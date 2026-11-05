@@ -42,6 +42,15 @@ internal sealed class MainForm : Form
     private readonly bool _enableReturnHome;
     private readonly ContextMenuStrip _moreMenu;
     private readonly Dictionary<Control, int> _baseTops = new();
+    private Panel _trustTip = null!;
+    private Label _trustTipText = null!;
+    private LinkLabel _trustTipRevert = null!;
+    private RadioButton _radioAsk = null!;
+    private RadioButton _radioRelaxed = null!;
+    private RadioButton _radioFullTrust = null!;
+    private ListView _confirmedView = null!;
+    private bool _suppressTrustRadio;
+    private int _baseClientHeight = 620;
 
     public event Action? HomeRequested;
 
@@ -338,7 +347,7 @@ internal sealed class MainForm : Form
         _btnAdvanced = MakeButton("高级 ▸", 16, y0 + 376, 100);
         _btnAdvanced.Click += (_, _) => ToggleAdvanced();
 
-        _advancedPanel = MakeCard(16, y0 + 412, 728, 150);
+        _advancedPanel = MakeCard(16, y0 + 412, 728, 420);
         _advancedPanel.Visible = false;
         _advancedPanel.Controls.Add(new Label
         {
@@ -346,12 +355,136 @@ internal sealed class MainForm : Form
             Location = new Point(12, 8),
             Size = new Size(200, 20),
             Font = new Font(Font.FontFamily, 9.5F, FontStyle.Bold),
-            Text = "高级（调试）"
+            Text = "高级"
+        });
+
+        // R007：信任等级三选一
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 32),
+            Size = new Size(400, 22),
+            Font = new Font(Font.FontFamily, 9.5F, FontStyle.Bold),
+            Text = TrustLevelCopy.GroupTitle,
+            Name = "trustGroupTitle"
+        });
+        _radioAsk = new RadioButton
+        {
+            AutoSize = false,
+            Location = new Point(16, 54),
+            Size = new Size(140, 22),
+            Text = TrustLevelCopy.AskEveryTimeName,
+            Checked = true,
+            Name = "radioTrustAsk"
+        };
+        _radioRelaxed = new RadioButton
+        {
+            AutoSize = false,
+            Location = new Point(16, 96),
+            Size = new Size(140, 22),
+            Text = TrustLevelCopy.RelaxedName,
+            Name = "radioTrustRelaxed"
+        };
+        _radioFullTrust = new RadioButton
+        {
+            AutoSize = false,
+            Location = new Point(16, 138),
+            Size = new Size(140, 22),
+            Text = TrustLevelCopy.FullTrustName,
+            Name = "radioTrustFullTrust"
+        };
+        _advancedPanel.Controls.Add(_radioAsk);
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(160, 54),
+            Size = new Size(540, 22),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = TrustLevelCopy.AskEveryTimeBlurb,
+            Name = "trustAskBlurb"
+        });
+        _advancedPanel.Controls.Add(_radioRelaxed);
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(160, 96),
+            Size = new Size(540, 22),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = TrustLevelCopy.RelaxedBlurb,
+            Name = "trustRelaxedBlurb"
+        });
+        _advancedPanel.Controls.Add(_radioFullTrust);
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(160, 138),
+            Size = new Size(540, 22),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = TrustLevelCopy.FullTrustBlurb,
+            Name = "trustFullTrustBlurb"
         });
         _advancedPanel.Controls.Add(new Label
         {
             AutoSize = false,
-            Location = new Point(12, 36),
+            Location = new Point(16, 164),
+            Size = new Size(680, 20),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Font = new Font(Font.FontFamily, 8.5F),
+            Text = TrustLevelCopy.HighRiskSupplement,
+            Name = "trustHighRiskNote"
+        });
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 184),
+            Size = new Size(680, 20),
+            ForeColor = Color.FromArgb(0x80, 0x86, 0x8B),
+            Font = new Font(Font.FontFamily, 8.5F),
+            Text = TrustLevelCopy.GuestCeilingNote,
+            Name = "trustGuestCeiling"
+        });
+        _radioAsk.CheckedChanged += OnTrustRadioChanged;
+        _radioRelaxed.CheckedChanged += OnTrustRadioChanged;
+        _radioFullTrust.CheckedChanged += OnTrustRadioChanged;
+
+        // R007：本次协助已确认的改动
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 210),
+            Size = new Size(400, 20),
+            Font = new Font(Font.FontFamily, 9.5F, FontStyle.Bold),
+            Text = TrustLevelCopy.ConfirmedChangesTitle,
+            Name = "confirmedChangesTitle"
+        });
+        _confirmedView = new ListView
+        {
+            Location = new Point(12, 232),
+            Size = new Size(704, 72),
+            View = View.Details,
+            FullRowSelect = true,
+            HeaderStyle = ColumnHeaderStyle.None,
+            MultiSelect = false,
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = Color.White,
+            Name = "confirmedChangesList"
+        };
+        _confirmedView.Columns.Add("line", 680);
+        _advancedPanel.Controls.Add(_confirmedView);
+
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 312),
+            Size = new Size(200, 18),
+            Font = new Font(Font.FontFamily, 8.5F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = "调试"
+        });
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 332),
             Size = new Size(60, 26),
             TextAlign = ContentAlignment.MiddleLeft,
             Text = "本机 IP"
@@ -359,7 +492,7 @@ internal sealed class MainForm : Form
         _hostCombo = new ComboBox
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
-            Location = new Point(76, 36),
+            Location = new Point(76, 332),
             Size = new Size(180, 26)
         };
         foreach (var ip in _host.LanIps)
@@ -374,7 +507,7 @@ internal sealed class MainForm : Form
         _portValue = new Label
         {
             AutoSize = false,
-            Location = new Point(270, 36),
+            Location = new Point(270, 332),
             Size = new Size(80, 26),
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Consolas", 10F, FontStyle.Bold),
@@ -384,7 +517,7 @@ internal sealed class MainForm : Form
         _advancedPanel.Controls.Add(new Label
         {
             AutoSize = false,
-            Location = new Point(360, 36),
+            Location = new Point(360, 332),
             Size = new Size(70, 26),
             TextAlign = ContentAlignment.MiddleLeft,
             Text = "TLS 指纹"
@@ -392,7 +525,7 @@ internal sealed class MainForm : Form
         _tlsValue = new Label
         {
             AutoSize = false,
-            Location = new Point(430, 36),
+            Location = new Point(430, 332),
             Size = new Size(280, 26),
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Consolas", 8.5F),
@@ -403,8 +536,8 @@ internal sealed class MainForm : Form
         _listenRawValue = new Label
         {
             AutoSize = false,
-            Location = new Point(12, 68),
-            Size = new Size(700, 20),
+            Location = new Point(12, 360),
+            Size = new Size(700, 18),
             Font = new Font("Consolas", 8F),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
             Text = ""
@@ -413,11 +546,11 @@ internal sealed class MainForm : Form
         _advancedPanel.Controls.Add(new Label
         {
             AutoSize = false,
-            Location = new Point(12, 92),
-            Size = new Size(120, 20),
+            Location = new Point(12, 378),
+            Size = new Size(120, 18),
             Text = "最近审计"
         });
-        var openAudit = new LinkLabel { AutoSize = true, Location = new Point(620, 92), Text = "打开日志文件" };
+        var openAudit = new LinkLabel { AutoSize = true, Location = new Point(620, 378), Text = "打开日志文件" };
         openAudit.LinkClicked += (_, _) =>
         {
             try
@@ -432,8 +565,8 @@ internal sealed class MainForm : Form
         _advancedPanel.Controls.Add(openAudit);
         _auditView = new ListView
         {
-            Location = new Point(12, 112),
-            Size = new Size(704, 30),
+            Location = new Point(12, 396),
+            Size = new Size(704, 18),
             View = View.Details,
             FullRowSelect = true,
             HeaderStyle = ColumnHeaderStyle.None,
@@ -454,8 +587,45 @@ internal sealed class MainForm : Form
             Text = "就绪。关闭窗口后会继续在托盘运行。"
         };
 
+        _trustTip = new Panel
+        {
+            Location = new Point(0, 64),
+            Size = new Size(760, 40),
+            BackColor = Color.FromArgb(0xE8, 0xF0, 0xFE),
+            Visible = false,
+            Name = "trustTip"
+        };
+        _trustTipText = new Label
+        {
+            AutoSize = false,
+            Location = new Point(20, 8),
+            Size = new Size(560, 24),
+            TextAlign = ContentAlignment.MiddleLeft,
+            ForeColor = Color.FromArgb(0x17, 0x4E, 0xA6),
+            Font = new Font(Font.FontFamily, 9F),
+            BackColor = Color.Transparent,
+            Name = "trustTipText"
+        };
+        _trustTipRevert = new LinkLabel
+        {
+            AutoSize = true,
+            Location = new Point(600, 10),
+            Text = TrustLevelCopy.RevertToAskEveryTime,
+            LinkColor = Color.FromArgb(0x1A, 0x73, 0xE8),
+            ActiveLinkColor = Color.FromArgb(0x15, 0x5F, 0xC0),
+            Name = "trustTipRevert"
+        };
+        _trustTipRevert.LinkClicked += (_, _) =>
+        {
+            _host.RevertTrustToAskEveryTime();
+            RefreshTrustUi();
+        };
+        _trustTip.Controls.Add(_trustTipText);
+        _trustTip.Controls.Add(_trustTipRevert);
+
         Controls.Add(header);
         Controls.Add(_banner);
+        Controls.Add(_trustTip);
         Controls.Add(sessionCard);
         Controls.Add(statusCard);
         Controls.Add(tipCard);
@@ -465,7 +635,7 @@ internal sealed class MainForm : Form
 
         foreach (Control c in Controls)
         {
-            if (c.Name is "header" or "banner") continue;
+            if (c.Name is "header" or "banner" or "trustTip") continue;
             _baseTops[c] = c.Top;
         }
 
@@ -474,9 +644,14 @@ internal sealed class MainForm : Form
         _host.PairedClientsChanged += OnPairedClientsChanged;
         _host.RelayStatusChanged += OnRelayStatusChanged;
         _host.Audit.EntryWritten += OnAuditWritten;
+        _host.TrustLevelChanged += OnTrustLevelChanged;
 
         _auditTimer = new System.Windows.Forms.Timer { Interval = 2500 };
-        _auditTimer.Tick += (_, _) => RefreshAudit();
+        _auditTimer.Tick += (_, _) =>
+        {
+            RefreshAudit();
+            RefreshConfirmedChanges();
+        };
         _auditTimer.Start();
 
         Shown += (_, _) => MaybeShowBanner();
@@ -484,6 +659,7 @@ internal sealed class MainForm : Form
         RefreshFromHost();
         RefreshClients();
         RefreshAudit();
+        RefreshTrustUi();
         UpdateFriendStatus();
     }
 
@@ -574,10 +750,16 @@ internal sealed class MainForm : Form
 
     private void RelayoutForBanner()
     {
-        var shift = _banner.Visible ? _banner.Height : 0;
+        var bannerH = _banner.Visible ? _banner.Height : 0;
+        var tipH = _trustTip is { Visible: true } ? _trustTip.Height : 0;
+        _banner.Top = 64;
+        if (_trustTip is not null)
+            _trustTip.Top = 64 + bannerH;
+        var shift = bannerH + tipH;
         foreach (var kv in _baseTops)
             kv.Key.Top = kv.Value + shift;
-        ClientSize = new Size(760, 620 + shift);
+        var advExtra = _advancedOpen ? Math.Max(0, _advancedPanel.Height - 150) : 0;
+        ClientSize = new Size(760, _baseClientHeight + shift + advExtra);
     }
 
     private void ToggleAdvanced()
@@ -585,6 +767,7 @@ internal sealed class MainForm : Form
         _advancedOpen = !_advancedOpen;
         _advancedPanel.Visible = _advancedOpen;
         _btnAdvanced.Text = _advancedOpen ? "高级 ▾" : "高级 ▸";
+        RelayoutForBanner();
     }
 
     private void CopyPayload()
@@ -723,6 +906,7 @@ internal sealed class MainForm : Form
         if (IsDisposed) return;
         if (InvokeRequired) { BeginInvoke(OnAuditWritten); return; }
         RefreshAudit();
+        RefreshConfirmedChanges();
         var latest = _host.Audit.ReadRecent(1).LastOrDefault();
         if (latest is not null && latest.EventType == "pair_owner_auto")
             SetStatus("已用你的账号连接，无需再确认配对（写操作仍须本机确认）");
@@ -855,6 +1039,148 @@ internal sealed class MainForm : Form
         catch { }
     }
 
+    private void OnTrustLevelChanged()
+    {
+        if (IsDisposed) return;
+        if (InvokeRequired) { BeginInvoke(RefreshTrustUi); return; }
+        RefreshTrustUi();
+    }
+
+    private void RefreshTrustUi()
+    {
+        SyncTrustRadios();
+        RefreshTrustTip();
+        RefreshConfirmedChanges();
+        RelayoutForBanner();
+    }
+
+    private void SyncTrustRadios()
+    {
+        if (_radioAsk is null) return;
+        var level = _host.TrustLevelEffective;
+        _suppressTrustRadio = true;
+        try
+        {
+            _radioAsk.Checked = level == TrustLevelKind.AskEveryTime;
+            _radioRelaxed.Checked = level == TrustLevelKind.Relaxed;
+            _radioFullTrust.Checked = level == TrustLevelKind.FullTrust;
+        }
+        finally { _suppressTrustRadio = false; }
+    }
+
+    private void RefreshTrustTip()
+    {
+        if (_trustTip is null) return;
+        var level = _host.TrustLevelEffective;
+        if (level == TrustLevelKind.AskEveryTime)
+        {
+            if (_trustTip.Visible)
+            {
+                _trustTip.Visible = false;
+            }
+            return;
+        }
+
+        if (level == TrustLevelKind.Relaxed)
+        {
+            _trustTip.BackColor = Color.FromArgb(0xE8, 0xF0, 0xFE);
+            _trustTipText.ForeColor = Color.FromArgb(0x17, 0x4E, 0xA6);
+            _trustTipText.Text = TrustLevelCopy.RelaxedBanner;
+        }
+        else
+        {
+            _trustTip.BackColor = Color.FromArgb(0xFE, 0xF7, 0xE0);
+            _trustTipText.ForeColor = Color.FromArgb(0xB0, 0x60, 0x00);
+            _trustTipText.Text = TrustLevelCopy.FullTrustBanner;
+        }
+        _trustTip.Visible = true;
+    }
+
+    private void OnTrustRadioChanged(object? sender, EventArgs e)
+    {
+        if (_suppressTrustRadio) return;
+        if (sender is not RadioButton { Checked: true } rb) return;
+
+        if (ReferenceEquals(rb, _radioAsk))
+        {
+            _host.SetTrustLevelPreference(TrustLevelKind.AskEveryTime);
+            RefreshTrustUi();
+            return;
+        }
+
+        if (ReferenceEquals(rb, _radioRelaxed))
+        {
+            _host.SetTrustLevelPreference(TrustLevelKind.Relaxed);
+            RefreshTrustUi();
+            return;
+        }
+
+        if (ReferenceEquals(rb, _radioFullTrust))
+        {
+            // 二次确认；取消则档位不变
+            using var dlg = new FullTrustConfirmDialog();
+            var result = dlg.ShowDialog(this);
+            if (result == DialogResult.OK)
+            {
+                _host.EnableFullTrustAfterConfirm();
+                RefreshTrustUi();
+            }
+            else
+            {
+                SyncTrustRadios();
+            }
+        }
+    }
+
+    private void RefreshConfirmedChanges()
+    {
+        if (_confirmedView is null) return;
+        try
+        {
+            var entries = _host.Audit.ReadRecent(80);
+            var filtered = ConfirmedChangeList.Filter(entries.Select(e => (e.EventType, e.Detail)));
+            _confirmedView.BeginUpdate();
+            try
+            {
+                _confirmedView.Items.Clear();
+                // ReadRecent 旧→新；列表展示新在上
+                foreach (var (eventType, detail) in filtered.Reverse())
+                {
+                    var matching = entries.LastOrDefault(e => e.EventType == eventType && e.Detail == detail);
+                    var ts = matching?.Timestamp;
+                    var line = ConfirmedChangeList.DisplayLine(eventType, detail, ts is { Length: >= 19 } ? ts[..19] : ts);
+                    _confirmedView.Items.Add(new ListViewItem(line));
+                }
+                if (_confirmedView.Items.Count == 0)
+                    _confirmedView.Items.Add(new ListViewItem("（暂无已确认的改动）") { ForeColor = Color.Gray });
+            }
+            finally { _confirmedView.EndUpdate(); }
+        }
+        catch { /* ignore */ }
+    }
+
+    /// <summary>UiShot：展开高级面板。</summary>
+    internal void OpenAdvancedForShot()
+    {
+        if (!_advancedOpen) ToggleAdvanced();
+    }
+
+    /// <summary>UiShot：收起高级面板。</summary>
+    internal void CloseAdvancedForShot()
+    {
+        if (_advancedOpen) ToggleAdvanced();
+    }
+
+    /// <summary>UiShot：同步信任档 UI（不弹二次确认）。</summary>
+    internal void ApplyTrustForShot(TrustLevelKind level)
+    {
+        if (level == TrustLevelKind.FullTrust)
+            _host.EnableFullTrustAfterConfirm();
+        else
+            _host.SetTrustLevelPreference(level);
+        RefreshTrustUi();
+    }
+
     private void SetStatus(string text) => _statusLabel.Text = text;
 
     protected override void Dispose(bool disposing)
@@ -865,6 +1191,7 @@ internal sealed class MainForm : Form
             _host.PairedClientsChanged -= OnPairedClientsChanged;
             _host.RelayStatusChanged -= OnRelayStatusChanged;
             _host.Audit.EntryWritten -= OnAuditWritten;
+            _host.TrustLevelChanged -= OnTrustLevelChanged;
             _auditTimer.Stop();
             _auditTimer.Dispose();
             _qrImage?.Dispose();

@@ -37,6 +37,7 @@ internal sealed class AgentHost
     private readonly string? _accountToken;
     private readonly string _deviceId;
     private readonly string _deviceDisplayName;
+    private readonly TrustLevelSession _trust = new();
 
     public int Port { get; }
     public string AuditPath { get; }
@@ -47,6 +48,8 @@ internal sealed class AgentHost
     public event Action? PairedClientsChanged;
     /// <summary>中继访客通道状态变化（供 UI 亲友向文案）。</summary>
     public event Action? RelayStatusChanged;
+    /// <summary>信任等级变化（主界面提示 / 高级单选同步）。</summary>
+    public event Action? TrustLevelChanged;
 
     private volatile string _relayPhase = "starting";
     private volatile string? _lastRelayError;
@@ -93,6 +96,7 @@ internal sealed class AgentHost
         _sessionCode = SessionCodeGenerator.Generate(6);
         _sessionPassword = SessionPasswordGenerator.Generate(4);
         _selectedHost = LanIps.FirstOrDefault() ?? "127.0.0.1";
+        _trust.Changed += () => { try { TrustLevelChanged?.Invoke(); } catch { /* UI */ } };
         if (!_insecure)
         {
             _serverCert = TlsCertUtil.CreateEphemeralServerCert();
@@ -179,6 +183,30 @@ internal sealed class AgentHost
         SessionChanged?.Invoke();
     }
 
+
+    public TrustLevelKind TrustLevelEffective => _trust.Effective;
+    public TrustLevelKind TrustLevelPreference => _trust.Preference;
+    public bool TrustLevelIsFullTrust => _trust.IsFullTrustActive;
+
+    public void SetTrustLevelPreference(TrustLevelKind level)
+    {
+        _trust.SetPreference(level);
+        _audit.Write("trust_level", $"preference={level}");
+    }
+
+    public void EnableFullTrustAfterConfirm()
+    {
+        var tokens = ListPairedClients().Select(c => c.Token);
+        _trust.EnableFullTrust(tokens);
+        _audit.Write("trust_level", "fulltrust=enabled");
+    }
+
+    public void RevertTrustToAskEveryTime()
+    {
+        _trust.RevertToAskEveryTime();
+        _audit.Write("trust_level", "preference=AskEveryTime; reverted=1");
+    }
+
     public IReadOnlyList<PairedClientInfo> ListPairedClients()
     {
         var now = DateTimeOffset.UtcNow;
@@ -209,6 +237,7 @@ internal sealed class AgentHost
         _audit.Write("session_kick",
             $"client={session.ClientName}; remote={session.RemoteEndpoint}; perm={session.Permission}; token={token[..Math.Min(8, token.Length)]}…");
         Console.WriteLine($"[已断开] {session.ClientName} @ {session.RemoteEndpoint}");
+        _trust.OnClientDisconnected(token);
         PairedClientsChanged?.Invoke();
         return true;
     }
@@ -245,6 +274,7 @@ internal sealed class AgentHost
 
         _audit.Write("session_refresh", $"code={code}; kicked_all=true");
         Console.WriteLine($"[会话码已刷新] {code}");
+        _trust.OnSessionRefreshed();
         SessionChanged?.Invoke();
         PairedClientsChanged?.Invoke();
         return code;
@@ -663,6 +693,7 @@ internal sealed class AgentHost
             AgentName = Environment.MachineName
         }, id: envelope.Id).ConfigureAwait(false);
 
+        _trust.OnClientPaired(token);
         Console.WriteLine($"[已配对] {req.ClientName} @ {remote} 权限={granted} token={token[..8]}…");
         return session;
     }
@@ -698,27 +729,41 @@ internal sealed class AgentHost
         var args = req.Arguments ?? new Dictionary<string, string?>();
         var source = $"{session.ClientName}";
 
-        if (ToolCapabilities.RequiresConfirmation(tool, session.Permission))
+        if (!ToolCapabilities.IsReadOnly(tool))
         {
             var desc = WriteConfirmCopy.Describe(tool, args);
-            var info = new ConfirmRequestInfo(source, tool.ToString(), desc.Headline, _confirmTimeoutSeconds, desc.Detail);
-            var outcome = await ConfirmPrompt.AskAsync(info, _autoYes, _headless).ConfigureAwait(false);
-            if (!outcome.Approved)
+            var trust = _trust.EffectiveForClient(session.Token);
+            var needConfirm = TrustLevelPolicy.NeedsLocalConfirm(trust, tool, args);
+            // 完全信任仅覆盖已绑定的协助者；未覆盖时回落到本机偏好
+            if (needConfirm)
             {
-                _audit.Write("tool_denied_user", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
-                var err = outcome.Decision == ConfirmDecision.TimedOut
-                    ? WriteConfirmCopy.TimedOutMessage
-                    : WriteConfirmCopy.DeniedMessage;
-                await FrameIo.WriteAsync(stream, "tool_result",
-                    new ToolResponse { Ok = false, Error = err, DeniedByUser = true },
-                    id: envelope.Id).ConfigureAwait(false);
-                return;
+                var info = new ConfirmRequestInfo(source, tool.ToString(), desc.Headline, _confirmTimeoutSeconds, desc.Detail);
+                var outcome = await ConfirmPrompt.AskAsync(info, _autoYes, _headless).ConfigureAwait(false);
+                if (!outcome.Approved)
+                {
+                    _audit.Write("tool_denied_user", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
+                    var err = outcome.Decision == ConfirmDecision.TimedOut
+                        ? WriteConfirmCopy.TimedOutMessage
+                        : WriteConfirmCopy.DeniedMessage;
+                    await FrameIo.WriteAsync(stream, "tool_result",
+                        new ToolResponse { Ok = false, Error = err, DeniedByUser = true },
+                        id: envelope.Id).ConfigureAwait(false);
+                    return;
+                }
+                _audit.Write("tool_confirmed", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
             }
-            _audit.Write("tool_confirmed", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
-        }
-        else if (!ToolCapabilities.IsReadOnly(tool) && session.Permission == PermissionLevel.Admin)
-        {
-            _audit.Write("tool_admin_auto", $"tool={tool}; source={source}; {WriteConfirmCopy.Describe(tool, args).ForAudit}");
+            else if (trust == TrustLevelKind.FullTrust)
+            {
+                _audit.Write("tool_auto_fulltrust", $"tool={tool}; source={source}; {desc.ForAudit}");
+            }
+            else if (trust == TrustLevelKind.Relaxed)
+            {
+                _audit.Write("tool_auto_relaxed", $"tool={tool}; source={source}; {desc.ForAudit}");
+            }
+            else if (session.Permission == PermissionLevel.Admin)
+            {
+                _audit.Write("tool_admin_auto", $"tool={tool}; source={source}; {desc.ForAudit}");
+            }
         }
 
         try

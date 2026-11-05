@@ -35,6 +35,12 @@ public sealed class HelperUiSettings
     /// <summary>用户是否点过「可能取消了防火墙」相关引导。</summary>
     public bool NetworkAllowMaybeDenied { get; set; }
 
+    /// <summary>
+    /// 本机信任等级偏好：仅「每次询问」或「宽松」可持久化。
+    /// 取值：AskEveryTime / Relaxed。完全信任不写入。
+    /// </summary>
+    public string TrustLevelPreference { get; set; } = nameof(TrustLevelKind.AskEveryTime);
+
     public static string SettingsDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RemoteAssist");
 
