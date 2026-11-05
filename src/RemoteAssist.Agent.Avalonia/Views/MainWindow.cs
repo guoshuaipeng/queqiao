@@ -25,6 +25,9 @@ internal sealed class MainWindow : Window
     private readonly RadioButton _radioAsk;
     private readonly RadioButton _radioRelaxed;
     private readonly RadioButton _radioFullTrust;
+    private readonly ScrollViewer _scroll;
+    private readonly ListBox _confirmedList;
+    private readonly ListBox _auditList;
     private bool _advancedOpen;
     private bool _suppressTrustRadio;
     private bool _ending;
@@ -44,7 +47,7 @@ internal sealed class MainWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Background = Brush.Parse("#F5F6F8");
 
-        var scroll = new ScrollViewer
+        _scroll = new ScrollViewer
         {
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
         };
@@ -141,7 +144,7 @@ internal sealed class MainWindow : Window
         _btnAdvanced.Click += (_, _) => ToggleAdvanced();
         root.Children.Add(_btnAdvanced);
 
-        _advancedPanel = BuildAdvancedPanel(out _radioAsk, out _radioRelaxed, out _radioFullTrust);
+        _advancedPanel = BuildAdvancedPanel(out _radioAsk, out _radioRelaxed, out _radioFullTrust, out _confirmedList, out _auditList);
         _advancedPanel.IsVisible = false;
         root.Children.Add(_advancedPanel);
 
@@ -155,8 +158,8 @@ internal sealed class MainWindow : Window
         endBtn.Click += async (_, _) => await EndAssistAsync(returnHome: _enableReturnHome);
         root.Children.Add(endBtn);
 
-        scroll.Content = root;
-        Content = scroll;
+        _scroll.Content = root;
+        Content = _scroll;
 
         Closing += OnClosing;
 
@@ -166,10 +169,17 @@ internal sealed class MainWindow : Window
             _host.RelayStatusChanged += () => Dispatcher.UIThread.Post(RefreshSessionUi);
             _host.PairedClientsChanged += () => Dispatcher.UIThread.Post(RefreshSessionUi);
             _host.TrustLevelChanged += () => Dispatcher.UIThread.Post(RefreshTrustUi);
+            _host.Audit.EntryWritten += () => Dispatcher.UIThread.Post(() =>
+            {
+                RefreshConfirmedChanges();
+                RefreshAudit();
+            });
             Opened += (_, _) =>
             {
                 RefreshSessionUi();
                 RefreshTrustUi();
+                RefreshConfirmedChanges();
+                RefreshAudit();
             };
         }
         else
@@ -183,7 +193,12 @@ internal sealed class MainWindow : Window
 
     public void AllowCloseWithoutPrompt() => _allowClose = true;
 
-    private Border BuildAdvancedPanel(out RadioButton radioAsk, out RadioButton radioRelaxed, out RadioButton radioFullTrust)
+    private Border BuildAdvancedPanel(
+        out RadioButton radioAsk,
+        out RadioButton radioRelaxed,
+        out RadioButton radioFullTrust,
+        out ListBox confirmedList,
+        out ListBox auditList)
     {
         var stack = new StackPanel { Spacing = 8 };
 
@@ -223,6 +238,39 @@ internal sealed class MainWindow : Window
         radioAsk.IsCheckedChanged += OnTrustRadioChanged;
         radioRelaxed.IsCheckedChanged += OnTrustRadioChanged;
         radioFullTrust.IsCheckedChanged += OnTrustRadioChanged;
+
+        stack.Children.Add(new TextBlock
+        {
+            Name = "confirmedChangesTitle",
+            Text = TrustLevelCopy.ConfirmedChangesTitle,
+            FontWeight = FontWeight.SemiBold,
+            FontSize = 14,
+            Margin = new Thickness(0, 8, 0, 0)
+        });
+        confirmedList = new ListBox
+        {
+            Name = "confirmedChangesList",
+            Height = 88,
+            MinHeight = 72
+        };
+        stack.Children.Add(confirmedList);
+
+        stack.Children.Add(new TextBlock
+        {
+            Name = "recentAuditTitle",
+            Text = "最近审计",
+            FontWeight = FontWeight.SemiBold,
+            FontSize = 13,
+            Foreground = Brush.Parse("#5F6368"),
+            Margin = new Thickness(0, 6, 0, 0)
+        });
+        auditList = new ListBox
+        {
+            Name = "recentAuditList",
+            Height = 72,
+            MinHeight = 56
+        };
+        stack.Children.Add(auditList);
 
         return new Border
         {
@@ -317,18 +365,14 @@ internal sealed class MainWindow : Window
 
         var refreshBtn = new Button
         {
-            Content = "刷新会话码",
+            Name = "btnRefreshSession",
+            Content = FriendConnectGuide.RefreshSessionConfirmOk,
             HorizontalAlignment = HorizontalAlignment.Left,
-            Margin = new Thickness(0, 4, 0, 0)
+            Margin = new Thickness(0, 4, 0, 0),
+            // 轻按钮：不抢「复制码+密码」实心主按钮权重
+            Background = Brushes.Transparent
         };
-        refreshBtn.Click += (_, _) =>
-        {
-            if (_shotMode) return;
-            _host.RefreshSessionCode();
-            RefreshSessionUi();
-            RefreshTrustUi();
-            _status.Text = "已换新的会话码和验证密码。之前发出去的码不能再用。";
-        };
+        refreshBtn.Click += async (_, _) => await ConfirmAndRefreshSessionAsync();
         stack.Children.Add(refreshBtn);
         return stack;
     }
@@ -339,7 +383,7 @@ internal sealed class MainWindow : Window
         _advancedPanel.IsVisible = _advancedOpen;
         _btnAdvanced.Content = _advancedOpen ? "高级 ▾" : "高级 ▸";
         if (_advancedOpen)
-            Height = Math.Max(Height, 720);
+            Height = Math.Max(Height, 860);
     }
 
     private async void OnTrustRadioChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -428,6 +472,8 @@ internal sealed class MainWindow : Window
         if (level == TrustLevelKind.AskEveryTime)
         {
             _trustTip.IsVisible = false;
+            RefreshConfirmedChanges();
+            RefreshAudit();
             return;
         }
 
@@ -446,6 +492,149 @@ internal sealed class MainWindow : Window
             _trustTip.BorderBrush = Brush.Parse("#FDD663");
             _trustTipText.Foreground = Brush.Parse("#B06000");
         }
+        RefreshConfirmedChanges();
+        RefreshAudit();
+    }
+
+    private async Task ConfirmAndRefreshSessionAsync()
+    {
+        if (_shotMode) return;
+        var dlg = new RefreshSessionConfirmWindow();
+        var result = await dlg.ShowDialog<bool?>(this).ConfigureAwait(true);
+        if (!(dlg.Confirmed || result == true))
+            return;
+        _host.RefreshSessionCode();
+        RefreshSessionUi();
+        RefreshTrustUi();
+        RefreshConfirmedChanges();
+        RefreshAudit();
+        _status.Text = "已换新的会话码和验证密码。之前发出去的码不能再用。";
+    }
+
+    private void RefreshConfirmedChanges()
+    {
+        try
+        {
+            var entries = _host.Audit.ReadRecent(80);
+            var filtered = ConfirmedChangeList.Filter(entries.Select(e => (e.EventType, e.Detail)));
+            var items = new List<string>();
+            foreach (var (eventType, detail) in filtered.Reverse())
+            {
+                var matching = entries.LastOrDefault(e => e.EventType == eventType && e.Detail == detail);
+                var ts = matching?.Timestamp;
+                var line = ConfirmedChangeList.DisplayLine(
+                    eventType, detail, ts is { Length: >= 19 } ? ts[..19] : ts);
+                items.Add(line);
+            }
+            if (items.Count == 0)
+                items.Add("（暂无已确认的改动）");
+            _confirmedList.ItemsSource = null;
+            _confirmedList.ItemsSource = items;
+        }
+        catch
+        {
+            _confirmedList.ItemsSource = new[] { "（暂无已确认的改动）" };
+        }
+    }
+
+    private void RefreshAudit()
+    {
+        try
+        {
+            var entries = _host.Audit.ReadRecent(8);
+            var items = new List<string>();
+            foreach (var e in entries.Reverse())
+            {
+                items.Add(FormatAuditLine(e));
+            }
+            if (items.Count == 0)
+                items.Add("（暂无审计记录）");
+            _auditList.ItemsSource = null;
+            _auditList.ItemsSource = items;
+        }
+        catch
+        {
+            _auditList.ItemsSource = new[] { "（暂无审计记录）" };
+        }
+    }
+
+    private static string FormatAuditLine(AuditEntry e)
+    {
+        var ts = e.Timestamp.Length >= 19 ? e.Timestamp[..19] : e.Timestamp;
+        var label = e.EventType switch
+        {
+            "tool_confirmed" => "已确认执行",
+            "tool_denied_user" => WriteConfirmCopy.DeniedMessage,
+            "tool_denied_perm" => "权限不足",
+            "tool_auto_relaxed" => "宽松自动允许",
+            "tool_auto_fulltrust" => "完全信任自动允许",
+            "tool_admin_auto" => "已自动执行",
+            "trust_level" => "信任等级",
+            "session_refresh" => "刷新会话码",
+            _ => e.EventType
+        };
+        // 人话摘要；剥掉 tool=/source= 等，避免亲友界面出现内部字段
+        var detail = ConfirmedChangeList.HumanizeDetail(e.Detail);
+        if (string.IsNullOrWhiteSpace(detail) &&
+            !string.Equals(e.EventType, "trust_level", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(e.EventType, "session_refresh", StringComparison.OrdinalIgnoreCase))
+        {
+            detail = "";
+        }
+        else if (string.IsNullOrWhiteSpace(detail))
+        {
+            // 信任/刷新等保留短说明，但过滤技术泄漏
+            detail = FriendConnectGuide.LooksTechnicalLeak(e.Detail) ? "" : (e.Detail.Length > 60 ? e.Detail[..57] + "…" : e.Detail);
+        }
+        if (FriendConnectGuide.LooksTechnicalLeak(detail))
+            detail = "";
+        return string.IsNullOrEmpty(detail) ? $"{ts}  {label}" : $"{ts}  {label}  ·  {detail}";
+    }
+
+    internal void SeedConfirmedForShot(string humanDetail)
+    {
+        _host.Audit.Write(
+            "tool_confirmed",
+            $"tool=RunCommand; source=guest; via=ui; result=approved; at={DateTimeOffset.UtcNow:o}; {humanDetail}");
+        RefreshConfirmedChanges();
+        RefreshAudit();
+    }
+
+    internal void SeedDeniedForShot(string humanDetail)
+    {
+        _host.Audit.Write(
+            "tool_denied_user",
+            $"tool=RunCommand; source=guest; via=ui; result=denied; at={DateTimeOffset.UtcNow:o}; {humanDetail}");
+        RefreshConfirmedChanges();
+        RefreshAudit();
+    }
+
+    internal RefreshSessionConfirmWindow ShowRefreshConfirmForShot()
+    {
+        var dlg = new RefreshSessionConfirmWindow();
+        dlg.Show(this);
+        return dlg;
+    }
+
+    internal string ApplyRefreshForShot()
+    {
+        var code = _host.RefreshSessionCode();
+        _codeBlock.Text = "会话码：" + code;
+        _pwdBlock.Text = "验证密码：" + _host.SessionPassword;
+        RefreshTrustUi();
+        RefreshConfirmedChanges();
+        RefreshAudit();
+        _status.Text = "已换新的会话码和验证密码。之前发出去的码对方将连不上。";
+        return code;
+    }
+
+    internal void ScrollListsIntoViewForShot()
+    {
+        // 确保「本次协助已确认的改动 / 最近审计」进入视口（验收截图用）
+        _scroll.Offset = new Vector(0, double.MaxValue);
+        _confirmedList.InvalidateVisual();
+        _auditList.InvalidateVisual();
+        InvalidateVisual();
     }
 
     internal void OpenAdvancedForShot()

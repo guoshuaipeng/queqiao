@@ -21,7 +21,7 @@
 | R010 | 高频：Mac/Linux Avalonia 被控窗；打磨：Avalonia 框架依赖小包实测 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-010.md` |
 | R011 | 高频：Mac/Linux Avalonia 双模式（去协助）；打磨：框架依赖小包实测（顺手 Linux .tar.gz） | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-011.md` |
 | R012 | 高频：Avalonia 被控端信任等级；打磨：Windows P2-7「结束完全信任」文案 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-012.md` |
-| R013 | 高频：Avalonia「本次协助已确认的改动」；打磨：刷新会话码先确认 | 鹊桥-客户端 | **wip** | `docs/round-013.md` |
+| R013 | 高频：Avalonia「本次协助已确认的改动」；打磨：刷新会话码先确认 | 鹊桥-客户端 | **done（实现已推；待产品验收）** | `docs/round-013.md` |
 
 ## P0 — 可演示闭环（不后挪）
 

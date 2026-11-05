@@ -6,7 +6,7 @@ using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>把真实 Avalonia 控件渲成 PNG（R012 信任等级验收截图；非标注条伪造）。</summary>
+/// <summary>R013：已确认改动列表 + 刷新会话码确认（真实控件截图）。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -22,45 +22,42 @@ internal static class UiShotRunner
         win.Show();
         await Task.Delay(350).ConfigureAwait(true);
 
+        // 1) 已确认列表有人话条目（文档例会话码 AB12CD/3471）
+        win.SeedConfirmedForShot("运行一条命令 · 命令：echo r013-ok");
         win.OpenAdvancedForShot();
-        await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(win, Path.Combine(outDir, "r012-linux-advanced-ask.png")).ConfigureAwait(true);
+        win.ScrollListsIntoViewForShot();
+        await Task.Delay(350).ConfigureAwait(true);
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-confirmed-list.png")).ConfigureAwait(true);
 
-        var confirm = win.ShowFullTrustConfirmForShot();
+        // 2) 拒绝写入审计；滚到列表；已确认不得含拒绝，最近审计可见已拒绝
+        win.SeedDeniedForShot("运行一条命令 · 命令：echo r013-deny-should-not-run");
+        win.ScrollListsIntoViewForShot();
+        await Task.Delay(350).ConfigureAwait(true);
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-denied-not-in-confirmed.png")).ConfigureAwait(true);
+
+        // 3) 刷新确认弹窗
+        var refreshDlg = win.ShowRefreshConfirmForShot();
         await Task.Delay(300).ConfigureAwait(true);
-        await CaptureWindowAsync(confirm, Path.Combine(outDir, "r012-linux-fulltrust-confirm.png")).ConfigureAwait(true);
-        confirm.Close(false);
+        await CaptureWindowAsync(refreshDlg, Path.Combine(outDir, "r013-refresh-confirm.png")).ConfigureAwait(true);
+        refreshDlg.Close(false);
         await Task.Delay(150).ConfigureAwait(true);
 
-        win.ApplyTrustForShot(TrustLevelKind.AskEveryTime);
+        // 4) 取消刷新：收起高级，主界面仍文档例码 AB12CD（与列表图区分）
         win.CloseAdvancedForShot();
-        await Task.Delay(200).ConfigureAwait(true);
-        await CaptureWindowAsync(win, Path.Combine(outDir, "r012-linux-fulltrust-cancel-stays.png")).ConfigureAwait(true);
+        await Task.Delay(250).ConfigureAwait(true);
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-refresh-cancel-keeps-code.png")).ConfigureAwait(true);
 
-        win.ApplyTrustForShot(TrustLevelKind.Relaxed);
-        await Task.Delay(200).ConfigureAwait(true);
-        await CaptureWindowAsync(win, Path.Combine(outDir, "r012-linux-banner-relaxed.png")).ConfigureAwait(true);
-
+        // 5) 完全信任 → 刷新 → 新码 + 横幅消失
         win.ApplyTrustForShot(TrustLevelKind.FullTrust);
-        await Task.Delay(200).ConfigureAwait(true);
-        await CaptureWindowAsync(win, Path.Combine(outDir, "r012-linux-banner-fulltrust.png")).ConfigureAwait(true);
-
-        win.ApplyTrustForShot(TrustLevelKind.AskEveryTime);
-        var writeInfo = new ConfirmRequestInfo(
-            Source: "guest",
-            Tool: "RunCommand",
-            Summary: "运行一条命令",
-            TimeoutSeconds: 60,
-            Detail: "命令：echo r012-ask");
-        var write = new WriteConfirmWindow(writeInfo);
-        write.Show(win);
+        await Task.Delay(250).ConfigureAwait(true);
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-fulltrust-before-refresh.png")).ConfigureAwait(true);
+        var newCode = win.ApplyRefreshForShot();
         await Task.Delay(300).ConfigureAwait(true);
-        await CaptureWindowAsync(write, Path.Combine(outDir, "r012-linux-write-confirm-ask.png")).ConfigureAwait(true);
-        write.Close();
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-refresh-clears-fulltrust.png")).ConfigureAwait(true);
+        Console.WriteLine("r013 refreshed code (live host, not doc example)=" + newCode);
 
         win.AllowCloseWithoutPrompt();
         win.Close();
-
         try { host.SetTrustLevelPreference(TrustLevelKind.AskEveryTime); } catch { /* ignore */ }
 
         Console.WriteLine("ui-shot written to " + outDir);
@@ -71,9 +68,10 @@ internal static class UiShotRunner
     private static async Task CaptureWindowAsync(Window window, string path)
     {
         window.Show();
-        await Task.Delay(120).ConfigureAwait(true);
+        await Task.Delay(150).ConfigureAwait(true);
         window.InvalidateVisual();
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+        await Task.Delay(80).ConfigureAwait(true);
 
         var size = new Size(Math.Max(window.Width, 400), Math.Max(window.Height, 200));
         if (window.Bounds.Width > 1 && window.Bounds.Height > 1)

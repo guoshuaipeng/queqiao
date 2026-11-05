@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（Avalonia 被控端；不改 `relay/`，不迁 Windows 到 Avalonia，不重做 R006–R012）
-> 状态：**wip**
+> 状态：**done（实现已推；待产品验收）**
 > 依据：docs/mac-linux-scenes.md「客户支持」验收；docs/quality.md §1；Windows R007 已确认列表行为；docs/PRODUCT.md。
 
 R012 已产品验收 Avalonia 信任三档 + Windows P2-7。客户支持场景仍要求：客户不进终端也能在本机看到这次已确认的改动；Avalonia 被控端还缺这份只读回看（Windows R007 已有）。同时 Avalonia「刷新会话码」仍可能与「复制码+密码」抢点击，对齐 quality.md 先确认再失效。
@@ -47,3 +47,23 @@ R012 已产品验收 Avalonia 信任三档 + Windows P2-7。客户支持场景�
 - 更新本文交付说明、`docs/roadmap.md`（本轮标 done）
 - 截图放到 `docs/screenshots/r013-*`
 - 回告产品验收；未开下一轮
+
+## 交付说明（鹊桥-客户端 · 2026-11-05 Asia/Shanghai）
+
+### 实现摘要
+- **Avalonia 已确认改动回看**：被控窗「高级」内标题「本次协助已确认的改动」，复用 `ConfirmedChangeList.Filter/DisplayLine/HumanizeDetail` + `AuditLog`；含已确认与宽松/完全信任自动允许；拒绝/未确认不进列表。旁附「最近审计」便于对照拒绝项（人话，剥掉 tool=/source=）。
+- **刷新会话码先确认**：`RefreshSessionConfirmWindow` 原文对齐 `FriendConnectGuide` / quality.md §1；取消码不变；确认后 `RefreshSessionCode`（旧码旧密失效，完全信任经 `OnSessionRefreshed` 失效）。「复制码+密码」仍为唯一实心主按钮，刷新为轻按钮。
+- osx 未上真机，不写成 Mac 已验收。未开下一轮。
+
+### 截图（`docs/screenshots/r013-*`，已复制 `%USERPROFILE%\Downloads\r013-shots\`）
+| 文件 | 屏幕可见要点 |
+|------|-------------|
+| r013-confirmed-list.png | 「本次协助已确认的改动」含人话「已确认 · 运行一条命令 · 命令：echo r013-ok」；会话码为**文档例** AB12CD/3471 |
+| r013-denied-not-in-confirmed.png | 最近审计可见「已拒绝，未做任何改动」；已确认列表仍只有已确认项、无拒绝 |
+| r013-refresh-confirm.png | 「刷新后旧码会失效，已经发出去的码对方将连不上。」按钮「刷新会话码 / 取消」 |
+| r013-refresh-cancel-keeps-code.png | 取消后仍为文档例 AB12CD |
+| r013-fulltrust-before-refresh.png | 完全信任横幅「结束完全信任」 |
+| r013-refresh-clears-fulltrust.png | 确认刷新后新码（现场 host 码，非文档例）+ 完全信任横幅消失 |
+
+### 测试
+`dotnet test`：168 通过 / 0 失败。
