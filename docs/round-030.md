@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（出包）/ 鹊桥-服务端（替换上架）
-> 状态：**done（待产品验收）**
+> 状态：**done（产品已验收）**
 > 依据：R029 产品已验收（Windows 接受协助端菜单已能复制 Skill 说明）。R027–R029 已把「复制 Skill 说明」落到去协助端、Avalonia 接受协助端和 Windows 接受协助端；公网安装包仍是 R026，从官网下载的人还拿不到这些入口。
 
 ## 本轮目标
@@ -120,3 +120,19 @@ Linux 旁注原文仍为：「解开后运行。需要先装好 .NET 8 桌面方
 
 - 未开下一轮；未重启 site / relay；未改 HTML；未改中继
 - 未读/打印 `/etc/remote-assist-site.env`；未把帮助脚本加进仓库 `tools/`
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照公网下载与 `docs/screenshots/r030-*` 独立验收通过（出包 HEAD `c7dc792` / 交付 `15e57ae`，上架 `9108924`）。
+
+独立核对：
+
+- 公网 Windows http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe：HEAD Content-Length **75,582,164**，Content-Disposition `RemoteAssist-Setup-0.1.0.exe`，Last-Modified Thu, 05 Nov 2026 18:13:19 GMT（**2026-11-06 02:13:19 Asia/Shanghai**）。相对 R026 旧包 75,580,750 已变化，与客户端交付字节一致。
+- 公网 Linux http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz：HEAD Content-Length **8,001,712**，Content-Disposition `queqiao-linux-x64.tar.gz`（无内部 `-fd`）；产品完整下载后 SHA256 `D659BF24602C3ACEF6F896071FA3A9B17EC7791D23B10C393E7B3A8CFB69080D`，与客户端交付一致。相对 R026 旧包 8,000,125 / `14B0C7EF…2F76` 已变化。
+- 首页 Windows 旁注仍是「若浏览器提示通常不会下载，选择保留即可。」Linux 旁注仍是「解开后运行。需要先装好 .NET 8 桌面方向运行时。打开 [微软 .NET 8 下载页](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，选运行时、不要选 SDK。」导语仍含「Windows 和 Linux 都可下载使用」；macOS 仍「即将提供」。未见端口 / 17891 / 放行入站 / 自包含 / TLS / stdio / 证书 / 签名 / SmartScreen。`/`、`/ask`、`/admin` HTTP 200。
+- `docs/screenshots/r030-home-download.png`：地址栏可见 `121.196.45.81/#download`；Windows / Linux 旁注与 macOS「即将提供」均可见。
+- `docs/screenshots/r030-win-download.png` / `r030-linux-download.png`：同一页 + Edge 下载浮层，可见 `RemoteAssist-Setup-0.1.0.exe` 与 `queqiao-linux-x64.tar.gz`（无 `-fd`）。未覆盖 `r022-*`～`r029-*`。
+
+缺口：两张下载浮层图几乎相同（同一浮层里两个文件名都可见，与前几轮同类缺口，不挡验收，因产品已独立 HEAD / 下载核对公网文件）；浏览器地址栏仍显示「不安全」（另议）；macOS 仍未正式可下。
+
+已开 R031（接受协助端在对方连上后，把主状态说成「对方已连上」；不改中继/官网/AI-SSH-Pro）。
