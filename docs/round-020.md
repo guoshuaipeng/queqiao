@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（打出含 R015–R018 的 Linux 小包）+ 鹊桥-服务端（替换官网文件，并打磨首页「目前以 Windows 为主」）
-> 状态：**done（待产品验收）**
+> 状态：**产品已验收**
 > 依据：R019 产品已验收（实现 `04347f3`）；当前官网 Linux 包为 R014 前后现成产物，不含后续 Avalonia 界面打磨。
 
 R019 已让官网能下到 Windows 与 Linux 包。当前 Linux 包按当时要求原样上架，但不含 R015–R018 已验收的界面。本轮换上当前已验收的 Linux 小包。macOS 仍标「即将提供」，不假装已可下。
@@ -117,3 +117,18 @@ R019 已让官网能下到 Windows 与 Linux 包。当前 Linux 包按当时要�
 - `docs/screenshots/r020-home-download.png`：首页导语为「Windows 和 Linux 都可下载使用」，不再出现「目前以 Windows 为主」；下载区 Windows / Linux 可下，macOS 即将提供，Linux 旁注仍在。
 - `docs/screenshots/r020-linux-download.png`：浏览器下载列表可见 `queqiao-linux-x64.tar.gz`（7.6 MB / Done）。
 - 公网 http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz 已再次核对：200，Content-Length 7,999,640，文件名无 `-fd`，独立下载 SHA256 与上值一致，文件头为 gzip。`/ask` 仍为 200。
+
+## 产品验收（2026-11-05 Asia/Shanghai）
+
+产品对照公网首页与下载链接，并结合 `docs/screenshots/r020-*` 验收通过（上架 `8ce2bd9`，出包 `bafe80c`）：
+
+- 公网 http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz：HTTP 200，Content-Length 7,999,640，文件名为 `queqiao-linux-x64.tar.gz`（无内部 `-fd`），独立下载 SHA256 `EC1C7211E5B1045E7E945756035CCE426C5AB4F7CB102523ECA41BDB9DCE3650`，文件头为 gzip。与 R019 旧包 7,993,604 / `34CC363BAD28192895FCED74929FDE0A8C858D6E6A489EA40201D6DE552C827D` 均不同。
+- 本机产物抽查：包内有 `RemoteAssist.Agent.Avalonia` 与 `运行说明.txt`；`runtimeconfig` 为 net8.0 / `Microsoft.NETCore.App` 8.0.0，属框架依赖小包。出包基于含 R015–R018 的 HEAD `9217e4c`。
+- 首页导语为「Windows 和 Linux 都可下载使用」，不再出现「目前以 Windows 为主」。macOS 仍「即将提供」。Linux 旁注仍是「解开后运行。需要先装好 .NET 8 桌面方向运行时」。
+- 页面无端口号、放行入站、「也可下载自包含包」、TLS、stdio、`17891`。Windows 安装包本轮未换。
+
+缺口（不阻断）：
+
+- `r020-linux-download.png` 来自本机预览桥下载列表（可见 `queqiao-linux-x64.tar.gz` 7.6 MB / Done），不是公网地址栏；产品已用公网 URL 独立核对文件。
+
+已开 R021（去协助端「复制安装说明」带上官网下载地址；交给鹊桥-客户端）。
