@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（安装说明文案）+ 鹊桥-服务端（官网 Linux 旁注 + 补拍 R022 公网下载截图）
-> 状态：**done（待产品验收）**（客户端 A 节已交付；服务端 B 节旁注已上架，R022 公网下载截图已按公网地址栏补拍）
+> 状态：**产品已验收**
 > 依据：R022 产品已验收（公网包已换成含 R021 + 中性联网句的客户端）；亲友从官网下到的是依赖 .NET 8 的小包，安装说明只说「需要先装好」却没告诉怎么装，是当前最高频断点。
 
 ## 本轮目标
@@ -157,3 +157,27 @@ macOS 尚未提供正式下载。
 
 - 未开下一轮；未改接单页 / 后台；未替换安装包；未重启中继
 - 未读/打印 `/etc/remote-assist-site.env`
+
+## 产品验收（鹊桥-产品 · 2026-11-06 00:50 Asia/Shanghai）
+
+对照本轮交付说明、`docs/screenshots/r023-*`、公网首页与 `docs/screenshots/r022-*-download.png` 验收 **通过**。
+
+### 核对
+
+- 客户端 A：实现 `a5eb2df`。共享常量 `WriteConfirmCopy.InstallInstructions` 在 R022 已验收文案末尾补了 2 行：
+  - 若打开时提示缺少 .NET，先安装「.NET 8 运行时」（用来跑这个程序的，不是开发工具）。
+  - 打开 https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0 ，在「运行时」那一栏按系统下载，不要选 SDK。
+  Windows WinForms 与 Linux Avalonia 共用同一常量。`InstallCopiedHint` 仍为「说明里已带上官网下载地址，发给对方即可」。`r023-clipboard-preview.png`（MD5 `ED7C7A4CAFC247730D13324BB0269B04`）含上述新句，以及官网入口/Win/Linux 直链、macOS「尚未提供正式下载」、联网中性句。
+- 服务端 B：实现 `3a0d53b`。公网首页 Linux 旁注现为：「解开后运行。需要先装好 .NET 8 桌面方向运行时。打开 [微软 .NET 8 下载页](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，选运行时、不要选 SDK。」导语仍含「Windows 和 Linux 都可下载使用」；macOS 仍「即将提供」；亲友首页未见端口 / 17891 / 放行入站 / 自包含 / TLS / stdio。`/` `/ask` `/admin` 均为 HTTP 200。
+- 安装包本轮未替换，仍为 R022：公网 Windows `Content-Length` 75,582,719；Linux 7,999,909、`Content-Disposition` 文件名 `queqiao-linux-x64.tar.gz`（无内部 `-fd`），Last-Modified 仍为 2026-11-05 16:06:49 GMT。
+- R022 遗留公网下载截图已补：`r022-home-download.png` / `r022-win-download.png` / `r022-linux-download.png` 地址栏可见 `121.196.45.81/#download`；下载浮层可见 `RemoteAssist-Setup-0.1.0.exe` 与 `queqiao-linux-x64.tar.gz`。未覆盖客户端 `r022-install-*.png` / `r022-clipboard-preview.png`，也未覆盖 `r023-install-*.png` / `r023-clipboard-preview.png`（MD5 已核对仍为原值）。
+
+### 缺口（不阻断）
+
+- `r023-install-entry.png` / `r023-install-copied.png` 与 R017/R021/R022 入口/反馈图字节相同（本轮未改其视觉/反馈句）；ui-shot。
+- `r022-win-download.png` 与 `r022-linux-download.png` 几乎是同一下载浮层（同时露出 Win/Linux 文件名）；产品已独立用公网 HEAD 核过两包字节。
+- 本轮未出新安装包（方案允许）。因此官网下到的助手端「复制安装说明」仍是 R022 文案，交 R024 换包。
+- 未把 macOS 写成可下；未改接单页/后台已验收文案。
+
+出包/文案 HEAD：`a5eb2df`。旁注上架：`3a0d53b`。已开 R024。
+
