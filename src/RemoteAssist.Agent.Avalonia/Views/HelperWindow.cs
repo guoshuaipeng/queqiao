@@ -201,7 +201,7 @@ internal sealed class HelperWindow : Window
 
         _preview = new TextBlock
         {
-            Text = "粘贴后点「连接」",
+            Text = HelperSessionCopy.PasteThenConnectHint,
             Foreground = Brush.Parse("#5F6368"),
             TextWrapping = TextWrapping.Wrap
         };
@@ -671,10 +671,19 @@ internal sealed class HelperWindow : Window
 
     private void RefreshPreview()
     {
+        // R037：已连上不再刷回「粘贴后点「连接」」
+        if (_client is not null || _uiShotConnected)
+        {
+            if (_preview.Text == HelperSessionCopy.PasteThenConnectHint)
+                _preview.IsVisible = false;
+            return;
+        }
+
+        _preview.IsVisible = true;
         var raw = (_pasteBox.Text ?? "").Trim();
         if (raw.Length == 0)
         {
-            _preview.Text = "粘贴后点「连接」";
+            _preview.Text = HelperSessionCopy.PasteThenConnectHint;
             return;
         }
 
@@ -839,7 +848,33 @@ internal sealed class HelperWindow : Window
             if (connected)
                 StyleToolButtonEnabled(b);
         }
+        UpdatePasteThenConnectHintVisibility(connected);
         UpdateOwnConnectUi();
+    }
+
+    /// <summary>R037：已连上隐藏「粘贴后点「连接」」；断开后再显示原文。</summary>
+    private void UpdatePasteThenConnectHintVisibility(bool connected)
+    {
+        var show = HelperSessionCopy.ShowPasteThenConnectHint(connected);
+        if (!show)
+        {
+            if (_preview.Text == HelperSessionCopy.PasteThenConnectHint)
+                _preview.IsVisible = false;
+            return;
+        }
+
+        // 仅当仍是操作提示原文时恢复显示；MCP/Skill 预览等其它用途保持现状
+        if (_preview.Text == HelperSessionCopy.PasteThenConnectHint ||
+            string.IsNullOrWhiteSpace(_preview.Text))
+        {
+            _preview.Text = HelperSessionCopy.PasteThenConnectHint;
+            _preview.Foreground = Brush.Parse("#5F6368");
+            _preview.IsVisible = true;
+        }
+        else if (!_preview.IsVisible)
+        {
+            _preview.IsVisible = true;
+        }
     }
 
 
@@ -1235,7 +1270,7 @@ internal sealed class HelperWindow : Window
         _pasteBox.Text = "";
         SetConnectedUi(false);
         _status.Text = HelperSessionCopy.StatusDisconnectedSelf;
-        _preview.Text = "粘贴后点「连接」";
+        _preview.Text = HelperSessionCopy.PasteThenConnectHint;
         _failHint.Text = "";
     }
 
@@ -1399,7 +1434,7 @@ internal sealed class HelperWindow : Window
     {
         PrepareIdleForShot();
         _pasteBox.Text = "";
-        _preview.Text = "粘贴后点「连接」";
+        _preview.Text = HelperSessionCopy.PasteThenConnectHint;
         _preview.Foreground = Brush.Parse("#5F6368");
         _mcpHint.Text = "";
         _failHint.Text = "";

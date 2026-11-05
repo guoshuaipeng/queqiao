@@ -6,7 +6,7 @@ using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R036：会话码主按钮连上后「已连接」；结束后恢复「连接」（ui-shot）。</summary>
+/// <summary>R037：已连上隐藏「粘贴后点「连接」」；结束后再显示原文（ui-shot）。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -21,19 +21,19 @@ internal static class UiShotRunner
 
         helper.PreparePeerConnectedSessionForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r036-avalonia-helper-connected-btn.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r037-avalonia-helper-connected-no-paste-hint.png")).ConfigureAwait(true);
 
         helper.PreparePeerEndedAssistForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r036-avalonia-helper-peer-ended-reconnect.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r037-avalonia-helper-peer-ended-hint-back.png")).ConfigureAwait(true);
 
         helper.PrepareSelfDisconnectedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r036-avalonia-helper-self-disconnect-reconnect.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r037-avalonia-helper-self-disconnect-hint-back.png")).ConfigureAwait(true);
 
         try { helper.Close(); } catch { /* ignore */ }
 
-        Console.WriteLine("ui-shot r036 written to " + outDir);
+        Console.WriteLine("ui-shot r037 written to " + outDir);
         await Task.CompletedTask;
         _ = home;
     }

@@ -3,7 +3,7 @@ using System;
 namespace RemoteAssist.Protocol;
 
 /// <summary>
-/// 去协助端会话主状态与会话码主按钮文案（R035/R036）。
+/// 去协助端会话主状态与会话码主按钮文案（R035/R036/R037）。
 /// </summary>
 public static class HelperSessionCopy
 {
@@ -34,6 +34,12 @@ public static class HelperSessionCopy
     /// <summary>会话码主按钮文案：连上 →「已连接」；否则 →「连接」。</summary>
     public static string SessionConnectButtonLabel(bool connected) =>
         connected ? ConnectedButtonText : ConnectButtonText;
+
+    /// <summary>未连上时会话码区操作提示（原文锁定；R037 只控制显隐）。</summary>
+    public const string PasteThenConnectHint = "粘贴后点「连接」";
+
+    /// <summary>R037：已连上不显示粘贴提示；断开/结束/未连上再显示。</summary>
+    public static bool ShowPasteThenConnectHint(bool sessionConnected) => !sessionConnected;
 
     /// <summary>R016：仅已连接时展示五个常用操作。</summary>
     public static bool ShowCommonTools(bool connected) => connected;

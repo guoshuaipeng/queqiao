@@ -180,7 +180,7 @@ internal sealed class MainForm : Form
             Size = new Size(440, 28),
             Font = new Font(Font.FontFamily, 9F),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "粘贴后点「连接」"
+            Text = HelperSessionCopy.PasteThenConnectHint
         };
         pairCard.Controls.Add(_previewLabel);
 
@@ -760,11 +760,21 @@ internal sealed class MainForm : Form
 
     private void RefreshPreview()
     {
+        // R037：已连上（真连或 ui-shot）不再把预览刷回「粘贴后点「连接」」
+        if (_client is not null ||
+            string.Equals(_btnConnect.Text, HelperSessionCopy.ConnectedButtonText, StringComparison.Ordinal))
+        {
+            if (_previewLabel.Text == HelperSessionCopy.PasteThenConnectHint)
+                _previewLabel.Visible = false;
+            return;
+        }
+
+        _previewLabel.Visible = true;
         // 空态：未点连接前不报「无法连接」
         var raw = (_inputBox.Text ?? "").Trim();
         if (raw.Length == 0 && string.IsNullOrWhiteSpace(_pwdBox.Text))
         {
-            _previewLabel.Text = "粘贴后点「连接」";
+            _previewLabel.Text = HelperSessionCopy.PasteThenConnectHint;
             _previewLabel.ForeColor = Color.FromArgb(0x5F, 0x63, 0x68);
             return;
         }
@@ -968,7 +978,25 @@ internal sealed class MainForm : Form
             _toolCard.Visible = connected;
             LayoutForAdvanced();
         }
+        UpdatePasteThenConnectHintVisibility(connected);
         UpdateOwnConnectUi();
+    }
+
+    /// <summary>R037：已连上隐藏「粘贴后点「连接」」；断开后再显示原文。</summary>
+    private void UpdatePasteThenConnectHintVisibility(bool connected)
+    {
+        var show = HelperSessionCopy.ShowPasteThenConnectHint(connected);
+        if (!show)
+        {
+            if (_previewLabel.Text == HelperSessionCopy.PasteThenConnectHint)
+                _previewLabel.Visible = false;
+            return;
+        }
+
+        _previewLabel.Visible = true;
+        if (_previewLabel.Text == HelperSessionCopy.PasteThenConnectHint ||
+            string.IsNullOrWhiteSpace(_previewLabel.Text))
+            RefreshPreview();
     }
 
     private void UpdateOwnConnectUi()
