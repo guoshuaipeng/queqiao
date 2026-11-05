@@ -135,3 +135,38 @@ dotnet test
 ## 仓库
 
 计划发布到 Gitee 私有仓；当前本地 git，**默认不 push**。
+
+## .NET 8 vs .NET Framework 4.8 对比
+
+主线仍是 **.NET 8**（`RemoteAssist.sln` / `src/`）。另有并行移植树 **`src-net48/`** + `RemoteAssist.Net48.sln`，方便对比体积与运行时依赖；**不替换**现有产品路径。
+
+| 项 | .NET 8（主线） | .NET Framework 4.8（并行） |
+|---|---|---|
+| 代码位置 | `src/` | `src-net48/` |
+| 解决方案 | `RemoteAssist.sln` | `RemoteAssist.Net48.sln` |
+| 统一 App | `RemoteAssist.exe` | `RemoteAssist.Net48.exe` |
+| 亲友机依赖 | 自包含安装包 **无需**另装运行时；或需 .NET 8 Desktop Runtime | **通常无需安装**（Win10/11 预装 .NET Framework 4.8） |
+| 发布形态 | 自包含单文件 / Setup ~**72–77 MB** | 框架依赖文件夹合计约 **1.4 MB**（exe 本体约 **18 KB** + 依赖 DLL） |
+| 跨平台中继 | 可用 .NET 8 服务 | 客户端仅 Windows；中继仍建议 Go/Python/.NET 8（Linux） |
+| TLS | TLS 1.2 / 1.3 | **TLS 1.2**（兼容层） |
+| 能力对齐 | 完整（含 MCP / Helper CLI / 安装包） | 统一 App（被控+控制）核心：会话码、配对、LAN TLS 指纹、确认窗、基础工具；MCP 发布/TaskDialog 等做了简化 |
+
+### 构建 / 运行 4.8 对比版
+
+```powershell
+$env:PATH = "C:\Users\user\AppData\Local\Microsoft\dotnet;" + $env:PATH
+cd E:\IdeaProjects\remote-assist
+.\scripts\build-net48.ps1
+# 产物：artifacts\app-net48-fd\RemoteAssist.Net48.exe
+# 直接运行（需本机已有 .NET Framework 4.8）：
+.\artifacts\app-net48-fd\RemoteAssist.Net48.exe
+```
+
+开发机用 SDK 风格工程 + NuGet `Microsoft.NETFramework.ReferenceAssemblies` 即可编译（不必先装 VS 的 4.8 Targeting Pack）。若要用传统 Targeting Pack：Visual Studio Installer → 生成工具 → 勾选「.NET Framework 4.8 目标包」。
+
+体积实测（本机，约）：
+
+- net8 自包含 App：`artifacts\app-win-x64-sc\RemoteAssist.exe` ≈ **77 MB**
+- net8 Setup：`artifacts\installer\RemoteAssist-Setup-0.1.0.exe` ≈ **72 MB**
+- net48 发布目录合计：`artifacts\app-net48-fd\` ≈ **1.4 MB**
+
