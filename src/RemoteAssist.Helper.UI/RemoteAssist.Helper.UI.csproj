@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <RootNamespace>RemoteAssist.Helper.UI</RootNamespace>
+    <AssemblyName>RemoteAssist.Helper.UI</AssemblyName>
+    <Product>远端协助 · 协助端</Product>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RemoteAssist.Protocol\RemoteAssist.Protocol.csproj" />
+    <ProjectReference Include="..\RemoteAssist.Relay.Stub\RemoteAssist.Relay.Stub.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RemoteAssist.Protocol.Tests" />
+  </ItemGroup>
+
+</Project>
