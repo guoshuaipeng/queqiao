@@ -1106,4 +1106,32 @@ internal sealed class MainForm : Form
         if (_outputBox.TextLength > 200_000)
             _outputBox.Text = _outputBox.Text[^100_000..];
     }
+
+    /// <summary>UiShot：展开常用操作卡并写入输出区（不真连）。</summary>
+    internal void PrepareConnectedToolsForShot(string outputText)
+    {
+        SetConnectedUi(true);
+        _argBox.Text = "";
+        _outputBox.Text = outputText ?? "";
+        SetStatus("状态：已连接（截图）");
+        LayoutForAdvanced();
+    }
+
+    /// <summary>UiShot：模拟「复制 MCP 配置」成功后的界面文案。</summary>
+    internal void PrepareMcpCopiedForShot(bool exeExists = true)
+    {
+        var hint = exeExists ? McpInstallGuide.CopiedOkHint : McpInstallGuide.CopiedPlaceholderHint;
+        _previewLabel.Text = hint;
+        _previewLabel.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+        SetFailHint("");
+        SetStatus(hint);
+    }
+
+    /// <summary>UiShot：填入会话码/密码，走真实预览刷新。</summary>
+    internal void PrepareSessionDraftForShot(string code, string password)
+    {
+        _inputBox.Text = code ?? "";
+        _pwdBox.Text = password ?? "";
+        RefreshPreview();
+    }
 }

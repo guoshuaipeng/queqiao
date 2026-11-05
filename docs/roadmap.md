@@ -15,17 +15,18 @@
 | R004 | 高频：写操作确认白话（P0 收尾）；打磨：一键复制安装说明（P2-1） | 鹊桥-客户端 | **done** | `docs/round-004.md` |
 | R005 | 高频：界面上的 MCP 安装指引；打磨：已连网收起允许横幅、避免「设置」折行 | 鹊桥-客户端 | **done** | `docs/round-005.md` |
 | R006 | 质感：刷新会话码不抢点击 → 账号标签与免密选设备 → 连上后白话操作 → 首页卡片（见 quality.md） | 鹊桥-客户端 | **done**（产品已验收） | `docs/quality.md`、`docs/round-006.md` |
-| R007 | 被协助端信任等级（每次询问 / 宽松 / 完全信任）+ 打磨本机已确认改动回看 | 鹊桥-客户端 | **done** | `docs/round-007.md`、`docs/trust-levels.md` |
+| R007 | 被协助端信任等级（每次询问 / 宽松 / 完全信任）+ 打磨本机已确认改动回看 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-007.md`、`docs/trust-levels.md` |
+| R008 | 高频：MCP 提议命令闭环；打磨：双模式安装包扫尾 | 鹊桥-客户端 | **done** | `docs/round-008.md` |
 
 ## P0 — 可演示闭环（不后挪）
 
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
 | 公网中继访客配对（code+密码）+ 透明转发 | 鹊桥-服务端 | **done** | 两机经中继可配对；协议与 `relay-protocol.md` 一致；`go test ./internal/relay` PASS |
-| 同一 App 双模式 UI + 安装包 | 鹊桥-客户端 | wip | 安装后可选接受/去协助；被控展示 code+密码 |
+| 同一 App 双模式 UI + 安装包 | 鹊桥-客户端 | **done（R008）** | 安装后可选接受/去协助；被控展示 code+密码；见 `round-008.md` |
 | 业务 TLS+指纹；写操作本机确认 | 鹊桥-客户端 | **done（R004 文案）** | Assist 写命令弹确认；拒绝则不执行。验收文案见 PRODUCT.md：对方想在这台电脑执行操作 + 白话说明 + 允许/拒绝；超时不自动允许；拒绝后提示「已拒绝，未做任何改动」 |
 | 客户端/MCP 对接 JSONL 中继（访客 code+密码） | 鹊桥-客户端 | **done** | RelayJsonlIntegrationTests + 本机 relay smoke；MCP --relay/--code/--pwd |
-| MCP stdio 连会话并调只读/提议命令 | 鹊桥-客户端 | wip | Agent 能连上并完成至少：列进程、读日志、提议命令走确认 |
+| MCP stdio 连会话并调只读/提议命令 | 鹊桥-客户端 | **done（R008）** | Agent 能连上并完成至少：列进程、读日志、提议命令走确认；见 `round-008.md` / McpStdioLoopIntegrationTests |
 | 被控一键复制「会话码+密码」纯文本 | 鹊桥-客户端 | **done（R001）** | 见 `round-001.md` |
 | 界面品牌统一「鹊桥」 | 鹊桥-客户端 | **done（R001）** | 见 `round-001.md` |
 
@@ -66,4 +67,5 @@
 ## 明确暂缓
 
 完整远程桌面、计费/组织、改 AI-SSH-Pro。
+
 

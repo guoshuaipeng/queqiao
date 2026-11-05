@@ -1,0 +1,31 @@
+﻿【查看正在运行的程序】ok=True · 7604	AggregatorHost | 27548	ApplicationFrameHost | 38324	audiodg | 5292	AweSun | 10180	AweSun | 8504	AweSun | 10516	awe…
+【查看日志】ok=True · 2026-11-05 18:58:18.813 +08:00	tls_off	insecure plaintext | 2026-11-05 18:58:18.820 +08:00	agent_start	relay=True; rela…
+【提议一项改动】ok=True · exit=0 | --- stdout --- | r008-propose-ok | 
+----
+7604	AggregatorHost
+27548	ApplicationFrameHost
+38324	audiodg
+5292	AweSun
+10180	AweSun
+8504	AweSun
+10516	awesun_guard
+26716	backgroundTaskHost
+55592	BaiduNetdisk
+55548	baidunetdiskhost
+54800	baidunetdiskhost
+37984	baidunetdiskhost
+27572	BaiduNetdiskUnite
+42708	BaiduNetdiskUnite
+55828	BaiduNetdiskUnite
+53608	BaiduNetdiskUnite
+9304	BaiduNetdiskUnite
+36500	BaiduNetdiskUnite
+10496	Ba…
+----
+2026-11-05 18:58:18.813 +08:00	tls_off	insecure plaintext
+2026-11-05 18:58:18.820 +08:00	agent_start	relay=True; relayEp=127.0.0.1:17891; port=18041; code=BBKHED; host=192.168.12.80; tls=false; confirm=auto; timeout=30s; account=False
+2026-11-05 18:58:18.821 +08:00	lan_listen	skipped (relay-only)…
+----
+exit=0
+--- stdout ---
+r008-propose-ok
