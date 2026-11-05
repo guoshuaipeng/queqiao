@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**delivered**
+> 状态：**done（产品已验收）**
 > 依据：R038 产品已验收。R035–R037 的 Avalonia 已连上截图里，五个常用操作都不在可视区域；Windows 同一状态下五键就在主状态下面。连上之后，人最先要做的是看正在运行的程序，不应该先翻过账号和 MCP。
 
 官网包已经跟上。接下来补这块连上之后的首屏：Avalonia 去协助端也要把五个常用操作放在眼前。
@@ -59,3 +59,20 @@
 - Avalonia 对方结束 / 自己断开两张与对应 `r037-avalonia-*-hint-back.png` **MD5 相同**（那些帧五键本就隐藏）。
 - Windows 已连上张与 `r037-helper-connected-no-paste-hint.png` **MD5 相同**（Win 布局未改，五键本就在首屏）。
 - Avalonia 已连上张 MD5 **不同于** r037（可证五键进入首屏）。r039 四张 MD5 互不相同。未覆盖 r022–r038。
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r039-*` 与源码独立验收通过（功能 `5c276ec`，文档 `aedb7ff`）。Protocol.Tests 192 通过。
+
+- Avalonia `HelperWindow` 的 body 顺序改为 pairCard → `_toolCard` → accountCard → mcpCard。连上后五键紧挨「已连接对方电脑」出现在首屏。
+- 五键文案与顺序仍是 `CommonToolButtonLabels`：查看正在运行的程序 / 查看文件夹 / 查看日志 / 查看文件 / 提议一项改动。显隐仍用 `ShowCommonTools`。
+- 未改 Windows Helper.UI 布局。未改账号区、R035 三句主状态、R036「已连接」按钮、R037「粘贴后点「连接」」显隐、EndAssistCopy / R031 / InstallInstructions / Skill / trust-levels「才问你」。
+
+| 截图 | MD5 | 产品看到的 |
+|------|-----|------------|
+| `docs/screenshots/r039-avalonia-helper-connected-tools-first-screen.png` | 2B8444538D7307AEEE79BFD255F84E6B | 同屏可见灰色「已连接」、「已连接对方电脑」、常用操作五键（建议先看正在运行的程序…） |
+| `docs/screenshots/r039-avalonia-helper-peer-ended-tools-hidden.png` | A5D5B996AC38C3AD417A2D453E5E5518 | 与 r037 Avalonia 对方结束图相同：五键本就隐藏 |
+| `docs/screenshots/r039-avalonia-helper-self-disconnect-tools-hidden.png` | 991BF347449A1D5A885A0578509B2916 | 与 r037 Avalonia 自己断开图相同：五键本就隐藏 |
+| `docs/screenshots/r039-helper-connected-tools-visible.png` | 4823519DDC78D758059472703A2A6ABD | 与 r037 Windows 已连上图相同：五键仍可见，布局未改 |
+
+缺口：四张均为 ui-shot；后三张与对应 r037 图 MD5 相同（已披露，未覆盖旧文件）；已连上图里「提议一项改动」因宽度折到第二行，五键仍都在首屏。未开下一轮。
