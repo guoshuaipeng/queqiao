@@ -34,6 +34,6 @@
 
 ## 产品收口
 
-- **推荐下一轮（R041 候选）**：去协助端（Windows + Avalonia）把刚连上时的结果区 `PAIR_OK` 换成上述人话；点操作后再显示可读结果。
+- **定稿**：作为 **R041 打磨**（同轮高频为 S004 提议等待四态，见 `docs/scene-s004-propose-wait.md`）。
 - 优先级：R040 官网包验收通过后再开实现，避免打断出包。
 - 不改 EndAssistCopy / InstallInstructions / Skill / trust-levels「才问你」/ R035–R039 已锁文案。
