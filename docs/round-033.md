@@ -22,9 +22,7 @@
 - 结束后对方连不上；如果当前窗口有「返回首页」，结束后回到首页（与 Avalonia 点「结束这次协助」同一意图）。不要只断开列表里某一位、却继续等人连上。
 - 不要改 Avalonia 关窗提示「关闭窗口后，协助可能还在进行。要结束请点「结束这次协助」。」若 Avalonia 主界面已经有这颗按钮，不必重做，也不要改成实心主按钮。
 - 不要改 R031 主状态与协助方列表、不要改 Skill / MCP / InstallInstructions、不要改 docs/trust-levels.md 的「才问你」、不要改 R032 已锁定的两句启动气泡。
-- 截图放到 docs/screenshots/r033-*（至少：能看到「结束这次协助」且「复制码+密码」仍是唯一实心主按钮；确认窗原文；取消后仍在接受协助）。可用 ui-shot，须标明。**勿覆盖** 
-022-*～
-032-*。
+- 截图放到 docs/screenshots/r033-*（至少：能看到「结束这次协助」且「复制码+密码」仍是唯一实心主按钮；确认窗原文；取消后仍在接受协助）。可用 ui-shot，须标明。**勿覆盖** r022-*～r032-*。
 
 ## 打磨：结束前确认
 
@@ -85,15 +83,10 @@
 
 独立核对：
 
-- Windows 接受协助端可见轻按钮「结束这次协助」（非实心）；「复制码+密码」仍是唯一实心主按钮（
-033-accept-end-assist-entry.png）。
-- 确认窗正文「结束后对方将立刻连不上。」；按钮「结束这次协助 / 取消」（
-033-accept-end-assist-confirm.png）。取消后仍在接受协助界面（
-033-accept-end-assist-cancelled.png）。
+- Windows 接受协助端可见轻按钮「结束这次协助」（非实心）；「复制码+密码」仍是唯一实心主按钮（r033-accept-end-assist-entry.png）。
+- 确认窗正文「结束后对方将立刻连不上。」；按钮「结束这次协助 / 取消」（r033-accept-end-assist-confirm.png）。取消后仍在接受协助界面（r033-accept-end-assist-cancelled.png）。
 - EndAssistConfirmDialog：AcceptButton/CancelButton 均为取消，超时/回车不自动结束。确认后 DisconnectAllSessions + Stop，有返回首页则回首页。
-- R031 主状态、R032 托盘气泡/默认空底栏、Avalonia 关窗提示、Skill/MCP/InstallInstructions/	rust-levels「才问你」未改。未覆盖 
-022-*～
-032-*。
+- R031 主状态、R032 托盘气泡/默认空底栏、Avalonia 关窗提示、Skill/MCP/InstallInstructions/trust-levels「才问你」未改。未覆盖 r022-*～r032-*。
 
 缺口：确认窗为屏幕合成非模态示意；取消帧刷新了会话码以区分像素。公网安装包仍为 R030（交 R034）。
 
