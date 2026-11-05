@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（出包）+ 鹊桥-服务端（替换官网文件）
-> 状态：**ready-for-product**（客户端已出包，待服务端上架）
+> 状态：**done（待产品验收）**
 > 依据：R025 产品已验收（安装说明与官网旁注已含「通常不会下载」时怎么选）；公网 Windows / Linux 包仍是 R024 产物（75,583,762 / 8,000,095），亲友从官网下到的客户端「复制安装说明」还没有这一句。
 
 R025 已让去协助端复制的安装说明，以及官网 Windows 旁注，告诉对方浏览器提示通常不会下载时选保留。但公网仍挂着 R024 的包：对方按说明去官网下载后，自己再当协助方时，复制出来的说明又变回没有这一句的旧文案。本轮把官网包换到含 R025 的客户端。
@@ -93,3 +93,44 @@ R025 已让去协助端复制的安装说明，以及官网 Windows 旁注，告
 - 未改安装说明 / MCP / trust-levels「才问你」；未改业务功能
 - 未把 macOS 当正式可下；未打 Linux SC 冒充本轮产物
 
+
+## 交付说明（鹊桥-服务端 · 2026-11-06 Asia/Shanghai）
+
+### 上架摘要
+
+已替换公网 Windows / Linux 安装包（客户端交付 HEAD `73b2fea`），中继与站点进程均未重启；首页旁注与导语未回退。本轮未改 HTML。
+
+| 项 | Windows | Linux |
+|------|---------|-------|
+| 公网 URL | http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe | http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz |
+| 字节 | 75,580,750 | 8,000,125 |
+| SHA256 | `2A8EE24DA2A91157986686D4F22BF8D1AD960CFD4CEB60E031864401B6F59E26` | `14B0C7EF5050050469FBF7ECA522001F06529527F38C27ACE657BB0069832F76` |
+| Last-Modified | Thu, 05 Nov 2026 17:37:58 GMT（2026-11-06 01:37:58 Asia/Shanghai） | 同左 |
+| Content-Disposition | 正常 | 正常（公网文件名无内部 `-fd`） |
+
+对照 R024 旧公网：Windows 75,583,762 / `236EDEE7…FB58` → 新 `2A8EE24D…9E26`；Linux 8,000,095 / `305F9E40…E586` → 新 `14B0C7EF…2F76`——**字节与 SHA256 均不同**。
+
+进程：`remote-assist-site` MainPID 仍 **21336**（`*:80`）；中继 MainPID 仍 **2114**（`*:17891`）。`/ask`、`/admin` HTTP 200。
+
+### 首页旁注（未回退）
+
+Windows 旁注原文仍为：「若浏览器提示通常不会下载，选择保留即可。」
+
+Linux 旁注原文仍为：「解开后运行。需要先装好 .NET 8 桌面方向运行时。打开 [微软 .NET 8 下载页](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，选运行时、不要选 SDK。」
+
+导语仍含「Windows 和 Linux 都可下载使用」；无「目前以 Windows 为主」；macOS「即将提供」。首页无端口 / 17891 / 放行入站 / 也可下载自包含包 / TLS / stdio / 证书 / 签名 / SmartScreen。
+
+### 截图
+
+本机 Windows Edge 打开公网 `http://121.196.45.81/#download`（地址栏可见 `121.196.45.81`），窗口标题以「鹊桥远程协助」开头（未拍到运营后台 / Cursor）。**未覆盖** `r022-*` / `r023-*` / `r024-*` / `r025-*` 已有截图。
+
+- `docs/screenshots/r026-home-download.png`：首页下载区 + 地址栏；可见 Windows 旁注「若浏览器提示通常不会下载，选择保留即可。」、Linux 旁注（微软 .NET 8 下载页 + 选运行时不要选 SDK）与 macOS「即将提供」；未展开下载浮层。
+- `docs/screenshots/r026-win-download.png`：同一页 + Edge 下载浮层，可见 `RemoteAssist-Setup-0.1.0.exe`。
+- `docs/screenshots/r026-linux-download.png`：同一页 + 浮层，可见 `queqiao-linux-x64.tar.gz`（无 `-fd`）。
+
+浮层里与本产品无关的本机其它下载记录已遮盖后再入库。
+
+### 明确未做
+
+- 未开下一轮；未重启 site / relay；未改 HTML；未改中继
+- 未读/打印 `/etc/remote-assist-site.env`；未把帮助脚本加进仓库 `tools/`
