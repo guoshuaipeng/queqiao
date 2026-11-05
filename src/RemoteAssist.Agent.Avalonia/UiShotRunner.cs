@@ -5,7 +5,7 @@ using Avalonia.Threading;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R018：接受协助端高级内可选 MCP 说明 + 复制反馈（只一次）+ 主按钮对比。</summary>
+/// <summary>R021：去协助端「复制安装说明」带官网下载地址 + 复制反馈（只一次）。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -14,25 +14,24 @@ internal static class UiShotRunner
         await Dispatcher.UIThread.InvokeAsync(() => { });
         await Task.Delay(400).ConfigureAwait(true);
 
-        var host = Program.SharedHost ?? Program.CreateHost();
-        var accept = new MainWindow(host, shotDir: outDir, enableReturnHome: true);
-        accept.Show();
+        var helper = new HelperWindow(shotDir: outDir, enableReturnHome: true);
+        helper.Show();
         await Task.Delay(350).ConfigureAwait(true);
 
-        accept.PrepareMcpEntryForShot();
+        helper.PrepareInstallGuideEntryForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r018-mcp-entry.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r021-install-entry.png")).ConfigureAwait(true);
 
-        accept.PrepareMcpCopiedForShot();
+        helper.PrepareInstallCopiedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r018-mcp-copied.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r021-install-copied.png")).ConfigureAwait(true);
 
-        accept.PrepareMcpPrimaryContrastForShot();
-        await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r018-copy-primary.png")).ConfigureAwait(true);
+        helper.PrepareInstallClipboardPreviewForShot();
+        await Task.Delay(280).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r021-clipboard-preview.png")).ConfigureAwait(true);
 
-        accept.AllowCloseWithoutPrompt();
-        accept.Close();
+        helper.PrepareClose();
+        helper.Close();
 
         Console.WriteLine("ui-shot written to " + outDir);
         await Task.CompletedTask;

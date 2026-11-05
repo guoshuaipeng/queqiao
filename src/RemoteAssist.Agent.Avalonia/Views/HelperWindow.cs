@@ -1266,7 +1266,7 @@ internal sealed class HelperWindow : Window
         Height = Math.Max(Height, 900);
     }
 
-    /// <summary>UiShot：已点「复制安装说明」后人话反馈（Windows 同等文案）。</summary>
+    /// <summary>UiShot：已点「复制安装说明」后人话反馈（Windows 同等文案；只出现一次）。</summary>
     internal void PrepareInstallCopiedForShot()
     {
         PrepareInstallGuideEntryForShot();
@@ -1274,6 +1274,18 @@ internal sealed class HelperWindow : Window
         _preview.Foreground = Brush.Parse("#0F9D58");
         // 状态行保持「状态：未连接」，避免与预览行重复同一句反馈
         _mcpHint.Text = "";
+        _failHint.Text = "";
+    }
+
+    /// <summary>UiShot：预览区展示将复制到剪贴板的安装说明正文（与常量同一份；不含反馈叠字）。</summary>
+    internal void PrepareInstallClipboardPreviewForShot()
+    {
+        PrepareInstallGuideEntryForShot();
+        _preview.Text = WriteConfirmCopy.InstallInstructionsClipboard;
+        _preview.Foreground = Brush.Parse("#202124");
+        _mcpHint.Text = "";
+        _failHint.Text = "";
+        Height = Math.Max(Height, 980);
     }
 
 

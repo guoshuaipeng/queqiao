@@ -11,7 +11,7 @@ public class WriteConfirmCopyTests
         Assert.Equal("已拒绝，未做任何改动", WriteConfirmCopy.DeniedMessage);
         Assert.Equal("允许", WriteConfirmCopy.AllowButton);
         Assert.Equal("拒绝", WriteConfirmCopy.DenyButton);
-        Assert.Equal("请把安装包和这段说明一起发出去", WriteConfirmCopy.InstallCopiedHint);
+        Assert.Equal("说明里已带上官网下载地址，发给对方即可", WriteConfirmCopy.InstallCopiedHint);
         Assert.False(WriteConfirmCopy.ContainsBannedUiTerm(WriteConfirmCopy.DialogTitle));
         Assert.False(WriteConfirmCopy.ContainsBannedUiTerm(WriteConfirmCopy.DeniedMessage));
         Assert.False(WriteConfirmCopy.ContainsBannedUiTerm(WriteConfirmCopy.TimedOutMessage));
@@ -60,20 +60,28 @@ public class WriteConfirmCopyTests
     }
 
     [Fact]
-    public void InstallInstructions_ThreeLines_NoPorts_HintSeparate()
+    public void InstallInstructions_HasOfficialDownloads_NoPorts_HintSeparate()
     {
         var clip = WriteConfirmCopy.InstallInstructionsClipboard;
         var lines = clip.Replace("\r\n", "\n").Split('\n');
-        Assert.Equal(3, lines.Length);
-        Assert.Contains("鹊桥远程协助", lines[0]);
-        Assert.Contains("接受协助", lines[1]);
-        Assert.Contains("复制码+密码", lines[1]);
-        Assert.Contains("允许", lines[2]);
+        Assert.True(lines.Length >= 6);
+        Assert.Contains("http://121.196.45.81/", clip);
+        Assert.Contains("http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe", clip);
+        Assert.Contains("http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz", clip);
+        Assert.Contains(".NET 8 桌面方向运行时", clip);
+        Assert.Contains("macOS 尚未提供正式下载", clip);
+        Assert.Contains("如果你手头有安装包，也可以一起发出去", clip);
+        Assert.Contains("接受协助", clip);
+        Assert.Contains("复制码+密码", clip);
         Assert.DoesNotContain("17890", clip);
         Assert.DoesNotContain("17891", clip);
         Assert.DoesNotContain("放行入站", clip);
+        Assert.DoesNotContain("TLS", clip);
+        Assert.DoesNotContain("stdio", clip);
         Assert.DoesNotContain(WriteConfirmCopy.InstallCopiedHint, clip);
-        Assert.False(WriteConfirmCopy.ContainsBannedUiTerm(clip));
+        // 官网文件名含 RemoteAssist；亲友界面禁词检查不套用整段剪贴板
+        Assert.DoesNotContain("ownerLink", clip);
+        Assert.DoesNotContain("MCP", clip);
     }
 
     [Fact]
