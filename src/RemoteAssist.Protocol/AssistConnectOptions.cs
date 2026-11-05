@@ -34,6 +34,9 @@ public sealed class AssistConnectOptions
     public string? AccountToken { get; init; }
     public string? DeviceId { get; init; }
 
+    public string? AccountUser { get; init; }
+    public string? AccountPassword { get; init; }
+
     /// <summary>
     /// 从 argv + 环境变量解析。
     /// env: REMOTE_ASSIST_PAYLOAD / HOST / PORT / CODE / PERM / FP / INSECURE
@@ -56,6 +59,12 @@ public sealed class AssistConnectOptions
         PermissionLevel? argPerm = null;
         string? argFp = null;
         bool? argInsecure = null;
+        string? argRelay = null;
+        string? argPwd = null;
+        string? argToken = null;
+        string? argDeviceId = null;
+        string? argUser = null;
+        string? argAccountPass = null;
 
         for (var i = 0; i < args.Count; i++)
         {
@@ -114,6 +123,60 @@ public sealed class AssistConnectOptions
                 }
                 argFp = args[++i];
             }
+            else if (a is "--relay")
+            {
+                if (i + 1 >= args.Count)
+                {
+                    error = "--relay 需要 host:port";
+                    return false;
+                }
+                argRelay = args[++i];
+            }
+            else if (a is "--pwd" or "--password")
+            {
+                if (i + 1 >= args.Count)
+                {
+                    error = "--pwd/--password 需要参数";
+                    return false;
+                }
+                argPwd = args[++i];
+            }
+            else if (a is "--token")
+            {
+                if (i + 1 >= args.Count)
+                {
+                    error = "--token 需要账号令牌";
+                    return false;
+                }
+                argToken = args[++i];
+            }
+            else if (a is "--device-id" or "--device")
+            {
+                if (i + 1 >= args.Count)
+                {
+                    error = "--device-id 需要设备 ID";
+                    return false;
+                }
+                argDeviceId = args[++i];
+            }
+            else if (a is "--user" or "--username")
+            {
+                if (i + 1 >= args.Count)
+                {
+                    error = "--user 需要用户名";
+                    return false;
+                }
+                argUser = args[++i];
+            }
+            else if (a is "--account-password")
+            {
+                if (i + 1 >= args.Count)
+                {
+                    error = "--account-password 需要参数";
+                    return false;
+                }
+                argAccountPass = args[++i];
+            }
             else if (a is "--insecure")
             {
                 argInsecure = true;
@@ -141,6 +204,12 @@ public sealed class AssistConnectOptions
         var envPermStr = NullIfEmpty(getEnv("REMOTE_ASSIST_PERM"));
         var envFp = NullIfEmpty(getEnv("REMOTE_ASSIST_FP"));
         var envInsecure = ParseTruthy(getEnv("REMOTE_ASSIST_INSECURE"));
+        var envRelay = NullIfEmpty(getEnv("REMOTE_ASSIST_RELAY"));
+        var envPwd = NullIfEmpty(getEnv("REMOTE_ASSIST_PWD")) ?? NullIfEmpty(getEnv("REMOTE_ASSIST_PASSWORD"));
+        var envToken = NullIfEmpty(getEnv("REMOTE_ASSIST_TOKEN"));
+        var envDeviceId = NullIfEmpty(getEnv("REMOTE_ASSIST_DEVICE_ID"));
+        var envUser = NullIfEmpty(getEnv("REMOTE_ASSIST_USER"));
+        var envAccountPass = NullIfEmpty(getEnv("REMOTE_ASSIST_ACCOUNT_PASSWORD"));
 
         var explicitPayload = NullIfEmpty(argPayload) ?? envPayload;
 
@@ -157,27 +226,183 @@ public sealed class AssistConnectOptions
             defaultPort = ep;
         }
 
-        var resolvePositional = BuildPositional(positional, explicitPayload, argHost ?? envHost, argCode ?? envCode);
+        var relayEp = NullIfEmpty(argRelay) ?? envRelay;
+        var token = NullIfEmpty(argToken) ?? envToken;
+        var deviceId = NullIfEmpty(argDeviceId) ?? envDeviceId;
+        var accountUser = NullIfEmpty(argUser) ?? envUser;
+        var accountPassword = NullIfEmpty(argAccountPass) ?? envAccountPass;
+        var guestPassword = NullIfEmpty(argPwd) ?? envPwd;
 
-        if (!PairTargetResolver.TryResolve(resolvePositional, explicitPayload, defaultPort, out var target, out var resolveErr))
+        var ownerLink = !string.IsNullOrWhiteSpace(deviceId) &&
+                        (!string.IsNullOrWhiteSpace(token) ||
+                         (!string.IsNullOrWhiteSpace(accountUser) &&
+                          !string.IsNullOrWhiteSpace(accountPassword ?? guestPassword)));
+
+        if (ownerLink && string.IsNullOrWhiteSpace(accountPassword) && !string.IsNullOrWhiteSpace(guestPassword) &&
+            string.IsNullOrWhiteSpace(token))
         {
-            error = FormatResolveError(resolveErr);
-            return false;
+            accountPassword = guestPassword;
+            guestPassword = null;
         }
 
-        var host = target.Host;
-        var port = target.Port;
-        var code = target.Code;
-        var fp = target.Fingerprint;
-        var useTlsFromPayload = target.UseTls;
+        if (ownerLink)
+        {
+            if (string.IsNullOrWhiteSpace(relayEp))
+            {
+                error = "账号连机需要 --relay / REMOTE_ASSIST_RELAY（host:port）";
+                return false;
+            }
+            if (!Protocol.RelayEndpoint.TryParse(relayEp, out var rh, out var rp, out var rerr))
+            {
+                error = "中继地址无效: " + rerr;
+                return false;
+            }
 
-        // 显式命令行可覆盖载荷内字段（本机调试 / 端口转发）
+            var insecureOwner = argInsecure == true || envInsecure;
+            var fpOwner = NullIfEmpty(argFp) ?? envFp;
+            if (!insecureOwner && string.IsNullOrEmpty(TlsCertUtil.NormalizeFingerprint(fpOwner)))
+            {
+                error = "默认 TLS 需要证书指纹：--fp / REMOTE_ASSIST_FP；明文调试用 --insecure";
+                return false;
+            }
+
+            var permOwner = PermissionLevel.Assist;
+            if (argPerm is PermissionLevel parsedArgPerm) permOwner = parsedArgPerm;
+            else if (envPermStr is not null)
+            {
+                if (!Enum.TryParse(envPermStr, true, out PermissionLevel ep))
+                {
+                    error = "REMOTE_ASSIST_PERM 必须是 Assist|Guest|Admin";
+                    return false;
+                }
+                permOwner = ep;
+            }
+
+            options = new AssistConnectOptions
+            {
+                Host = rh,
+                Port = rp,
+                Code = "OWNER",
+                Permission = permOwner,
+                Fingerprint = insecureOwner ? null : TlsCertUtil.NormalizeFingerprint(fpOwner),
+                Insecure = insecureOwner,
+                ViaRelay = true,
+                RelayEndpoint = $"{rh}:{rp}",
+                OwnerLink = true,
+                AccountToken = token,
+                DeviceId = deviceId,
+                AccountUser = accountUser,
+                AccountPassword = accountPassword
+            };
+            return true;
+        }
+
+        // guest relay short-circuit: --relay + --code + --pwd 无需再走 host 解析
+        var codeArg = NullIfEmpty(argCode) ?? envCode;
+        if (!string.IsNullOrWhiteSpace(relayEp) && !string.IsNullOrWhiteSpace(codeArg) &&
+            !string.IsNullOrWhiteSpace(NullIfEmpty(guestPassword)) &&
+            string.IsNullOrWhiteSpace(explicitPayload) && positional.Count == 0)
+        {
+            if (!Protocol.RelayEndpoint.TryParse(relayEp, out var rhG, out var rpG, out var rerrG))
+            {
+                error = "中继地址无效: " + rerrG;
+                return false;
+            }
+            var insecureG = argInsecure == true || envInsecure;
+            var fpG = NullIfEmpty(argFp) ?? envFp;
+            if (!insecureG && string.IsNullOrEmpty(TlsCertUtil.NormalizeFingerprint(fpG)))
+            {
+                error = "默认 TLS 需要证书指纹：--fp / REMOTE_ASSIST_FP；明文调试用 --insecure";
+                return false;
+            }
+            var permG = PermissionLevel.Assist;
+            if (argPerm is PermissionLevel pg) permG = pg;
+            else if (envPermStr is not null)
+            {
+                if (!Enum.TryParse(envPermStr, true, out PermissionLevel epg))
+                {
+                    error = "REMOTE_ASSIST_PERM 必须是 Assist|Guest|Admin";
+                    return false;
+                }
+                permG = epg;
+            }
+            options = new AssistConnectOptions
+            {
+                Host = rhG,
+                Port = rpG,
+                Code = SessionCodeGenerator.Normalize(codeArg!),
+                Permission = permG,
+                Fingerprint = insecureG ? null : TlsCertUtil.NormalizeFingerprint(fpG),
+                Insecure = insecureG,
+                ViaRelay = true,
+                RelayEndpoint = $"{rhG}:{rpG}",
+                Password = SessionPasswordGenerator.Normalize(guestPassword!)
+            };
+            return true;
+        }
+
+        var resolvePositional = BuildPositional(positional, explicitPayload, argHost ?? envHost, argCode ?? envCode);
+
+        string host;
+        int port;
+        string code;
+        string? fpPayload;
+        bool useTlsFromPayload;
+        var viaRelay = false;
+        string? relayFromPayload = null;
+        string? pwdFromPayload = null;
+
+        if (!string.IsNullOrWhiteSpace(explicitPayload) ||
+            (positional.Count >= 1 &&
+             positional[0].Trim().StartsWith(PairQrPayload.SchemePrefix, StringComparison.OrdinalIgnoreCase)))
+        {
+            var raw = explicitPayload ?? positional[0];
+            if (!PairQrPayload.TryParseFull(raw!, out host, out port, out code, out fpPayload, out useTlsFromPayload,
+                    out viaRelay, out relayFromPayload, out pwdFromPayload))
+            {
+                error = "无法解析 remoteassist:pair 载荷";
+                return false;
+            }
+        }
+        else
+        {
+            if (!PairTargetResolver.TryResolve(resolvePositional, explicitPayload, defaultPort, out var target, out var resolveErr))
+            {
+                error = FormatResolveError(resolveErr);
+                return false;
+            }
+            host = target.Host;
+            port = target.Port;
+            code = target.Code;
+            fpPayload = target.Fingerprint;
+            useTlsFromPayload = target.UseTls;
+        }
+
         if (argHost is not null) host = argHost.Trim();
         if (argPort is int pOverride) port = pOverride;
         if (argCode is not null) code = SessionCodeGenerator.Normalize(argCode);
-        if (argFp is not null) fp = TlsCertUtil.NormalizeFingerprint(argFp);
-        else if (envFp is not null && string.IsNullOrEmpty(fp))
-            fp = TlsCertUtil.NormalizeFingerprint(envFp);
+
+        var fp = NullIfEmpty(argFp) ?? (string.IsNullOrEmpty(fpPayload) ? envFp : fpPayload);
+        if (fp is not null) fp = TlsCertUtil.NormalizeFingerprint(fp);
+
+        if (!string.IsNullOrWhiteSpace(relayEp))
+        {
+            viaRelay = true;
+            if (!Protocol.RelayEndpoint.TryParse(relayEp, out var rh2, out var rp2, out var rerr2))
+            {
+                error = "中继地址无效: " + rerr2;
+                return false;
+            }
+            relayFromPayload = $"{rh2}:{rp2}";
+            host = rh2;
+            port = rp2;
+        }
+        else if (viaRelay && !string.IsNullOrWhiteSpace(relayFromPayload))
+        {
+            relayEp = relayFromPayload;
+        }
+
+        var password = NullIfEmpty(guestPassword) ?? pwdFromPayload;
 
         if (string.IsNullOrWhiteSpace(host))
         {
@@ -189,6 +414,22 @@ public sealed class AssistConnectOptions
         {
             error = "会话码不能为空（REMOTE_ASSIST_CODE / --code / 载荷内 code）";
             return false;
+        }
+
+        if (viaRelay)
+        {
+            if (string.IsNullOrWhiteSpace(relayEp) && !string.IsNullOrWhiteSpace(relayFromPayload))
+                relayEp = relayFromPayload;
+            if (string.IsNullOrWhiteSpace(relayEp))
+            {
+                error = "中继连接需要 relay=host:port（载荷或 --relay / REMOTE_ASSIST_RELAY）";
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                error = "中继访客连接需要密码（载荷 pwd= 或 --pwd / REMOTE_ASSIST_PWD）";
+                return false;
+            }
         }
 
         var insecure = false;
@@ -206,8 +447,8 @@ public sealed class AssistConnectOptions
         }
 
         var perm = PermissionLevel.Assist;
-        if (argPerm is PermissionLevel parsedArgPerm)
-            perm = parsedArgPerm;
+        if (argPerm is PermissionLevel parsedPerm)
+            perm = parsedPerm;
         else if (envPermStr is not null)
         {
             if (!Enum.TryParse(envPermStr, true, out PermissionLevel ep))
@@ -225,18 +466,33 @@ public sealed class AssistConnectOptions
             Code = code,
             Permission = perm,
             Fingerprint = insecure ? null : TlsCertUtil.NormalizeFingerprint(fp),
-            Insecure = insecure
+            Insecure = insecure,
+            ViaRelay = viaRelay,
+            RelayEndpoint = viaRelay ? relayEp : null,
+            Password = viaRelay ? SessionPasswordGenerator.Normalize(password!) : password
         };
         return true;
     }
 
     public static string UsageText => """
         连接参数（环境变量或启动参数；同名字段命令行优先）:
-          REMOTE_ASSIST_PAYLOAD / --payload <remoteassist:pair?v=1&host=...&port=...&code=...&tls=1&fp=...>
-          或 REMOTE_ASSIST_HOST + REMOTE_ASSIST_CODE + REMOTE_ASSIST_FP（可选 PORT，默认 17890）
-          或 --host <ip> --code <会话码> --fp <指纹> [--port 17890]
-          可选 REMOTE_ASSIST_PERM / --perm  Assist|Guest|Admin（默认 Assist）
-          调试明文: --insecure 或 REMOTE_ASSIST_INSECURE=1（Agent 也需 --insecure）
+
+        【临时远程 ID + 密码 · 经中继】
+          --payload <remoteassist:pair?v=2&via=relay&relay=IP:17891&code=...&pwd=...&tls=1&fp=...>
+          或 --relay IP:17891 --code <远程ID> --pwd <密码> --fp <指纹>
+          env: REMOTE_ASSIST_RELAY / REMOTE_ASSIST_CODE / REMOTE_ASSIST_PWD / REMOTE_ASSIST_FP
+
+        【登录后连自己的机器 · 免密】
+          --relay IP:17891 --token <令牌> --device-id <设备ID> --fp <指纹>
+          或 --relay IP:17891 --user <名> --account-password <密> --device-id <ID> --fp <指纹>
+          env: REMOTE_ASSIST_TOKEN / REMOTE_ASSIST_USER / REMOTE_ASSIST_ACCOUNT_PASSWORD / REMOTE_ASSIST_DEVICE_ID
+
+        【局域网高级/调试】
+          --host <ip> --code <会话码> --fp <指纹> [--port 17890]
+          或 REMOTE_ASSIST_PAYLOAD 旧版 via=lan 载荷
+
+        可选: --perm Assist|Guest|Admin；明文调试 --insecure / REMOTE_ASSIST_INSECURE=1
+        注意: run_command 等写操作仍须被控本机确认，MCP 无法绕过。
         """;
 
     private static List<string> BuildPositional(

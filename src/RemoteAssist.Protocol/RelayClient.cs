@@ -1,69 +1,13 @@
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace RemoteAssist.Protocol;
 
-/// <summary>解析 host:port / [ipv6]:port 中继地址。</summary>
-public static class RelayEndpoint
-{
-    public const int DefaultPort = 17891;
-    public const string DefaultEndpoint = "127.0.0.1:17891";
-
-    public static bool TryParse(string? text, out string host, out int port, out string error)
-    {
-        host = "";
-        port = 0;
-        error = "";
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            error = "中继地址为空";
-            return false;
-        }
-
-        var s = text.Trim();
-        if (s.StartsWith('['))
-        {
-            var close = s.IndexOf(']');
-            if (close < 1 || close + 2 >= s.Length || s[close + 1] != ':')
-            {
-                error = "IPv6 中继格式应为 [地址]:端口";
-                return false;
-            }
-            host = s[1..close];
-            if (!int.TryParse(s[(close + 2)..], out port) || port is < 1 or > 65535)
-            {
-                error = "端口需要 1–65535";
-                return false;
-            }
-            return true;
-        }
-
-        var idx = s.LastIndexOf(':');
-        if (idx <= 0 || idx == s.Length - 1)
-        {
-            error = "中继格式应为 IP:端口（例如 1.2.3.4:17891）";
-            return false;
-        }
-
-        host = s[..idx].Trim();
-        if (string.IsNullOrWhiteSpace(host))
-        {
-            error = "主机不能为空";
-            return false;
-        }
-
-        if (!int.TryParse(s[(idx + 1)..], out port) || port is < 1 or > 65535)
-        {
-            error = "端口需要 1–65535";
-            return false;
-        }
-
-        return true;
-    }
-}
-
 /// <summary>
-/// 出连公网中继：控制行配对后返回透明 TCP 流（业务帧/TLS 仍在端到端）。
+/// 公网中继客户端（JSON Lines 控制协议，见 docs/relay-protocol.md）。
+/// 配对成功后 Stream 为透明字节管道。
 /// </summary>
 public sealed class RelayClient : IDisposable
 {
@@ -78,72 +22,118 @@ public sealed class RelayClient : IDisposable
 
     public Stream Stream => _stream;
 
-    public static async Task<RelayClient> RegisterGuestAsync(
+    public static async Task<(RelayClient Client, string Code)> GuestHostAsync(
         string host,
         int port,
-        string sessionCode,
-        string role,
+        string password,
+        string? preferredCode = null,
+        Action<string>? onCodeAssigned = null,
+        CancellationToken ct = default)
+    {
+        password = SessionPasswordGenerator.Normalize(password);
+        if (password.Length < 4)
+            throw new ArgumentException("password min 4 chars", nameof(password));
+
+        var tcp = new TcpClient();
+        await tcp.ConnectAsync(host, port, ct).ConfigureAwait(false);
+        var stream = tcp.GetStream();
+        try
+        {
+            var req = new Dictionary<string, object?>
+            {
+                ["op"] = "guest_host",
+                ["password"] = password,
+                ["code"] = string.IsNullOrWhiteSpace(preferredCode)
+                    ? ""
+                    : SessionCodeGenerator.Normalize(preferredCode)
+            };
+            var hostReply = await RoundTripAsync(stream, req, ct).ConfigureAwait(false);
+            EnsureOk(hostReply, "guest_host");
+            var code = GetString(hostReply, "code")
+                ?? throw new InvalidOperationException("guest_host missing code");
+            var normalized = SessionCodeGenerator.Normalize(code);
+            try { onCodeAssigned?.Invoke(normalized); } catch { /* UI callback must not break wait */ }
+
+            // Wait until helper joins
+            var paired = await ReadJsonLineAsync(stream, ct).ConfigureAwait(false);
+            EnsureOk(paired, "paired");
+            if (!string.Equals(GetString(paired, "op"), "paired", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("expected paired, got " + GetString(paired, "op"));
+
+            var client = new RelayClient(tcp, stream);
+            return (client, normalized);
+        }
+        catch
+        {
+            try { tcp.Dispose(); } catch { /* ignore */ }
+            throw;
+        }
+    }
+
+    public static async Task<RelayClient> GuestJoinAsync(
+        string host,
+        int port,
+        string code,
         string password,
         CancellationToken ct = default)
     {
-        var code = SessionCodeGenerator.Normalize(sessionCode);
-        if (string.IsNullOrWhiteSpace(code))
-            throw new ArgumentException("session code required", nameof(sessionCode));
-        if (string.IsNullOrWhiteSpace(password))
-            throw new ArgumentException("password required", nameof(password));
-
-        role = NormalizeRole(role);
-        var line = $"REGISTER {code} {role} {password}\n";
-        return await DialControlAsync(host, port, line, ct).ConfigureAwait(false);
+        code = SessionCodeGenerator.Normalize(code);
+        password = SessionPasswordGenerator.Normalize(password);
+        var tcp = new TcpClient();
+        await tcp.ConnectAsync(host, port, ct).ConfigureAwait(false);
+        var stream = tcp.GetStream();
+        try
+        {
+            var reply = await RoundTripAsync(stream, new Dictionary<string, object?>
+            {
+                ["op"] = "guest_join",
+                ["code"] = code,
+                ["password"] = password
+            }, ct).ConfigureAwait(false);
+            EnsureOk(reply, "paired");
+            return new RelayClient(tcp, stream);
+        }
+        catch
+        {
+            try { tcp.Dispose(); } catch { /* ignore */ }
+            throw;
+        }
     }
 
-    public static async Task<RelayClient> DeviceOnlineAsync(
+    public static async Task<string> SignupOrLoginAsync(
         string host,
         int port,
-        string accountToken,
-        string deviceId,
-        string displayName,
-        CancellationToken ct = default)
-    {
-        if (string.IsNullOrWhiteSpace(accountToken))
-            throw new ArgumentException("token required", nameof(accountToken));
-        deviceId = deviceId.Trim();
-        displayName = string.IsNullOrWhiteSpace(displayName) ? deviceId : displayName.Trim();
-        // name may contain spaces — relay joins remaining fields
-        var line = $"DEVICE ONLINE {accountToken} {deviceId} {displayName}\n";
-        return await DialControlAsync(host, port, line, ct).ConfigureAwait(false);
-    }
-
-    public static async Task<RelayClient> DeviceConnectAsync(
-        string host,
-        int port,
-        string accountToken,
-        string deviceId,
-        CancellationToken ct = default)
-    {
-        var line = $"DEVICE CONNECT {accountToken} {deviceId.Trim()}\n";
-        return await DialControlAsync(host, port, line, ct).ConfigureAwait(false);
-    }
-
-    public static async Task<string> AuthAsync(
-        string host,
-        int port,
-        bool register,
+        bool signup,
         string user,
         string password,
         CancellationToken ct = default)
     {
-        var op = register ? "REGISTER" : "LOGIN";
         var tcp = new TcpClient();
         await tcp.ConnectAsync(host, port, ct).ConfigureAwait(false);
         try
         {
             var stream = tcp.GetStream();
-            await WriteAsciiLineAsync(stream, $"AUTH {op} {user.Trim()} {password}\n", ct).ConfigureAwait(false);
-            var reply = await ReadAsciiLineAsync(stream, ct).ConfigureAwait(false);
-            if (!reply.StartsWith("OK token ", StringComparison.Ordinal))
-                throw new InvalidOperationException(reply.StartsWith("ERR ", StringComparison.Ordinal) ? reply[4..] : reply);
-            return reply["OK token ".Length..].Trim();
+            var op = signup ? "signup" : "login";
+            var reply = await RoundTripAsync(stream, new Dictionary<string, object?>
+            {
+                ["op"] = op,
+                ["username"] = user.Trim(),
+                ["password"] = password
+            }, ct).ConfigureAwait(false);
+            EnsureOk(reply, op);
+            if (signup)
+            {
+                // signup does not return token; login next on same connection
+                reply = await RoundTripAsync(stream, new Dictionary<string, object?>
+                {
+                    ["op"] = "login",
+                    ["username"] = user.Trim(),
+                    ["password"] = password
+                }, ct).ConfigureAwait(false);
+                EnsureOk(reply, "login");
+            }
+            return GetString(reply, "token")
+                ?? throw new InvalidOperationException("login missing token");
         }
         finally
         {
@@ -151,30 +141,10 @@ public sealed class RelayClient : IDisposable
         }
     }
 
-    public static async Task UpsertDeviceAsync(
-        string host,
-        int port,
-        string token,
-        string deviceId,
-        string name,
-        CancellationToken ct = default)
-    {
-        var tcp = new TcpClient();
-        await tcp.ConnectAsync(host, port, ct).ConfigureAwait(false);
-        try
-        {
-            var stream = tcp.GetStream();
-            await WriteAsciiLineAsync(stream, $"DEVICE UPSERT {token} {deviceId.Trim()} {name.Trim()}\n", ct)
-                .ConfigureAwait(false);
-            var reply = await ReadAsciiLineAsync(stream, ct).ConfigureAwait(false);
-            if (!string.Equals(reply, "OK", StringComparison.Ordinal))
-                throw new InvalidOperationException(reply.StartsWith("ERR ", StringComparison.Ordinal) ? reply[4..] : reply);
-        }
-        finally
-        {
-            try { tcp.Dispose(); } catch { /* ignore */ }
-        }
-    }
+    /// <summary>兼容旧名。</summary>
+    public static Task<string> AuthAsync(
+        string host, int port, bool register, string user, string password, CancellationToken ct = default) =>
+        SignupOrLoginAsync(host, port, register, user, password, ct);
 
     public static async Task<IReadOnlyList<(string Id, string Name, bool Online)>> ListDevicesAsync(
         string host,
@@ -187,19 +157,21 @@ public sealed class RelayClient : IDisposable
         try
         {
             var stream = tcp.GetStream();
-            await WriteAsciiLineAsync(stream, $"DEVICE LIST {token}\n", ct).ConfigureAwait(false);
-            var hdr = await ReadAsciiLineAsync(stream, ct).ConfigureAwait(false);
-            if (!hdr.StartsWith("OK ", StringComparison.Ordinal))
-                throw new InvalidOperationException(hdr.StartsWith("ERR ", StringComparison.Ordinal) ? hdr[4..] : hdr);
-            if (!int.TryParse(hdr[3..].Trim(), out var n) || n < 0)
-                throw new InvalidOperationException("bad DEVICE LIST header: " + hdr);
-            var list = new List<(string, string, bool)>(n);
-            for (var i = 0; i < n; i++)
+            await AuthTokenAsync(stream, token, ct).ConfigureAwait(false);
+            var reply = await RoundTripAsync(stream, new Dictionary<string, object?> { ["op"] = "list_devices" }, ct)
+                .ConfigureAwait(false);
+            EnsureOk(reply, "list_devices");
+            var list = new List<(string, string, bool)>();
+            if (reply.TryGetValue("devices", out var raw) && raw is JsonElement el && el.ValueKind == JsonValueKind.Array)
             {
-                var row = await ReadAsciiLineAsync(stream, ct).ConfigureAwait(false);
-                var parts = row.Split('\t');
-                if (parts.Length < 3) continue;
-                list.Add((parts[0], parts[1], parts[2] == "1"));
+                foreach (var d in el.EnumerateArray())
+                {
+                    var id = d.TryGetProperty("device_id", out var idp) ? idp.GetString() ?? "" : "";
+                    var name = d.TryGetProperty("display_name", out var np) ? np.GetString() ?? id : id;
+                    var online = d.TryGetProperty("online", out var op) && op.ValueKind == JsonValueKind.True;
+                    if (id.Length > 0)
+                        list.Add((id, name, online));
+                }
             }
             return list;
         }
@@ -209,20 +181,37 @@ public sealed class RelayClient : IDisposable
         }
     }
 
-    private static async Task<RelayClient> DialControlAsync(string host, int port, string line, CancellationToken ct)
+    public static async Task UpsertDeviceAsync(
+        string host, int port, string token, string deviceId, string name, CancellationToken ct = default)
+    {
+        // JSONL relay upserts on device_online; no separate UPSERT op required.
+        await Task.CompletedTask.ConfigureAwait(false);
+    }
+
+    public static async Task<RelayClient> DeviceOnlineAsync(
+        string host,
+        int port,
+        string accountToken,
+        string deviceId,
+        string displayName,
+        CancellationToken ct = default)
     {
         var tcp = new TcpClient();
         await tcp.ConnectAsync(host, port, ct).ConfigureAwait(false);
+        var stream = tcp.GetStream();
         try
         {
-            var stream = tcp.GetStream();
-            await WriteAsciiLineAsync(stream, line, ct).ConfigureAwait(false);
-            var reply = await ReadAsciiLineAsync(stream, ct).ConfigureAwait(false);
-            if (reply.StartsWith("ERR ", StringComparison.Ordinal))
-                throw new InvalidOperationException(reply[4..]);
-            if (!reply.StartsWith("OK ", StringComparison.Ordinal))
-                throw new InvalidOperationException("unexpected relay reply: " + reply);
-            // OK waiting | OK paired — both OK to proceed; bytes queue until peer joins
+            await AuthTokenAsync(stream, accountToken, ct).ConfigureAwait(false);
+            var reply = await RoundTripAsync(stream, new Dictionary<string, object?>
+            {
+                ["op"] = "device_online",
+                ["device_id"] = deviceId.Trim(),
+                ["display_name"] = string.IsNullOrWhiteSpace(displayName) ? deviceId : displayName.Trim()
+            }, ct).ConfigureAwait(false);
+            EnsureOk(reply, "device_online");
+
+            var paired = await ReadJsonLineAsync(stream, ct).ConfigureAwait(false);
+            EnsureOk(paired, "paired");
             return new RelayClient(tcp, stream);
         }
         catch
@@ -232,22 +221,92 @@ public sealed class RelayClient : IDisposable
         }
     }
 
-    private static string NormalizeRole(string role) =>
-        role.Trim().ToLowerInvariant() switch
-        {
-            "agent" or "a" => "agent",
-            "helper" or "b" => "helper",
-            _ => throw new ArgumentException("role must be agent|helper", nameof(role))
-        };
-
-    private static async Task WriteAsciiLineAsync(Stream stream, string line, CancellationToken ct)
+    public static async Task<RelayClient> DeviceConnectAsync(
+        string host,
+        int port,
+        string accountToken,
+        string deviceId,
+        CancellationToken ct = default)
     {
-        var bytes = Encoding.UTF8.GetBytes(line);
+        var tcp = new TcpClient();
+        await tcp.ConnectAsync(host, port, ct).ConfigureAwait(false);
+        var stream = tcp.GetStream();
+        try
+        {
+            await AuthTokenAsync(stream, accountToken, ct).ConfigureAwait(false);
+            var reply = await RoundTripAsync(stream, new Dictionary<string, object?>
+            {
+                ["op"] = "connect_device",
+                ["device_id"] = deviceId.Trim()
+            }, ct).ConfigureAwait(false);
+            EnsureOk(reply, "paired");
+            return new RelayClient(tcp, stream);
+        }
+        catch
+        {
+            try { tcp.Dispose(); } catch { /* ignore */ }
+            throw;
+        }
+    }
+
+    // ---- legacy names used by AssistClient ----
+    public static Task<RelayClient> RegisterGuestAsync(
+        string host, int port, string sessionCode, string role, string password, CancellationToken ct = default)
+    {
+        role = role.Trim().ToLowerInvariant();
+        if (role is "helper" or "b")
+            return GuestJoinAsync(host, port, sessionCode, password, ct);
+        throw new InvalidOperationException("agent guest path should use GuestHostAsync");
+    }
+
+    private static async Task AuthTokenAsync(Stream stream, string token, CancellationToken ct)
+    {
+        var reply = await RoundTripAsync(stream, new Dictionary<string, object?>
+        {
+            ["op"] = "auth_token",
+            ["token"] = token
+        }, ct).ConfigureAwait(false);
+        EnsureOk(reply, "auth_token");
+    }
+
+    private static async Task<Dictionary<string, JsonElement>> RoundTripAsync(
+        Stream stream, Dictionary<string, object?> req, CancellationToken ct)
+    {
+        await WriteJsonLineAsync(stream, req, ct).ConfigureAwait(false);
+        return await ReadJsonLineAsync(stream, ct).ConfigureAwait(false);
+    }
+
+    private static async Task WriteJsonLineAsync(Stream stream, object req, CancellationToken ct)
+    {
+        string json;
+        if (req is Dictionary<string, object?> map)
+        {
+            var node = new JsonObject();
+            foreach (var kv in map)
+            {
+                node[kv.Key] = kv.Value switch
+                {
+                    null => null,
+                    string s => s,
+                    bool b => b,
+                    int i => i,
+                    long l => l,
+                    JsonNode jn => jn,
+                    _ => JsonValue.Create(kv.Value?.ToString())
+                };
+            }
+            json = node.ToJsonString();
+        }
+        else
+        {
+            json = JsonSerializer.Serialize(req);
+        }
+        var bytes = Encoding.UTF8.GetBytes(json + "\n");
         await stream.WriteAsync(bytes, ct).ConfigureAwait(false);
         await stream.FlushAsync(ct).ConfigureAwait(false);
     }
 
-    private static async Task<string> ReadAsciiLineAsync(Stream stream, CancellationToken ct)
+    private static async Task<Dictionary<string, JsonElement>> ReadJsonLineAsync(Stream stream, CancellationToken ct)
     {
         var buf = new MemoryStream();
         var one = new byte[1];
@@ -255,15 +314,43 @@ public sealed class RelayClient : IDisposable
         {
             var n = await stream.ReadAsync(one.AsMemory(0, 1), ct).ConfigureAwait(false);
             if (n == 0)
-                throw new EndOfStreamException("relay closed during control reply");
+                throw new EndOfStreamException("relay closed during JSONL control");
             if (one[0] == (byte)'\n')
                 break;
             if (one[0] != (byte)'\r')
                 buf.WriteByte(one[0]);
-            if (buf.Length > 2048)
-                throw new InvalidDataException("relay control line too long");
+            if (buf.Length > 16 * 1024)
+                throw new InvalidDataException("relay JSONL line too long");
         }
-        return Encoding.UTF8.GetString(buf.ToArray()).Trim();
+        var text = Encoding.UTF8.GetString(buf.ToArray()).Trim();
+        if (text.Length == 0)
+            throw new InvalidDataException("empty relay JSONL line");
+        using var doc = JsonDocument.Parse(text);
+        var map = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in doc.RootElement.EnumerateObject())
+            map[p.Name] = p.Value.Clone();
+        return map;
+    }
+
+    private static void EnsureOk(Dictionary<string, JsonElement> reply, string expectHint)
+    {
+        if (reply.TryGetValue("ok", out var okEl) && okEl.ValueKind == JsonValueKind.True)
+            return;
+        var err = reply.TryGetValue("error", out var e) ? e.GetString() : null;
+        throw new InvalidOperationException(err ?? ("relay error near " + expectHint));
+    }
+
+    private static string? GetString(Dictionary<string, JsonElement> map, string key)
+    {
+        if (!map.TryGetValue(key, out var el)) return null;
+        return el.ValueKind switch
+        {
+            JsonValueKind.String => el.GetString(),
+            JsonValueKind.Number => el.GetRawText(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            _ => el.ToString()
+        };
     }
 
     public void Dispose()
@@ -272,3 +359,5 @@ public sealed class RelayClient : IDisposable
         try { _tcp.Dispose(); } catch { /* ignore */ }
     }
 }
+
+

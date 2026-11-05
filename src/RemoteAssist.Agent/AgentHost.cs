@@ -32,6 +32,7 @@ internal sealed class AgentHost
     private string? _certFingerprint;
     private string _sessionPassword;
     private readonly bool _preferRelay;
+    private readonly bool _enableLanListen;
     private readonly string _relayEndpoint;
     private readonly string? _accountToken;
     private readonly string _deviceId;
@@ -54,6 +55,7 @@ internal sealed class AgentHost
         string auditPath,
         bool insecure = false,
         bool preferRelay = true,
+        bool enableLanListen = false,
         string? relayEndpoint = null,
         string? accountToken = null,
         string? deviceId = null,
@@ -67,6 +69,7 @@ internal sealed class AgentHost
         AuditPath = auditPath;
         _insecure = insecure;
         _preferRelay = preferRelay;
+        _enableLanListen = enableLanListen || !preferRelay;
         _relayEndpoint = string.IsNullOrWhiteSpace(relayEndpoint)
             ? RelayEndpoint.DefaultEndpoint
             : relayEndpoint.Trim();
@@ -99,6 +102,7 @@ internal sealed class AgentHost
     }
 
     public bool PreferRelay => _preferRelay;
+    public bool EnableLanListen => _enableLanListen;
     public string RelayEndpointAddress => _relayEndpoint;
     public bool AccountBound => !string.IsNullOrWhiteSpace(_accountToken);
     public string DeviceId => _deviceId;
@@ -288,10 +292,18 @@ internal sealed class AgentHost
                 _ = Task.Run(() => RelayDeviceLoopAsync(_cts.Token));
         }
 
-        // LAN listener kept for advanced/debug even when prefer relay
-        _listener = new TcpListener(IPAddress.Any, Port);
-        _listener.Start();
-        _ = Task.Run(() => AcceptLoopAsync(_cts.Token));
+        // 默认中继时不对外开 LAN 端口；高级/调试显式 EnableLanListen 才监听
+        if (_enableLanListen)
+        {
+            _listener = new TcpListener(IPAddress.Any, Port);
+            _listener.Start();
+            _ = Task.Run(() => AcceptLoopAsync(_cts.Token));
+            _audit.Write("lan_listen", $"port={Port}");
+        }
+        else
+        {
+            _audit.Write("lan_listen", "skipped (relay-only)");
+        }
     }
 
     public void Stop()
@@ -318,13 +330,8 @@ internal sealed class AgentHost
     {
         while (!ct.IsCancellationRequested)
         {
-            string code;
             string password;
-            lock (_codeLock)
-            {
-                code = _sessionCode;
-                password = _sessionPassword;
-            }
+            lock (_codeLock) password = _sessionPassword;
 
             if (!RelayEndpoint.TryParse(_relayEndpoint, out var host, out var port, out var err))
             {
@@ -336,9 +343,22 @@ internal sealed class AgentHost
             RelayClient? relay = null;
             try
             {
-                _audit.Write("relay_guest_dial", $"ep={host}:{port}; code={code}");
-                relay = await RelayClient.RegisterGuestAsync(host, port, code, "agent", password, ct)
+                _audit.Write("relay_guest_dial", $"ep={host}:{port}");
+                // JSONL: guest_host 由服务端签发 code；配对完成后再跑业务 TLS
+                var (client, code) = await RelayClient.GuestHostAsync(
+                        host, port, password, preferredCode: null,
+                        onCodeAssigned: c =>
+                        {
+                            lock (_codeLock) _sessionCode = c;
+                            SessionChanged?.Invoke();
+                            _audit.Write("relay_guest_code", $"code={c}");
+                        },
+                        ct: ct)
                     .ConfigureAwait(false);
+                relay = client;
+                lock (_codeLock) _sessionCode = code;
+                SessionChanged?.Invoke();
+                _audit.Write("relay_guest_paired", $"code={code}");
                 await HandleStreamAsync(relay, relay.Stream, $"relay-guest/{host}:{port}", ownerLink: false, ct)
                     .ConfigureAwait(false);
             }

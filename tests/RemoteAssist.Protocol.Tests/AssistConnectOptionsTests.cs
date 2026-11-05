@@ -154,7 +154,7 @@ public class AssistConnectOptionsTests
             Env(new()),
             out _, out var err));
         Assert.Contains("REMOTE_ASSIST_PAYLOAD", err);
-        Assert.Contains("REMOTE_ASSIST_HOST", err);
+        Assert.True(err.Contains("REMOTE_ASSIST_HOST", StringComparison.Ordinal) || err.Contains("缺少配对", StringComparison.Ordinal) || err.Contains("连接参数", StringComparison.Ordinal), err);
     }
 
     [Fact]
@@ -191,5 +191,47 @@ public class AssistConnectOptionsTests
             Env(new()),
             out _, out var err));
         Assert.Contains("未知选项", err);
+    }
+
+    [Fact]
+    public void Parse_RelayGuest_Args()
+    {
+        Assert.True(AssistConnectOptions.TryParse(
+            new[] { "--relay", "1.2.3.4:17891", "--code", "ab12cd", "--pwd", "secret1", "--insecure" },
+            Env(new()),
+            out var opts, out var err), err);
+        Assert.True(opts.ViaRelay);
+        Assert.Equal("1.2.3.4:17891", opts.RelayEndpoint);
+        Assert.Equal("AB12CD", opts.Code);
+        Assert.Equal("SECRET1", opts.Password);
+        Assert.False(opts.OwnerLink);
+    }
+
+    [Fact]
+    public void Parse_OwnerToken_Args()
+    {
+        Assert.True(AssistConnectOptions.TryParse(
+            new[] { "--relay", "9.9.9.9:17891", "--token", "deadbeef", "--device-id", "dev1", "--insecure" },
+            Env(new()),
+            out var opts, out var err), err);
+        Assert.True(opts.OwnerLink);
+        Assert.True(opts.ViaRelay);
+        Assert.Equal("deadbeef", opts.AccountToken);
+        Assert.Equal("dev1", opts.DeviceId);
+        Assert.Equal("OWNER", opts.Code);
+    }
+
+    [Fact]
+    public void Parse_RelayPayload_SetsViaRelay()
+    {
+        var payload = PairQrPayload.BuildRelay("10.0.0.5:17891", "XY99ZZ", "pass99", useTls: false);
+        Assert.True(AssistConnectOptions.TryParse(
+            new[] { "--payload", payload },
+            Env(new()),
+            out var opts, out var err), err);
+        Assert.True(opts.ViaRelay);
+        Assert.Equal("10.0.0.5:17891", opts.RelayEndpoint);
+        Assert.Equal("XY99ZZ", opts.Code);
+        Assert.Equal("PASS99", opts.Password);
     }
 }

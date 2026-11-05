@@ -42,6 +42,7 @@ public sealed class AgentDesktopController : IDisposable
             auditPath,
             insecure,
             preferRelay: preferRelay ?? settings.PreferRelay,
+            enableLanListen: settings.EnableLanListen,
             relayEndpoint: relayEndpoint ?? settings.RelayEndpoint,
             accountToken: settings.AccountToken,
             deviceId: settings.DeviceId,

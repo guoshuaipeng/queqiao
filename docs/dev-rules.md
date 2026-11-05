@@ -2,23 +2,23 @@
 
 ## 协作（多 bot）
 
-- 决策与分工一律写进本仓库 `docs/`（本文件、`PRODUCT.md`、`relay.md` 等），**禁止只依赖 bot 记忆**。
+- 决策与分工一律写进本仓库 `docs/`，**禁止只依赖 bot 记忆**。
 - 改动前先在文档标明本轮负责模块，避免互相覆盖。
 - **不改 AI-SSH-Pro**；本仓库独立演进。
-- 本机开发；默认不使用 Cursor CloudAgent 写本仓库（用户要求本机时以用户为准）。
-- 提交后可推 `origin`（Gitee）；推送前看清未提交文件。
+- 本机开发；推送前看清未提交文件。
 
 ## 当前分工（2026-11-05）
 
 | 角色 | 负责 |
 |---|---|
-| 「远端协助」bot | .NET 8 主线 / 统一 App；中继客户端对接；账号免密 UI；文档 |
-| 「远端协助-并行」bot | Go 中继脚手架；`src-net48` 对比与「返回首页」等 UI（尽量不改 `src/` 主线行为） |
+| 「远端协助」bot | .NET 客户端：`src/` / 统一 App / UI；按 **`docs/relay-protocol.md`（JSONL）** 对接中继 |
+| 「远端协助-并行」bot | **Go 中继** `relay/` + `docs/relay.md` / `docs/relay-protocol.md` |
 
-边界：并行改 `src-net48` / `relay/` 时，主线 bot 改 `src/`；中继协议变更先写 `docs/relay.md`。
+边界：并行 bot **不改** `src/`。中继协议变更必须先更新 `relay-protocol.md`，再改 Go；客户端跟随该文档。
 
 ## 技术红线
 
-- **默认经公网中继**；LAN 仅高级/调试。
+- **默认连接路径 = 公网中继**（访客 code+密码，或账号设备列表免密）；LAN 仅可选/调试。
 - Assist 写操作必须被控本机确认，不可由 MCP/中继绕过。
-- 密钥、会话码、审计日志、`relay/data/` 不进 git。
+- 密钥、会话码、审计日志、`relay/data/*.db` 不进 git。
+- 控制协议为 **JSONL**（不是空格分隔文本行）。

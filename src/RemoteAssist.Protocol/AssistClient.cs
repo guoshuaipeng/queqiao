@@ -117,7 +117,7 @@ public sealed class AssistClient : IDisposable
                 "默认启用 TLS，需要证书指纹：请使用含 fp= 的会话载荷，或填写指纹；调试明文请用 --insecure。");
         }
 
-        var relay = await RelayClient.RegisterGuestAsync(rh, rp, opts.Code, "helper", password, ct)
+        var relay = await RelayClient.GuestJoinAsync(rh, rp, opts.Code, password, ct)
             .ConfigureAwait(false);
         Stream stream = relay.Stream;
         try
@@ -144,15 +144,24 @@ public sealed class AssistClient : IDisposable
         var endpoint = opts.RelayEndpoint ?? throw new InvalidOperationException("缺少中继地址");
         if (!RelayEndpoint.TryParse(endpoint, out var rh, out var rp, out var err))
             throw new InvalidOperationException(err);
-        if (string.IsNullOrWhiteSpace(opts.AccountToken) || string.IsNullOrWhiteSpace(opts.DeviceId))
-            throw new InvalidOperationException("免密控制需要账号令牌与设备 ID");
+        if (string.IsNullOrWhiteSpace(opts.DeviceId))
+            throw new InvalidOperationException("免密控制需要设备 ID");
+
+        var token = opts.AccountToken;
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            if (string.IsNullOrWhiteSpace(opts.AccountUser) || string.IsNullOrWhiteSpace(opts.AccountPassword))
+                throw new InvalidOperationException("免密控制需要账号令牌，或用户名+密码登录");
+            token = await RelayClient.SignupOrLoginAsync(rh, rp, signup: false, opts.AccountUser!, opts.AccountPassword!, ct)
+                .ConfigureAwait(false);
+        }
 
         var useTls = !opts.Insecure;
         // Owner path: fingerprint may be unknown until first connect — allow insecure or require saved fp
         if (useTls && string.IsNullOrWhiteSpace(TlsCertUtil.NormalizeFingerprint(opts.Fingerprint)))
             throw new InvalidOperationException("免密控制仍建议 TLS：请先用一次 code+密码连接以保存指纹，或勾选明文（仅调试）");
 
-        var relay = await RelayClient.DeviceConnectAsync(rh, rp, opts.AccountToken!, opts.DeviceId!, ct)
+        var relay = await RelayClient.DeviceConnectAsync(rh, rp, token!, opts.DeviceId!, ct)
             .ConfigureAwait(false);
         Stream stream = relay.Stream;
         try
@@ -241,3 +250,4 @@ public sealed class AssistClient : IDisposable
         try { _transport.Dispose(); } catch { /* ignore */ }
     }
 }
+

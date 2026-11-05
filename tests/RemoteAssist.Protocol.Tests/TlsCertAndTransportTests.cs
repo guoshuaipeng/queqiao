@@ -36,7 +36,7 @@ public class TlsTransportSmokeTests
         var port = GetFreePort();
         var auditPath = Path.Combine(Path.GetTempPath(), "ra-tls-" + Guid.NewGuid().ToString("N") + ".log");
         var audit = new AuditLog(auditPath);
-        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath, insecure: false);
+        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath, insecure: false, preferRelay: false);
         Assert.False(string.IsNullOrEmpty(host.CertificateFingerprint));
         host.Start();
         try
@@ -68,7 +68,7 @@ public class TlsTransportSmokeTests
         var port = GetFreePort();
         var auditPath = Path.Combine(Path.GetTempPath(), "ra-tls-badfp-" + Guid.NewGuid().ToString("N") + ".log");
         var audit = new AuditLog(auditPath);
-        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath, insecure: false);
+        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath, insecure: false, preferRelay: false);
         host.Start();
         try
         {
@@ -93,7 +93,7 @@ public class TlsTransportSmokeTests
         var port = GetFreePort();
         var auditPath = Path.Combine(Path.GetTempPath(), "ra-plain-" + Guid.NewGuid().ToString("N") + ".log");
         var audit = new AuditLog(auditPath);
-        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath, insecure: true);
+        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath, insecure: true, preferRelay: false);
         Assert.Null(host.CertificateFingerprint);
         Assert.Contains("tls=0", host.QrPayload);
         host.Start();

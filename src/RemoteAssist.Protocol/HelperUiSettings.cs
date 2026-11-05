@@ -21,6 +21,12 @@ public sealed class HelperUiSettings
     /// <summary>false 时优先局域网直连（高级/调试）。默认 true = 公网中继。</summary>
     public bool PreferRelay { get; set; } = true;
 
+    /// <summary>默认中继时是否仍开 LAN 监听（高级/调试）。</summary>
+    public bool EnableLanListen { get; set; } = false;
+
+    /// <summary>协助方是否启用 MCP 辅助（被控模式永不自动启 MCP 服务）。</summary>
+    public bool EnableMcpHelper { get; set; } = false;
+
     public static string SettingsDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RemoteAssist");
 
