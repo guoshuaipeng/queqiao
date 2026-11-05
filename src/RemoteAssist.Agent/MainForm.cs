@@ -1199,6 +1199,17 @@ internal sealed class MainForm : Form
         RefreshTrustUi();
     }
 
+    /// <summary>UiShot：刷新审计与已确认列表；确保最近审计从顶部可见。</summary>
+    internal void RefreshListsForShot()
+    {
+        RefreshAudit();
+        RefreshConfirmedChanges();
+        if (_auditView.Items.Count > 0)
+            _auditView.EnsureVisible(0);
+        if (_confirmedView.Items.Count > 0)
+            _confirmedView.EnsureVisible(0);
+    }
+
     /// <summary>UiShot：同步信任档 UI（不弹二次确认）。</summary>
     internal void ApplyTrustForShot(TrustLevelKind level)
     {
