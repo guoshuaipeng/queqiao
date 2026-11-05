@@ -22,6 +22,17 @@ public sealed class RelayClient : IDisposable
 
     public Stream Stream => _stream;
 
+    /// <summary>底层 TCP，供协助端探测对端是否已关掉会话（R035）。</summary>
+    public System.Net.Sockets.Socket? TcpSocket
+    {
+        get
+        {
+            try { return _tcp.Client; }
+            catch { return null; }
+        }
+    }
+
+
     public static async Task<(RelayClient Client, string Code)> GuestHostAsync(
         string host,
         int port,

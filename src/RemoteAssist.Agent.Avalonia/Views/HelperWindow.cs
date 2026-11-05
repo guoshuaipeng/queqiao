@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using RemoteAssist.Protocol;
 using RemoteAssist.Protocol.Messages;
 
@@ -45,6 +46,7 @@ internal sealed class HelperWindow : Window
     private bool _busy;
     private bool _allowClose;
     private bool _uiShotConnected;
+    private bool _selfDisconnect;
 
     public HelperWindow(string? shotDir, bool enableReturnHome = true)
     {
@@ -785,15 +787,15 @@ internal sealed class HelperWindow : Window
             if (_shotMode)
             {
                 SetConnectedUi(true);
-                _status.Text = "已连接对方电脑";
+                _status.Text = HelperSessionCopy.StatusConnected;
                 _output.Text = "";
                 return;
             }
 
             var client = await AssistClient.PairAsync(opts, "helper-avalonia").ConfigureAwait(true);
-            _client = client;
+            AttachClient(client);
             SetConnectedUi(true);
-            _status.Text = "已连接对方电脑";
+            _status.Text = HelperSessionCopy.StatusConnected;
             _failHint.Text = "";
             AppendOutput("PAIR_OK\n");
             _ = preview;
@@ -801,7 +803,7 @@ internal sealed class HelperWindow : Window
         catch (Exception ex)
         {
             var friendly = FriendConnectGuide.FriendlyOrRaw(ex);
-            _status.Text = "连接失败";
+            _status.Text = HelperSessionCopy.StatusConnectFailed;
             _failHint.Text = friendly;
             SetConnectedUi(false);
         }
@@ -850,11 +852,51 @@ internal sealed class HelperWindow : Window
 
     private void Disconnect()
     {
-        try { _client?.Dispose(); } catch { /* ignore */ }
+        _selfDisconnect = true;
+        try
+        {
+            if (_client is not null)
+                _client.ConnectionLost -= OnClientConnectionLost;
+            _client?.Dispose();
+        }
+        catch { /* ignore */ }
         _client = null;
         _uiShotConnected = false;
+        _selfDisconnect = false;
         SetConnectedUi(false);
-        _status.Text = "状态：未连接";
+        _status.Text = HelperSessionCopy.StatusDisconnectedSelf;
+    }
+
+    private void AttachClient(AssistClient client)
+    {
+        if (_client is not null)
+        {
+            try { _client.ConnectionLost -= OnClientConnectionLost; } catch { /* ignore */ }
+            try { _client.Dispose(); } catch { /* ignore */ }
+        }
+        _client = client;
+        _client.ConnectionLost += OnClientConnectionLost;
+    }
+
+    private void OnClientConnectionLost()
+    {
+        if (_selfDisconnect) return;
+        void Apply()
+        {
+            if (_selfDisconnect) return;
+            if (_client is null) return;
+            try { _client.ConnectionLost -= OnClientConnectionLost; } catch { /* ignore */ }
+            try { _client.Dispose(); } catch { /* ignore */ }
+            _client = null;
+            _uiShotConnected = false;
+            SetConnectedUi(false);
+            _status.Text = HelperSessionCopy.StatusPeerEndedAssist;
+            _failHint.Text = "";
+        }
+        if (Dispatcher.UIThread.CheckAccess())
+            Apply();
+        else
+            Dispatcher.UIThread.Post(Apply);
     }
 
     private void UpdateOwnConnectUi()
@@ -1071,14 +1113,14 @@ internal sealed class HelperWindow : Window
                 DeviceId = deviceId
             };
             var client = await AssistClient.PairAsync(opts, "helper-avalonia-owner").ConfigureAwait(true);
-            _client = client;
+            AttachClient(client);
             SetConnectedUi(true);
             _status.Text = "已用你的账号连接，无需再确认配对（写操作仍须对方本机确认）";
             _failHint.Text = "";
         }
         catch (Exception ex)
         {
-            _status.Text = "连接失败";
+            _status.Text = HelperSessionCopy.StatusConnectFailed;
             _failHint.Text = FriendConnectGuide.FriendlyOrRaw(ex);
             SetConnectedUi(false);
         }
@@ -1109,7 +1151,7 @@ internal sealed class HelperWindow : Window
         if (_busy) return;
         if (_client is null)
         {
-            _status.Text = "状态：未连接";
+            _status.Text = HelperSessionCopy.StatusDisconnectedSelf;
             return;
         }
 
@@ -1156,12 +1198,41 @@ internal sealed class HelperWindow : Window
             _output.Text = _output.Text![^100_000..];
     }
 
+
+    /// <summary>UiShot：已连上 + 常用操作可见。</summary>
+    internal void PreparePeerConnectedSessionForShot()
+    {
+        _uiShotConnected = true;
+        SetConnectedUi(true);
+        _status.Text = HelperSessionCopy.StatusConnected;
+        _failHint.Text = "";
+        _output.Text = "PAIR_OK\n";
+    }
+
+    /// <summary>UiShot：对方结束后主状态 + 五键收起。</summary>
+    internal void PreparePeerEndedAssistForShot()
+    {
+        _uiShotConnected = false;
+        SetConnectedUi(false);
+        _status.Text = HelperSessionCopy.StatusPeerEndedAssist;
+        _failHint.Text = "";
+    }
+
+    /// <summary>UiShot：自己断开原文。</summary>
+    internal void PrepareSelfDisconnectedForShot()
+    {
+        _uiShotConnected = false;
+        SetConnectedUi(false);
+        _status.Text = HelperSessionCopy.StatusDisconnectedSelf;
+        _failHint.Text = "";
+    }
+
     /// <summary>UiShot：未连接空态。</summary>
     internal void PrepareIdleForShot()
     {
         _pasteBox.Text = "";
         SetConnectedUi(false);
-        _status.Text = "状态：未连接";
+        _status.Text = HelperSessionCopy.StatusDisconnectedSelf;
         _preview.Text = "粘贴后点「连接」";
         _failHint.Text = "";
     }
@@ -1172,7 +1243,7 @@ internal sealed class HelperWindow : Window
         _pasteBox.Text = shareText;
         RefreshPreview();
         SetConnectedUi(false);
-        _status.Text = "状态：未连接";
+        _status.Text = HelperSessionCopy.StatusDisconnectedSelf;
         _failHint.Text = "";
     }
 
@@ -1180,7 +1251,7 @@ internal sealed class HelperWindow : Window
     internal void PrepareFailForShot(string failMessage)
     {
         SetConnectedUi(false);
-        _status.Text = "连接失败";
+        _status.Text = HelperSessionCopy.StatusConnectFailed;
         _failHint.Text = failMessage;
     }
 
@@ -1188,7 +1259,7 @@ internal sealed class HelperWindow : Window
     internal void PrepareConnectedReadonlyForShot(string output)
     {
         SetConnectedUi(true);
-        _status.Text = "已连接对方电脑";
+        _status.Text = HelperSessionCopy.StatusConnected;
         _failHint.Text = "";
         _output.Text = output;
     }
@@ -1285,7 +1356,7 @@ internal sealed class HelperWindow : Window
     {
         PrepareAccountForShot(selected: true);
         SetConnectedUi(false);
-        _status.Text = "状态：未连接";
+        _status.Text = HelperSessionCopy.StatusDisconnectedSelf;
         _accountStatus.Text = "已登录（截图）";
         _output.Text = "";
     }
@@ -1330,7 +1401,7 @@ internal sealed class HelperWindow : Window
         _preview.Foreground = Brush.Parse("#5F6368");
         _mcpHint.Text = "";
         _failHint.Text = "";
-        _status.Text = "状态：未连接";
+        _status.Text = HelperSessionCopy.StatusDisconnectedSelf;
         Height = Math.Max(Height, 900);
     }
 

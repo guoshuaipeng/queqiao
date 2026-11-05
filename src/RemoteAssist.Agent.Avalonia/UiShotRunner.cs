@@ -6,7 +6,7 @@ using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R031：接受协助端对方连上 / 断开后人话主状态 + 协助方列表（ui-shot）。</summary>
+/// <summary>R035：去协助端对方结束 / 自己断开 / 未连上失败（ui-shot）。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -15,27 +15,29 @@ internal static class UiShotRunner
         await Dispatcher.UIThread.InvokeAsync(() => { });
         await Task.Delay(400).ConfigureAwait(true);
 
-        var host = Program.SharedHost ?? Program.CreateHost();
-        var accept = new MainWindow(host, shotDir: outDir, enableReturnHome: true);
-        accept.Show();
+        var helper = new HelperWindow(shotDir: outDir, enableReturnHome: true);
+        helper.Show();
         await Task.Delay(350).ConfigureAwait(true);
 
-        accept.PreparePeerIdleForShot();
+        helper.PreparePeerConnectedSessionForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r031-avalonia-idle.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r035-avalonia-helper-connected.png")).ConfigureAwait(true);
 
-        accept.PreparePeerConnectedForShot("小明");
+        helper.PreparePeerEndedAssistForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r031-avalonia-peer-connected.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r035-avalonia-helper-peer-ended.png")).ConfigureAwait(true);
 
-        accept.PreparePeerDisconnectedForShot();
+        helper.PrepareSelfDisconnectedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r031-avalonia-peer-disconnected.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r035-avalonia-helper-self-disconnect.png")).ConfigureAwait(true);
 
-        accept.AllowCloseWithoutPrompt();
-        accept.Close();
+        helper.PrepareFailForShot(FriendConnectGuide.FailStaleCode);
+        await Task.Delay(250).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r035-avalonia-helper-connect-failed.png")).ConfigureAwait(true);
 
-        Console.WriteLine("ui-shot r031 written to " + outDir);
+        try { helper.Close(); } catch { /* ignore */ }
+
+        Console.WriteLine("ui-shot r035 written to " + outDir);
         await Task.CompletedTask;
         _ = home;
     }

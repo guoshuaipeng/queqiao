@@ -42,6 +42,7 @@ internal sealed class MainForm : Form
     private AssistClient? _client;
     private readonly HelperUiSettings _settings;
     private bool _busy;
+    private bool _selfDisconnect;
     private readonly bool _enableReturnHome;
     private bool _returningHome;
 
@@ -868,13 +869,13 @@ internal sealed class MainForm : Form
             }
 
             var client = await AssistClient.PairAsync(opts, "helper-ui").ConfigureAwait(true);
-            _client = client;
+            AttachClient(client);
             _settings.LastHost = opts.Host;
             _settings.LastPort = opts.Port;
             _settings.PreferRelay = true;
             _settings.Save();
             SetConnectedUi(true);
-            SetStatus("已连接对方电脑");
+            SetStatus(HelperSessionCopy.StatusConnected);
             AppendOutput("PAIR_OK\r\n");
             ClearFailHint();
             _ = preview;
@@ -882,7 +883,7 @@ internal sealed class MainForm : Form
         catch (Exception ex)
         {
             var friendly = FriendConnectGuide.FriendlyOrRaw(ex);
-            SetStatus("连接失败");
+            SetStatus(HelperSessionCopy.StatusConnectFailed);
             SetFailHint(friendly);
             SetConnectedUi(false);
         }
@@ -899,10 +900,47 @@ internal sealed class MainForm : Form
 
     private void Disconnect()
     {
-        try { _client?.Dispose(); } catch { }
+        _selfDisconnect = true;
+        try
+        {
+            if (_client is not null)
+                _client.ConnectionLost -= OnClientConnectionLost;
+            _client?.Dispose();
+        }
+        catch { /* ignore */ }
+        _client = null;
+        _selfDisconnect = false;
+        SetConnectedUi(false);
+        SetStatus(HelperSessionCopy.StatusDisconnectedSelf);
+    }
+
+    private void AttachClient(AssistClient client)
+    {
+        if (_client is not null)
+        {
+            try { _client.ConnectionLost -= OnClientConnectionLost; } catch { /* ignore */ }
+            try { _client.Dispose(); } catch { /* ignore */ }
+        }
+        _client = client;
+        _client.ConnectionLost += OnClientConnectionLost;
+    }
+
+    private void OnClientConnectionLost()
+    {
+        if (IsDisposed) return;
+        if (InvokeRequired)
+        {
+            try { BeginInvoke(OnClientConnectionLost); } catch { /* closing */ }
+            return;
+        }
+        if (_selfDisconnect) return;
+        if (_client is null) return;
+        try { _client.ConnectionLost -= OnClientConnectionLost; } catch { /* ignore */ }
+        try { _client.Dispose(); } catch { /* ignore */ }
         _client = null;
         SetConnectedUi(false);
-        SetStatus("状态：未连接");
+        SetStatus(HelperSessionCopy.StatusPeerEndedAssist);
+        ClearFailHint();
     }
 
     private void SetConnectedUi(bool connected)
@@ -1115,7 +1153,7 @@ internal sealed class MainForm : Form
                 DeviceId = deviceId
             };
             var client = await AssistClient.PairAsync(opts, "helper-ui-owner").ConfigureAwait(true);
-            _client = client;
+            AttachClient(client);
             SetConnectedUi(true);
             SetStatus("已用你的账号连接，无需再确认配对（写操作仍须对方本机确认）");
         }
@@ -1134,6 +1172,44 @@ internal sealed class MainForm : Form
         _outputBox.AppendText(text);
         if (_outputBox.TextLength > 200_000)
             _outputBox.Text = _outputBox.Text[^100_000..];
+    }
+
+
+    /// <summary>UiShot：已连上对方电脑 + 常用操作可见。</summary>
+    internal void PreparePeerConnectedForShot()
+    {
+        SetConnectedUi(true);
+        SetStatus(HelperSessionCopy.StatusConnected);
+        ClearFailHint();
+        _outputBox.Text = "PAIR_OK\r\n";
+        LayoutForAdvanced();
+    }
+
+    /// <summary>UiShot：对方结束后主状态 + 五键收起。</summary>
+    internal void PreparePeerEndedAssistForShot()
+    {
+        SetConnectedUi(false);
+        SetStatus(HelperSessionCopy.StatusPeerEndedAssist);
+        ClearFailHint();
+        LayoutForAdvanced();
+    }
+
+    /// <summary>UiShot：自己断开 — 原文「状态：未连接」。</summary>
+    internal void PrepareSelfDisconnectedForShot()
+    {
+        SetConnectedUi(false);
+        SetStatus(HelperSessionCopy.StatusDisconnectedSelf);
+        ClearFailHint();
+        LayoutForAdvanced();
+    }
+
+    /// <summary>UiShot：尚未连上失败 — 「连接失败」+ R003 原因句。</summary>
+    internal void PrepareConnectFailedForShot(string failHint)
+    {
+        SetConnectedUi(false);
+        SetStatus(HelperSessionCopy.StatusConnectFailed);
+        SetFailHint(failHint);
+        LayoutForAdvanced();
     }
 
     /// <summary>UiShot：展开常用操作卡并写入输出区（不真连）。</summary>
