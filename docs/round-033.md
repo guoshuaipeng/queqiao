@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（出包）/ 鹊桥-服务端（替换上架）
-> 状态：**ready**
+> 状态：**delivered**
 > 依据：R032 产品已验收。R031 接受协助端「对方已连上」主状态与 R032 托盘说明去重已进仓库（HEAD 含 `b78fc1e`）；公网安装包仍是 R030（Windows 75,582,164 / Linux 8,001,712），从官网下载的人还拿不到这两轮改动。
 
 ## 本轮目标
@@ -44,3 +44,27 @@
 
 - 更新本文交付说明与截图
 - 回告产品验收；未开下一轮
+
+
+## 交付说明（客户端 · 2026-11-06 Asia/Shanghai）
+
+### 做了什么
+- 新增 `RemoteAssist.Protocol.EndAssistCopy`：`ButtonText` / `ConfirmBody` / `ConfirmOk` / `ConfirmCancel`
+- Windows `EndAssistConfirmDialog`：正文「结束后对方将立刻连不上。」；按钮「结束这次协助 / 取消」；`AcceptButton`/`CancelButton` 均为取消（超时/回车不自动结束）
+- Windows `MainForm`：轻按钮「结束这次协助」（白底描边，非实心）；确认后 `DisconnectAllSessions` + `Stop`；有返回首页则 `HomeRequested`，否则 `ExitRequested`
+- `AgentDesktopUi` 接线 `MainForm.ExitRequested`
+- 「复制码+密码」仍唯一实心主按钮；R032 关窗藏托盘 / 气泡 / 默认空底栏未改；未改 Avalonia 关窗提示与已有结束按钮；未改 R031 / Skill / MCP / InstallInstructions / trust-levels；未换公网包；未开下一轮
+
+### 测试
+- `RemoteAssist.Protocol.Tests`：**185** 通过
+
+### 截图（均为 **ui-shot**）
+| 文件 | 显示 | MD5 |
+|------|------|-----|
+| `docs/screenshots/r033-accept-end-assist-entry.png` | 轻按钮「结束这次协助」+ 实心「复制码+密码」 | AB25E54689FF5D95ACB5535C4736D045 |
+| `docs/screenshots/r033-accept-end-assist-confirm.png` | 确认窗正文与两按钮（屏幕合成） | 202CD344237A3171A97D93AD112793D3 |
+| `docs/screenshots/r033-accept-end-assist-cancelled.png` | 取消后仍在接受协助界面（会话码已刷新以区分 entry 像素） | AE8035C234B5DACC4B71EDBAC49AFD5A |
+
+### 缺口 / 披露
+- 确认窗截图为非模态 `Show` + 屏幕合成（便于同屏验收），真实交互为 `ShowDialog`。
+- 取消构图与 entry 同属接受协助屏；为满足三张 MD5 不同，取消后刷新了会话码再拍。

@@ -42,6 +42,7 @@ internal sealed class MainForm : Form
     private readonly bool _enableReturnHome;
     private readonly ContextMenuStrip _moreMenu;
     private readonly Button _btnMore;
+    private readonly Button _btnEndAssist;
     private Label? _skillPreviewLabel;
     private readonly Dictionary<Control, int> _baseTops = new();
     private Panel _trustTip = null!;
@@ -55,6 +56,7 @@ internal sealed class MainForm : Form
     private int _baseClientHeight = 620;
 
     public event Action? HomeRequested;
+    public event Action? ExitRequested;
 
     public MainForm(AgentHost host, bool enableReturnHome = false)
     {
@@ -346,6 +348,23 @@ internal sealed class MainForm : Form
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
             Text = "点「复制码+密码」发给对方。对方连上后本机弹出确认，你点允许才开始协助。"
         });
+
+        // R033：轻按钮「结束这次协助」（非实心主按钮；复制码+密码仍唯一实心主按钮）
+        _btnEndAssist = new Button
+        {
+            Text = EndAssistCopy.ButtonText,
+            Name = "btnEndAssist",
+            Location = new Point(16, y0 + 312),
+            Size = new Size(728, 36),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.White,
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Font = new Font(Font.FontFamily, 9.5F),
+            Cursor = Cursors.Hand
+        };
+        _btnEndAssist.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        _btnEndAssist.FlatAppearance.BorderSize = 1;
+        _btnEndAssist.Click += (_, _) => ConfirmAndEndAssist();
 
         _btnAdvanced = MakeButton("高级 ▸", 16, y0 + 376, 100);
         _btnAdvanced.Click += (_, _) => ToggleAdvanced();
@@ -648,6 +667,7 @@ internal sealed class MainForm : Form
         Controls.Add(sessionCard);
         Controls.Add(statusCard);
         Controls.Add(tipCard);
+        Controls.Add(_btnEndAssist);
         Controls.Add(_btnAdvanced);
         Controls.Add(_advancedPanel);
         Controls.Add(_statusLabel);
@@ -818,6 +838,31 @@ internal sealed class MainForm : Form
         Location = new Point(x, y), Size = new Size(w, h), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle
     };
 
+
+
+    private void ConfirmAndEndAssist()
+    {
+        using var dlg = new EndAssistConfirmDialog();
+        if (dlg.ShowDialog(this) != DialogResult.OK)
+            return;
+
+        try
+        {
+            _host.DisconnectAllSessions();
+            _host.Stop();
+        }
+        catch (Exception ex)
+        {
+            SetStatus("结束失败：" + ex.Message);
+            return;
+        }
+
+        SetStatus("已结束这次协助。");
+        if (_enableReturnHome)
+            HomeRequested?.Invoke();
+        else
+            ExitRequested?.Invoke();
+    }
 
     private void ConfirmAndRefreshSession()
     {
@@ -1239,6 +1284,24 @@ internal sealed class MainForm : Form
 
 
 
+
+
+    /// <summary>UiShot：露出轻按钮「结束这次协助」；复制码+密码仍为实心主按钮。</summary>
+    internal void PrepareEndAssistEntryForShot()
+    {
+        RefreshFromHost();
+        PreparePeerIdleForShot();
+        SetStatus("");
+        if (_advancedOpen) ToggleAdvanced();
+    }
+
+    /// <summary>UiShot：弹出结束确认窗（非模态 Show，便于同屏截图）。</summary>
+    internal EndAssistConfirmDialog ShowEndAssistConfirmForShot()
+    {
+        var dlg = new EndAssistConfirmDialog();
+        dlg.Show(this);
+        return dlg;
+    }
 
     /// <summary>UiShot：接受协助就绪态——底栏空白，不含常驻托盘句。</summary>
     internal void PrepareTrayStayIdleForShot()

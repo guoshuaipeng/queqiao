@@ -33,6 +33,7 @@ internal sealed class AgentDesktopUi : IDisposable
         _mainForm = new MainForm(host, enableReturnHome);
         if (enableReturnHome)
             _mainForm.HomeRequested += TryReturnHome;
+        _mainForm.ExitRequested += () => ExitRequested?.Invoke();
 
         _clientsMenu = new ToolStripMenuItem("已配对客户端");
 
