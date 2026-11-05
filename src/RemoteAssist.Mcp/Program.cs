@@ -7,8 +7,8 @@ namespace RemoteAssist.Mcp;
 
 /// <summary>
 /// Minimal MCP server over stdio (JSON-RPC 2.0, Content-Length framing).
-/// Env: REMOTE_ASSIST_HOST, REMOTE_ASSIST_PORT, REMOTE_ASSIST_CODE, REMOTE_ASSIST_PERM
-/// Or first argv: --host --port --code --perm
+/// 启动时自动配对；支持整段 remoteassist:pair 载荷或 host+code+port。
+/// 详见 AssistConnectOptions / README「MCP」一节。
 /// </summary>
 internal static class Program
 {
@@ -20,36 +20,36 @@ internal static class Program
         Console.InputEncoding = Encoding.UTF8;
         Console.OutputEncoding = Encoding.UTF8;
 
-        var host = EnvOr("REMOTE_ASSIST_HOST", "127.0.0.1");
-        var port = int.TryParse(EnvOr("REMOTE_ASSIST_PORT", "17890"), out var p) ? p : 17890;
-        var code = EnvOr("REMOTE_ASSIST_CODE", "");
-        var perm = Enum.TryParse(EnvOr("REMOTE_ASSIST_PERM", "Assist"), true, out PermissionLevel pl)
-            ? pl
-            : PermissionLevel.Assist;
-
-        for (var i = 0; i < args.Length; i++)
+        if (args.Any(a => a is "-h" or "--help" or "help"))
         {
-            if (args[i] == "--host" && i + 1 < args.Length) host = args[++i];
-            else if (args[i] == "--port" && i + 1 < args.Length) port = int.Parse(args[++i]);
-            else if (args[i] == "--code" && i + 1 < args.Length) code = args[++i];
-            else if (args[i] == "--perm" && i + 1 < args.Length) perm = Enum.Parse<PermissionLevel>(args[++i], true);
+            await Console.Error.WriteLineAsync("RemoteAssist MCP (stdio)").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync(AssistConnectOptions.UsageText).ConfigureAwait(false);
+            Environment.Exit(0);
         }
 
-        // MCP uses stdout for protocol; log to stderr
-        if (string.IsNullOrWhiteSpace(code))
+        if (!AssistConnectOptions.TryParse(args, Environment.GetEnvironmentVariable, out var opts, out var parseError))
         {
-            await Console.Error.WriteLineAsync("REMOTE_ASSIST_CODE / --code 必填").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync("[mcp] 启动参数错误:").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync(parseError).ConfigureAwait(false);
             Environment.Exit(2);
         }
 
         try
         {
-            _client = await AssistClient.PairAsync(host, port, code, perm, "mcp").ConfigureAwait(false);
-            await Console.Error.WriteLineAsync($"[mcp] paired perm={_client.Permission}").ConfigureAwait(false);
+            _client = await AssistClient.PairAsync(opts.Host, opts.Port, opts.Code, opts.Permission, "mcp")
+                .ConfigureAwait(false);
+            await Console.Error.WriteLineAsync(
+                    $"[mcp] paired {opts.Host}:{opts.Port} perm={_client.Permission}")
+                .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            await Console.Error.WriteLineAsync("[mcp] pair failed: " + ex.Message).ConfigureAwait(false);
+            await Console.Error.WriteLineAsync("[mcp] 配对失败: " + ex.Message).ConfigureAwait(false);
+            await Console.Error.WriteLineAsync(
+                    $"  目标 {opts.Host}:{opts.Port} code={opts.Code} perm={opts.Permission}").ConfigureAwait(false);
+            await Console.Error.WriteLineAsync(
+                    "  请确认 Agent 已在局域网启动，会话码未过期，且本机已在 Agent 确认配对。")
+                .ConfigureAwait(false);
             Environment.Exit(3);
         }
 
@@ -72,7 +72,7 @@ internal static class Program
             if (method is null)
                 continue;
 
-            // notifications (no id) — ignore except initialized
+            // notifications (no id)
             if (id is null)
                 continue;
 
@@ -212,9 +212,6 @@ internal static class Program
             isError = false
         };
     }
-
-    private static string EnvOr(string key, string fallback) =>
-        Environment.GetEnvironmentVariable(key) is { Length: > 0 } v ? v : fallback;
 
     private static async Task<string?> ReadLspMessageAsync(Stream input)
     {

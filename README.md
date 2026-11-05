@@ -20,7 +20,7 @@
 - `src/RemoteAssist.Protocol` — 共享消息 / 权限 / 会话契约 / TCP 帧 / 客户端 / 二维码载荷 / 局域网地址筛选
 - `src/RemoteAssist.Agent` — 被协助端（会话码、**托盘常驻**、确认窗口、审计日志）
 - `src/RemoteAssist.Helper` — 协助端 CLI（支持整段 QR 载荷 / `--payload` / `--clipboard`）
-- `src/RemoteAssist.Mcp` — stdio MCP Server
+- `src/RemoteAssist.Mcp` — stdio MCP Server（支持整段载荷 / host+code；见 docs/MCP.md）
 - `src/RemoteAssist.Relay.Stub` — 公网中继 TODO
 - `tests/RemoteAssist.Protocol.Tests` — 基础单元测试
 
@@ -107,9 +107,18 @@ helper> run echo hello-from-remote-assist
 
 ### MCP（stdio）
 
-先启动 Agent，再由宿主拉起：
+详细说明见 [docs/MCP.md](docs/MCP.md)（含 Cursor `mcp.json` 示例）。
+
+先启动 Agent，再由宿主拉起。**推荐整段载荷**（与会话窗「复制载荷」一致）：
 
 ```powershell
+$env:REMOTE_ASSIST_PAYLOAD = "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=<会话码>"
+dotnet run --project src/RemoteAssist.Mcp --no-build
+
+# 或启动参数：
+dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=ABC123"
+
+# 仍支持 host+code：
 $env:REMOTE_ASSIST_HOST = "127.0.0.1"
 $env:REMOTE_ASSIST_PORT = "17890"
 $env:REMOTE_ASSIST_CODE = "<会话码>"
@@ -117,7 +126,8 @@ $env:REMOTE_ASSIST_PERM = "Assist"
 dotnet run --project src/RemoteAssist.Mcp --no-build
 ```
 
-工具：`list_processes` / `read_log_tail` / `list_dir` / `read_file` / `run_command`（需确认）。
+工具：`list_processes` / `read_log_tail` / `list_dir` / `read_file` / `run_command`（需确认，MCP 不可绕过）。  
+缺参 / 坏载荷 / 配对失败会写 stderr 并分别以退出码 `2` / `3` 退出。
 
 ## 审计日志
 
@@ -148,6 +158,33 @@ dotnet run --project src/RemoteAssist.Helper -- oneshot 127.0.0.1 <会话码> --
 dotnet run --project src/RemoteAssist.Agent -- --headless --confirm-timeout 30
 ```
 
+
+## 分发 Agent（给亲友拷贝）
+
+自包含单文件（推荐，目标机通常无需再装 .NET）：
+
+```powershell
+.\scripts\publish-agent.ps1
+# 产物目录：artifacts\agent-win-x64-sc\
+# 主程序：RemoteAssist.Agent.exe
+```
+
+等价命令：
+
+```powershell
+dotnet publish src/RemoteAssist.Agent -c Release -r win-x64 --self-contained true `
+  -o artifacts/agent-win-x64-sc `
+  /p:PublishSingleFile=true `
+  /p:IncludeNativeLibrariesForSelfExtract=true `
+  /p:EnableCompressionInSingleFile=true
+```
+
+若自包含体积过大，可用框架依赖版（目标机需 [.NET 8 Desktop Runtime x64](https://dotnet.microsoft.com/download/dotnet/8.0)）：
+
+```powershell
+.\scripts\publish-agent.ps1 -FrameworkDependent
+# 产物：artifacts\agent-win-x64-fd\
+```
 ## 已知限制（v1）
 
 - 无 TLS / 无端到端加密（仅信任局域网）
