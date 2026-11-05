@@ -25,7 +25,8 @@
 | R014 | 高频：Avalonia 账号登录免密连自有设备；打磨：最近审计人话 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-014.md` |
 | R015 | 高频：Avalonia 设备列表人话（隐藏内部 id）+ 免密连接可点击态；打磨：免密连上后常用操作可用 | 鹊桥-客户端 | **done（产品已验收）** | `docs/round-015.md` |
 | R016 | 高频：Avalonia 协助端连上后五键白话 + 引导 + 已连接按钮权重；打磨：文件夹/文件路径轻量输入 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-016.md` |
-| R017 | 高频：Avalonia MCP 安装说明；打磨：复制后人话反馈 | 鹊桥-客户端 | **ready-for-product** | `docs/round-017.md` |
+| R017 | 高频：Avalonia MCP 安装说明；打磨：复制后人话反馈 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-017.md` |
+| R018 | 高频：接受协助端可选 MCP 说明；打磨：复制 MCP 配置后人话反馈 | 鹊桥-客户端 | **wip** | `docs/round-018.md` |
 
 ## P0 — 可演示闭环（不后挪）
 
@@ -51,7 +52,7 @@
 
 ## 平台 — macOS / Linux（2026-11-05 起，不抢 P0）
 
-场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 已产品验收 Avalonia 信任等级 + Windows P2-7；R013 已产品验收 Avalonia 已确认改动回看 + 刷新确认；R014 已产品验收 Avalonia 账号登录免密 + 审计人话（edddc11，2026-11-05）；R015 已产品验收 Avalonia 设备列表人话与免密连接可点击态（e11a8a7，2026-11-05）；R016 已产品验收 Avalonia 协助端连上后五键白话对齐（f083f51，2026-11-05）；R017 Avalonia MCP / 复制安装说明已交付待产品验收（见 `docs/round-017.md`）；未开下一轮。
+场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 已产品验收 Avalonia 信任等级 + Windows P2-7；R013 已产品验收 Avalonia 已确认改动回看 + 刷新确认；R014 已产品验收 Avalonia 账号登录免密 + 审计人话（edddc11，2026-11-05）；R015 已产品验收 Avalonia 设备列表人话与免密连接可点击态（e11a8a7，2026-11-05）；R016 已产品验收 Avalonia 协助端连上后五键白话对齐（f083f51，2026-11-05）；R017 已产品验收 Avalonia 去协助端 MCP / 复制安装说明（5bcab34，2026-11-05）；下一步 R018 接受协助端可选 MCP 说明。
 
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
