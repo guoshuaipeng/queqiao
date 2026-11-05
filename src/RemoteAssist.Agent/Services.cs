@@ -115,7 +115,7 @@ internal sealed record AuditEntry(string Raw, string Timestamp, string EventType
                 "tool_ok" => "工具成功",
                 "tool_error" => "工具失败",
                 "tool_confirmed" => "已确认执行",
-                "tool_denied_user" => "用户拒绝执行",
+                "tool_denied_user" => WriteConfirmCopy.DeniedMessage,
                 "tool_denied_perm" => "权限不足",
                 "tool_admin_auto" => "管理员自动执行",
                 "session_refresh" => "刷新会话码",

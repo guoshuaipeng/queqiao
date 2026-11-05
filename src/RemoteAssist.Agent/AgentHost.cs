@@ -700,25 +700,25 @@ internal sealed class AgentHost
 
         if (ToolCapabilities.RequiresConfirmation(tool, session.Permission))
         {
-            var summary = BuildSummary(tool, args);
-            var info = new ConfirmRequestInfo(source, tool.ToString(), summary, _confirmTimeoutSeconds);
+            var desc = WriteConfirmCopy.Describe(tool, args);
+            var info = new ConfirmRequestInfo(source, tool.ToString(), desc.Headline, _confirmTimeoutSeconds, desc.Detail);
             var outcome = await ConfirmPrompt.AskAsync(info, _autoYes, _headless).ConfigureAwait(false);
             if (!outcome.Approved)
             {
-                _audit.Write("tool_denied_user", outcome.AuditDetail(tool.ToString(), summary, source));
+                _audit.Write("tool_denied_user", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
                 var err = outcome.Decision == ConfirmDecision.TimedOut
-                    ? "确认超时，已自动拒绝"
-                    : "用户拒绝执行";
+                    ? WriteConfirmCopy.TimedOutMessage
+                    : WriteConfirmCopy.DeniedMessage;
                 await FrameIo.WriteAsync(stream, "tool_result",
                     new ToolResponse { Ok = false, Error = err, DeniedByUser = true },
                     id: envelope.Id).ConfigureAwait(false);
                 return;
             }
-            _audit.Write("tool_confirmed", outcome.AuditDetail(tool.ToString(), summary, source));
+            _audit.Write("tool_confirmed", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
         }
         else if (!ToolCapabilities.IsReadOnly(tool) && session.Permission == PermissionLevel.Admin)
         {
-            _audit.Write("tool_admin_auto", $"tool={tool}; source={source}; {BuildSummary(tool, args)}");
+            _audit.Write("tool_admin_auto", $"tool={tool}; source={source}; {WriteConfirmCopy.Describe(tool, args).ForAudit}");
         }
 
         try
@@ -772,15 +772,8 @@ internal sealed class AgentHost
         throw new ArgumentException($"缺少参数: {key}");
     }
 
-    private static string BuildSummary(ToolKind tool, Dictionary<string, string?> args) =>
-        tool switch
-        {
-            ToolKind.RunCommand => $"RunCommand: {GetArgOr(args, "command", "?")}",
-            _ => $"{tool}: {JsonSerializer.Serialize(args)}"
-        };
 
-    private static string GetArgOr(Dictionary<string, string?> args, string key, string fallback) =>
-        args.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v! : fallback;
+
 }
 
 

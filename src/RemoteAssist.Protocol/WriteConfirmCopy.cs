@@ -1,0 +1,137 @@
+namespace RemoteAssist.Protocol;
+
+/// <summary>
+/// R004：写操作确认窗白话 + 协助端安装说明文案。界面禁止出现 Assist / MCP / ownerLink / TLS。
+/// </summary>
+public sealed record WriteConfirmDescription(string Headline, string? Detail = null)
+{
+    /// <summary>审计/单行摘要：人话为主，细节附后。</summary>
+    public string ForAudit =>
+        string.IsNullOrWhiteSpace(Detail) ? Headline : $"{Headline} · {Detail}";
+}
+
+public static class WriteConfirmCopy
+{
+    public const string DialogTitle = "对方想在这台电脑执行操作";
+
+    public const string DeniedMessage = "已拒绝，未做任何改动";
+
+    public const string TimedOutMessage = "确认超时，未做任何改动";
+
+    public const string AllowButton = "允许";
+
+    public const string DenyButton = "拒绝";
+
+    /// <summary>复制安装说明后的界面提示（剪贴板仍是三行原文）。</summary>
+    public const string InstallCopiedHint = "请把安装包和这段说明一起发出去";
+
+    /// <summary>协助端「复制安装说明」剪贴板正文（三行，不含端口/放行入站）。</summary>
+    public const string InstallInstructions =
+        "我发你一个安装包，打开装上就行，名字叫「鹊桥远程协助」。\n" +
+        "装好后打开，选「接受协助」，再点「复制码+密码」，把复制出来的发给我。\n" +
+        "如果电脑问是否允许连网，点「允许」。";
+
+    public static string InstallInstructionsClipboard =>
+        InstallInstructions.Replace("\n", Environment.NewLine);
+
+    public static WriteConfirmDescription Describe(ToolKind tool, IReadOnlyDictionary<string, string?>? args = null)
+    {
+        args ??= new Dictionary<string, string?>();
+        return tool switch
+        {
+            ToolKind.RunCommand => DescribeRun(GetArgRaw(args, "command")),
+            ToolKind.ReadFile => new WriteConfirmDescription(
+                "读取一个文件",
+                DetailPath(GetArgRaw(args, "path"))),
+            ToolKind.ReadLogTail => new WriteConfirmDescription(
+                "查看一段日志",
+                DetailPath(GetArgRaw(args, "path"))),
+            ToolKind.ListDir => new WriteConfirmDescription(
+                "查看一个文件夹",
+                DetailPath(GetArgRaw(args, "path"))),
+            ToolKind.ListProcesses => new WriteConfirmDescription("查看正在运行的程序列表"),
+            _ => new WriteConfirmDescription("执行一项电脑操作")
+        };
+    }
+
+    /// <summary>兼容只需要单行人话+细节拼在一起的场景。</summary>
+    public static string DescribeText(ToolKind tool, IReadOnlyDictionary<string, string?>? args = null) =>
+        Describe(tool, args).ForAudit;
+
+    public static WriteConfirmDescription DescribeFromToolName(string? toolName, IReadOnlyDictionary<string, string?>? args = null)
+    {
+        if (Enum.TryParse<ToolKind>(toolName, true, out var tool))
+            return Describe(tool, args);
+        return new WriteConfirmDescription("执行一项电脑操作");
+    }
+
+    public static string CountdownText(int seconds) =>
+        $"若不操作，将在 {Math.Max(0, seconds)} 秒后自动拒绝";
+
+    public static bool ContainsBannedUiTerm(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return false;
+        return text.Contains("Assist", StringComparison.Ordinal) ||
+               text.Contains("MCP", StringComparison.Ordinal) ||
+               text.Contains("ownerLink", StringComparison.OrdinalIgnoreCase) ||
+               text.Contains("TLS", StringComparison.Ordinal);
+    }
+
+    private static WriteConfirmDescription DescribeRun(string? command)
+    {
+        if (string.IsNullOrWhiteSpace(command))
+            return new WriteConfirmDescription("运行一条命令");
+
+        var trimmed = command.Trim();
+        if (LooksLikeDelete(trimmed))
+        {
+            return new WriteConfirmDescription(
+                "删除一个文件或文件夹",
+                $"命令：{Truncate(trimmed, 160)}");
+        }
+
+        if (LooksLikeListProcesses(trimmed))
+        {
+            return new WriteConfirmDescription(
+                "运行一条命令，列出当前进程",
+                $"命令：{Truncate(trimmed, 160)}");
+        }
+
+        return new WriteConfirmDescription(
+            "运行一条命令",
+            $"命令：{Truncate(trimmed, 160)}");
+    }
+
+    private static bool LooksLikeDelete(string command)
+    {
+        var lower = command.ToLowerInvariant();
+        return lower.Contains("del ") ||
+               lower.StartsWith("del ", StringComparison.Ordinal) ||
+               lower.Contains("rmdir") ||
+               lower.Contains("remove-item") ||
+               lower.Contains("rm -") ||
+               lower.Contains(" erase ") ||
+               lower.StartsWith("erase ", StringComparison.Ordinal);
+    }
+
+    private static bool LooksLikeListProcesses(string command)
+    {
+        var lower = command.ToLowerInvariant();
+        return lower.Contains("tasklist") ||
+               lower.Contains("get-process") ||
+               lower.Contains("ps aux") ||
+               lower == "ps";
+    }
+
+    private static string? DetailPath(string? path) =>
+        string.IsNullOrWhiteSpace(path) ? null : $"路径：{Truncate(path.Trim(), 160)}";
+
+    private static string Truncate(string s, int max)
+    {
+        if (s.Length <= max) return s;
+        return s[..(max - 1)] + "…";
+    }
+
+    private static string? GetArgRaw(IReadOnlyDictionary<string, string?> args, string key) =>
+        args.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v : null;
+}

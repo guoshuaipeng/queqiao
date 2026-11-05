@@ -55,7 +55,7 @@ internal sealed class MainForm : Form
         MaximizeBox = false;
         MinimizeBox = true;
         StartPosition = FormStartPosition.Manual;
-        ClientSize = new Size(780, 820);
+        ClientSize = new Size(780, 870);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
@@ -109,12 +109,31 @@ internal sealed class MainForm : Form
             btnHome.BringToFront();
         }
 
-        var pairCard = MakeCard(16, 80, 748, 200);
+        var pairCard = MakeCard(16, 80, 748, 250);
         pairCard.Controls.Add(SectionTitle("1. 配对", 12, 10));
         pairCard.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(16, 40),
+            Size = new Size(420, 20),
+            Text = "先让对方装好「鹊桥远程协助」",
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
+        });
+
+        var btnInstallGuide = MakeButton("复制安装说明", 450, 34, 140);
+        btnInstallGuide.Height = 34;
+        btnInstallGuide.Font = new Font(Font.FontFamily, 10F, FontStyle.Bold);
+        btnInstallGuide.BackColor = Color.FromArgb(0x1A, 0x73, 0xE8);
+        btnInstallGuide.ForeColor = Color.White;
+        btnInstallGuide.FlatStyle = FlatStyle.Flat;
+        btnInstallGuide.FlatAppearance.BorderSize = 0;
+        btnInstallGuide.Click += (_, _) => CopyInstallInstructions();
+        pairCard.Controls.Add(btnInstallGuide);
+
+        pairCard.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 78),
             Size = new Size(560, 20),
             Text = "粘贴对方发来的会话码和验证密码",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
@@ -122,7 +141,7 @@ internal sealed class MainForm : Form
 
         _inputBox = new TextBox
         {
-            Location = new Point(16, 64),
+            Location = new Point(16, 102),
             Size = new Size(600, 52),
             Font = new Font("Consolas", 9.5F),
             Multiline = true,
@@ -132,7 +151,7 @@ internal sealed class MainForm : Form
         _inputBox.TextChanged += (_, _) => OnInputChanged();
         pairCard.Controls.Add(_inputBox);
 
-        var btnClip = MakeButton("从剪贴板", 626, 64, 100);
+        var btnClip = MakeButton("从剪贴板", 626, 102, 100);
         btnClip.Height = 52;
         btnClip.Click += (_, _) => PasteClipboard();
         pairCard.Controls.Add(btnClip);
@@ -140,7 +159,7 @@ internal sealed class MainForm : Form
         // password kept for advanced/manual; auto-filled by share paste
         _pwdBox = new TextBox
         {
-            Location = new Point(16, 124),
+            Location = new Point(16, 164),
             Size = new Size(200, 26),
             Font = new Font("Consolas", 9.5F),
             Visible = false
@@ -151,7 +170,7 @@ internal sealed class MainForm : Form
         _previewLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 124),
+            Location = new Point(16, 164),
             Size = new Size(440, 28),
             Font = new Font(Font.FontFamily, 9F),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
@@ -159,7 +178,7 @@ internal sealed class MainForm : Form
         };
         pairCard.Controls.Add(_previewLabel);
 
-        _btnConnect = MakeButton("连接", 470, 122, 100);
+        _btnConnect = MakeButton("连接", 470, 162, 100);
         _btnConnect.Height = 32;
         _btnConnect.BackColor = Color.FromArgb(0x0F, 0x9D, 0x58);
         _btnConnect.ForeColor = Color.White;
@@ -167,7 +186,7 @@ internal sealed class MainForm : Form
         _btnConnect.Click += async (_, _) => await ConnectAsync().ConfigureAwait(true);
         pairCard.Controls.Add(_btnConnect);
 
-        _btnDisconnect = MakeButton("断开", 580, 122, 70);
+        _btnDisconnect = MakeButton("断开", 580, 162, 70);
         _btnDisconnect.Height = 32;
         _btnDisconnect.Enabled = false;
         _btnDisconnect.Click += (_, _) => Disconnect();
@@ -176,19 +195,19 @@ internal sealed class MainForm : Form
         _failHintLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 158),
-            Size = new Size(710, 32),
+            Location = new Point(16, 200),
+            Size = new Size(710, 36),
             ForeColor = Color.FromArgb(0xC5, 0x22, 0x1F),
             Text = ""
         };
         pairCard.Controls.Add(_failHintLabel);
         Controls.Add(pairCard);
 
-        _btnAdvanced = MakeButton("高级 ▸", 16, 290, 100);
+        _btnAdvanced = MakeButton("高级 ▸", 16, 340, 100);
         _btnAdvanced.Click += (_, _) => ToggleAdvanced();
         Controls.Add(_btnAdvanced);
 
-        _advancedPanel = MakeCard(16, 326, 748, 150);
+        _advancedPanel = MakeCard(16, 376, 748, 150);
         _advancedPanel.Visible = false;
         _advancedPanel.Controls.Add(new Label
         {
@@ -295,7 +314,7 @@ internal sealed class MainForm : Form
         _advancedPanel.Controls.Add(btnSaveRelay);
         Controls.Add(_advancedPanel);
 
-        var toolTop = 292;
+        var toolTop = 342;
         var toolCard = MakeCard(16, toolTop, 748, 250);
         toolCard.Name = "tool";
         toolCard.Controls.Add(SectionTitle("2. 常用操作（连接后）", 12, 10));
@@ -374,7 +393,7 @@ internal sealed class MainForm : Form
         };
         Controls.Add(toolCard);
 
-        var settingsCard = MakeCard(16, 558, 748, 220);
+        var settingsCard = MakeCard(16, 608, 748, 220);
         settingsCard.Name = "settings";
         settingsCard.Controls.Add(SectionTitle("3. 账号（可选）", 12, 10));
         settingsCard.Controls.Add(new Label
@@ -426,14 +445,14 @@ internal sealed class MainForm : Form
         {
             if (c.Name is "tool" or "settings")
             {
-                // base positions: tool=292, settings=558 when advanced closed under btn at 290
+                // base positions: tool=342, settings=608 when advanced closed under btn at 340
             }
         }
         var tool = Controls.Find("tool", false).FirstOrDefault();
         var settings = Controls.Find("settings", false).FirstOrDefault();
-        if (tool is not null) tool.Top = 292 + shift;
-        if (settings is not null) settings.Top = 558 + shift;
-        ClientSize = new Size(780, 820 + shift);
+        if (tool is not null) tool.Top = 342 + shift;
+        if (settings is not null) settings.Top = 608 + shift;
+        ClientSize = new Size(780, 870 + shift);
     }
 
     private static Panel MakeCard(int x, int y, int w, int h) => new()
@@ -458,6 +477,21 @@ internal sealed class MainForm : Form
         Text = text, Location = new Point(x, y), Size = new Size(w, 28), FlatStyle = FlatStyle.System
     };
 
+
+    private void CopyInstallInstructions()
+    {
+        try
+        {
+            Clipboard.SetText(WriteConfirmCopy.InstallInstructionsClipboard);
+            _previewLabel.Text = WriteConfirmCopy.InstallCopiedHint;
+            _previewLabel.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+            SetFailHint("");
+        }
+        catch (Exception ex)
+        {
+            SetFailHint("复制失败：" + ex.Message);
+        }
+    }
     private void PasteClipboard()
     {
         try
@@ -721,7 +755,7 @@ internal sealed class MainForm : Form
             if (!resp.Ok)
             {
                 var msg = resp.Error ?? "失败";
-                if (resp.DeniedByUser) msg = "对方拒绝：" + msg;
+                if (resp.DeniedByUser) msg = WriteConfirmCopy.DeniedMessage;
                 SetStatus(msg);
                 AppendOutput($"[{tool}] FAIL: {msg}\r\n");
                 return;

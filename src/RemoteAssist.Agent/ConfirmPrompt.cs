@@ -133,6 +133,11 @@ internal static class ConfirmPrompt
                 else
                 {
                     result = new ConfirmOutcome(false, ConfirmChannel.Ui, ConfirmDecision.Denied, now);
+                    MessageBox.Show(
+                        WriteConfirmCopy.DeniedMessage,
+                        WriteConfirmCopy.DialogTitle,
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
@@ -194,24 +199,25 @@ internal static class ConfirmPrompt
     private static ConfirmOutcome AskConsole(ConfirmRequestInfo info)
     {
         Console.WriteLine();
-        Console.WriteLine("!!!!!!!! 需要确认的操作 !!!!!!!!");
-        Console.WriteLine($"来源: {info.Source}");
-        Console.WriteLine($"工具: {info.Tool}");
-        Console.WriteLine($"详情: {info.Summary}");
+        Console.WriteLine(WriteConfirmCopy.DialogTitle);
+        Console.WriteLine(info.Headline);
+        if (!string.IsNullOrWhiteSpace(info.Detail))
+            Console.WriteLine(info.Detail);
         Console.WriteLine($"超时: {info.TimeoutSeconds}s（无输入则自动拒绝）");
-        Console.Write("是否允许执行? [Y/N] > ");
+        Console.Write("允许吗? [Y/N] > ");
 
         var answer = ReadLineWithTimeout(TimeSpan.FromSeconds(info.TimeoutSeconds));
         var now = DateTimeOffset.UtcNow;
         if (answer is null)
         {
-            Console.WriteLine("（超时，自动拒绝）");
+            Console.WriteLine($"（{WriteConfirmCopy.TimedOutMessage}）");
             return new ConfirmOutcome(false, ConfirmChannel.Console, ConfirmDecision.TimedOut, now);
         }
 
         var ans = answer.Trim().ToUpperInvariant();
         if (ans is "Y" or "YES")
             return new ConfirmOutcome(true, ConfirmChannel.Console, ConfirmDecision.Approved, now);
+        Console.WriteLine(WriteConfirmCopy.DeniedMessage);
         return new ConfirmOutcome(false, ConfirmChannel.Console, ConfirmDecision.Denied, now);
     }
 

@@ -30,7 +30,11 @@ internal sealed record ConfirmRequestInfo(
     string Source,
     string Tool,
     string Summary,
-    int TimeoutSeconds);
+    int TimeoutSeconds,
+    string? Detail = null)
+{
+    public string Headline => string.IsNullOrWhiteSpace(Summary) ? "执行一项电脑操作" : Summary;
+}
 
 internal sealed record PairRequestInfo(
     string RemoteEndpoint,
