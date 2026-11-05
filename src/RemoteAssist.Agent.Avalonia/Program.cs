@@ -89,6 +89,7 @@ internal static class Program
     public static AgentHost CreateHost()
     {
         var audit = new AuditLog(_auditPath);
+        var settings = HelperUiSettings.Load();
         return new AgentHost(
             _port,
             autoYes: _autoYes,
@@ -99,7 +100,10 @@ internal static class Program
             insecure: _insecure,
             preferRelay: true,
             enableLanListen: _enableLan,
-            relayEndpoint: _relayEndpoint);
+            relayEndpoint: _relayEndpoint ?? settings.RelayEndpoint,
+            accountToken: settings.AccountToken,
+            deviceId: settings.DeviceId,
+            deviceDisplayName: settings.DeviceDisplayName ?? Environment.MachineName);
     }
 
     public static void EnsureHostStarted()

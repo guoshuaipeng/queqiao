@@ -28,6 +28,10 @@ internal sealed class MainWindow : Window
     private readonly ScrollViewer _scroll;
     private readonly ListBox _confirmedList;
     private readonly ListBox _auditList;
+    private TextBox _accountUserBox = null!;
+    private TextBox _accountPassBox = null!;
+    private TextBlock _accountBindStatus = null!;
+    private readonly HelperUiSettings _settings;
     private bool _advancedOpen;
     private bool _suppressTrustRadio;
     private bool _ending;
@@ -38,6 +42,7 @@ internal sealed class MainWindow : Window
         _host = host;
         _shotMode = shotDir is not null;
         _enableReturnHome = enableReturnHome;
+        _settings = HelperUiSettings.Load();
 
         Title = "鹊桥远程协助";
         Width = 520;
@@ -238,6 +243,67 @@ internal sealed class MainWindow : Window
         radioAsk.IsCheckedChanged += OnTrustRadioChanged;
         radioRelaxed.IsCheckedChanged += OnTrustRadioChanged;
         radioFullTrust.IsCheckedChanged += OnTrustRadioChanged;
+
+        // R014：被控登录绑定账号 → 设备上线（与 Windows HelperUiSettings + AgentHost 约定一致）
+        stack.Children.Add(new TextBlock
+        {
+            Name = "accountBindTitle",
+            Text = "账号（可选）",
+            FontWeight = FontWeight.SemiBold,
+            FontSize = 14,
+            Margin = new Thickness(0, 8, 0, 0)
+        });
+        stack.Children.Add(new TextBlock
+        {
+            Name = "accountBindBlurb",
+            Text = "登录后，这台电脑会出现在该账号的设备列表里，方便你从另一台免密连过来。",
+            FontSize = 12,
+            Foreground = Brush.Parse("#5F6368"),
+            TextWrapping = TextWrapping.Wrap
+        });
+        var accRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        accRow.Children.Add(new TextBlock
+        {
+            Name = "accountUserLabel",
+            Text = "账号",
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        _accountUserBox = new TextBox
+        {
+            Name = "accountUserBox",
+            Width = 120,
+            Text = _settings.AccountUser ?? ""
+        };
+        accRow.Children.Add(_accountUserBox);
+        accRow.Children.Add(new TextBlock
+        {
+            Name = "accountPassLabel",
+            Text = "密码",
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        _accountPassBox = new TextBox
+        {
+            Name = "accountPassBox",
+            Width = 120,
+            PasswordChar = '●'
+        };
+        accRow.Children.Add(_accountPassBox);
+        var btnAccLogin = new Button { Name = "accountBindLoginBtn", Content = "登录", Width = 60, Height = 32 };
+        btnAccLogin.Click += async (_, _) => await BindAccountAsync(register: false);
+        accRow.Children.Add(btnAccLogin);
+        var btnAccReg = new Button { Name = "accountBindRegisterBtn", Content = "注册", Width = 60, Height = 32 };
+        btnAccReg.Click += async (_, _) => await BindAccountAsync(register: true);
+        accRow.Children.Add(btnAccReg);
+        stack.Children.Add(accRow);
+        _accountBindStatus = new TextBlock
+        {
+            Name = "accountBindStatus",
+            Text = _host.AccountBound ? "已绑定账号，本机可出现在设备列表" : "尚未绑定账号",
+            FontSize = 12,
+            Foreground = Brush.Parse("#5F6368"),
+            TextWrapping = TextWrapping.Wrap
+        };
+        stack.Children.Add(_accountBindStatus);
 
         stack.Children.Add(new TextBlock
         {
@@ -558,6 +624,55 @@ internal sealed class MainWindow : Window
         }
     }
 
+
+    private async Task BindAccountAsync(bool register)
+    {
+        var user = _accountUserBox.Text?.Trim() ?? "";
+        var pass = _accountPassBox.Text ?? "";
+        if (user.Length == 0 || pass.Length == 0)
+        {
+            _accountBindStatus.Text = "请填写用户名和密码";
+            return;
+        }
+
+        var ep = string.IsNullOrWhiteSpace(_settings.RelayEndpoint)
+            ? RelayEndpoint.DefaultEndpoint
+            : _settings.RelayEndpoint!;
+        if (!RelayEndpoint.TryParse(ep, out var host, out var port, out var err))
+        {
+            _accountBindStatus.Text = err;
+            return;
+        }
+
+        if (_shotMode)
+        {
+            _settings.AccountUser = user;
+            _settings.AccountToken = "shot-token";
+            _settings.DeviceDisplayName = Environment.MachineName;
+            _settings.Save();
+            try { _host.BindAccount("shot-token"); } catch { /* ignore */ }
+            _accountBindStatus.Text = "已绑定账号（截图）";
+            return;
+        }
+
+        try
+        {
+            var tok = await RelayClient.AuthAsync(host, port, register, user, pass).ConfigureAwait(true);
+            _settings.AccountUser = user;
+            _settings.AccountToken = tok;
+            _settings.RelayEndpoint = $"{host}:{port}";
+            if (string.IsNullOrWhiteSpace(_settings.DeviceDisplayName))
+                _settings.DeviceDisplayName = Environment.MachineName;
+            _settings.Save();
+            _host.BindAccount(tok);
+            _accountBindStatus.Text = (register ? "注册" : "登录") + "成功，本机将出现在设备列表";
+        }
+        catch (Exception ex)
+        {
+            _accountBindStatus.Text = FriendConnectGuide.FriendlyOrRaw(ex);
+        }
+    }
+
     private static string FormatAuditLine(AuditEntry e)
     {
         var ts = e.Timestamp.Length >= 19 ? e.Timestamp[..19] : e.Timestamp;
@@ -571,24 +686,60 @@ internal sealed class MainWindow : Window
             "tool_admin_auto" => "已自动执行",
             "trust_level" => "信任等级",
             "session_refresh" => "刷新会话码",
+            "account_bound" => "账号已绑定",
+            "pair_owner_auto" => "账号免密自动配对",
             _ => e.EventType
         };
-        // 人话摘要；剥掉 tool=/source= 等，避免亲友界面出现内部字段
-        var detail = ConfirmedChangeList.HumanizeDetail(e.Detail);
-        if (string.IsNullOrWhiteSpace(detail) &&
-            !string.Equals(e.EventType, "trust_level", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(e.EventType, "session_refresh", StringComparison.OrdinalIgnoreCase))
+
+        string detail;
+        if (string.Equals(e.EventType, "trust_level", StringComparison.OrdinalIgnoreCase))
         {
-            detail = "";
+            // R014：信任等级变更只显示「每次询问」/「宽松」/「完全信任」等人话
+            detail = TrustLevelCopy.HumanizeAuditDetail(e.Detail);
         }
-        else if (string.IsNullOrWhiteSpace(detail))
+        else
         {
-            // 信任/刷新等保留短说明，但过滤技术泄漏
-            detail = FriendConnectGuide.LooksTechnicalLeak(e.Detail) ? "" : (e.Detail.Length > 60 ? e.Detail[..57] + "…" : e.Detail);
+            // 人话摘要；剥掉 tool=/source= 等，避免亲友界面出现内部字段
+            detail = ConfirmedChangeList.HumanizeDetail(e.Detail);
+            if (string.IsNullOrWhiteSpace(detail) &&
+                string.Equals(e.EventType, "session_refresh", StringComparison.OrdinalIgnoreCase))
+            {
+                detail = FriendConnectGuide.LooksTechnicalLeak(e.Detail)
+                    ? ""
+                    : (e.Detail.Length > 60 ? e.Detail[..57] + "…" : e.Detail);
+            }
+            else if (string.IsNullOrWhiteSpace(detail))
+            {
+                detail = "";
+            }
         }
+
         if (FriendConnectGuide.LooksTechnicalLeak(detail))
             detail = "";
+        // 亲友界面禁止 preference= / AskEveryTime 等内部名
+        if (detail.Contains("preference=", StringComparison.OrdinalIgnoreCase) ||
+            detail.Contains("AskEveryTime", StringComparison.OrdinalIgnoreCase) ||
+            detail.Contains("ownerLink", StringComparison.OrdinalIgnoreCase))
+            detail = TrustLevelCopy.HumanizeAuditDetail(e.Detail);
+
         return string.IsNullOrEmpty(detail) ? $"{ts}  {label}" : $"{ts}  {label}  ·  {detail}";
+    }
+
+
+    internal void SeedTrustAuditForShot()
+    {
+        // 截图用：清空本机审计文件，避免混入历史 R013 条目；写入内部 detail，界面须人话
+        try { System.IO.File.WriteAllText(_host.Audit.FilePath, ""); } catch { /* ignore */ }
+        _host.Audit.Write("trust_level", "preference=AskEveryTime");
+        _host.Audit.Write("trust_level", "preference=Relaxed");
+        _host.Audit.Write("trust_level", "fulltrust=enabled");
+        _host.Audit.Write("trust_level", "preference=AskEveryTime; reverted=1");
+        _host.Audit.Write("trust_level", "fulltrust=ended");
+        RefreshConfirmedChanges();
+        RefreshAudit();
+        // 抬高最近审计列表，使人话三档与改回/结束同屏可见
+        _auditList.Height = 140;
+        _auditList.MinHeight = 120;
     }
 
     internal void SeedConfirmedForShot(string humanDetail)

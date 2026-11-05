@@ -8,13 +8,14 @@ using RemoteAssist.Protocol.Messages;
 namespace RemoteAssist.Agent;
 
 /// <summary>
-/// 协助端（R011）：一次粘贴会话码+验证密码，经默认公网中继连接；
-/// 连上前不出现可点灰按钮；连上后白话只读；写操作对方确认，拒绝见 DeniedMessage。
+/// 协助端（R011 / R014）：粘贴会话码连接；或账号登录 → 自有设备列表 → 免密连接。
+/// 亲友界面不出现 Assist、Admin、ownerLink、TLS、端口号。
 /// </summary>
 internal sealed class HelperWindow : Window
 {
     private readonly bool _shotMode;
     private readonly bool _enableReturnHome;
+    private readonly HelperUiSettings _settings;
     private readonly TextBox _pasteBox;
     private readonly Button _btnConnect;
     private readonly TextBlock _status;
@@ -25,6 +26,14 @@ internal sealed class HelperWindow : Window
     private readonly Button _btnProcs;
     private readonly Button _btnLogs;
     private readonly Button _btnRun;
+
+    private readonly TextBox _accountUserBox;
+    private readonly TextBox _accountPassBox;
+    private readonly ListBox _deviceList;
+    private readonly Button _btnOwnConnect;
+    private readonly TextBlock _ownSelectHint;
+    private readonly TextBlock _accountStatus;
+
     private AssistClient? _client;
     private bool _busy;
     private bool _allowClose;
@@ -33,12 +42,13 @@ internal sealed class HelperWindow : Window
     {
         _shotMode = shotDir is not null;
         _enableReturnHome = enableReturnHome;
+        _settings = HelperUiSettings.Load();
 
         Title = "鹊桥远程协助";
         Width = 720;
-        Height = 560;
+        Height = 720;
         MinWidth = 640;
-        MinHeight = 480;
+        MinHeight = 560;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Background = Brush.Parse("#F7F8FA");
 
@@ -68,7 +78,7 @@ internal sealed class HelperWindow : Window
                 },
                 new TextBlock
                 {
-                    Text = "粘贴对方发来的会话码和验证密码，连接后查看进程 / 日志",
+                    Text = "粘贴对方发来的会话码和验证密码，或登录账号免密控制自己的机器",
                     FontSize = 12,
                     Foreground = Brush.Parse("#E6F4EA")
                 }
@@ -181,6 +191,114 @@ internal sealed class HelperWindow : Window
         pairCard.Child = pairStack;
         body.Children.Add(pairCard);
 
+        // ---- R014 账号（可选）：权重低于粘贴区 ----
+        var accountCard = new Border
+        {
+            Name = "accountCard",
+            Background = Brushes.White,
+            BorderBrush = Brush.Parse("#DADEE3"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(16)
+        };
+        var accountStack = new StackPanel { Spacing = 8 };
+        accountStack.Children.Add(new TextBlock
+        {
+            Name = "accountSectionTitle",
+            Text = "账号（可选）",
+            FontSize = 14,
+            FontWeight = FontWeight.SemiBold
+        });
+        accountStack.Children.Add(new TextBlock
+        {
+            Name = "accountSectionBlurb",
+            Text = "登录后免密连自己的机器（无需再确认配对；写操作仍须对方本机确认）",
+            Foreground = Brush.Parse("#5F6368"),
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 12
+        });
+
+        var credRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        credRow.Children.Add(new TextBlock
+        {
+            Name = "accountUserLabel",
+            Text = "账号",
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        _accountUserBox = new TextBox
+        {
+            Name = "accountUserBox",
+            Text = _settings.AccountUser ?? "",
+            Width = 140
+        };
+        credRow.Children.Add(_accountUserBox);
+        credRow.Children.Add(new TextBlock
+        {
+            Name = "accountPassLabel",
+            Text = "密码",
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        _accountPassBox = new TextBox
+        {
+            Name = "accountPassBox",
+            PasswordChar = '●',
+            Width = 140
+        };
+        credRow.Children.Add(_accountPassBox);
+        var btnReg = new Button { Name = "accountRegisterBtn", Content = "注册", Width = 60, Height = 32 };
+        btnReg.Click += async (_, _) => await AccountAuthAsync(register: true);
+        credRow.Children.Add(btnReg);
+        var btnLogin = new Button { Name = "accountLoginBtn", Content = "登录", Width = 60, Height = 32 };
+        btnLogin.Click += async (_, _) => await AccountAuthAsync(register: false);
+        credRow.Children.Add(btnLogin);
+        var btnList = new Button { Name = "accountRefreshDevicesBtn", Content = "刷新设备", Width = 80, Height = 32 };
+        btnList.Click += async (_, _) => await RefreshDevicesAsync();
+        credRow.Children.Add(btnList);
+        accountStack.Children.Add(credRow);
+
+        _deviceList = new ListBox
+        {
+            Name = "ownDeviceList",
+            Height = 88,
+            MinHeight = 72
+        };
+        _deviceList.SelectionChanged += (_, _) => UpdateOwnConnectUi();
+        accountStack.Children.Add(_deviceList);
+
+        var ownRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+        _btnOwnConnect = new Button
+        {
+            Name = "ownConnectBtn",
+            Content = "连接这台电脑",
+            Width = 160,
+            Height = 36,
+            IsEnabled = false
+        };
+        _btnOwnConnect.Click += async (_, _) => await ConnectOwnedDeviceAsync();
+        ownRow.Children.Add(_btnOwnConnect);
+        _ownSelectHint = new TextBlock
+        {
+            Name = "ownSelectHint",
+            Text = "请先点选一台自己的电脑",
+            Foreground = Brush.Parse("#5F6368"),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        ownRow.Children.Add(_ownSelectHint);
+        accountStack.Children.Add(ownRow);
+
+        _accountStatus = new TextBlock
+        {
+            Name = "accountStatus",
+            Text = string.IsNullOrWhiteSpace(_settings.AccountToken) ? "尚未登录账号" : "已保存登录，可刷新设备",
+            Foreground = Brush.Parse("#5F6368"),
+            FontSize = 12,
+            TextWrapping = TextWrapping.Wrap
+        };
+        accountStack.Children.Add(_accountStatus);
+
+        accountCard.Child = accountStack;
+        body.Children.Add(accountCard);
+
         _toolCard = new Border
         {
             Background = Brushes.White,
@@ -203,13 +321,10 @@ internal sealed class HelperWindow : Window
         _btnLogs = MakeToolButton("查看日志", 100);
         _btnLogs.Click += async (_, _) =>
         {
-            var path = OperatingSystem.IsWindows() ? @"C:\Windows\WindowsUpdate.log" : "/var/log/syslog";
-            // 联调 / 截图用短日志；真实路径失败时仍显示结果
-            if (!OperatingSystem.IsWindows())
-                path = File.Exists("/tmp/r011-demo.log") ? "/tmp/r011-demo.log" : "/tmp/r011-demo.log";
+            var pathLog = OperatingSystem.IsWindows() ? @"C:\Windows\WindowsUpdate.log" : "/tmp/r011-demo.log";
             await RunToolAsync(ToolKind.ReadLogTail, new Dictionary<string, string?>
             {
-                ["path"] = path,
+                ["path"] = pathLog,
                 ["lines"] = "80"
             });
         };
@@ -217,8 +332,8 @@ internal sealed class HelperWindow : Window
         _btnRun.Click += async (_, _) =>
         {
             var cmd = OperatingSystem.IsWindows()
-                ? "echo r011-should-not-run"
-                : "echo r011-should-not-run >/tmp/r011-deny-marker";
+                ? "echo r014-should-not-run"
+                : "echo r014-should-not-run >/tmp/r014-deny-marker";
             await RunToolAsync(ToolKind.RunCommand, new Dictionary<string, string?> { ["command"] = cmd });
         };
         tools.Children.Add(_btnProcs);
@@ -230,7 +345,7 @@ internal sealed class HelperWindow : Window
         {
             AcceptsReturn = true,
             IsReadOnly = true,
-            MinHeight = 140,
+            MinHeight = 120,
             TextWrapping = TextWrapping.Wrap,
             FontFamily = new FontFamily("Consolas,Menlo,monospace"),
             FontSize = 12
@@ -243,6 +358,7 @@ internal sealed class HelperWindow : Window
         Content = root;
 
         Closing += OnClosing;
+        UpdateOwnConnectUi();
     }
 
     private static Button MakeToolButton(string text, double width) => new()
@@ -261,10 +377,7 @@ internal sealed class HelperWindow : Window
     private void RequestHome()
     {
         if (_client is not null)
-        {
-            // 已连接：直接断开后回首页（与 Windows「返回首页将断开」一致，简化无二次确认）
             Disconnect();
-        }
         _allowClose = true;
         AppNavigator.ShowHome();
         try { Close(); } catch { /* ignore */ }
@@ -277,7 +390,6 @@ internal sealed class HelperWindow : Window
             Disconnect();
             return;
         }
-        // 关协助窗 = 回首页，不退出应用
         e.Cancel = true;
         RequestHome();
         await Task.CompletedTask;
@@ -321,7 +433,6 @@ internal sealed class HelperWindow : Window
             return;
         }
 
-        // 亲友可见：只用 FriendConnectionPreview，不展示中继 IP / 端口 / Assist / 明文
         _preview.Text = FriendConnectGuide.FriendConnectionPreview(opts.Code);
     }
 
@@ -369,7 +480,7 @@ internal sealed class HelperWindow : Window
             portField: null,
             fingerprintField: null,
             PermissionLevel.Assist,
-            insecure: true, // 亲友无指纹：对齐 Windows 协助端中继默认明文业务管道
+            insecure: true,
             passwordField: password,
             relayField: RelayEndpoint.DefaultEndpoint,
             preferRelay: true,
@@ -401,7 +512,6 @@ internal sealed class HelperWindow : Window
             return;
         }
 
-        // 中继访客：无指纹时强制明文（与 Windows Helper.UI 一致）
         if (opts.ViaRelay && !opts.Insecure && string.IsNullOrWhiteSpace(opts.Fingerprint))
         {
             opts = new AssistConnectOptions
@@ -425,7 +535,6 @@ internal sealed class HelperWindow : Window
         {
             if (_shotMode)
             {
-                // 截图不真连
                 SetConnectedUi(true);
                 _status.Text = "已连接对方电脑";
                 _output.Text = "";
@@ -460,6 +569,7 @@ internal sealed class HelperWindow : Window
         _btnConnect.IsEnabled = !connected;
         _pasteBox.IsEnabled = !connected;
         _toolCard.IsVisible = connected;
+        UpdateOwnConnectUi();
     }
 
     private void Disconnect()
@@ -468,6 +578,176 @@ internal sealed class HelperWindow : Window
         _client = null;
         SetConnectedUi(false);
         _status.Text = "状态：未连接";
+    }
+
+    private void UpdateOwnConnectUi()
+    {
+        if (_deviceList.SelectedItem is null)
+        {
+            _btnOwnConnect.IsEnabled = false;
+            _btnOwnConnect.Content = "连接这台电脑";
+            _ownSelectHint.Text = "请先点选一台自己的电脑";
+            return;
+        }
+
+        var row = _deviceList.SelectedItem.ToString() ?? "";
+        var parts = row.Split('\t');
+        var name = parts.Length > 1 ? parts[1] : parts[0];
+        if (string.IsNullOrWhiteSpace(name)) name = "这台电脑";
+        _btnOwnConnect.IsEnabled = _client is null;
+        _btnOwnConnect.Content = "连接：" + name;
+        _ownSelectHint.Text = "将免密连接「" + name + "」";
+    }
+
+    private string RelayEndpointText =>
+        string.IsNullOrWhiteSpace(_settings.RelayEndpoint)
+            ? RelayEndpoint.DefaultEndpoint
+            : _settings.RelayEndpoint!;
+
+    private async Task AccountAuthAsync(bool register)
+    {
+        if (!RelayEndpoint.TryParse(RelayEndpointText, out var host, out var port, out var err))
+        {
+            _accountStatus.Text = err;
+            return;
+        }
+        var user = _accountUserBox.Text?.Trim() ?? "";
+        var pass = _accountPassBox.Text ?? "";
+        if (user.Length == 0 || pass.Length == 0)
+        {
+            _accountStatus.Text = "请填写用户名和密码";
+            return;
+        }
+
+        if (_shotMode)
+        {
+            _settings.AccountUser = user;
+            _settings.AccountToken = "shot-token";
+            _settings.Save();
+            _accountStatus.Text = (register ? "注册" : "登录") + "成功（截图）";
+            PrepareDevicesForShot(selected: false);
+            return;
+        }
+
+        try
+        {
+            var tok = await RelayClient.AuthAsync(host, port, register, user, pass).ConfigureAwait(true);
+            _settings.AccountUser = user;
+            _settings.AccountToken = tok;
+            _settings.RelayEndpoint = $"{host}:{port}";
+            _settings.Save();
+            _accountStatus.Text = (register ? "注册" : "登录") + "成功，已保存";
+            // 被控端若已开，可 BindAccount；此处写 settings，接受协助创建时也会带上
+            try { Program.SharedHost?.BindAccount(tok); } catch { /* ignore */ }
+            await RefreshDevicesAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _accountStatus.Text = FriendConnectGuide.FriendlyOrRaw(ex);
+        }
+    }
+
+    private async Task RefreshDevicesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_settings.AccountToken))
+        {
+            _accountStatus.Text = "请先登录账号";
+            return;
+        }
+        if (!RelayEndpoint.TryParse(RelayEndpointText, out var host, out var port, out var err))
+        {
+            _accountStatus.Text = err;
+            return;
+        }
+
+        if (_shotMode)
+        {
+            PrepareDevicesForShot(selected: false);
+            return;
+        }
+
+        try
+        {
+            var list = await RelayClient.ListDevicesAsync(host, port, _settings.AccountToken!).ConfigureAwait(true);
+            _deviceList.Items.Clear();
+            foreach (var d in list)
+                _deviceList.Items.Add($"{d.Id}\t{d.Name}\t{(d.Online ? "在线" : "离线")}");
+            UpdateOwnConnectUi();
+            _accountStatus.Text = $"设备 {list.Count} 台";
+        }
+        catch (Exception ex)
+        {
+            _accountStatus.Text = FriendConnectGuide.FriendlyOrRaw(ex);
+        }
+    }
+
+    private async Task ConnectOwnedDeviceAsync()
+    {
+        if (_client is not null)
+        {
+            _status.Text = "已连接，请先断开";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_settings.AccountToken))
+        {
+            _accountStatus.Text = "请先登录账号";
+            return;
+        }
+        if (_deviceList.SelectedItem is null)
+        {
+            _accountStatus.Text = "请先点选一台自己的电脑";
+            return;
+        }
+
+        var row = _deviceList.SelectedItem.ToString() ?? "";
+        var deviceId = row.Split('\t')[0];
+        if (!RelayEndpoint.TryParse(RelayEndpointText, out var host, out var port, out var err))
+        {
+            _accountStatus.Text = err;
+            return;
+        }
+
+        if (_shotMode)
+        {
+            SetConnectedUi(true);
+            _status.Text = "已用你的账号连接，无需再确认配对（写操作仍须对方本机确认）";
+            _accountStatus.Text = "免密连接（截图）";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var opts = new AssistConnectOptions
+            {
+                Host = host,
+                Port = port,
+                Code = "OWNER",
+                Permission = PermissionLevel.Assist,
+                Fingerprint = null,
+                Insecure = true,
+                ViaRelay = true,
+                RelayEndpoint = $"{host}:{port}",
+                OwnerLink = true,
+                AccountToken = _settings.AccountToken,
+                DeviceId = deviceId
+            };
+            var client = await AssistClient.PairAsync(opts, "helper-avalonia-owner").ConfigureAwait(true);
+            _client = client;
+            SetConnectedUi(true);
+            _status.Text = "已用你的账号连接，无需再确认配对（写操作仍须对方本机确认）";
+            _failHint.Text = "";
+        }
+        catch (Exception ex)
+        {
+            _status.Text = "连接失败";
+            _failHint.Text = FriendConnectGuide.FriendlyOrRaw(ex);
+            SetConnectedUi(false);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task RunToolAsync(ToolKind tool, Dictionary<string, string?> args)
@@ -563,6 +843,48 @@ internal sealed class HelperWindow : Window
         _status.Text = WriteConfirmCopy.DeniedMessage;
         _failHint.Text = "";
         AppendOutput($"[RunCommand] FAIL: {WriteConfirmCopy.DeniedMessage}\n");
+    }
+
+
+    /// <summary>UiShot：仅展示账号/密码可见标签（设备列表空，便于与未选中截图区分）。</summary>
+    internal void PrepareAccountLabelsOnlyForShot()
+    {
+        _accountUserBox.Text = "";
+        _accountPassBox.Text = "";
+        _accountStatus.Text = "请填写账号和密码后登录";
+        _deviceList.Items.Clear();
+        _deviceList.SelectedIndex = -1;
+        UpdateOwnConnectUi();
+    }
+
+    /// <summary>UiShot：账号标签 + 设备列表；selected 控制是否点选。</summary>
+    internal void PrepareAccountForShot(bool selected)
+    {
+        _accountUserBox.Text = "demo";
+        _accountPassBox.Text = "••••••";
+        _accountStatus.Text = "已登录（截图）";
+        PrepareDevicesForShot(selected);
+    }
+
+    internal void PrepareDevicesForShot(bool selected)
+    {
+        _deviceList.Items.Clear();
+        _deviceList.Items.Add("dev-living\t客厅电脑\t在线");
+        _deviceList.Items.Add("dev-office\t书房电脑\t离线");
+        if (selected)
+            _deviceList.SelectedIndex = 0;
+        else
+            _deviceList.SelectedIndex = -1;
+        UpdateOwnConnectUi();
+    }
+
+    internal void PrepareOwnerConnectedForShot()
+    {
+        PrepareAccountForShot(selected: true);
+        SetConnectedUi(true);
+        _status.Text = "已用你的账号连接，无需再确认配对（写操作仍须对方本机确认）";
+        _accountStatus.Text = "免密已连接（截图）";
+        _output.Text = "";
     }
 }
 

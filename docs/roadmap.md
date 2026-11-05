@@ -22,7 +22,7 @@
 | R011 | 高频：Mac/Linux Avalonia 双模式（去协助）；打磨：框架依赖小包实测（顺手 Linux .tar.gz） | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-011.md` |
 | R012 | 高频：Avalonia 被控端信任等级；打磨：Windows P2-7「结束完全信任」文案 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-012.md` |
 | R013 | 高频：Avalonia「本次协助已确认的改动」；打磨：刷新会话码先确认 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-013.md` |
-| R014 | 高频：Avalonia 账号登录免密连自有设备；打磨：最近审计人话 | 鹊桥-客户端 | **wip** | `docs/round-014.md` |
+| R014 | 高频：Avalonia 账号登录免密连自有设备；打磨：最近审计人话 | 鹊桥-客户端 | **done**（待产品对照截图） | `docs/round-014.md` |
 
 ## P0 — 可演示闭环（不后挪）
 
@@ -48,7 +48,7 @@
 
 ## 平台 — macOS / Linux（2026-11-05 起，不抢 P0）
 
-场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 已产品验收 Avalonia 信任等级 + Windows P2-7；R013 已产品验收 Avalonia 已确认改动回看 + 刷新确认；下一步 R014 Avalonia 账号登录免密 + 审计人话。
+场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 已产品验收 Avalonia 信任等级 + Windows P2-7；R013 已产品验收 Avalonia 已确认改动回看 + 刷新确认；R014 Avalonia 账号登录免密 + 审计人话已实现待产品对照截图；未开下一轮。
 
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
@@ -76,6 +76,8 @@
 ## 明确暂缓
 
 完整远程桌面、计费/组织、改 AI-SSH-Pro。
+
+
 
 
 

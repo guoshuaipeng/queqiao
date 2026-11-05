@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（Avalonia；不改 `relay/`，不迁 Windows 到 Avalonia，不重做 R006–R013）
-> 状态：**wip**
+> 状态：**done**（待产品对照截图验收）
 > 依据：Windows 已验收的账号登录→设备列表→免密连自有在线设备（PRODUCT.md）；docs/quality.md（账号/密码有可见标签；未选中设备时禁用连接）；R013 已验收；round-013 本轮不做里写过「Avalonia 账号登录 / 设备上线 / 免密（可后续）」。
 
 R013 已产品验收 Avalonia「本次协助已确认的改动」+ 刷新会话码先确认。Windows 侧账号登录与免密连自有设备早已验收；Linux Avalonia 双模式仍缺同等路径。同时 R013 验收记下「最近审计」仍出现 `preference=AskEveryTime` 内部名，本轮一并打磨成人话。
@@ -43,3 +43,38 @@ R013 已产品验收 Avalonia「本次协助已确认的改动」+ 刷新会话�
 
 - 更新本文交付说明与截图
 - 回告产品验收；未开下一轮
+
+## 交付说明（鹊桥-客户端 · 2026-11-05 Asia/Shanghai）
+
+### 实现摘要
+
+- **协助端 `HelperWindow`**：在「连接对方」下方增加「账号（可选）」——可见「账号」「密码」标签；注册 / 登录 / 刷新设备；设备列表；未选中时「连接这台电脑」禁用并提示「请先点选一台自己的电脑」；选中后按钮改为「连接：{名称}」，文案「将免密连接「…」」。免密走既有 `AssistConnectOptions.OwnerLink` + `AccountToken` + `DeviceId` + 默认公网中继（与 Windows Helper.UI 同协议）。
+- **被控端 `MainWindow` 高级**：账号绑定登录/注册，写入 `HelperUiSettings` 并 `AgentHost.BindAccount`，拉起 `device_online` 循环，使本机出现在同账号设备列表（约定与 Windows `AgentDesktopController` + settings 一致，未另起一套）。
+- **`Program.CreateHost`**：加载 settings 的 `AccountToken` / `DeviceId` / `DeviceDisplayName`。
+- **打磨**：`TrustLevelCopy.HumanizeAuditDetail` + `MainWindow.FormatAuditLine`——「最近审计」信任变更显示「每次询问」/「宽松」/「完全信任」/「改回每次询问」/「结束完全信任」，不再外露 `preference=AskEveryTime`。未改 R013「本次协助已确认的改动」标题与刷新确认原文。
+- **osx**：`scripts/publish-agent-avalonia.ps1` 已出 `osx-x64` / `osx-arm64` FD 包；**未上真机**，不写成 Mac 已验收。
+
+### 截图（`docs/screenshots/r014-*`，已复制 `%USERPROFILE%\Downloads\r014-shots\`）
+
+| 文件 | 要点 | MD5 |
+|------|------|-----|
+| `r014-helper-account-labels.png` | 账号/密码可见标签；连接这台电脑禁用；ui-shot | 7FB55DA2FDECB7CA25C9A93092133F58 |
+| `r014-helper-account-unselected.png` | 设备列表有「客厅电脑 在线」等；未选中；连接禁用 +「请先点选」；ui-shot | 9519BFAD7478C408ABD9B89DD8C2DA8F |
+| `r014-helper-account-selected.png` | 选中在线「客厅电脑」；「连接：客厅电脑」可用；ui-shot | 847D7A7C277BAAF6AE208B96C679DE53 |
+| `r014-helper-owner-connected.png` | 免密已连状态文案「已用你的账号连接，无需再确认配对（写操作仍须对方本机确认）」；ui-shot | E4750D6A2212252282FF1FDBEF1A4866 |
+| `r014-audit-human.png` | 最近审计：宽松 / 完全信任 / 改回每次询问 / 结束完全信任；无 preference=；已确认标题仍为「本次协助已确认的改动」；ui-shot | C20C77597556DD05DCDA838632A1F011 |
+| `r014-osx-publish.png` | osx 出包体积说明；标明未上真机 | B7F7D9C77587B00882759CACF1458C39 |
+
+登录/设备列表截图为 **ui-shot**（示例设备名「客厅电脑 / 书房电脑」），不是现场公网结对码。未做现场双机免密联调截图；协议与 Windows 已验收路径相同。
+
+### 测试
+
+`dotnet test`：169 通过 / 0 失败（含 `HumanizeAuditDetail_Maps_Preference_To_Chinese`）。
+
+### 明确未做
+
+- 未开 R015 / 下一轮
+- 未改 `relay/`、官网下载、AI-SSH-Pro
+- 未把 Windows 迁到 Avalonia；未重做 R006–R013
+- 未改 R013 已验收的「本次协助已确认的改动」标题与刷新确认原文「刷新后旧码会失效，已经发出去的码对方将连不上。」
+- 亲友界面未出现 Assist、Admin、ownerLink、TLS、端口号

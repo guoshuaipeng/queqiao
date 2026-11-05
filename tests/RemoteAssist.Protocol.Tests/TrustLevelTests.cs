@@ -195,6 +195,19 @@ public class ConfirmedChangeListTests
         Assert.Contains("运行一条命令", line);
         Assert.DoesNotContain("tool=RunCommand", line);
     }
+
+    [Fact]
+    public void HumanizeAuditDetail_Maps_Preference_To_Chinese()
+    {
+        Assert.Equal("每次询问", TrustLevelCopy.HumanizeAuditDetail("preference=AskEveryTime"));
+        Assert.Equal("宽松", TrustLevelCopy.HumanizeAuditDetail("preference=Relaxed"));
+        Assert.Equal("完全信任", TrustLevelCopy.HumanizeAuditDetail("fulltrust=enabled"));
+        Assert.Equal("改回每次询问", TrustLevelCopy.HumanizeAuditDetail("preference=AskEveryTime; reverted=1"));
+        Assert.Equal("结束完全信任", TrustLevelCopy.HumanizeAuditDetail("fulltrust=ended"));
+        Assert.DoesNotContain("preference=", TrustLevelCopy.HumanizeAuditDetail("preference=AskEveryTime"));
+        Assert.DoesNotContain("AskEveryTime", TrustLevelCopy.HumanizeAuditDetail("preference=AskEveryTime"));
+    }
+
 }
 
 public class TrustLevelSessionTests

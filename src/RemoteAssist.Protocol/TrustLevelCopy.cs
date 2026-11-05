@@ -82,4 +82,73 @@ public static class TrustLevelCopy
         TrustLevelKind.Relaxed => RevertToAskEveryTime,
         _ => ""
     };
+
+    /// <summary>
+    /// 「最近审计」信任等级 detail 人话：禁止 preference=AskEveryTime 等内部名外露。
+    /// </summary>
+    public static string HumanizeAuditDetail(string? detail)
+    {
+        if (string.IsNullOrWhiteSpace(detail))
+            return "";
+
+        var d = detail.Trim();
+        var reverted = d.Contains("reverted=1", StringComparison.OrdinalIgnoreCase);
+
+        if (d.Contains("fulltrust=enabled", StringComparison.OrdinalIgnoreCase))
+            return FullTrustName;
+        if (d.Contains("fulltrust=ended", StringComparison.OrdinalIgnoreCase))
+            return EndFullTrust;
+
+        string? levelName = null;
+        if (d.Contains("preference=AskEveryTime", StringComparison.OrdinalIgnoreCase) ||
+            d.Contains("preference=0", StringComparison.OrdinalIgnoreCase))
+            levelName = AskEveryTimeName;
+        else if (d.Contains("preference=Relaxed", StringComparison.OrdinalIgnoreCase) ||
+                 d.Contains("preference=1", StringComparison.OrdinalIgnoreCase))
+            levelName = RelaxedName;
+        else if (d.Contains("preference=FullTrust", StringComparison.OrdinalIgnoreCase) ||
+                 d.Contains("preference=2", StringComparison.OrdinalIgnoreCase))
+            levelName = FullTrustName;
+        else if (d.StartsWith("preference=", StringComparison.OrdinalIgnoreCase))
+        {
+            // 未知枚举名：仍不把 preference= 原文给亲友
+            var raw = d["preference=".Length..];
+            var semi = raw.IndexOf(';');
+            if (semi >= 0) raw = raw[..semi];
+            levelName = raw.Trim() switch
+            {
+                nameof(TrustLevelKind.AskEveryTime) => AskEveryTimeName,
+                nameof(TrustLevelKind.Relaxed) => RelaxedName,
+                nameof(TrustLevelKind.FullTrust) => FullTrustName,
+                _ => AskEveryTimeName
+            };
+        }
+
+        if (levelName is not null)
+            return reverted ? RevertToAskEveryTime : levelName;
+
+        // 剥掉 preference=/fulltrust= 残留键，避免泄漏
+        while (true)
+        {
+            var cut = -1;
+            foreach (var key in new[] { "preference=", "fulltrust=", "reverted=" })
+            {
+                if (d.StartsWith(key, StringComparison.OrdinalIgnoreCase))
+                {
+                    var semi = d.IndexOf(';');
+                    d = semi < 0 ? "" : d[(semi + 1)..].TrimStart();
+                    cut = 0;
+                    break;
+                }
+            }
+            if (cut < 0) break;
+        }
+
+        if (d.Contains("preference=", StringComparison.OrdinalIgnoreCase) ||
+            d.Contains("AskEveryTime", StringComparison.OrdinalIgnoreCase) ||
+            d.Contains("FullTrust", StringComparison.OrdinalIgnoreCase))
+            return "";
+
+        return d;
+    }
 }

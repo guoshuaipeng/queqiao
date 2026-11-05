@@ -6,7 +6,7 @@ using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R013：已确认改动列表 + 刷新会话码确认（真实控件截图）。</summary>
+/// <summary>R014：Avalonia 账号登录免密 + 最近审计人话（真实控件截图）。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -15,46 +15,44 @@ internal static class UiShotRunner
         await Dispatcher.UIThread.InvokeAsync(() => { });
         await Task.Delay(400).ConfigureAwait(true);
 
+        // ---- Helper：账号标签 / 未选中禁用 / 选中可连 ----
+        var helper = new HelperWindow(shotDir: outDir, enableReturnHome: true);
+        helper.Show();
+        await Task.Delay(350).ConfigureAwait(true);
+
+        // 标签可见：有账号/密码标签与输入框，设备列表为空（与未选中有列表区分 MD5）
+        helper.PrepareAccountLabelsOnlyForShot();
+        await Task.Delay(250).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r014-helper-account-labels.png")).ConfigureAwait(true);
+
+        helper.PrepareAccountForShot(selected: false);
+        await Task.Delay(200).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r014-helper-account-unselected.png")).ConfigureAwait(true);
+
+        helper.PrepareAccountForShot(selected: true);
+        await Task.Delay(200).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r014-helper-account-selected.png")).ConfigureAwait(true);
+
+        helper.PrepareOwnerConnectedForShot();
+        await Task.Delay(200).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r014-helper-owner-connected.png")).ConfigureAwait(true);
+
+        helper.PrepareClose();
+        helper.Close();
+        await Task.Delay(150).ConfigureAwait(true);
+
+        // ---- 被控：最近审计人话（无 preference=）----
         var host = Program.SharedHost ?? Program.CreateHost();
         host.SetTrustLevelPreference(TrustLevelKind.AskEveryTime);
 
         var win = new MainWindow(host, shotDir: outDir, enableReturnHome: true);
         win.Show();
         await Task.Delay(350).ConfigureAwait(true);
-
-        // 1) 已确认列表有人话条目（文档例会话码 AB12CD/3471）
-        win.SeedConfirmedForShot("运行一条命令 · 命令：echo r013-ok");
+        win.SeedTrustAuditForShot();
         win.OpenAdvancedForShot();
         win.ScrollListsIntoViewForShot();
         await Task.Delay(350).ConfigureAwait(true);
-        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-confirmed-list.png")).ConfigureAwait(true);
-
-        // 2) 拒绝写入审计；滚到列表；已确认不得含拒绝，最近审计可见已拒绝
-        win.SeedDeniedForShot("运行一条命令 · 命令：echo r013-deny-should-not-run");
-        win.ScrollListsIntoViewForShot();
-        await Task.Delay(350).ConfigureAwait(true);
-        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-denied-not-in-confirmed.png")).ConfigureAwait(true);
-
-        // 3) 刷新确认弹窗
-        var refreshDlg = win.ShowRefreshConfirmForShot();
-        await Task.Delay(300).ConfigureAwait(true);
-        await CaptureWindowAsync(refreshDlg, Path.Combine(outDir, "r013-refresh-confirm.png")).ConfigureAwait(true);
-        refreshDlg.Close(false);
-        await Task.Delay(150).ConfigureAwait(true);
-
-        // 4) 取消刷新：收起高级，主界面仍文档例码 AB12CD（与列表图区分）
-        win.CloseAdvancedForShot();
-        await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-refresh-cancel-keeps-code.png")).ConfigureAwait(true);
-
-        // 5) 完全信任 → 刷新 → 新码 + 横幅消失
-        win.ApplyTrustForShot(TrustLevelKind.FullTrust);
-        await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-fulltrust-before-refresh.png")).ConfigureAwait(true);
-        var newCode = win.ApplyRefreshForShot();
-        await Task.Delay(300).ConfigureAwait(true);
-        await CaptureWindowAsync(win, Path.Combine(outDir, "r013-refresh-clears-fulltrust.png")).ConfigureAwait(true);
-        Console.WriteLine("r013 refreshed code (live host, not doc example)=" + newCode);
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r014-audit-human.png")).ConfigureAwait(true);
 
         win.AllowCloseWithoutPrompt();
         win.Close();

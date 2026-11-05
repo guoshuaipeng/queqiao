@@ -34,7 +34,8 @@ internal sealed class AgentHost
     private readonly bool _preferRelay;
     private readonly bool _enableLanListen;
     private readonly string _relayEndpoint;
-    private readonly string? _accountToken;
+    private string? _accountToken;
+    private int _deviceLoopStarted;
     private readonly string _deviceId;
     private readonly string _deviceDisplayName;
     private readonly TrustLevelSession _trust = new();
@@ -214,6 +215,19 @@ internal sealed class AgentHost
         _audit.Write("trust_level", "fulltrust=ended");
     }
 
+
+    /// <summary>登录后绑定账号令牌；若 Host 已 Start 则拉起设备上线循环（免密通道）。</summary>
+    public void BindAccount(string accountToken)
+    {
+        if (string.IsNullOrWhiteSpace(accountToken))
+            throw new ArgumentException("accountToken");
+        _accountToken = accountToken.Trim();
+        _audit.Write("account_bound", $"device={_deviceId}");
+        var cts = _cts;
+        if (cts is not null && Interlocked.CompareExchange(ref _deviceLoopStarted, 1, 0) == 0)
+            _ = Task.Run(() => RelayDeviceLoopAsync(cts.Token));
+    }
+
     public IReadOnlyList<PairedClientInfo> ListPairedClients()
     {
         var now = DateTimeOffset.UtcNow;
@@ -347,7 +361,10 @@ internal sealed class AgentHost
         {
             _ = Task.Run(() => RelayGuestLoopAsync(_cts.Token));
             if (AccountBound)
+            {
+                Interlocked.Exchange(ref _deviceLoopStarted, 1);
                 _ = Task.Run(() => RelayDeviceLoopAsync(_cts.Token));
+            }
         }
 
         // 默认中继时不对外开 LAN 端口；高级/调试显式 EnableLanListen 才监听
@@ -376,6 +393,7 @@ internal sealed class AgentHost
                 try { s.ConnectionCts?.Cancel(); } catch { /* ignore */ }
             }
         }
+        Interlocked.Exchange(ref _deviceLoopStarted, 0);
         _audit.Write("agent_stop", "listener stopped");
         try { _serverCert?.Dispose(); } catch { /* ignore */ }
         _serverCert = null;
