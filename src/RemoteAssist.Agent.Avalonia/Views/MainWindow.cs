@@ -7,11 +7,12 @@ using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>亲友被控主窗：复制码+密码 / 结束这次协助；关窗提示见 first-run §2。</summary>
+/// <summary>亲友被控主窗：复制码+密码 / 结束这次协助；关窗提示见 first-run §2。R011 可返回首页。</summary>
 internal sealed class MainWindow : Window
 {
     private readonly AgentHost _host;
     private readonly bool _shotMode;
+    private readonly bool _enableReturnHome;
     private readonly TextBlock _codeBlock;
     private readonly TextBlock _pwdBlock;
     private readonly TextBlock _status;
@@ -19,14 +20,15 @@ internal sealed class MainWindow : Window
     private bool _ending;
     private bool _allowClose;
 
-    public MainWindow(AgentHost host, string? shotDir)
+    public MainWindow(AgentHost host, string? shotDir, bool enableReturnHome = false)
     {
         _host = host;
         _shotMode = shotDir is not null;
+        _enableReturnHome = enableReturnHome;
 
         Title = "鹊桥远程协助";
         Width = 480;
-        Height = 420;
+        Height = 440;
         MinWidth = 420;
         MinHeight = 360;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -34,15 +36,31 @@ internal sealed class MainWindow : Window
 
         var root = new DockPanel { Margin = new Thickness(20) };
 
+        var topRow = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
+        DockPanel.SetDock(topRow, Dock.Top);
         var title = new TextBlock
         {
             Text = "鹊桥远程协助",
             FontSize = 22,
             FontWeight = FontWeight.Bold,
-            Margin = new Thickness(0, 0, 0, 8)
+            VerticalAlignment = VerticalAlignment.Center
         };
-        DockPanel.SetDock(title, Dock.Top);
-        root.Children.Add(title);
+        topRow.Children.Add(title);
+        if (_enableReturnHome)
+        {
+            var homeBtn = new Button
+            {
+                Content = "返回首页",
+                Width = 96,
+                Height = 32,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            DockPanel.SetDock(homeBtn, Dock.Right);
+            homeBtn.Click += async (_, _) => await ReturnHomeAsync();
+            topRow.Children.Add(homeBtn);
+        }
+        root.Children.Add(topRow);
 
         _hint = new TextBlock
         {
@@ -61,7 +79,7 @@ internal sealed class MainWindow : Window
             Height = 40,
             Margin = new Thickness(0, 12, 0, 0)
         };
-        endBtn.Click += async (_, _) => await EndAssistAsync();
+        endBtn.Click += async (_, _) => await EndAssistAsync(returnHome: _enableReturnHome);
         DockPanel.SetDock(endBtn, Dock.Bottom);
         root.Children.Add(endBtn);
 
@@ -99,12 +117,14 @@ internal sealed class MainWindow : Window
         }
         else
         {
-            // 截图模式：填演示凭证，不连中继
+            // 截图模式：填演示凭证，不连中继（与 R010 一致；真实联调以协助端码为准）
             _codeBlock.Text = "会话码：AB12CD";
             _pwdBlock.Text = "验证密码：3471";
             _status.Text = "已连上网络，可以发给对方了";
         }
     }
+
+    public void AllowCloseWithoutPrompt() => _allowClose = true;
 
     private Control BuildSessionCard(out TextBlock codeBlock, out TextBlock pwdBlock)
     {
@@ -223,11 +243,16 @@ internal sealed class MainWindow : Window
         var tip = new CloseWarnWindow();
         var result = await tip.ShowDialog<string?>(this).ConfigureAwait(true);
         if (result == "end")
-            await EndAssistAsync().ConfigureAwait(true);
+            await EndAssistAsync(returnHome: _enableReturnHome).ConfigureAwait(true);
         // 「返回」或关闭提示：继续留在主窗
     }
 
-    private async Task EndAssistAsync()
+    private async Task ReturnHomeAsync()
+    {
+        await EndAssistAsync(returnHome: true).ConfigureAwait(true);
+    }
+
+    private async Task EndAssistAsync(bool returnHome)
     {
         if (_ending) return;
         _ending = true;
@@ -240,10 +265,18 @@ internal sealed class MainWindow : Window
             }
             _status.Text = "已结束这次协助。";
             _allowClose = true;
-            Close();
-            if (Application.Current?.ApplicationLifetime is
-                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
-                desktop.Shutdown();
+            if (returnHome)
+            {
+                AppNavigator.ShowHome();
+                try { Close(); } catch { /* ignore */ }
+            }
+            else
+            {
+                Close();
+                if (Application.Current?.ApplicationLifetime is
+                    Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+                    desktop.Shutdown();
+            }
         }
         catch (Exception ex)
         {
@@ -253,4 +286,3 @@ internal sealed class MainWindow : Window
         await Task.CompletedTask;
     }
 }
-

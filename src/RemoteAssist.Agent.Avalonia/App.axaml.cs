@@ -14,16 +14,29 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             ConfirmPrompt.UiDispatcher = Dispatcher.UIThread;
-            var main = new MainWindow(Program.SharedHost!, Program.ShotMode);
-            desktop.MainWindow = main;
+            var home = new HomeWindow();
+            AppNavigator.AttachHome(home);
+            desktop.MainWindow = home;
+
+            // 直达接受协助（联调）
+            var args = Environment.GetCommandLineArgs();
+            if (Program.ShotMode is null && args.Any(a => a is "--accept"))
+            {
+                AppNavigator.EnterAccept();
+            }
+            else if (Program.ShotMode is null && args.Any(a => a is "--control" or "--helper"))
+            {
+                AppNavigator.EnterHelper();
+            }
+
             if (Program.ShotMode is { } shot)
             {
-                main.Opened += async (_, _) =>
+                home.Opened += async (_, _) =>
                 {
                     try
                     {
                         await Task.Delay(200).ConfigureAwait(true);
-                        await UiShotRunner.RunAsync(main, shot).ConfigureAwait(true);
+                        await UiShotRunner.RunAsync(home, shot).ConfigureAwait(true);
                     }
                     catch (Exception ex)
                     {

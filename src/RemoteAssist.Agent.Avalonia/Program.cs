@@ -9,6 +9,16 @@ internal static class Program
     public static AgentHost? SharedHost { get; private set; }
     public static string? ShotMode { get; private set; }
 
+    private static int _port = 17890;
+    private static bool _autoYes;
+    private static bool _insecure;
+    private static bool _testAllowPair;
+    private static bool _testDenyWrite;
+    private static bool _enableLan;
+    private static int _confirmTimeoutSeconds = 60;
+    private static string? _relayEndpoint;
+    private static string _auditPath = "";
+
     [STAThread]
     public static int Main(string[] args)
     {
@@ -27,52 +37,40 @@ internal static class Program
                 ShotMode = args[++i];
         }
 
-        var port = 17890;
-        var autoYes = args.Any(a => a is "--yes" or "--auto-yes");
-        var insecure = args.Any(a => a is "--insecure");
-        var testAllowPair = args.Any(a => a is "--test-allow-pair");
-        var testDenyWrite = args.Any(a => a is "--test-deny-write");
-        var enableLan = args.Any(a => a is "--lan");
-        var confirmTimeoutSeconds = 60;
-        string? relayEndpoint = null;
+        _port = 17890;
+        _autoYes = args.Any(a => a is "--yes" or "--auto-yes");
+        _insecure = args.Any(a => a is "--insecure");
+        _testAllowPair = args.Any(a => a is "--test-allow-pair");
+        _testDenyWrite = args.Any(a => a is "--test-deny-write");
+        _enableLan = args.Any(a => a is "--lan");
+        _confirmTimeoutSeconds = 60;
+        _relayEndpoint = null;
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] is "--port" or "-p" && i + 1 < args.Length && int.TryParse(args[i + 1], out var p))
-                port = p;
+                _port = p;
             if (args[i] is "--confirm-timeout" && i + 1 < args.Length && int.TryParse(args[i + 1], out var t))
-                confirmTimeoutSeconds = Math.Clamp(t, 5, 600);
+                _confirmTimeoutSeconds = Math.Clamp(t, 5, 600);
             if (args[i] is "--relay" && i + 1 < args.Length)
-                relayEndpoint = args[++i];
+                _relayEndpoint = args[++i];
         }
 
         var auditDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RemoteAssist");
         Directory.CreateDirectory(auditDir);
-        var auditPath = Path.Combine(auditDir, "audit-avalonia.log");
-        var audit = new AuditLog(auditPath);
+        _auditPath = Path.Combine(auditDir, "audit-avalonia.log");
 
-        // headless:false → Avalonia ConfirmPrompt 弹窗；ShotMode 下可不起真实中继
-        ConfirmPrompt.ForceAllowPair = testAllowPair;
-        ConfirmPrompt.ForceDenyWrites = testDenyWrite;
+        ConfirmPrompt.ForceAllowPair = _testAllowPair;
+        ConfirmPrompt.ForceDenyWrites = _testDenyWrite;
 
-        SharedHost = new AgentHost(
-            port,
-            autoYes: autoYes,
-            headless: false,
-            confirmTimeoutSeconds: confirmTimeoutSeconds,
-            audit: audit,
-            auditPath: auditPath,
-            insecure: insecure,
-            preferRelay: true,
-            enableLanListen: enableLan,
-            relayEndpoint: relayEndpoint);
+        // 双模式：首页先出；接受协助时再 Start 被控 Host。截图模式也不抢先连中继。
+        SharedHost = CreateHost();
 
-        if (ShotMode is null)
+        if (ShotMode is null && args.Any(a => a is "--accept"))
         {
-            SharedHost.Start();
-            // 控制台附带两行凭证，方便联调；亲友主路径仍是窗内「复制码+密码」
-            Console.WriteLine("鹊桥远程协助已启动（Avalonia 被控窗）。");
+            EnsureHostStarted();
+            Console.WriteLine("鹊桥远程协助已启动（Avalonia · 接受协助）。");
             Console.WriteLine(FriendConnectGuide.FormatShareClipboard(SharedHost.SessionCode, SharedHost.SessionPassword));
             SharedHost.SessionChanged += () =>
             {
@@ -80,8 +78,48 @@ internal static class Program
                 catch { }
             };
         }
+        else if (ShotMode is null)
+        {
+            Console.WriteLine("鹊桥远程协助已启动（Avalonia 双模式）。请在首页选择「接受协助」或「去协助别人」。");
+        }
 
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
+
+    public static AgentHost CreateHost()
+    {
+        var audit = new AuditLog(_auditPath);
+        return new AgentHost(
+            _port,
+            autoYes: _autoYes,
+            headless: false,
+            confirmTimeoutSeconds: _confirmTimeoutSeconds,
+            audit: audit,
+            auditPath: _auditPath,
+            insecure: _insecure,
+            preferRelay: true,
+            enableLanListen: _enableLan,
+            relayEndpoint: _relayEndpoint);
+    }
+
+    public static void EnsureHostStarted()
+    {
+        SharedHost ??= CreateHost();
+        SharedHost.Start();
+        // 控制台附带两行凭证，方便联调
+        try
+        {
+            Console.WriteLine(FriendConnectGuide.FormatShareClipboard(SharedHost.SessionCode, SharedHost.SessionPassword));
+        }
+        catch { /* ignore */ }
+    }
+
+    public static void StopHost()
+    {
+        try { SharedHost?.DisconnectAllSessions(); } catch { /* ignore */ }
+        try { SharedHost?.Stop(); } catch { /* ignore */ }
+        // Stop 后证书已释放；下次接受协助时重建
+        SharedHost = CreateHost();
     }
 
     public static AppBuilder BuildAvaloniaApp()
@@ -91,8 +129,10 @@ internal static class Program
 
     private static void PrintHelp()
     {
-        Console.WriteLine("鹊桥远程协助 · Avalonia 被控窗（Mac/Linux）");
+        Console.WriteLine("鹊桥远程协助 · Avalonia 双模式（Mac/Linux）");
         Console.WriteLine("  默认连公网中继 121.196.45.81:17891");
+        Console.WriteLine("  首页可选「接受协助」或「去协助别人」");
+        Console.WriteLine("  --accept            启动后直达接受协助");
         Console.WriteLine("  --insecure          明文业务管道（对齐协助端无指纹粘贴）");
         Console.WriteLine("  --relay host:port   覆盖默认中继");
         Console.WriteLine("  --port N            本地端口（默认 17890）");
@@ -103,5 +143,3 @@ internal static class Program
         Console.WriteLine("  --test-deny-write   联调：写操作一律拒绝");
     }
 }
-
-

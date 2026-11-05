@@ -1,0 +1,10 @@
+R011 live (Asia/Shanghai 2026-11-05)
+Agent: Linux Avalonia --accept --insecure --test-allow-pair --test-deny-write
+Relay: 121.196.45.81:17891
+Session: U6G722 / FQNW
+PAIR_OK
+PROCS ok=True (bamfdaemon / bamfdaemon-dbus-runner)
+LOGS ok=True (/tmp/r011-demo.log)
+RUN ok=False denied=True
+RUN_MSG=已拒绝，未做任何改动
+/tmp/r011-deny-marker absent
