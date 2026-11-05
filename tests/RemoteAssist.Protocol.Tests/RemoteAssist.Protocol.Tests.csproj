@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\RemoteAssist.Protocol\RemoteAssist.Protocol.csproj" />
     <ProjectReference Include="..\..\src\RemoteAssist.Agent\RemoteAssist.Agent.csproj" />
     <ProjectReference Include="..\..\src\RemoteAssist.Relay.Stub\RemoteAssist.Relay.Stub.csproj" />
+    <ProjectReference Include="..\..\src\RemoteAssist.Helper.UI\RemoteAssist.Helper.UI.csproj" />
   </ItemGroup>
 
 </Project>

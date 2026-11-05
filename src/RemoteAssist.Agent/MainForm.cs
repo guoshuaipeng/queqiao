@@ -28,10 +28,15 @@ internal sealed class MainForm : Form
     private bool _suppressHostChange;
     private readonly System.Windows.Forms.Timer _auditTimer;
     private ToolTip? _tip;
+    private readonly bool _enableReturnHome;
 
-    public MainForm(AgentHost host)
+    /// <summary>统一 App 中请求返回模式选择页。</summary>
+    public event Action? HomeRequested;
+
+    public MainForm(AgentHost host, bool enableReturnHome = false)
     {
         _host = host;
+        _enableReturnHome = enableReturnHome;
 
         Text = "远端协助";
         FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -71,6 +76,23 @@ internal sealed class MainForm : Form
             BackColor = Color.Transparent
         };
         header.Controls.Add(_headerSubtitle);
+        if (_enableReturnHome)
+        {
+            var btnHome = new Button
+            {
+                Text = "返回首页",
+                Location = new Point(640, 16),
+                Size = new Size(100, 32),
+                FlatStyle = FlatStyle.Flat,
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(0x15, 0x5F, 0xC0),
+                Font = new Font(Font.FontFamily, 9F, FontStyle.Bold)
+            };
+            btnHome.FlatAppearance.BorderColor = Color.White;
+            btnHome.Click += (_, _) => HomeRequested?.Invoke();
+            header.Controls.Add(btnHome);
+        }
+
 
         var sessionCard = MakeCard(16, 80, 360, 420);
         sessionCard.Controls.Add(new Label

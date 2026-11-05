@@ -29,9 +29,15 @@ internal sealed class MainForm : Form
     private AssistClient? _client;
     private readonly HelperUiSettings _settings;
     private bool _busy;
+    private readonly bool _enableReturnHome;
+    private bool _returningHome;
 
-    public MainForm()
+    /// <summary>统一 App 中请求返回模式选择页。</summary>
+    public event Action? HomeRequested;
+
+    public MainForm(bool enableReturnHome = false)
     {
+        _enableReturnHome = enableReturnHome;
         _settings = HelperUiSettings.Load();
 
         Text = "远端协助 · 协助端";
@@ -71,6 +77,23 @@ internal sealed class MainForm : Form
             BackColor = Color.Transparent
         });
         Controls.Add(header);
+
+        if (_enableReturnHome)
+        {
+            var btnHome = new Button
+            {
+                Text = "返回首页",
+                Location = new Point(660, 16),
+                Size = new Size(100, 32),
+                FlatStyle = FlatStyle.Flat,
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(0x0B, 0x7A, 0x45),
+                Font = new Font(Font.FontFamily, 9F, FontStyle.Bold)
+            };
+            btnHome.FlatAppearance.BorderColor = Color.White;
+            btnHome.Click += (_, _) => RequestHome();
+            header.Controls.Add(btnHome);
+        }
 
         var pairCard = MakeCard(16, 80, 748, 220);
         pairCard.Controls.Add(SectionTitle("1. 配对", 12, 10));
@@ -307,7 +330,7 @@ internal sealed class MainForm : Form
 
         Controls.Add(settingsCard);
 
-        FormClosing += (_, _) => Disconnect();
+        FormClosing += OnFormClosing;
 
         RefreshPreview();
         SetConnectedUi(false);
@@ -547,6 +570,38 @@ internal sealed class MainForm : Form
         SetStatus(string.IsNullOrEmpty(text)
             ? "已清除中继设置（v1 未启用）。"
             : $"已保存中继占位：{text}（即将支持，当前不连接）");
+    }
+
+
+    private void RequestHome()
+    {
+        if (!_enableReturnHome) return;
+        if (_client is not null)
+        {
+            var r = MessageBox.Show(this,
+                "当前已连接被控端。返回首页将断开连接。是否继续？",
+                "返回首页",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+            if (r != DialogResult.Yes) return;
+        }
+
+        _returningHome = true;
+        HomeRequested?.Invoke();
+    }
+
+    private void OnFormClosing(object? sender, FormClosingEventArgs e)
+    {
+        if (_enableReturnHome && !_returningHome && e.CloseReason == CloseReason.UserClosing)
+        {
+            // 统一 App：关窗 = 回首页，而不是退出进程
+            e.Cancel = true;
+            RequestHome();
+            return;
+        }
+
+        Disconnect();
     }
 
     private void SetStatus(string text) => _statusLabel.Text = text;

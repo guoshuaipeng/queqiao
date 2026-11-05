@@ -31,14 +31,16 @@
 - **传输：默认 TLS 1.2/1.3**（Agent 进程内临时自签证书；QR 载荷带 `fp=` SHA-256 指纹，客户端钉扎校验）。`--insecure` 明文仅调试。
 - **后期：公网中继隧道** — 代码占位见 `src/RemoteAssist.Relay.Stub`。可选自建 relay 或临时用 FRP 类方案。
 
-## 会话展示、主界面与安装
+## 产品形态、主界面与安装
 
-- 默认 **主界面 + 系统托盘**：主界面含大号会话码、二维码、本机 IP、短 TLS 指纹、复制载荷/MCP、已配对列表、最近审计；关闭主窗 = 回托盘（不退出）。
-- 托盘菜单：打开主界面、复制 MCP 配置、刷新会话码、已配对客户端断开、退出。
-- **安装包**：`installer/RemoteAssist.iss` + `scripts/build-installer.ps1`（Inno Setup）；无 Inno 可用 `scripts/install-agent-local.ps1`。
-- 默认安装目录：`%LOCALAPPDATA%\Programs\RemoteAssist`（当前用户）。
-- Helper 支持：手输 `host + code`、整段载荷、`--payload`、`--clipboard`。
-- `--headless` / `--yes`：**不启主界面与托盘**，保持 CLI。
+- **同一 App 双模式**（类似向日葵）：启动首页选「接受协助（被控）」或「去协助别人（控制）」；模式页可互相返回。
+- 被控：主界面 + 托盘（会话码 / 二维码 / TLS 指纹 / 配对 / 确认 / 审计）；关闭主窗 = 回托盘。
+- 控制：粘贴载荷配对向导 + 常用排障操作 + 中继设置占位。
+- **一个安装包**：`installer/RemoteAssist.iss` + `scripts/build-installer.ps1` → `RemoteAssist-Setup-*.exe`（内含 `RemoteAssist.exe`）。
+- 无 Inno：`scripts/install-app-local.ps1`（旧名 `install-agent-local.ps1` 仍转发）。
+- 默认安装目录：`%LOCALAPPDATA%\Programs\RemoteAssist`。
+- 兼容入口：独立 `RemoteAssist.Agent` / `RemoteAssist.Helper.UI` / Helper CLI / MCP 仍可单独 publish。
+- `--headless` / `--yes`：统一 App 或 Agent 均可走无 UI 被控。
 
 ## MCP
 

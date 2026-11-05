@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <RootNamespace>RemoteAssist.App</RootNamespace>
+    <AssemblyName>RemoteAssist</AssemblyName>
+    <Product>远端协助</Product>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RemoteAssist.Agent\RemoteAssist.Agent.csproj" />
+    <ProjectReference Include="..\RemoteAssist.Helper.UI\RemoteAssist.Helper.UI.csproj" />
+  </ItemGroup>
+
+</Project>
+

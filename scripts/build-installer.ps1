@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Publish Agent + compile Inno Setup installer (Setup.exe).
+  Publish unified App + compile Inno Setup installer (Setup.exe).
 
 .EXAMPLE
   .\scripts\build-installer.ps1
@@ -17,21 +17,21 @@ $root = Split-Path -Parent $PSScriptRoot
 if (-not $root) { $root = (Get-Location).Path }
 $env:PATH = "C:\Users\user\AppData\Local\Microsoft\dotnet;" + $env:PATH
 
-$agentOut = Join-Path $root "artifacts\agent-win-x64-sc"
+$appOut = Join-Path $root "artifacts\app-win-x64-sc"
 $iss = Join-Path $root "installer\RemoteAssist.iss"
 $installerOut = Join-Path $root "artifacts\installer"
 
 if (-not $SkipPublish) {
-    Write-Host "==> Publishing Agent (self-contained)..."
-    & (Join-Path $PSScriptRoot "publish-agent.ps1") -Configuration $Configuration
+    Write-Host "==> Publishing unified App (self-contained)..."
+    & (Join-Path $PSScriptRoot "publish-app.ps1") -Configuration $Configuration
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 } else {
-    Write-Host "==> SkipPublish: using existing $agentOut"
+    Write-Host "==> SkipPublish: using existing $appOut"
 }
 
-$exe = Join-Path $agentOut "RemoteAssist.Agent.exe"
+$exe = Join-Path $appOut "RemoteAssist.exe"
 if (-not (Test-Path $exe)) {
-    Write-Error "Missing $exe — run without -SkipPublish or .\scripts\publish-agent.ps1 first."
+    Write-Error "Missing $exe — run without -SkipPublish or .\scripts\publish-app.ps1 first."
     exit 1
 }
 
@@ -56,22 +56,20 @@ if (-not $iscc) {
     Write-Host "未找到 Inno Setup 编译器 ISCC.exe。" -ForegroundColor Yellow
     Write-Host "请安装 Inno Setup 6："
     Write-Host "  https://jrsoftware.org/isdl.php"
-    Write-Host "  或 GitHub: https://github.com/jrsoftware/issrc/releases"
     Write-Host "安装后重新运行本脚本。脚本与 .iss 已就绪：$iss"
     Write-Host ""
     Write-Host "也可用便携安装（当前用户，无需 Inno）:"
-    Write-Host "  .\scripts\install-agent-local.ps1"
+    Write-Host "  .\scripts\install-app-local.ps1"
     exit 2
 }
 
 New-Item -ItemType Directory -Force -Path $installerOut | Out-Null
 
-# 同步版本到 iss（简单替换 OutputBaseFilename 已含宏；此处用 /D 覆盖 AgentSource）
 Write-Host "==> Compiling installer with $iscc"
-& $iscc "/DAgentSource=$agentOut" "/DMyAppVersion=$Version" $iss
+& $iscc "/DAppSource=$appOut" "/DMyAppVersion=$Version" $iss
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-$setup = Get-ChildItem $installerOut -Filter "RemoteAssist-Agent-Setup-*.exe" |
+$setup = Get-ChildItem $installerOut -Filter "RemoteAssist-Setup-*.exe" |
     Sort-Object LastWriteTime -Descending |
     Select-Object -First 1
 
@@ -82,4 +80,4 @@ if (-not $setup) {
 
 Write-Host ""
 Write-Host "OK: $($setup.FullName) ($([math]::Round($setup.Length/1MB,2)) MB)"
-Write-Host "发给亲友：双击 Setup 安装 → 开始菜单打开「远端协助」。"
+Write-Host "亲友安装后打开「远端协助」，首页可选被控/控制。"
