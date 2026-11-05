@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（安装说明文案）+ 鹊桥-服务端（官网 Linux 旁注 + 补拍 R022 公网下载截图）
-> 状态：**ready-for-product**（客户端 A 节已交付，待服务端 B 节）
+> 状态：**done（待产品验收）**（客户端 A 节已交付；服务端 B 节旁注已上架，R022 公网下载截图已按公网地址栏补拍）
 > 依据：R022 产品已验收（公网包已换成含 R021 + 中性联网句的客户端）；亲友从官网下到的是依赖 .NET 8 的小包，安装说明只说「需要先装好」却没告诉怎么装，是当前最高频断点。
 
 ## 本轮目标
@@ -113,3 +113,47 @@ macOS 尚未提供正式下载。
 - 未改 MCP 三步 /「复制 MCP 配置」反馈；未改 trust-levels「才问你」
 - 未把 macOS 写成已可下
 
+
+
+## 交付说明（鹊桥-服务端 · 2026-11-06 Asia/Shanghai）
+
+### 上架摘要
+
+已更新官网首页 Linux 下载旁注并重建部署 `remote-assist-site` 二进制。未改接单页 / 后台 HTML，未替换 Windows / Linux 安装包（仍为 R022），未重启 `remote-assist-relay`，未占用 17891，未把安装包嵌进站点进程。
+
+### 旁注最终原文（已上线）
+
+> 解开后运行。需要先装好 .NET 8 桌面方向运行时。打开 [微软 .NET 8 下载页](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，选运行时、不要选 SDK。
+
+公网 HTML 等价：
+
+```html
+<p class="note" style="margin-top:8px">解开后运行。需要先装好 .NET 8 桌面方向运行时。打开 <a href="https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0">微软 .NET 8 下载页</a>，选运行时、不要选 SDK。</p>
+```
+
+### 部署
+
+- 构建：`site/` 模块 `GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ../artifacts/remote-assist-site-linux-amd64 ./cmd/site`
+- 产物：`artifacts/remote-assist-site-linux-amd64`，16983100 字节
+- 安装：`/usr/local/bin/remote-assist-site`（755）；仅 `systemctl restart remote-assist-site`
+- 重启后：`remote-assist-site` MainPID **19184**（ActiveEnterTimestamp 2026-11-06 00:33:11 CST / Asia/Shanghai）
+- `remote-assist-relay` 仍 MainPID **2114**（未重启），仍听 `*:17891`
+
+### 公网抽查
+
+- 首页导语仍含「Windows 和 Linux 都可下载使用」；**未**出现「目前以 Windows 为主」；macOS 仍「即将提供」
+- 亲友可见首页无端口号 / 17891 / 放行入站 / 也可下载自包含包 / TLS / stdio
+- 安装包仍为 R022：Windows 75,582,719 / `6AC3CE69…84400CD1`；Linux 7,999,909 / `B90E3B28…CD0AB1CE`；Content-Disposition 文件名无 `-fd`
+- `/ask`、`/admin` 均为 HTTP 200
+
+### 截图
+
+已用本机 Windows Edge 打开公网 `http://121.196.45.81/#download` 补拍，并覆盖以下三张（未改客户端 `r022-install-*.png` / `r022-clipboard-preview.png`，也未改本轮 `r023-install-*.png` / `r023-clipboard-preview.png`）：
+
+- `docs/screenshots/r022-home-download.png`：地址栏可见 `121.196.45.81/#download`；导语「Windows 和 Linux 都可下载使用」；下载区 Linux 旁注含「微软 .NET 8 下载页」与「选运行时、不要选 SDK」；macOS「即将提供」；无下载浮层。
+- `docs/screenshots/r022-win-download.png`、`r022-linux-download.png`：同一公网页 + Edge 下载浮层。Linux 文件名 `queqiao-linux-x64.tar.gz`（无 `-fd`，已完成「打开文件」）；Windows 文件名 `RemoteAssist-Setup-0.1.0.exe`（Edge SmartScreen 提示「通常不会下载 … 请在打开前确保信任」）。浮层里与本产品无关的本机其它下载记录已遮盖后再入库。
+
+### 明确未做
+
+- 未开下一轮；未改接单页 / 后台；未替换安装包；未重启中继
+- 未读/打印 `/etc/remote-assist-site.env`
