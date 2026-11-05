@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**ready**
+> 状态：**ready-for-product**
 > 依据：R028 产品已验收（Avalonia 接受协助端已能复制同一段 Skill 说明）。Windows 接受协助端 `RemoteAssist.Agent.MainForm` 没有「如何安装 MCP」卡片，只有菜单「复制 MCP 配置」，本轮不新开卡，只在已有菜单旁补上同一入口。
 
 ## 本轮目标
@@ -56,3 +56,43 @@
 
 - 更新本文交付说明与截图
 - 回告产品验收；未开下一轮
+
+## 交付说明（鹊桥-客户端 · 2026-11-06 Asia/Shanghai）
+
+### 实现摘要
+
+- Windows 接受协助端 `RemoteAssist.Agent.MainForm` 的「更多」菜单里，在「复制 MCP 配置」旁增加「复制 Skill 说明」（`McpInstallGuide.CopySkillButton`）。
+- 剪贴板 / 反馈复用 `SkillInstructionsClipboard` / `SkillCopiedHint`；反馈只写状态栏一次。
+- **未新开**「如何安装 MCP」卡片；未改 Avalonia R028 / 去协助端 R027；未改 Skill 常量原文；未自动监听 MCP；未换包。
+
+### 菜单位置
+
+- 会话卡「更多」按钮 → ContextMenuStrip：复制载荷 / 复制 MCP 配置 / **复制 Skill 说明** / 复制会话码
+
+### 截图（`docs/screenshots/r029-*`，已复制 `%USERPROFILE%\Downloads\r029-shots\`）
+
+| 文件 | 要点 | MD5 |
+|------|------|-----|
+| `r029-skill-menu.png` | 「更多」菜单展开，可见「复制 Skill 说明」在「复制 MCP 配置」旁；WinForms UiShot 实拍 | 8C120721CF7B5F5C7A0831195AC27189 |
+| `r029-skill-copied.png` | 状态栏反馈「已复制 Skill 说明。请交给智能体保存为技能，它只会用来安装 MCP。」只一次；UiShot | 932135806F785EEC133F5BAB22B2A217 |
+| `r029-skill-clipboard-preview.png` | 预览叠层展示与 R027/R028 相同的 Skill 正文；UiShot | F951A1F00A3D7F1E985392538C33CD55 |
+
+三张 MD5 互异，且与 r022–r028 不同（未覆盖旧文件）。
+
+### 改动文件
+
+- `src/RemoteAssist.Agent/MainForm.cs`
+- `tools/UiShot/R029Shots.cs`（新增）
+- `tools/UiShot/Program.cs`（`--r029`）
+- `docs/round-029.md` / `docs/roadmap.md` / `docs/screenshots/r029-*`
+
+### 测试
+
+`dotnet test`：170 通过 / 0 失败（RemoteAssist.sln Release）。
+
+### 明确未做
+
+- 未开下一轮；未换包；未改 Avalonia MainWindow / HelperWindow / Helper.UI 去协助 Skill 入口
+- 未改 MCP 三步 /「复制 MCP 配置」反馈 / 安装说明 / Skill 常量原文 / trust-levels「才问你」
+- 未新开 MCP 卡；未自动监听 MCP
+
