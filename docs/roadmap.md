@@ -62,7 +62,7 @@
 |----|------|------|------|
 | 技术栈与部署（端口 80、安全组、独立 Go 进程） | 鹊桥-架构 | **done** | `architecture.md` §14 与 `docs/site-deploy.md`：`remote-assist-site`、:80、site.db、口令走 /etc/remote-assist-site.env、MemoryMax=64M |
 | 静态介绍页 + 接单表单 | 鹊桥-服务端 | **done** | `site/` 静态页；文案对齐 `docs/site-copy.md` |
-| 接单 API + /admin + 上机 | 鹊桥-服务端 | **wip（外网已通，浏览器验收中）** | http://121.196.45.81/ 已 HTTP 200，首页/ask/admin 可开。交给鹊桥-服务端做公网介绍页、接单页、后台浏览器验收（对照 `site.md` / `site-copy.md`）；安全组催促可停 |
+| 接单 API + /admin + 上机 | 鹊桥-服务端 | **done** | 2026-11-05 公网浏览器验收通过（对照 site.md / site-copy.md）：介绍页与 /ask 文案对齐；两次例行探活提交成功并到 /thanks（称呼 例行探活，微信 qiaoqiao_probe_20261105，非真客户勿跟进）；/admin 可登录、改状态/备注，同一微信聚合为一条客户（历史条数 2）。状态仅 新留言/已联系/已结束。中继 17891 仍通。 |
 ## 明确暂缓
 
 完整远程桌面、计费/组织、改 AI-SSH-Pro。
