@@ -117,20 +117,18 @@
 - 未改接受协助端；未因展示/复制 Skill 而自动监听 MCP
 - 未把 Skill 做成控制面或远程控制
 
-
 ## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
 
-产品对照 `docs/screenshots/r027-*` 与源码常量独立验收通过（实现 `65f2e2d`）。本轮未换包。
+产品对照 `docs/screenshots/r027-*` 与交付说明独立验收通过（实现 `65f2e2d`）。
 
 独立核对：
 
-- `src/RemoteAssist.Protocol/McpInstallGuide.cs` 中 `SkillInstructions` / `SkillInstructionsClipboard` 与 round-027.md 剪贴板正文逐字一致；`SkillCopiedHint` 为「已复制 Skill 说明。请交给智能体保存为技能，它只会用来安装 MCP。」；`CopySkillButton` 为「复制 Skill 说明」。
-- 「如何安装 MCP」三步、`CopyConfigButton` / `CopiedOkHint` 未改；`WriteConfirmCopy.InstallInstructions` 与 `docs/trust-levels.md` 相对本轮提交无改动。
-- Windows `Helper.UI` 与 Linux Avalonia `HelperWindow` 都接上同一组常量；按钮白底蓝字，与「复制 MCP 配置」并列。Avalonia 反馈只写 `_mcpHint` 一次，不叠到状态行。
-- `docs/screenshots/r027-skill-entry.png`（MD5 `DE73CF0744C043EC96C1C353717A2FA4`）：去协助端可见轻按钮「复制 Skill 说明」与「复制 MCP 配置」并列；「连接」仍是唯一实心绿；三步原文仍在；状态「未连接」。
-- `docs/screenshots/r027-skill-copied.png`（MD5 `1D4BF356D9CB4C319167C8618FBD4B61`）：反馈「已复制 Skill 说明。请交给智能体保存为技能，它只会用来安装 MCP。」只出现一次；状态仍「未连接」。
-- `docs/screenshots/r027-skill-clipboard-preview.png`（MD5 `A4471DB93526EC54F51EC7E933AD7708`）：预览为上述逐字正文（含「不能代替对方本机确认」「不要用这段说明去远程控制电脑」）。未覆盖 `r022-*`～`r026-*`。
+- `r027-skill-entry.png`：去协助端「如何安装 MCP」内「复制 Skill 说明」为轻按钮，与「复制 MCP 配置」并列；该屏唯一实心绿仍是「连接」；三步原文未改。
+- `r027-skill-copied.png`：反馈「已复制 Skill 说明。请交给智能体保存为技能，它只会用来安装 MCP。」只出现一次；状态仍「未连接」。
+- `r027-skill-clipboard-preview.png`：预览正文与 round-027 剪贴板要求逐字一致；未见端口 / 17891 / Assist / ownerLink / TLS / 证书 / 签名 / HTTP /「不安全」/ SmartScreen。
+- 交付说明与 `McpInstallGuide` 常量披露 Windows WinForms 与 Linux Avalonia 共用文案；本轮截图以 Avalonia ui-shot 为主（与 R017 同类）。
+- 未改接受协助端、未换公网安装包、未自动对外监听 MCP、未改 trust-levels「才问你」、未改中继/官网/AI-SSH-Pro。
 
-缺口：三张均为 Avalonia ui-shot（剪贴板预览写入界面预览区，不是记事本实贴）；Windows 同源常量，无独立 WinForms 截图。不挡验收。
+缺口：未单独拍 WinForms 截图（同源常量已披露，不挡验收）；接受协助端 Skill 入口本轮明确不做，交 R028；公网包仍为 R026。
 
-已开 R028（接受协助端复用同一段 Skill 说明；不改中继/官网/AI-SSH-Pro）。
+已开 R028（接受协助端 Skill 薄封装：复制一段只讲如何安装 MCP 的技能说明；不改中继/官网/AI-SSH-Pro）。
