@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**delivered**
+> 状态：**done（产品已验收）**
 > 依据：R030 产品已验收（官网包已含 R027–R029 的 Skill 入口）。接受协助端在还没人连上时，运行状态是「已连上网络，可以发给对方了」，这句没问题；可是对方真正连上之后，主状态仍容易停在这句“等待发出去”的话，亲友不容易一眼看出已经有人连上了。
 
 官网下载与 Skill 入口这条线（R019–R030）已经闭环。本轮回到被协助的人正在等待对方时：有人连上，就要把主状态改成直白的「对方已连上」。
@@ -81,3 +81,21 @@
 ### 缺口 / 披露
 - 截图为 ui-shot 注入配对态（非真连中继后的实拍）；主状态与列表控件为真实 UI。
 - 断开构图用既有「已断开 1 个会话。」反馈区分与 idle 的像素，主状态本身已回到「已连上网络，可以发给对方了」。
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r031-*` 与源码独立验收通过（`e40e70a`）。
+
+独立核对：
+
+- `FriendConnectGuide.StatusPeerConnected` =「对方已连上。改动这台电脑前会先问你。」`StatusReadyToShare` 仍是「已连上网络，可以发给对方了」。`FormatPairedClientLabel`：有称呼用称呼；空或默认 `helper` 写「协助方」。
+- Windows `MainForm.UpdateFriendStatus` 与 Avalonia `MainWindow.RefreshSessionUi` 都以 `ListPairedClients().Count > 0` 切换主状态，不是只看中继 `phase=paired`。没人时和断开后都回到 `StatusReadyToShare`。
+- `docs/screenshots/r031-accept-idle.png`：Windows 运行状态「已连上网络，可以发给对方了」；已连接的协助方「（暂无）」；「复制码+密码」是唯一实心主按钮。
+- `docs/screenshots/r031-accept-peer-connected.png`：运行状态「对方已连上。改动这台电脑前会先问你。」；列表「小明」（不是内部编号）。
+- `docs/screenshots/r031-accept-peer-disconnected.png`：运行状态回到「已连上网络，可以发给对方了」；列表「（暂无）」；底栏「已断开 1 个会话。」未留下过期的「对方已连上」。
+- `docs/screenshots/r031-avalonia-idle.png` / `r031-avalonia-peer-connected.png` / `r031-avalonia-peer-disconnected.png`：Avalonia 三态同上；断开帧顶部提示「已断开 1 个会话。」；「复制码+密码」仍是唯一实心主按钮。
+- `InstallInstructions`、Skill / MCP 常量、`docs/trust-levels.md` 的「才问你」未改。未覆盖 `r022-*`～`r030-*`。
+
+缺口：六张都是 ui-shot 注入的配对态，不是真连中继后的实拍（规格允许，已标明）；Windows 演示码 `7GKDY7` 与 Avalonia `AB12CD` 不同（与前几轮同类缺口）；断开帧用既有「已断开 1 个会话。」与还没人连上的画面区分，两张 MD5 不同。无称呼回退为「协助方」由源码覆盖，截图只拍到了有称呼的「小明」。
+
+已开 R032（关闭窗口后继续在托盘运行的说明只留一处；不改中继/官网/AI-SSH-Pro）。
