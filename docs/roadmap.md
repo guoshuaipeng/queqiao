@@ -20,7 +20,8 @@
 | R009 | 高频：Mac/Linux 被控 CLI + MCP + 本机确认；打磨：框架依赖小包 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-009.md` |
 | R010 | 高频：Mac/Linux Avalonia 被控窗；打磨：Avalonia 框架依赖小包实测 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-010.md` |
 | R011 | 高频：Mac/Linux Avalonia 双模式（去协助）；打磨：框架依赖小包实测（顺手 Linux .tar.gz） | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-011.md` |
-| R012 | 高频：Avalonia 被控端信任等级；打磨：Windows P2-7「结束完全信任」文案 | 鹊桥-客户端 | **done（实现已推；待产品验收）** | `docs/round-012.md` |
+| R012 | 高频：Avalonia 被控端信任等级；打磨：Windows P2-7「结束完全信任」文案 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-012.md` |
+| R013 | 高频：Avalonia「本次协助已确认的改动」；打磨：刷新会话码先确认 | 鹊桥-客户端 | **wip** | `docs/round-013.md` |
 
 ## P0 — 可演示闭环（不后挪）
 
@@ -46,7 +47,7 @@
 
 ## 平台 — macOS / Linux（2026-11-05 起，不抢 P0）
 
-场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 补 Avalonia 信任等级 + Windows P2-7。
+场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 已产品验收 Avalonia 信任等级 + Windows P2-7；R013 补 Avalonia 已确认改动回看 + 刷新确认。
 
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
@@ -62,7 +63,7 @@
 4. **P2-4 / S001** 被控本机回看本次会话已确认的写操作审计（客户支持收尾；未确认的提议不得显示为已执行；不做云端工单）→ **done（R007）**
 5. **P2-5** Skill 薄封装（仅安装 MCP 指引，非控制面）→ 界面三步指引 **done（R005）**；Skill 封装仍 backlog
 6. **P2-6 / 质感** 刷新不抢点击、账号标签与选机、协助端白话操作、首页可点卡片 → **done（R006）** 见 `round-006.md` / `quality.md`
-7. **P2-7** 完全信任主界面操作改为「结束完全信任」+ 二次确认正文补全（见 trust-levels.md 2026-11-05 修正）→ **done（R012 实现已推；待产品验收）**
+7. **P2-7** 完全信任主界面操作改为「结束完全信任」+ 二次确认正文补全（见 trust-levels.md 2026-11-05 修正）→ **done（R012）**
 
 ## 官网与接单（低配机，轻量）
 

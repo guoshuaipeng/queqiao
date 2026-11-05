@@ -175,3 +175,14 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - FD 小包与 Linux `.tar.gz` 已记录；osx **已出包、未上真机**。
 
 已开 R012（Avalonia 被控端信任等级 + Windows P2-7；不改中继/官网/AI-SSH-Pro）。
+
+## R012 产品验收（2026-11-05 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r012-*` 与 `docs/trust-levels.md` 验收通过（`54ea652`）：
+
+- Linux Avalonia「高级」三档默认「每次询问」；完全信任二次确认原文（含「只对现在这位协助者、这一次有效」「会回到你平时的选择」）；取消后仍停在每次询问。
+- 宽松横幅 +「改回每次询问」；完全信任横幅 +「结束完全信任」；每次询问下写确认窗对齐已有原文。
+- Windows P2-7：完全信任主界面「结束完全信任」；二次确认正文补句；宽松仍「改回每次询问」。
+- `dotnet test` 168 绿。osx 已出包、未上真机。
+
+已开 R013（Avalonia「本次协助已确认的改动」+ 刷新会话码先确认；不改中继/官网/AI-SSH-Pro）。
