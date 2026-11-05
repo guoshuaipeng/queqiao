@@ -33,7 +33,7 @@ public class FriendConnectGuideTests
         var text = "会话码：AB12CD\n验证密码：xyzw";
         Assert.True(FriendConnectGuide.TryParseShareText(text, out var code, out var pwd));
         Assert.Equal("AB12CD", code);
-        Assert.Equal("XYZW", pwd); // normalize upper? check SessionPasswordGenerator
+        Assert.Equal("XYZW", pwd);
     }
 
     [Fact]
@@ -65,14 +65,18 @@ public class FriendConnectGuideTests
     }
 
     [Fact]
-    public void MomentA_Copy_NoPorts()
+    public void MomentA_Copy_NoPorts_AndPlainSetting()
     {
         Assert.Contains("RemoteAssist.Agent", FriendConnectGuide.MomentAAllow);
         Assert.DoesNotContain("17890", FriendConnectGuide.MomentAAllow);
         Assert.DoesNotContain("放行入站", FriendConnectGuide.MomentAAllow);
-        Assert.Equal("打开防火墙设\u2060置", FriendConnectGuide.OpenFirewallButtonText);
-        Assert.Contains("设", FriendConnectGuide.MomentAAllow);
-        Assert.Contains("置", FriendConnectGuide.MomentAAllow);
-        Assert.Contains("\u2060", FriendConnectGuide.MomentAAllow);
+        Assert.Equal("打开防火墙设置", FriendConnectGuide.OpenFirewallButtonText);
+        Assert.Contains("系统设置", FriendConnectGuide.MomentAAllow);
+        Assert.Contains('\n', FriendConnectGuide.MomentAAllow);
+        // 禁止零宽/BOM：用 Ordinal IndexOf（文化敏感 Contains 会把 U+2060 当成可忽略字符误报）
+        Assert.Equal(-1, FriendConnectGuide.MomentAAllow.IndexOf('\u2060'));
+        Assert.Equal(-1, FriendConnectGuide.MomentAAllow.IndexOf('\uFEFF'));
+        Assert.Equal(-1, FriendConnectGuide.OpenFirewallButtonText.IndexOf('\u2060'));
+        Assert.Equal(-1, FriendConnectGuide.OpenFirewallButtonText.IndexOf('\uFEFF'));
     }
 }

@@ -20,7 +20,7 @@ public enum FriendConnectFailKind
 public static class FriendConnectGuide
 {
     public const string MomentAAllow =
-        "请点「允许」，让鹊桥连网。弹窗里也许写着 RemoteAssist.Agent，就是本软件。系统设\u2060置一般不用改。";
+        "请点「允许」，让鹊桥连网。弹窗里也许写着 RemoteAssist.Agent，就是本软件。\n系统设置一般不用改。";
 
     public const string MomentADenied =
         "刚才可能点了取消，对方将连不上。";
@@ -28,7 +28,7 @@ public static class FriendConnectGuide
     public const string MomentAFirewallHint =
         "找到本软件（可能叫 RemoteAssist.Agent），在列表里勾选允许";
 
-    public const string OpenFirewallButtonText = "打开防火墙设\u2060置";
+    public const string OpenFirewallButtonText = "打开防火墙设置";
 
     public const string StatusReadyToShare = "已连上网络，可以发给对方了";
     public const string StatusWaitingPeer = "等待对方连接";

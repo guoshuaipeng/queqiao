@@ -125,13 +125,14 @@ internal sealed class MainForm : Form
             Location = new Point(16, 6),
             Size = new Size(728, 44),
             ForeColor = Color.FromArgb(0x5F, 0x3A, 0x00),
-            Text = FriendConnectGuide.MomentAAllow
+            Text = FriendConnectGuide.MomentAAllow.Replace("\n", Environment.NewLine)
         };
         _btnFirewall = new Button
         {
             Text = FriendConnectGuide.OpenFirewallButtonText,
             Location = new Point(16, 52),
-            Size = new Size(160, 28),
+            Size = new Size(180, 28),
+            AutoSize = false,
             Visible = false
         };
         _btnFirewall.Click += (_, _) => FriendConnectGuide.OpenWindowsFirewallSettings();
@@ -515,7 +516,7 @@ internal sealed class MainForm : Form
             return;
         }
 
-        _bannerText.Text = FriendConnectGuide.MomentAAllow;
+        _bannerText.Text = FriendConnectGuide.MomentAAllow.Replace("\n", Environment.NewLine);
         _btnFirewall.Visible = false;
         if (!_banner.Visible)
         {

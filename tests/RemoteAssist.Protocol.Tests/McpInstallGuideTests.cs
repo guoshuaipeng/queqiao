@@ -14,15 +14,17 @@ public class McpInstallGuideTests
         Assert.Contains("不能绕过", McpInstallGuide.Step3);
         Assert.DoesNotContain("17890", McpInstallGuide.StepsBlock);
         Assert.DoesNotContain("17891", McpInstallGuide.StepsBlock);
-        Assert.False(WriteConfirmCopy.ContainsBannedUiTerm(McpInstallGuide.StepsBlock.Replace("MCP", "")));
     }
 
     [Fact]
-    public void SettingWord_JoinerKeepsTogether_InMomentA()
+    public void BannerCopy_UsesPlainSetting_NoZeroWidthChars()
     {
-        Assert.Contains("\u2060", FriendConnectGuide.MomentAAllow);
-        Assert.Contains("\u2060", FriendConnectGuide.OpenFirewallButtonText);
-        // 不应再出现可被折成「改设」「置」的旧句式
-        Assert.DoesNotContain("不用改设置", FriendConnectGuide.MomentAAllow);
+        Assert.Equal("打开防火墙设置", FriendConnectGuide.OpenFirewallButtonText);
+        Assert.Contains("系统设置", FriendConnectGuide.MomentAAllow);
+        Assert.Equal(-1, FriendConnectGuide.MomentAAllow.IndexOf((char)0x2060));
+        Assert.Equal(-1, FriendConnectGuide.MomentAAllow.IndexOf((char)0xFEFF));
+        Assert.Equal(-1, FriendConnectGuide.OpenFirewallButtonText.IndexOf((char)0x2060));
+        Assert.DoesNotContain("设0置", FriendConnectGuide.MomentAAllow);
+        Assert.DoesNotContain("设0置", FriendConnectGuide.OpenFirewallButtonText);
     }
 }

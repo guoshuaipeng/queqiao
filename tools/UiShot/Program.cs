@@ -72,6 +72,16 @@ internal static class Program
             Thread.Sleep(200);
             Application.DoEvents();
             SaveForm(form, Path.Combine(outDir, "r005-agent-denied-banner.png"));
+            // OpenFirewallButtonText check
+            foreach (Control c in form.Controls)
+            {
+                if (c.Name != "banner") continue;
+                foreach (Control b in c.Controls)
+                {
+                    if (b is Button btn && btn.Text.Contains("防火墙", StringComparison.Ordinal))
+                        Console.WriteLine("firewall-btn=[" + btn.Text + "]");
+                }
+            }
             form.Hide();
         }
         finally

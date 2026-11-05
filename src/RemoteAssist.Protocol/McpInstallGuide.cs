@@ -25,8 +25,4 @@ public static class McpInstallGuide
 
     public const string CopiedPlaceholderHint =
         "已复制 MCP 配置（路径可能需改成实际 RemoteAssist.Mcp.exe）。请粘贴到 MCP 设置并保存。";
-
-    /// <summary>横幅「设置」防折行：用字面量「设置」两侧不可断（Word Joiner）。</summary>
-    public static string KeepSettingTogether(string text) =>
-        text.Replace("设置", "设\u2060置", StringComparison.Ordinal);
 }
