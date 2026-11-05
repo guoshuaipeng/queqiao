@@ -23,8 +23,11 @@ internal sealed class HelperWindow : Window
     private readonly TextBlock _preview;
     private readonly Border _toolCard;
     private readonly TextBox _output;
+    private readonly TextBox _argBox;
     private readonly Button _btnProcs;
+    private readonly Button _btnLs;
     private readonly Button _btnLogs;
+    private readonly Button _btnCat;
     private readonly Button _btnRun;
 
     private readonly TextBox _accountUserBox;
@@ -37,6 +40,7 @@ internal sealed class HelperWindow : Window
     private AssistClient? _client;
     private bool _busy;
     private bool _allowClose;
+    private bool _uiShotConnected;
 
     public HelperWindow(string? shotDir, bool enableReturnHome = true)
     {
@@ -317,31 +321,70 @@ internal sealed class HelperWindow : Window
             FontSize = 14,
             FontWeight = FontWeight.SemiBold
         });
-        var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+        toolStack.Children.Add(new TextBlock
+        {
+            Text = "建议先看正在运行的程序，再决定要不要改",
+            FontSize = 12,
+            Foreground = Brush.Parse("#5F6368"),
+            TextWrapping = TextWrapping.Wrap
+        });
+        var tools = new WrapPanel { MaxWidth = 680 };
         _btnProcs = MakeToolButton("查看正在运行的程序", 180);
         _btnProcs.Click += async (_, _) => await RunToolAsync(ToolKind.ListProcesses, new Dictionary<string, string?>());
+        _btnLs = MakeToolButton("查看文件夹", 110);
+        _btnLs.Click += async (_, _) =>
+        {
+            var p = RequireArg("path");
+            if (p is null) return;
+            await RunToolAsync(ToolKind.ListDir, new Dictionary<string, string?> { ["path"] = p });
+        };
         _btnLogs = MakeToolButton("查看日志", 100);
         _btnLogs.Click += async (_, _) =>
         {
-            var pathLog = OperatingSystem.IsWindows() ? @"C:\Windows\WindowsUpdate.log" : "/tmp/r011-demo.log";
+            var p = RequireArg("path");
+            if (p is null) return;
             await RunToolAsync(ToolKind.ReadLogTail, new Dictionary<string, string?>
             {
-                ["path"] = pathLog,
+                ["path"] = p,
                 ["lines"] = "80"
             });
         };
-        _btnRun = MakeToolButton("运行一条命令", 120);
+        _btnCat = MakeToolButton("查看文件", 100);
+        _btnCat.Click += async (_, _) =>
+        {
+            var p = RequireArg("path");
+            if (p is null) return;
+            await RunToolAsync(ToolKind.ReadFile, new Dictionary<string, string?> { ["path"] = p });
+        };
+        _btnRun = MakeToolButton("提议一项改动", 120);
         _btnRun.Click += async (_, _) =>
         {
-            var cmd = OperatingSystem.IsWindows()
-                ? "echo r014-should-not-run"
-                : "echo r014-should-not-run >/tmp/r014-deny-marker";
-            await RunToolAsync(ToolKind.RunCommand, new Dictionary<string, string?> { ["command"] = cmd });
+            var c = RequireArg("command");
+            if (c is null) return;
+            await RunToolAsync(ToolKind.RunCommand, new Dictionary<string, string?> { ["command"] = c });
         };
-        tools.Children.Add(_btnProcs);
-        tools.Children.Add(_btnLogs);
-        tools.Children.Add(_btnRun);
+        foreach (var b in new[] { _btnProcs, _btnLs, _btnLogs, _btnCat, _btnRun })
+        {
+            b.Margin = new Thickness(0, 0, 10, 8);
+            tools.Children.Add(b);
+        }
         toolStack.Children.Add(tools);
+
+        toolStack.Children.Add(new TextBlock
+        {
+            Text = "路径 / 命令参数",
+            FontSize = 12,
+            Foreground = Brush.Parse("#5F6368")
+        });
+        _argBox = new TextBox
+        {
+            Watermark = OperatingSystem.IsWindows()
+                ? @"例如 C:\Users\你的文件夹"
+                : "例如 /home/你的文件夹",
+            MinHeight = 32,
+            FontSize = 13
+        };
+        toolStack.Children.Add(_argBox);
 
         _output = new TextBox
         {
@@ -570,18 +613,27 @@ internal sealed class HelperWindow : Window
     {
         _btnConnect.IsEnabled = !connected;
         _pasteBox.IsEnabled = !connected;
-        _toolCard.IsVisible = connected;
-        _btnProcs.IsEnabled = connected;
-        _btnLogs.IsEnabled = connected;
-        _btnRun.IsEnabled = connected;
         if (connected)
         {
-            StyleToolButtonEnabled(_btnProcs);
-            StyleToolButtonEnabled(_btnLogs);
-            StyleToolButtonEnabled(_btnRun);
+            _btnConnect.Background = Brush.Parse("#E8EAED");
+            _btnConnect.Foreground = Brush.Parse("#9AA0A6");
+        }
+        else
+        {
+            _btnConnect.Background = Brush.Parse("#0F9D58");
+            _btnConnect.Foreground = Brushes.White;
+        }
+
+        _toolCard.IsVisible = connected;
+        foreach (var b in new[] { _btnProcs, _btnLs, _btnLogs, _btnCat, _btnRun })
+        {
+            b.IsEnabled = connected;
+            if (connected)
+                StyleToolButtonEnabled(b);
         }
         UpdateOwnConnectUi();
     }
+
 
     private static void StyleToolButtonEnabled(Button b)
     {
@@ -596,6 +648,7 @@ internal sealed class HelperWindow : Window
     {
         try { _client?.Dispose(); } catch { /* ignore */ }
         _client = null;
+        _uiShotConnected = false;
         SetConnectedUi(false);
         _status.Text = "状态：未连接";
     }
@@ -604,7 +657,7 @@ internal sealed class HelperWindow : Window
     {
         if (_deviceList.SelectedItem is null)
         {
-            ApplyOwnConnectStyle(enabled: false);
+            ApplyOwnConnectStyle(OwnConnectVisual.Disabled);
             _btnOwnConnect.Content = "连接这台电脑";
             _ownSelectHint.Text = "请先点选一台自己的电脑";
             return;
@@ -612,7 +665,7 @@ internal sealed class HelperWindow : Window
 
         if (_deviceList.SelectedItem is not DeviceListItem device)
         {
-            ApplyOwnConnectStyle(enabled: false);
+            ApplyOwnConnectStyle(OwnConnectVisual.Disabled);
             _btnOwnConnect.Content = "连接这台电脑";
             _ownSelectHint.Text = "请先点选一台自己的电脑";
             return;
@@ -621,34 +674,52 @@ internal sealed class HelperWindow : Window
         var name = string.IsNullOrWhiteSpace(device.Name) ? "这台电脑" : device.Name.Trim();
         if (!device.Online)
         {
-            ApplyOwnConnectStyle(enabled: false);
+            ApplyOwnConnectStyle(OwnConnectVisual.Disabled);
             _btnOwnConnect.Content = "连接：" + name;
             _ownSelectHint.Text = "这台电脑现在不在线";
             return;
         }
 
-        var canClick = _client is null;
-        ApplyOwnConnectStyle(enabled: canClick);
+        if (_client is not null || _uiShotConnected)
+        {
+            // 已连接：账号区不再保持实心绿主权重
+            ApplyOwnConnectStyle(OwnConnectVisual.ConnectedLight);
+            _btnOwnConnect.Content = "已连接";
+            _ownSelectHint.Text = "免密已连接「" + name + "」";
+            return;
+        }
+
+        ApplyOwnConnectStyle(OwnConnectVisual.Clickable);
         _btnOwnConnect.Content = "连接：" + name;
         _ownSelectHint.Text = "将免密连接「" + name + "」";
     }
 
-    private void ApplyOwnConnectStyle(bool enabled)
+
+    private void ApplyOwnConnectStyle(OwnConnectVisual visual)
     {
-        _btnOwnConnect.IsEnabled = enabled;
-        if (enabled)
+        switch (visual)
         {
-            _btnOwnConnect.Background = Brush.Parse("#0F9D58");
-            _btnOwnConnect.Foreground = Brushes.White;
-            _btnOwnConnect.FontWeight = FontWeight.Bold;
-        }
-        else
-        {
-            _btnOwnConnect.Background = Brush.Parse("#E8EAED");
-            _btnOwnConnect.Foreground = Brush.Parse("#9AA0A6");
-            _btnOwnConnect.FontWeight = FontWeight.Normal;
+            case OwnConnectVisual.Clickable:
+                _btnOwnConnect.IsEnabled = true;
+                _btnOwnConnect.Background = Brush.Parse("#0F9D58");
+                _btnOwnConnect.Foreground = Brushes.White;
+                _btnOwnConnect.FontWeight = FontWeight.Bold;
+                break;
+            case OwnConnectVisual.ConnectedLight:
+                _btnOwnConnect.IsEnabled = false;
+                _btnOwnConnect.Background = Brush.Parse("#F1F3F4");
+                _btnOwnConnect.Foreground = Brush.Parse("#5F6368");
+                _btnOwnConnect.FontWeight = FontWeight.SemiBold;
+                break;
+            default:
+                _btnOwnConnect.IsEnabled = false;
+                _btnOwnConnect.Background = Brush.Parse("#E8EAED");
+                _btnOwnConnect.Foreground = Brush.Parse("#9AA0A6");
+                _btnOwnConnect.FontWeight = FontWeight.Normal;
+                break;
         }
     }
+
 
 
     private string RelayEndpointText =>
@@ -813,6 +884,22 @@ internal sealed class HelperWindow : Window
         }
     }
 
+    private string? RequireArg(string key)
+    {
+        var v = _argBox.Text?.Trim() ?? "";
+        if (v.Length == 0)
+        {
+            var hint = OperatingSystem.IsWindows()
+                ? @"例如 C:\Users\你的文件夹"
+                : "例如 /home/你的文件夹";
+            _status.Text = key == "command"
+                ? "请先在上方填写要提议的改动（人话说明或命令）"
+                : "请先在上方填写路径（" + hint + "）";
+            return null;
+        }
+        return v;
+    }
+
     private async Task RunToolAsync(ToolKind tool, Dictionary<string, string?> args)
     {
         if (_busy) return;
@@ -839,7 +926,10 @@ internal sealed class HelperWindow : Window
             _status.Text = tool switch
             {
                 ToolKind.ListProcesses => "已查看正在运行的程序",
+                ToolKind.ListDir => "已查看文件夹",
                 ToolKind.ReadLogTail => "已查看日志",
+                ToolKind.ReadFile => "已查看文件",
+                ToolKind.RunCommand => "已提议一项改动",
                 _ => "完成"
             };
             AppendOutput($"[{tool}] OK\n{resp.Result}\n");
@@ -902,11 +992,12 @@ internal sealed class HelperWindow : Window
     /// <summary>UiShot：对方拒绝写操作后的协助端提示。</summary>
     internal void PrepareDeniedForShot()
     {
-        SetConnectedUi(true);
+        PrepareOwnerConnectedForShot();
         _status.Text = WriteConfirmCopy.DeniedMessage;
         _failHint.Text = "";
-        AppendOutput($"[RunCommand] FAIL: {WriteConfirmCopy.DeniedMessage}\n");
+        _output.Text = "[提议一项改动] FAIL: " + WriteConfirmCopy.DeniedMessage + "\n";
     }
+
 
 
     /// <summary>UiShot：仅展示账号/密码可见标签（设备列表空，便于与未选中截图区分）。</summary>
@@ -964,14 +1055,45 @@ internal sealed class HelperWindow : Window
     internal void PrepareOwnerConnectedForShot()
     {
         PrepareAccountForShot(selected: true);
+        _uiShotConnected = true;
         SetConnectedUi(true);
         _status.Text = "已用你的账号连接，无需再确认配对（写操作仍须对方本机确认）";
         _accountStatus.Text = "免密已连接（截图）";
+        _argBox.Text = "";
+        _argBox.Watermark = OperatingSystem.IsWindows()
+            ? @"例如 C:\Users\你的文件夹"
+            : "例如 /home/你的文件夹";
         _output.Text = "";
-        Height = Math.Max(Height, 860);
+        Height = Math.Max(Height, 920);
         Width = Math.Max(Width, 720);
     }
 
+    /// <summary>UiShot：强调已连接后账号区「已连接」轻态 + 会话码「连接」灰禁。</summary>
+    internal void PrepareConnectedButtonLightForShot()
+    {
+        PrepareOwnerConnectedForShot();
+        _output.Text = "（截图）账号区为「已连接」轻态；上方会话码「连接」已灰禁用。";
+        _accountStatus.Text = "免密已连接 · 按钮轻态（截图）";
+    }
+
+    /// <summary>UiShot：仅登录未免密连上——常用操作整块不可见。</summary>
+    internal void PrepareLoggedInUnconnectedForShot()
+    {
+        PrepareAccountForShot(selected: true);
+        SetConnectedUi(false);
+        _status.Text = "状态：未连接";
+        _accountStatus.Text = "已登录（截图）";
+        _output.Text = "";
+    }
+
+
+
+    private enum OwnConnectVisual
+    {
+        Disabled,
+        Clickable,
+        ConnectedLight
+    }
 
     /// <summary>列表展示用人话名称+在线/离线；内部 Id 不出现在 ToString。</summary>
     private sealed class DeviceListItem

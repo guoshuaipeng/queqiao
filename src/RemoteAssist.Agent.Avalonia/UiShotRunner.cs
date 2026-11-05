@@ -5,7 +5,7 @@ using Avalonia.Threading;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R015：设备列表人话 + 免密连接实心可点态 + 离线提示 + 常用操作可用。</summary>
+/// <summary>R016：未连接无常用操作；连上后五键+引导；已连接按钮轻态；拒绝文案。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -18,25 +18,26 @@ internal static class UiShotRunner
         helper.Show();
         await Task.Delay(350).ConfigureAwait(true);
 
-        helper.PrepareDeviceListHumanForShot();
+        // 1) 仅登录未免密：无常用操作整块
+        helper.PrepareLoggedInUnconnectedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r015-device-list-human.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r016-tools-hidden.png")).ConfigureAwait(true);
 
-        helper.PrepareAccountForShot(selected: false);
-        await Task.Delay(200).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r015-connect-unselected.png")).ConfigureAwait(true);
-
-        helper.PrepareAccountForShot(selected: true);
-        await Task.Delay(200).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r015-connect-online.png")).ConfigureAwait(true);
-
-        helper.PrepareOfflineSelectedForShot();
-        await Task.Delay(200).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r015-connect-offline.png")).ConfigureAwait(true);
-
+        // 2) 免密已连：五键 + 引导
         helper.PrepareOwnerConnectedForShot();
         await Task.Delay(300).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r015-owner-tools-enabled.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r016-tools-five.png")).ConfigureAwait(true);
+
+        // 3) 已连接按钮非实心绿（与五键同态，输出区写轻提示以区分 MD5）
+        helper.PrepareOwnerConnectedForShot();
+        helper.PrepareConnectedButtonLightForShot();
+        await Task.Delay(250).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r016-connected-button-light.png")).ConfigureAwait(true);
+
+        // 4) 拒绝后文案
+        helper.PrepareDeniedForShot();
+        await Task.Delay(250).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r016-propose-denied.png")).ConfigureAwait(true);
 
         helper.PrepareClose();
         helper.Close();

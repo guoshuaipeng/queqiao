@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（Avalonia；不改 `relay/`，不迁 Windows 到 Avalonia，不重做 R006–R015）
-> 状态：**todo**
+> 状态：**ready-for-product**
 > 依据：R015 产品已验收（e11a8a7）；docs/quality.md §3；Windows `Helper.UI` 已有五键白话，Avalonia 仍三键且「运行一条命令」。
 
 R015 已产品验收设备列表人话与免密连接可点击态。Avalonia 协助端连上后常用操作仍少于 Windows，且「运行一条命令」不像给亲友看的措辞；已连接后「连接：{名称}」仍实心绿，和常用操作抢主按钮权重。本轮把协助端连上之后的操作对齐 Windows 质感，不扩协议。
@@ -46,3 +46,38 @@ R015 已产品验收设备列表人话与免密连接可点击态。Avalonia 协
 
 - 更新本文交付说明与截图
 - 回告产品验收；未开下一轮
+
+## 交付说明（鹊桥-客户端 · 2026-11-05 Asia/Shanghai）
+
+### 实现摘要
+
+- **常用操作**：未连接（含仅登录未免密）整块不展示。访客会话码或账号免密连上后展开五键，顺序与文案：查看正在运行的程序 / 查看文件夹 / 查看日志 / 查看文件 / 提议一项改动。标题下轻引导「建议先看正在运行的程序，再决定要不要改」。
+- **提议一项改动**：走既有 `RunCommand` + `WriteConfirmCopy.DeniedMessage`（「已拒绝，未做任何改动」）。只读四项不走写确认弹窗（协议侧既有行为）。
+- **路径输入**：与 Windows 一致的「路径 / 命令参数」+ 人话占位「例如 /home/你的文件夹」（Windows 为 `C:\Users\…`），无英文命令行窗。
+- **已连接按钮权重**：账号区改为禁用轻态「已连接」（灰底深字，非实心绿）；会话码区「连接」已连接时灰禁用并去掉绿色填充。未连接选中在线时 R015 实心绿「连接：{name}」不变。
+- **未改** R013/R014/R015 已验收原文；未改 `docs/trust-levels.md`。
+- **osx**：与 Linux 同树可出包；本轮未重跑 publish、**未上真机**，不写成 Mac 已验收。
+
+### 截图（`docs/screenshots/r016-*`，已复制 `%USERPROFILE%\Downloads\r016-shots\`）
+
+| 文件 | 要点 | MD5 |
+|------|------|-----|
+| `r016-tools-hidden.png` | 仅登录未免密；无「常用操作」整块；ui-shot | 48A0FADF15CF4706A89B9987A831040F |
+| `r016-tools-five.png` | 免密已连；五键+引导；账号区「已连接」轻态；ui-shot | F9690581B530E302F62FB436C386D864 |
+| `r016-connected-button-light.png` | 已连接后账号「已连接」非实心绿；会话码「连接」灰禁；ui-shot | ADC23371A4465C17C76BF5CA9191ACF8 |
+| `r016-propose-denied.png` | 拒绝后「已拒绝，未做任何改动」；ui-shot | D235B25461B6B28AA3746C9A594B8D06 |
+
+截图为 **ui-shot**（示例设备客厅电脑/书房电脑），不是现场公网双机。亲友界面不出现 Assist、Admin、ownerLink、TLS、端口号、deviceId、offline。
+
+### 测试
+
+`dotnet test`：169 通过 / 0 失败（RemoteAssist.sln Release）。
+
+### 明确未做
+
+- 未开 R017 / 下一轮
+- 未改 `relay/`、官网、AI-SSH-Pro
+- 未把 Windows 迁到 Avalonia；未重做 R006–R015
+- 未改 R013–R015 已验收文案；未改 `docs/trust-levels.md`
+- 现场公网双机非本轮必须，未做
+
