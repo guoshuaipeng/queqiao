@@ -172,6 +172,21 @@ public class ConfirmedChangeListTests
         Assert.Contains("echo", line);
         Assert.Contains("2026-11-05", line);
     }
+
+    [Fact]
+    public void HumanizeDetail_Strips_Internal_Fields_Keeps_Headline()
+    {
+        var raw = "tool=RunCommand; source=协助者; via=ui; result=approved; at=2026-11-05T12:00:00Z; 运行一条命令 · 命令：echo hello";
+        var h = ConfirmedChangeList.HumanizeDetail(raw);
+        Assert.Equal("运行一条命令 · 命令：echo hello", h);
+        Assert.DoesNotContain("RunCommand", h);
+        Assert.DoesNotContain("tool=", h);
+
+        var line = ConfirmedChangeList.DisplayLine("tool_confirmed", raw, "2026-11-05 12:00:00");
+        Assert.Contains("已确认", line);
+        Assert.Contains("运行一条命令", line);
+        Assert.DoesNotContain("tool=RunCommand", line);
+    }
 }
 
 public class TrustLevelSessionTests

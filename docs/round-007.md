@@ -63,3 +63,9 @@
 | `docs/screenshots/r007-ask-no-banner.png` | 每次询问时主界面无信任提示 |
 | `docs/screenshots/r007-confirmed-list.png` | 已确认改动回看列表 |
 | `docs/screenshots/r007-denied-not-in-list.png` | 拒绝项不出现在已确认列表（同屏对照种子审计） |
+
+### 验收修复（同日）
+
+- 高级展开时托盘状态行钉在面板下方，不再叠住「宽松」。
+- 已确认列表展示 WriteConfirmCopy 人话，剥离 tool=/RunCommand。
+- 四张验收图 MD5 互不相同；拒绝项只出现在「最近审计」。

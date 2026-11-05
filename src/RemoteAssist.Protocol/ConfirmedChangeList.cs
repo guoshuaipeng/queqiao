@@ -35,6 +35,50 @@ public static class ConfirmedChangeList
         return list;
     }
 
+    /// <summary>
+    /// 去掉 tool=/source=/via=/result=/at= 等内部字段，留下 WriteConfirmCopy 人话摘要。
+    /// </summary>
+    public static string HumanizeDetail(string? detail)
+    {
+        if (string.IsNullOrWhiteSpace(detail))
+            return "";
+
+        var d = detail.Trim();
+        // 反复剥掉前导 technical key=value;
+        while (true)
+        {
+            var cut = -1;
+            foreach (var key in new[] { "tool=", "source=", "via=", "result=", "at=" })
+            {
+                if (d.StartsWith(key, StringComparison.OrdinalIgnoreCase))
+                {
+                    var semi = d.IndexOf(';');
+                    if (semi < 0)
+                    {
+                        d = "";
+                        cut = 0;
+                    }
+                    else
+                    {
+                        d = d[(semi + 1)..].TrimStart();
+                        cut = 0;
+                    }
+                    break;
+                }
+            }
+            if (cut < 0) break;
+        }
+
+        // 若仍以 RunCommand 等内部名开头，尽量丢掉
+        if (d.StartsWith("RunCommand", StringComparison.OrdinalIgnoreCase))
+        {
+            var semi = d.IndexOf(';');
+            d = semi >= 0 ? d[(semi + 1)..].TrimStart() : "";
+        }
+
+        return d.Trim().TrimStart('·', ' ', '	');
+    }
+
     public static string DisplayLine(string eventType, string detail, string? timestamp = null)
     {
         var label = eventType switch
@@ -45,7 +89,8 @@ public static class ConfirmedChangeList
             "tool_admin_auto" => "已自动执行",
             _ => eventType
         };
-        var d = detail.Length > 100 ? detail[..97] + "…" : detail;
+        var d = HumanizeDetail(detail);
+        if (d.Length > 90) d = d[..87] + "…";
         var ts = string.IsNullOrEmpty(timestamp) ? "" : timestamp + "  ";
         return string.IsNullOrEmpty(d) ? $"{ts}{label}" : $"{ts}{label}  ·  {d}";
     }

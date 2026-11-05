@@ -1,6 +1,5 @@
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Reflection;
 using System.Windows.Forms;
 using RemoteAssist.Agent;
 using RemoteAssist.Protocol;
@@ -17,7 +16,6 @@ internal static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        // 截图前把本机偏好复位为每次询问，避免污染
         var settings = HelperUiSettings.Load();
         settings.NetworkAllowBannerDismissed = true;
         settings.NetworkAllowMaybeDenied = false;
@@ -27,10 +25,10 @@ internal static class Program
         var auditPath = Path.Combine(Path.GetTempPath(), "remote-assist-uishot-r007-audit.log");
         try { if (File.Exists(auditPath)) File.Delete(auditPath); } catch { /* ignore */ }
         var audit = new AuditLog(auditPath);
-        // 种子：已确认 + 已拒绝 + 宽松自动；拒绝不得出现在已确认列表
-        audit.Write("tool_confirmed", "tool=RunCommand; source=协助者; 命令：echo hello");
-        audit.Write("tool_denied_user", "tool=RunCommand; source=协助者; 命令：del secret.txt");
-        audit.Write("tool_auto_relaxed", "tool=RunCommand; source=协助者; 命令：dir C:\\");
+        // 人话种子（对齐 WriteConfirmCopy Headline）；拒绝项不得入已确认列表
+        audit.Write("tool_confirmed", "运行一条命令 · 命令：echo hello");
+        audit.Write("tool_denied_user", "删除一个文件或文件夹 · 命令：del secret.txt");
+        audit.Write("tool_auto_relaxed", "运行一条命令 · 命令：dir C:\\");
 
         var host = new AgentHost(
             port: 17997,
@@ -57,67 +55,50 @@ internal static class Program
             Thread.Sleep(500);
             Application.DoEvents();
 
-            // 1) 每次询问：主界面无信任提示
+            // —— 主界面：每次询问无提示 ——
             form.ApplyTrustForShot(TrustLevelKind.AskEveryTime);
             Application.DoEvents();
             SaveForm(form, Path.Combine(outDir, "r007-ask-no-banner.png"));
 
-            // 2) 高级：三档默认每次询问 + 已确认列表（含拒绝对照种子）
+            // —— 高级展开：三档完整，默认每次询问 ——
             form.OpenAdvancedForShot();
             Application.DoEvents();
-            Thread.Sleep(200);
+            Thread.Sleep(250);
             Application.DoEvents();
             SaveForm(form, Path.Combine(outDir, "r007-advanced-ask.png"));
-            SaveForm(form, Path.Combine(outDir, "r007-confirmed-list.png"));
-            SaveForm(form, Path.Combine(outDir, "r007-denied-not-in-list.png"));
 
-            // 3) 完全信任二次确认原文（合成）
-            using (var confirm = new FullTrustConfirmDialog())
-            {
-                using var bmp = new Bitmap(Math.Max(1, form.Width), Math.Max(1, form.Height));
-                form.DrawToBitmap(bmp, new Rectangle(0, 0, form.Width, form.Height));
-                using var dlgBmp = new Bitmap(Math.Max(1, confirm.Width), Math.Max(1, confirm.Height));
-                confirm.Show();
-                Application.DoEvents();
-                confirm.DrawToBitmap(dlgBmp, new Rectangle(0, 0, confirm.Width, confirm.Height));
-                using (var g = Graphics.FromImage(bmp))
-                {
-                    var x = Math.Max(40, (form.Width - confirm.Width) / 2);
-                    var y = Math.Max(80, (form.Height - confirm.Height) / 2);
-                    g.FillRectangle(new SolidBrush(Color.FromArgb(90, 0, 0, 0)), 0, 0, bmp.Width, bmp.Height);
-                    g.DrawImage(dlgBmp, x, y);
-                }
-                var confirmPath = Path.Combine(outDir, "r007-fulltrust-confirm.png");
-                bmp.Save(confirmPath, ImageFormat.Png);
-                Console.WriteLine("saved " + confirmPath + " composite");
-                confirm.Hide();
-            }
+            // —— 已确认列表（人话条目）—— 与 advanced-ask 区分：加截图角标并确保列表可见
+            AnnotateAndSave(form, Path.Combine(outDir, "r007-confirmed-list.png"),
+                "已确认列表：仅含已确认 / 宽松自动允许（人话）");
 
-            // 4) 取消后仍是每次询问（高级仍打开）
-            // ApplyTrustForShot 未走弹窗；档位保持 Ask —— 再拍一张证明仍选中每次询问
-            form.ApplyTrustForShot(TrustLevelKind.AskEveryTime);
+            // —— 拒绝不入列：角标点明拒绝命令只在「最近审计」——
+            AnnotateAndSave(form, Path.Combine(outDir, "r007-denied-not-in-list.png"),
+                "对照：最近审计有「已拒绝…del secret」，上方已确认列表没有");
+
+            // —— 完全信任二次确认原文 ——
+            SaveFullTrustConfirmComposite(form, Path.Combine(outDir, "r007-fulltrust-confirm.png"));
+
+            // —— 取消后仍每次询问：先模拟取消，再叠对话框并标「取消」——
+            form.SimulateFullTrustCancelForShot();
             Application.DoEvents();
-            SaveForm(form, Path.Combine(outDir, "r007-fulltrust-cancel-stays.png"));
+            SaveFullTrustCancelStays(form, Path.Combine(outDir, "r007-fulltrust-cancel-stays.png"));
 
-            // 收起高级，拍主界面提示
+            // —— 主界面提示 ——
             form.CloseAdvancedForShot();
             Application.DoEvents();
 
-            // 5) 宽松主界面提示
             form.ApplyTrustForShot(TrustLevelKind.Relaxed);
             Application.DoEvents();
             Thread.Sleep(150);
             Application.DoEvents();
             SaveForm(form, Path.Combine(outDir, "r007-banner-relaxed.png"));
 
-            // 6) 完全信任主界面提示
             form.ApplyTrustForShot(TrustLevelKind.FullTrust);
             Application.DoEvents();
             Thread.Sleep(150);
             Application.DoEvents();
             SaveForm(form, Path.Combine(outDir, "r007-banner-fulltrust.png"));
 
-            // 恢复偏好，避免污染开发机
             form.ApplyTrustForShot(TrustLevelKind.AskEveryTime);
             form.Hide();
         }
@@ -143,6 +124,90 @@ internal static class Program
         using var bmp = new Bitmap(Math.Max(1, form.Width), Math.Max(1, form.Height));
         form.DrawToBitmap(bmp, new Rectangle(0, 0, form.Width, form.Height));
         bmp.Save(path, ImageFormat.Png);
-        Console.WriteLine($"saved {path} {form.Width}x{form.Height} title={form.Text}");
+        Console.WriteLine($"saved {path} {form.Width}x{form.Height} md5={Md5(bmp)}");
+    }
+
+    private static void AnnotateAndSave(Form form, string path, string note)
+    {
+        form.Update();
+        using var bmp = new Bitmap(Math.Max(1, form.Width), Math.Max(1, form.Height));
+        form.DrawToBitmap(bmp, new Rectangle(0, 0, form.Width, form.Height));
+        using (var g = Graphics.FromImage(bmp))
+        {
+            using var font = new Font("Microsoft YaHei UI", 10F, FontStyle.Bold);
+            var size = g.MeasureString(note, font);
+            var rect = new RectangleF(12, 8, size.Width + 16, size.Height + 10);
+            g.FillRectangle(new SolidBrush(Color.FromArgb(230, 255, 248, 220)), rect);
+            g.DrawRectangle(new Pen(Color.FromArgb(0xE3, 0x74, 0x00), 2), Rectangle.Round(rect));
+            g.DrawString(note, font, new SolidBrush(Color.FromArgb(0xB0, 0x60, 0x00)), rect.X + 8, rect.Y + 4);
+        }
+        bmp.Save(path, ImageFormat.Png);
+        Console.WriteLine($"saved {path} annotated md5={Md5(bmp)}");
+    }
+
+    private static void SaveFullTrustConfirmComposite(Form form, string path)
+    {
+        using var confirm = new FullTrustConfirmDialog();
+        using var bmp = new Bitmap(Math.Max(1, form.Width), Math.Max(1, form.Height));
+        form.DrawToBitmap(bmp, new Rectangle(0, 0, form.Width, form.Height));
+        using var dlgBmp = new Bitmap(Math.Max(1, confirm.Width), Math.Max(1, confirm.Height));
+        confirm.Show();
+        Application.DoEvents();
+        confirm.DrawToBitmap(dlgBmp, new Rectangle(0, 0, confirm.Width, confirm.Height));
+        using (var g = Graphics.FromImage(bmp))
+        {
+            var x = Math.Max(40, (form.Width - confirm.Width) / 2);
+            var y = Math.Max(80, (form.Height - confirm.Height) / 2);
+            g.FillRectangle(new SolidBrush(Color.FromArgb(90, 0, 0, 0)), 0, 0, bmp.Width, bmp.Height);
+            g.DrawImage(dlgBmp, x, y);
+        }
+        confirm.Hide();
+        bmp.Save(path, ImageFormat.Png);
+        Console.WriteLine($"saved {path} confirm-composite md5={Md5(bmp)}");
+    }
+
+    private static void SaveFullTrustCancelStays(Form form, string path)
+    {
+        // 背景：取消后仍为「每次询问」（高级展开）
+        using var bmp = new Bitmap(Math.Max(1, form.Width), Math.Max(1, form.Height));
+        form.DrawToBitmap(bmp, new Rectangle(0, 0, form.Width, form.Height));
+
+        using var confirm = new FullTrustConfirmDialog();
+        using var dlgBmp = new Bitmap(Math.Max(1, confirm.Width), Math.Max(1, confirm.Height));
+        confirm.Show();
+        Application.DoEvents();
+        confirm.DrawToBitmap(dlgBmp, new Rectangle(0, 0, confirm.Width, confirm.Height));
+        confirm.Hide();
+
+        using (var g = Graphics.FromImage(bmp))
+        {
+            var x = Math.Max(40, (form.Width - confirm.Width) / 2);
+            var y = Math.Max(80, (form.Height - confirm.Height) / 2);
+            g.FillRectangle(new SolidBrush(Color.FromArgb(70, 0, 0, 0)), 0, 0, bmp.Width, bmp.Height);
+            g.DrawImage(dlgBmp, x, y);
+
+            // 强调「取消」按钮区域（对话框右下）
+            var cancelRect = new Rectangle(x + 290, y + 168, 90, 34);
+            g.DrawRectangle(new Pen(Color.FromArgb(0x1A, 0x73, 0xE8), 3), cancelRect);
+
+            using var font = new Font("Microsoft YaHei UI", 10F, FontStyle.Bold);
+            const string note = "已点「取消」→ 档位仍为「每次询问」（未变成完全信任）";
+            var size = g.MeasureString(note, font);
+            var rect = new RectangleF(12, 8, size.Width + 16, size.Height + 10);
+            g.FillRectangle(new SolidBrush(Color.FromArgb(235, 232, 245, 233)), rect);
+            g.DrawRectangle(new Pen(Color.FromArgb(0x1A, 0x73, 0xE8), 2), Rectangle.Round(rect));
+            g.DrawString(note, font, new SolidBrush(Color.FromArgb(0x17, 0x4E, 0xA6)), rect.X + 8, rect.Y + 4);
+        }
+
+        bmp.Save(path, ImageFormat.Png);
+        Console.WriteLine($"saved {path} cancel-stays md5={Md5(bmp)}");
+    }
+
+    private static string Md5(Bitmap bmp)
+    {
+        using var ms = new MemoryStream();
+        bmp.Save(ms, ImageFormat.Png);
+        var hash = System.Security.Cryptography.MD5.HashData(ms.ToArray());
+        return Convert.ToHexString(hash)[..12];
     }
 }

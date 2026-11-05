@@ -754,11 +754,11 @@ internal sealed class AgentHost
             }
             else if (trust == TrustLevelKind.FullTrust)
             {
-                _audit.Write("tool_auto_fulltrust", $"tool={tool}; source={source}; {desc.ForAudit}");
+                _audit.Write("tool_auto_fulltrust", $"{desc.ForAudit}; source={source}");
             }
             else if (trust == TrustLevelKind.Relaxed)
             {
-                _audit.Write("tool_auto_relaxed", $"tool={tool}; source={source}; {desc.ForAudit}");
+                _audit.Write("tool_auto_relaxed", $"{desc.ForAudit}; source={source}");
             }
             else if (session.Permission == PermissionLevel.Admin)
             {

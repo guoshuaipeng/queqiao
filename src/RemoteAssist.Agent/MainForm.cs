@@ -347,7 +347,7 @@ internal sealed class MainForm : Form
         _btnAdvanced = MakeButton("高级 ▸", 16, y0 + 376, 100);
         _btnAdvanced.Click += (_, _) => ToggleAdvanced();
 
-        _advancedPanel = MakeCard(16, y0 + 412, 728, 420);
+        _advancedPanel = MakeCard(16, y0 + 412, 728, 460);
         _advancedPanel.Visible = false;
         _advancedPanel.Controls.Add(new Label
         {
@@ -566,13 +566,14 @@ internal sealed class MainForm : Form
         _auditView = new ListView
         {
             Location = new Point(12, 396),
-            Size = new Size(704, 18),
+            Size = new Size(704, 56),
             View = View.Details,
             FullRowSelect = true,
             HeaderStyle = ColumnHeaderStyle.None,
             MultiSelect = false,
-            BorderStyle = BorderStyle.None,
-            BackColor = Color.White
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = Color.White,
+            Name = "recentAuditList"
         };
         _auditView.Columns.Add("line", 680);
         _advancedPanel.Controls.Add(_auditView);
@@ -757,9 +758,27 @@ internal sealed class MainForm : Form
             _trustTip.Top = 64 + bannerH;
         var shift = bannerH + tipH;
         foreach (var kv in _baseTops)
+        {
+            // 托盘提示始终单独钉在窗体底部，避免叠进「高级」单选组（曾挡住「宽松」）
+            if (ReferenceEquals(kv.Key, _statusLabel)) continue;
             kv.Key.Top = kv.Value + shift;
-        var advExtra = _advancedOpen ? Math.Max(0, _advancedPanel.Height - 150) : 0;
-        ClientSize = new Size(760, _baseClientHeight + shift + advExtra);
+        }
+
+        if (_advancedOpen)
+        {
+            // 高级面板完整露出 + 底部状态行
+            var needH = _advancedPanel.Bottom + _statusLabel.Height + 10;
+            ClientSize = new Size(760, Math.Max(_baseClientHeight + shift, needH));
+            _statusLabel.Top = _advancedPanel.Bottom + 6;
+            _advancedPanel.BringToFront();
+            _statusLabel.BringToFront();
+        }
+        else
+        {
+            ClientSize = new Size(760, _baseClientHeight + shift);
+            var baseStatus = _baseTops.TryGetValue(_statusLabel, out var st) ? st : 592;
+            _statusLabel.Top = baseStatus + shift;
+        }
     }
 
     private void ToggleAdvanced()
@@ -1169,6 +1188,15 @@ internal sealed class MainForm : Form
     internal void CloseAdvancedForShot()
     {
         if (_advancedOpen) ToggleAdvanced();
+    }
+
+    /// <summary>UiShot：模拟选完全信任后点取消，档位回到每次询问。</summary>
+    internal void SimulateFullTrustCancelForShot()
+    {
+        using var dlg = new FullTrustConfirmDialog();
+        // 不真正 ShowDialog（无人工点击）；直接走取消分支：档位不变
+        SyncTrustRadios();
+        RefreshTrustUi();
     }
 
     /// <summary>UiShot：同步信任档 UI（不弹二次确认）。</summary>
