@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>鹊桥远程协助 · 智能体</title>
+  <meta name="description" content="用命令与智能体协助修电脑，不是远程桌面。危险操作需对方本机确认。">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="/"><strong>鹊桥</strong><span>远程协助 · 智能体</span></a>
+      <nav>
+        <a href="#how">怎么用</a>
+        <a href="#safe">安全</a>
+        <a href="#download">下载</a>
+        <a href="/ask">留下联系方式</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>用命令和智能体修电脑，<br>不是把整块屏幕交给别人。</h1>
+      <p class="lead">鹊桥帮你连上对方的电脑：查进程、看日志、读文件、在对方确认后执行命令。目前以 Windows 为主，适合帮亲友排障、客户支持和同事运维。</p>
+      <div class="actions">
+        <a class="btn primary" href="/ask">留下联系方式</a>
+        <a class="btn" href="#download">下载 Windows 安装包</a>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="grid">
+        <article class="card">
+          <h2>三步连上</h2>
+          <ol>
+            <li><span class="num">1.</span>对方安装鹊桥，选择「接受协助」。</li>
+            <li><span class="num">2.</span>把会话码和验证密码发给你（或用账号免密连自己的机器）。</li>
+            <li><span class="num">3.</span>你在「去协助别人」里连上，开始排障。</li>
+          </ol>
+        </article>
+        <article class="card">
+          <h2>它做什么</h2>
+          <p>列进程、读日志、浏览目录、读文件、提议并执行命令。不做完整远程桌面，也不注入键鼠。</p>
+        </article>
+        <article class="card" id="safe">
+          <h2>安全边界</h2>
+          <p>写操作必须在对方电脑上点允许。中继只负责打通连接，不会代执行命令，也不能绕过本机确认。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="download" class="card">
+      <h2>下载</h2>
+      <p>Windows 安装包入口将在此公布。当前可向协助方索取安装包，或使用仓库构建产物。</p>
+      <p class="note" style="margin-top:12px">macOS <span class="soon">即将提供</span>　Linux <span class="soon">即将提供</span>　请先不要当作已可下载。</p>
+    </section>
+  </div>
+  <footer>
+    <div class="wrap">鹊桥远程协助 · 智能体　　中继只转发，不代执行</div>
+  </footer>
+</body>
+</html>

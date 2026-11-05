@@ -1,0 +1,4 @@
+/data/
+*.db
+*.exe
+/remote-assist-site
