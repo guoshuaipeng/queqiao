@@ -2,8 +2,8 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（出包）/ 鹊桥-服务端（替换上架）
-> 状态：**done（待产品验收）**
-> 依据：R033 产品已验收。R031「对方已连上」、R032 托盘说明去重、R033 Windows「结束这次协助」已进仓库（HEAD 含 3b01e7f）；公网安装包仍是 R030（Windows 75,582,164 / Linux 8,001,712），从官网下载的人还拿不到这三轮改动。
+> 状态：**done（产品已验收）**
+> 依据：R033 产品已验收。R031「对方已连上」、R032 托盘说明去重、R033 Windows「结束这次协助」已进仓库并随本轮进入官网安装包（出包 HEAD 7bf7924，含祖先 3b01e7f）。
 
 ## 本轮目标
 
@@ -122,3 +122,22 @@ Linux 旁注原文仍为：「解开后运行。需要先装好 .NET 8 桌面方
 
 - 未开下一轮；未重启 site / relay；未改 HTML；未改中继
 - 未读/打印 `/etc/remote-assist-site.env`；未把帮助脚本加进仓库 `tools/`
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照公网下载与 `docs/screenshots/r034-*` 独立验收通过。
+
+- 出包 HEAD `7bf7924`（祖先含 R033 `3b01e7f`、R031 `e40e70a`、R032 `b78fc1e`）；客户端文档 `763d9b3`；服务端上架 `b5f089d`。
+- 公网 Windows http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe ：75,584,964 字节，SHA256 `64A3231617963B4D6100036E34FA8A74DAB6FFC6978AE6E5142FE82A8B5EBCD0`，Last-Modified 2026-11-06 02:55:23 Asia/Shanghai，文件头为 MZ。与本机产物一致，并不同于 R030 的 75,582,164 / `EEA41DA2…C1E5`。
+- 公网 Linux http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz ：8,002,690 字节，SHA256 `B20257AD6E7A6CFB4E5048BBD2099A8D0B5906DA96802C5C7BFFC60B8E789108`，同一次 Last-Modified，文件头为 gzip；`Content-Disposition` 文件名无 `-fd`。与本机产物一致，并不同于 R030 的 8,001,712 / `D659BF24…080D`。
+- 首页独立核对：Windows 旁注「若浏览器提示通常不会下载，选择保留即可。」；Linux 旁注含微软 .NET 8 下载页与「选运行时、不要选 SDK」；导语含「Windows 和 Linux 都可下载使用」；macOS「即将提供」；首页无 17891。`/`、`/ask`、`/admin` 均为 HTTP 200。
+
+| 截图 | MD5 | 产品看到的 |
+|------|-----|------------|
+| `docs/screenshots/r034-home-download.png` | E127CD97B042FEFBF7D83C508D72B7C7 | 地址栏 `121.196.45.81/#download`；Windows 旁注、Linux 旁注、macOS「即将提供」均可读 |
+| `docs/screenshots/r034-win-download.png` | 070FFB4EF7192753951F9994968F22A9 | Edge 浮层 `RemoteAssist-Setup-0.1.0.exe`（约 72.1 MB，与 75,584,964 字节相符） |
+| `docs/screenshots/r034-linux-download.png` | 42AD0656BE9A9BBC1F974630ED5541E4 | Edge 浮层 `queqiao-linux-x64.tar.gz`（约 7.6 MB，与 8,002,690 字节相符；无 `-fd`） |
+
+缺口：两张下载浮层几乎相同（浏览器同时列出两个文件）；地址栏仍显示「不安全」；macOS 仍未正式可下；浮层拍摄时下载尚未完成，但不影响文件名与约略体积核对。服务端称 site MainPID 仍 21336、relay MainPID 仍 2114（本轮未再登录服务器核对进程号）。
+
+已开 R035（去协助端在对方结束协助后，把主状态说成「对方已结束这次协助。」；交给鹊桥-客户端；不改中继/官网/AI-SSH-Pro）。
