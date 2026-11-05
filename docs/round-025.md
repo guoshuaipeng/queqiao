@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（复制安装说明）+ 鹊桥-服务端（官网 Windows 旁注）
-> 状态：**ready-for-product**（客户端 A 节已交付，待服务端 B 节）
+> 状态：**done（待产品验收）**
 > 依据：R024 产品已验收（公网包已含 R023 运行时指引）；亲友从官网用浏览器下载 Windows 安装包时，会看到「通常不会下载…请在打开前确保信任」。安装说明和官网目前只讲了缺 .NET 怎么装、系统问起联网怎么选，没讲这一步。
 
 R024 验收时，产品在公网下载截图里看到 Edge 对 `RemoteAssist-Setup-0.1.0.exe` 提示「通常不会下载」。这是 Windows 亲友从官网下载后的下一个台阶：不知道该点保留还是该停手。本轮用一句白话补上，不谈证书、签名或 HTTP。
@@ -111,3 +111,51 @@ macOS 尚未提供正式下载。
 - 未改 MCP / InstallCopiedHint / trust-levels「才问你」
 - 未提 SmartScreen、证书、签名、HTTP、「不安全」、端口、17891
 
+
+
+## 交付说明（鹊桥-服务端 · 2026-11-06 Asia/Shanghai）
+
+### 实现摘要
+
+- 在官网首页 Windows 下载按钮下方增加旁注原文：「若浏览器提示通常不会下载，选择保留即可。」
+- 重建并部署 `remote-assist-site`；**未替换**公网安装包；**未重启**中继；Linux 旁注 / 导语 / macOS「即将提供」未回退。
+- `docs/site-copy.md` 无下载区上屏文案（无「下载鹊桥」/「通常不会」/下载按钮原文），故未改。
+
+### 插入片段（`site/index.html`）
+
+```
+      <p style="margin-top:8px"><a class="btn primary" href="/downloads/RemoteAssist-Setup-0.1.0.exe">下载鹊桥远程协助</a></p>
+      <p class="note" style="margin-top:8px">若浏览器提示通常不会下载，选择保留即可。</p>
+      <p style="margin-top:18px"><strong>Linux</strong></p>
+```
+
+### 构建与部署
+
+| 项 | 值 |
+|----|----|
+| 构建 | `site/` 模块 `GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ../artifacts/remote-assist-site-linux-amd64 ./cmd/site` |
+| 产物 | `artifacts/remote-assist-site-linux-amd64` **16,983,100** 字节 |
+| 上线 | `install` → `/usr/local/bin/remote-assist-site`（755）；`systemctl restart remote-assist-site` |
+| site MainPID | **19184 → 21336** |
+| site ActiveEnterTimestamp | **2026-11-06 01:28:31 Asia/Shanghai**（CST） |
+| relay MainPID | **仍为 2114**（未重启；仍听 `*:17891`） |
+
+### 公网核对（本机抓取）
+
+- `/` HTML 含 Windows 新旁注原文；Linux 旁注仍为 R023：「解开后运行。需要先装好 .NET 8 桌面方向运行时。打开 微软 .NET 8 下载页，选运行时、不要选 SDK。」
+- 导语仍含「Windows 和 Linux 都可下载使用」；无「目前以 Windows 为主」；macOS「即将提供」。
+- 首页禁词未命中：端口号 / 17891 / 放行入站 / 也可下载自包含包 / TLS / stdio / 证书 / 签名 / SmartScreen。
+- 安装包未换：Windows HEAD Content-Length **75583762**，服务器 SHA256 **236EDEE7B5C1CC28BA6E4804D17CE0FEC07AACA916CB201C3C16CAC2BC76FB58**；Linux Content-Length **8000095**，SHA256 **305F9E40057828C0354ED0C0057F6611A380541A962A15AACC8CAD2C414FE586**；Linux 文件名无 `-fd`。
+- `/ask`、`/admin` HTTP **200**。
+
+### 截图
+
+| 文件 | 要点 |
+|------|------|
+| `docs/screenshots/r025-home-download.png` | 本机 Edge 打开公网 `http://121.196.45.81/#download`；地址栏可见 `121.196.45.81/#download`；Windows 新旁注可见；Linux 旁注未回退；macOS「即将提供」可见。1920×1080，218,595 字节。未展开下载浮层。 |
+
+未覆盖任何 `r022-*` / `r023-*` / `r024-*`（复制前后 size 已对账，12 个受保护文件未变）。
+
+### 明确未做
+
+- 未开下一轮；未替换公网安装包；未重启中继；未改接单页 / 后台；未改 `docs/architecture.md`、`relay-deploy.md`、`round-005/006/007.md`、`tools/`；未改 `docs/site-copy.md`（无下载区上屏文案）。
