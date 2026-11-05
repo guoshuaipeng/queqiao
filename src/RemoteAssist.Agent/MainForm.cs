@@ -497,8 +497,11 @@ internal sealed class MainForm : Form
     private void OnAuditWritten()
     {
         if (IsDisposed) return;
-        if (InvokeRequired) { BeginInvoke(RefreshAudit); return; }
+        if (InvokeRequired) { BeginInvoke(OnAuditWritten); return; }
         RefreshAudit();
+        var latest = _host.Audit.ReadRecent(1).LastOrDefault();
+        if (latest is not null && latest.EventType == "pair_owner_auto")
+            SetStatus("已用你的账号连接，无需再确认配对（写操作仍须本机确认）");
     }
 
     private void RefreshFromHost()
@@ -574,7 +577,8 @@ internal sealed class MainForm : Form
             foreach (var c in _host.ListPairedClients())
             {
                 var shortTok = c.Token.Length >= 8 ? c.Token[..8] : c.Token;
-                _clientsView.Items.Add(new ListViewItem($"{c.ClientName} · {c.Permission} · {c.RemoteEndpoint} · {shortTok}…")
+                var ownerTag = c.OwnerLink ? "账号免密 · " : "";
+                _clientsView.Items.Add(new ListViewItem($"{ownerTag}{c.ClientName} · {c.Permission} · {c.RemoteEndpoint} · {shortTok}…")
                 {
                     Tag = c.Token
                 });

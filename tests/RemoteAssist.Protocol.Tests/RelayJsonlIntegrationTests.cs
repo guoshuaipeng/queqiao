@@ -116,6 +116,8 @@ public class RelayJsonlIntegrationTests
         }
 
         Assert.NotNull(owner);
+        var acctLog = await File.ReadAllTextAsync(auditPath);
+        Assert.Contains("pair_owner_auto", acctLog);
         var procs = await owner!.InvokeToolAsync(ToolKind.ListProcesses);
         Assert.True(procs.Ok, procs.Error);
         owner.Dispose();

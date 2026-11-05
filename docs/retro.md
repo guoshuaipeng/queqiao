@@ -14,3 +14,23 @@
 - **踩坑**：统一 App 已创建 ModeSelect 后再 SetCompatibleTextRenderingDefault 会炸，--accept 进被控失败；需吞掉 InvalidOperation / 由宿主先初始化。
 - **踩坑**：桌面 CopyFromScreen 易被其它窗口遮挡；验收截图改用 WinForms DrawToBitmap（	ools/UiShot）。
 - **规则候选**：有 UI 的轮次优先 DrawToBitmap/专用 shot 工具，不依赖当前桌面前景。
+
+## R000b — 场景讨论入库 + 跨平台（2026-11-05）
+
+- **收入**：亲友连不上引导（S002，R003 候选，与失败文案合成）；客户审计回看保持 P2；同事运维 ownerLink 专项作为 R002 高频。P0 不后挪。
+- **新决策**：正式做 macOS / Linux；小体积一等约束；不阻塞 Windows P0；先被控端+MCP，后对等 GUI。
+- **预防**：跨平台不推倒当前 WinForms 演示；net48 对比版不上 Mac/Linux。
+
+## R000c — 官网与接单（2026-11-05）
+
+- 用户要求服务器上静态介绍站 + 接单/管理用户，且必须轻便（机器性能低）。
+- 决策：静态页 + 独立小进程 + SQLite；订单和客户名单，不升级成用户中心；与中继账号分开；需额外放行 80。
+- 预防：官网不得与中继共用 17891，也不得引入重型 Web 栈。
+
+## R002 — ownerLink 验收 + 品牌扫尾（2026-11-05）
+
+- **交付**：ownerLink 验收矩阵与自动化测试；协助端/被控端「无需再确认配对 / 写操作仍确认」提示；审计与客户端列表展示账号免密；品牌扫尾；截图三张。
+- **踩坑**：xunit 并行 + headless 控制台确认会抢 `Console.ReadLine`，ownerLink 写确认类测试需 `DisableParallelization` 集合。
+- **踩坑**：仅客户端声明 `OwnerLink=true` 不够，必须中继/测试武装的 owner 通道；伪造标志不得跳过配对窗（已单测）。
+- **规则候选**：权限相关验收优先可无 UI 的 headless 矩阵 + 审计断言；截图仍用 DrawToBitmap。
+

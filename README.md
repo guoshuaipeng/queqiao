@@ -1,9 +1,9 @@
-# RemoteAssist / 远端协助
+# RemoteAssist / 鹊桥远程协助 · 智能体
 
 独立产品：可控远程协助 + AI 排障（可 MCP 嵌入其他智能体）。**不修改 AI-SSH-Pro。**
 
 > **给亲友怎么用（一句话）**  
-> 安装「远端协助」→ 打开后选 **接受协助** 或 **去协助别人** → 被控端把会话码发给协助方 → 危险操作需被控本机点允许。
+> 安装「鹊桥」→ 打开后选 **接受协助** 或 **去协助别人** → 被控端把会话码发给协助方 → 危险操作需被控本机点允许。
 
 ## 已锁定决策（v1）
 
@@ -54,7 +54,7 @@ cd E:\IdeaProjects\remote-assist
 
 需要 [Inno Setup 6](https://jrsoftware.org/isdl.php)。详见 [installer/README.md](installer/README.md)。
 
-亲友侧：双击 Setup → 开始菜单打开 **「远端协助」** → 首页选角色。
+亲友侧：双击 Setup → 开始菜单打开 **「鹊桥远程协助」** → 首页选角色。
 
 ### 方式 B：本机软安装（无 Inno）
 

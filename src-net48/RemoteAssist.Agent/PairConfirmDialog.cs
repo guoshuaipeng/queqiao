@@ -21,7 +21,7 @@ internal sealed class PairConfirmDialog : Form
     {
         _requested = info.RequestedPermission;
 
-        Text = "远端协助 — 确认配对";
+        Text = "鹊桥 — 确认配对";
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;

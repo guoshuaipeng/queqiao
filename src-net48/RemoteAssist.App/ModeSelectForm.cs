@@ -14,7 +14,7 @@ internal sealed class ModeSelectForm : Form
 
     public ModeSelectForm()
     {
-        Text = "远端协助";
+        Text = "鹊桥";
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         MinimizeBox = true;
@@ -37,7 +37,7 @@ internal sealed class ModeSelectForm : Form
             Size = new Size(500, 32),
             ForeColor = Color.White,
             Font = new Font(Font.FontFamily, 16F, FontStyle.Bold),
-            Text = "远端协助",
+            Text = "鹊桥",
             BackColor = Color.Transparent
         });
         header.Controls.Add(new Label

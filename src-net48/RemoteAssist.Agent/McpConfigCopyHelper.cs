@@ -101,7 +101,7 @@ internal static class McpConfigCopyHelper
         var result = MessageBox.Show(
             owner,
             msg,
-            "远端协助",
+            "鹊桥",
             MessageBoxButtons.YesNoCancel,
             MessageBoxIcon.Warning);
         if (result == DialogResult.Yes) return MissingAction.CopySnippetAnyway;

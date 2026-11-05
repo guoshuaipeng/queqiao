@@ -38,7 +38,7 @@ internal sealed class MainForm : Form
         _host = host;
         _enableReturnHome = enableReturnHome;
 
-        Text = "远端协助";
+        Text = "鹊桥";
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         MinimizeBox = true;
@@ -62,7 +62,7 @@ internal sealed class MainForm : Form
             Size = new Size(500, 28),
             ForeColor = Color.White,
             Font = new Font(Font.FontFamily, 14F, FontStyle.Bold),
-            Text = "远端协助",
+            Text = "鹊桥",
             BackColor = Color.Transparent
         });
         _headerSubtitle = new Label

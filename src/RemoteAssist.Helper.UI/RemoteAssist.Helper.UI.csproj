@@ -9,7 +9,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <RootNamespace>RemoteAssist.Helper.UI</RootNamespace>
     <AssemblyName>RemoteAssist.Helper.UI</AssemblyName>
-    <Product>远端协助 · 协助端</Product>
+    <Product>鹊桥 · 协助端</Product>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 

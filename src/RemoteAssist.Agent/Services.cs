@@ -18,6 +18,7 @@ internal sealed class SessionState
     public required string RemoteEndpoint { get; init; }
     public DateTimeOffset PairedAtUtc { get; init; } = DateTimeOffset.UtcNow;
     public CancellationTokenSource? ConnectionCts { get; set; }
+    public bool OwnerLink { get; init; }
     public bool IsExpired => DateTimeOffset.UtcNow >= ExpiresAtUtc;
 }
 
@@ -28,7 +29,8 @@ internal sealed record PairedClientInfo(
     string RemoteEndpoint,
     PermissionLevel Permission,
     DateTimeOffset PairedAtUtc,
-    DateTimeOffset ExpiresAtUtc);
+    DateTimeOffset ExpiresAtUtc,
+    bool OwnerLink = false);
 
 internal sealed class PendingConfirmation
 {
@@ -107,6 +109,7 @@ internal sealed record AuditEntry(string Raw, string Timestamp, string EventType
             var label = EventType switch
             {
                 "pair_ok" => "配对成功",
+                "pair_owner_auto" => "账号免密自动配对",
                 "pair_reject" => "配对拒绝",
                 "pair_timeout" => "配对超时",
                 "tool_ok" => "工具成功",

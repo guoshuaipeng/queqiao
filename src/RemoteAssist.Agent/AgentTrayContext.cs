@@ -93,7 +93,8 @@ internal sealed class AgentDesktopUi : IDisposable
         foreach (var c in clients)
         {
             var shortTok = c.Token.Length >= 8 ? c.Token[..8] : c.Token;
-            var label = $"{c.ClientName} · {c.Permission} · {c.RemoteEndpoint}";
+            var ownerTag = c.OwnerLink ? "账号免密 · " : "";
+            var label = $"{ownerTag}{c.ClientName} · {c.Permission} · {c.RemoteEndpoint}";
             var item = new ToolStripMenuItem(label);
             var token = c.Token;
             item.DropDownItems.Add(new ToolStripMenuItem($"断开（{shortTok}…）", null, (_, _) =>

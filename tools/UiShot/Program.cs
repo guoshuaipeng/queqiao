@@ -3,6 +3,7 @@ using System.Drawing.Imaging;
 using System.Windows.Forms;
 using RemoteAssist.Agent;
 using RemoteAssist.App;
+using RemoteAssist.Helper.UI;
 
 namespace UiShot;
 
@@ -20,14 +21,14 @@ internal static class Program
         {
             home.Show();
             Application.DoEvents();
-            SaveForm(home, Path.Combine(outDir, "r001-after-home.png"));
+            SaveForm(home, Path.Combine(outDir, "r002-home.png"));
             home.Hide();
         }
 
-        var auditPath = Path.Combine(Path.GetTempPath(), "remote-assist-uishot-audit.log");
+        var auditPath = Path.Combine(Path.GetTempPath(), "remote-assist-uishot-r002-audit.log");
         var audit = new AuditLog(auditPath);
         var host = new AgentHost(
-            port: 17991,
+            port: 17992,
             autoYes: true,
             headless: false,
             confirmTimeoutSeconds: 30,
@@ -39,17 +40,15 @@ internal static class Program
         try
         {
             host.Start();
-            using var form = new MainForm(host, enableReturnHome: true);
+            using var form = new RemoteAssist.Agent.MainForm(host, enableReturnHome: true);
             form.Show();
+            Application.DoEvents();
+            // 模拟账号免密审计，便于截图展示状态栏提示与审计文案
+            audit.Write("pair_owner_auto", "client=uishot-owner; remote=relay-device/dev-demo; perm=Assist");
             Application.DoEvents();
             Thread.Sleep(400);
             Application.DoEvents();
-            SaveForm(form, Path.Combine(outDir, "r001-after-agent.png"));
-            host.RefreshSessionCode();
-            Application.DoEvents();
-            Thread.Sleep(200);
-            Application.DoEvents();
-            SaveForm(form, Path.Combine(outDir, "r001-after-agent-refreshed.png"));
+            SaveForm(form, Path.Combine(outDir, "r002-agent-ownerlink-hint.png"));
             form.Hide();
         }
         finally
@@ -57,7 +56,17 @@ internal static class Program
             host.Stop();
         }
 
-        Console.WriteLine("OK wrote shots to " + outDir);
+        using (var helper = new HelperDesktopController(enableReturnHome: true))
+        {
+            helper.Show();
+            Application.DoEvents();
+            Thread.Sleep(300);
+            Application.DoEvents();
+            SaveForm(helper.Form, Path.Combine(outDir, "r002-helper.png"));
+            helper.Form.Hide();
+        }
+
+        Console.WriteLine("OK wrote r002 shots to " + outDir);
         return 0;
     }
 

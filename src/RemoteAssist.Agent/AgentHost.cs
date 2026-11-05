@@ -182,7 +182,8 @@ internal sealed class AgentHost
                 s.RemoteEndpoint,
                 s.Permission,
                 s.PairedAtUtc,
-                s.ExpiresAtUtc))
+                s.ExpiresAtUtc,
+                s.OwnerLink))
             .ToList();
     }
 
@@ -446,10 +447,16 @@ internal sealed class AgentHost
         }
     }
 
+    /// <summary>测试用：下一笔入站 LAN 连接按 ownerLink 通道处理（账号免密语义）。</summary>
+    internal void ArmOwnerLinkOnNextAccept() => Interlocked.Exchange(ref _ownerLinkNextAccept, 1);
+
+    private int _ownerLinkNextAccept;
+
     private async Task HandleClientAsync(TcpClient client)
     {
         var remote = client.Client.RemoteEndPoint?.ToString() ?? "?";
-        await HandleStreamAsync(client, client.GetStream(), remote, ownerLink: false, CancellationToken.None)
+        var ownerLink = Interlocked.Exchange(ref _ownerLinkNextAccept, 0) == 1;
+        await HandleStreamAsync(client, client.GetStream(), remote, ownerLink, CancellationToken.None)
             .ConfigureAwait(false);
     }
 
@@ -603,6 +610,7 @@ internal sealed class AgentHost
         }
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
         var expires = DateTimeOffset.UtcNow.Add(TokenTtl);
+        var isOwner = ownerLinkChannel && req.OwnerLink;
         var session = new SessionState
         {
             Token = token,
@@ -611,7 +619,8 @@ internal sealed class AgentHost
             ClientName = req.ClientName,
             RemoteEndpoint = remote,
             PairedAtUtc = DateTimeOffset.UtcNow,
-            ConnectionCts = connCts
+            ConnectionCts = connCts,
+            OwnerLink = isOwner
         };
         _sessions[token] = session;
         if (!(ownerLinkChannel && req.OwnerLink))

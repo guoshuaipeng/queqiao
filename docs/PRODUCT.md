@@ -1,4 +1,11 @@
-# 远端协助 — 产品决策
+# 鹊桥远程协助 · 智能体 — 产品决策
+
+## 品牌名
+
+- **中文全称**：鹊桥远程协助 · 智能体
+- **简称**：鹊桥
+- **英文（暂定）**：Queqiao Remote Assist
+- 意象：像鹊桥一样把两边连上，用智能体/命令协助修电脑（非远程桌面画面）。
 
 > 独立软件 + 可 MCP 嵌入其他智能体。不做进 AI-SSH-Pro。  
 > 约定与决策写进本仓库 `docs/`，**不要只放在 bot 记忆里**。
@@ -41,6 +48,17 @@
 - 安装包：`installer/RemoteAssist.iss` → `RemoteAssist-Setup-*.exe`（默认 `%LOCALAPPDATA%\Programs\RemoteAssist`）。
 - 兼容：独立 Agent / Helper.UI / Helper CLI / MCP。
 
+## 支持平台（2026-11-05）
+
+- **Windows / macOS / Linux** 均为正式产品范围，不是「以后再说」。
+- **不阻塞** Windows 的 P0 演示闭环：Windows 仍先可演示。
+- 分两步，避免为跨平台把当前 WinForms UI 推倒重来再卡住演示：
+  1. 先出 Mac/Linux **被控端 + MCP**（配对、只读查询、写操作本机确认与 Windows 同一套安全底线），让这两类机器能被协助。
+  2. 再出与 Windows 对等的双模式 GUI（接受协助 / 去协助）。
+- 不拆成三套互不相干的原生客户端；Protocol / Helper / MCP 已是 net8.0。细节见 docs/architecture.md 第 13 节。
+- **GUI**：Windows 现阶段保持 WinForms；macOS / Linux 用 Avalonia。确认规则与 Windows 相同（写操作本机确认）。
+- **分发**：Windows 继续 Inno（RemoteAssist-Setup-*.exe）；macOS 为 .app + .dmg；Linux 先便携 .tar.gz，随后可选 .deb。
+
 ## 协助闭环（管理端 / Agent）
 
 1. 协助方把**安装包下载地址**或本机安装包目录发给远端用户。
@@ -58,25 +76,38 @@ Skill 仅作「如何安装 MCP / 如何填参数」的薄封装；**控制面�
 
 配对与 Assist 写操作默认本机确认窗（账号自有设备可跳过配对确认，见上）；串行排队；审计写本地日志。
 
+## 官网与接单（2026-11-05）
+
+- 在现有低配中继机上提供 **静态产品介绍** + **接单表单** + **极简后台**（订单状态与按联系方式聚合的客户名单）。详见 docs/site.md。
+- 必须轻便：静态页 + 小进程 + SQLite；不装 Node/Java/PHP/MySQL/WordPress/Docker 全家桶；不占用中继 17891。
+- 与中继账号/设备体系分开；不因此做成完整云端用户中心、计费或组织工单。
+- 安全组需额外放行 HTTP（80；若上 HTTPS 再加 443），由架构写入部署约定。
+
 ## 明确不做（当前）
 
 - 完整远程桌面 / 键鼠注入
 - 在中继上代执行写操作或绕过本机确认
-- 完整云端用户中心 / 计费 / 组织工单
+- 完整云端用户中心 / 计费 / 组织工单（官网接单后台除外：仅订单+客户名单，见 docs/site.md）
 - 修改 AI-SSH-Pro 本体
 - 正式 CA 互认（仍用自签 + 指纹）
 - 用纯 Skill 替代 MCP/协议作为控制面
 
 ## 技术选型
 
-- Windows 客户端：**.NET 8**（另有 `src-net48` 体积对比版，不替代主线）
+- 客户端主线：**.NET 8**。Windows 现阶段 WinForms；macOS / Linux 用 Avalonia（见 architecture.md 第 13 节）。src-net48 仅作 Windows 小体积对比，不替代主线、不上 Mac/Linux。
 - 公网中继：**Go** + SQLite（`relay/`）
 - 二维码：QRCoder
 - 帧：业务侧 4 字节 LE 长度 + UTF-8 JSON；中继透明 pipe；控制面 JSONL
 
 ## 体积说明
 
-- .NET 8 自包含安装包约数十 MB（家用机一般**不预装** .NET 8；系统预装多为 .NET Framework 4.8）。
-- Framework 4.8 对比版可更小，但与跨平台中继客户端路线不同，主线暂保持 .NET 8。
+- 小体积是跨平台一等约束。实测基线（2026-11-05，本机 artifacts/）：Windows src-net48 依赖系统 .NET Framework 4.8 的对比版约 **1.4 MB**；.NET 8 自包含安装包约 **72 MB**。
+- **macOS / Linux 默认发依赖运行时的小包**，目标尽量接近上述 1.4 MB 这一档（应力争个位数 MB，而不是默认 72 MB）；对方需已装 .NET 8 桌面方向运行时，首次使用提供简短安装说明。
+- **自包含包保留为备选**（不愿或不能先装运行时），体积上限不差于当前 Windows 自包含安装包（约 72 MB）；手段为 PublishTrimmed + 单文件，Native AOT 作后续试验。
+- src-net48 / .NET Framework 4.8 仅适用于 Windows，不能作为 Mac/Linux 的缩体积方案。
 
+## 持续迭代
 
+- 产品 bot 驱动选题与验收；每轮文档 docs/round-NNN.md，优先级以 docs/roadmap.md 为准。
+- 实现由「鹊桥-客户端」（.NET 客户端 / UI / MCP / 安装包）/「鹊桥-服务端」（Go 中继）执行；架构边界见 docs/architecture.md。
+- 每轮结束后写 docs/retro.md。

@@ -60,7 +60,8 @@ public sealed class AssistClient : IDisposable
     {
         ArgumentNullException.ThrowIfNull(opts);
 
-        if (opts.OwnerLink)
+        // OwnerLink + 中继设备通道才走免密；LAN 直连时仅把 ownerLink 标志传给被控（被控仍需 owner 通道才自动批）。
+        if (opts.OwnerLink && opts.ViaRelay)
             return await PairOwnerDeviceAsync(opts, clientName, ct).ConfigureAwait(false);
 
         if (opts.ViaRelay)
@@ -89,7 +90,7 @@ public sealed class AssistClient : IDisposable
                     .ConfigureAwait(false);
             }
 
-            return await FinishPairAsync(tcp, stream, opts.Code, opts.Permission, clientName, ownerLink: false, ct)
+            return await FinishPairAsync(tcp, stream, opts.Code, opts.Permission, clientName, ownerLink: opts.OwnerLink, ct)
                 .ConfigureAwait(false);
         }
         catch

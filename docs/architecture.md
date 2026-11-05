@@ -140,34 +140,32 @@
 
 ### 13.2 分发形态
 
-默认按「对方没装 .NET 运行时」发布（自包含或等价）。
-
 | 平台 | 第一期 | 随后可加 |
 |------|--------|----------|
-| Windows | 现有 Inno Setup 安装包（`RemoteAssist-Setup-*.exe`） | — |
+| Windows | 现有 Inno Setup 安装包；小体积路径继续用 `src-net48` 依赖系统自带的 .NET Framework 4.8 | 自包含 .NET 8 安装包（给没装 4.8 桌面组件、或要免装运行时的场景） |
 | macOS | `.app` 放入 `.dmg` | 以后再考虑公证 / 签名 |
 | Linux | 便携 `.tar.gz` | 可选 `.deb` |
 
-`src-net48` 只作 Windows 体积对比，不上 Mac/Linux。
+`src-net48` / .NET Framework 4.8 **不能**用在 Mac/Linux（那是 Windows 才有的系统组件）。Mac/Linux 要对齐「几兆」体量，只能发 **依赖已安装的 .NET 8（含桌面/Avalonia 所需运行时）** 的包，运行时用系统包管理器或官方运行时安装器装一次。
 
 ### 13.3 体积（发布验收）
 
 实测基线（本机 `artifacts/`，2026-11-05）：
 
-| 产物 | 大小 |
-|------|------|
-| `RemoteAssist-Setup-0.1.0.exe`（Windows 自包含安装包） | **约 72 MB** |
-| `RemoteAssist-Agent-Setup-0.1.0.exe` | 约 63.5 MB |
-| `app-win-x64-sc/RemoteAssist.exe`（自包含单文件） | 约 77 MB |
+| 产物 | 大小 | 含义 |
+|------|------|------|
+| `app-net48-fd/`（依赖 .NET Framework 4.8） | **约 1.4 MB** | Windows「几兆」对比版：不打进运行时，用系统自带 4.8 |
+| `RemoteAssist-Setup-0.1.0.exe`（.NET 8 自包含安装包） | 约 72 MB | 把运行时打进安装包，对方不用先装 .NET 8 |
+| `RemoteAssist-Agent-Setup-0.1.0.exe` | 约 63.5 MB | 同上，Agent 安装包 |
+| `app-win-x64-sc/RemoteAssist.exe` | 约 77 MB | .NET 8 自包含单文件 |
 
-结论：**不会「很小」（不是几 MB）**。自包含必须带上 .NET 运行时，Avalonia 也是同类桌面栈，各平台分发包的数量级仍是数十 MB。
+用户补充（2026-11-05）：**macOS / Linux 尽量保持与 Windows net48 对比版同一量级（约 1.4 MB 这一档），而不是默认 72 MB 自包含。**
 
-验收目标：每个平台的对外分发包体积 **不差于** 上述 Windows 自包含安装包（约 72 MB）。允许略大，但发布说明里要写实测数字。
+要做到「尽量这么小」：
 
-压体积手段（按优先级）：
+1. Mac/Linux **默认发依赖运行时的小包**（framework-dependent）：应用本身目标尽量接近 `app-net48-fd` 的约 1.4 MB；Avalonia 与原生依赖可能导致略大，发布时写实测数字，应力争个位数 MB，而不是几十 MB。
+2. 运行时不打进应用包。对方机器需已有 **.NET 8 桌面方向运行时**（macOS 可用官方安装包或 Homebrew；Linux 用发行版/微软包）。首次使用要有简短安装说明，避免只弹英文「Download runtime」却讲不清。
+3. **自包含包保留为备选**（给不能/不愿装运行时的人），体积以不差于当前 Windows 自包含安装包（约 72 MB）为上限；用 `PublishTrimmed` + 单文件、后续可试 Native AOT 再压。
+4. 不把 .NET Framework 4.8 当作跨平台缩体积方案。
 
-1. 自包含 + `PublishTrimmed` + 单文件（`PublishSingleFile`），按 RID 出包（至少 `osx-arm64` / `osx-x64` / `linux-x64`，按需 `linux-arm64`）。
-2. 去掉调试符号与不需要的附属 exe。
-3. **Native AOT** 作为后续试验，不作为第一期必达（UI + 反射/TLS 风险较高）。
-
-实现节奏：Windows 演示与 R001 优先；Mac/Linux 按产品「平台」轨道排期，由「鹊桥-客户端」做，不改 `relay/`。
+Windows 主线演示仍按现有安排；小体积 4.8 对比版仅 Windows。实现由「鹊桥-客户端」在平台轨道执行，不改 `relay/`，也不停 R001 / 窗口位置记忆。

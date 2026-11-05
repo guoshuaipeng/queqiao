@@ -328,7 +328,7 @@ internal sealed class MainForm : Form
             AutoSize = false,
             Location = new Point(16, 72),
             Size = new Size(700, 20),
-            Text = "账号（可选）：登录后可在设备列表免密控制自己的被控机",
+            Text = "账号（可选）：登录后免密连自己的机器（无需再确认配对；写操作仍须对方本机确认）",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
         _accountUserBox = new TextBox { Location = new Point(16, 96), Size = new Size(140, 26), Text = _settings.AccountUser ?? "" };
@@ -745,7 +745,7 @@ internal sealed class MainForm : Form
             var client = await AssistClient.PairAsync(opts, "helper-ui-owner").ConfigureAwait(true);
             _client = client;
             SetConnectedUi(true);
-            SetStatus($"已免密连接设备 {deviceId} · 权限={client.Permission}");
+            SetStatus($"已用你的账号连接，无需再确认配对 · 设备 {deviceId} · 权限={client.Permission}（写操作仍须对方本机确认）");
         }
         catch (Exception ex)
         {

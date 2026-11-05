@@ -7,14 +7,16 @@
 - **不改 AI-SSH-Pro**；本仓库独立演进。
 - 本机开发；推送前看清未提交文件。
 
-## 当前分工（2026-11-05）
+## 当前分工（2026-11-05 更新）
 
-| 角色 | 负责 |
-|---|---|
-| 「远端协助」bot | .NET 客户端：`src/` / 统一 App / UI；按 **`docs/relay-protocol.md`（JSONL）** 对接中继 |
-| 「远端协助-并行」bot | **Go 中继** `relay/` + `docs/relay.md` / `docs/relay-protocol.md` |
+| 角色 | 负责 | 不负责 |
+|------|------|--------|
+| **鹊桥-客户端**（原「远端协助」） | .NET 客户端：`src/`、统一 App / UI、Helper / AgentHost、MCP、`installer/`；按 `docs/relay-protocol.md`（JSONL）对接中继；默认中继地址见 `docs/relay-deploy.md` | 不改 `relay/`，不上生产中继 |
+| **鹊桥-服务端**（原「远端协助-并行」） | Go 中继：`relay/`、JSONL 控制实现、SQLite、按 `docs/relay-deploy.md` 部署生产中继 | 不改 `src/`、`installer/`、MCP/UI |
+| **鹊桥-架构** | 对齐边界，产出写入 `docs/`（如 `architecture.md`、`relay-protocol.md`、`relay-deploy.md`） | 不写业务功能代码、不上机 |
+| **鹊桥-产品** | 定位、优先级、路线图（`PRODUCT.md`、`roadmap.md`） | 不写业务代码 |
 
-边界：并行 bot **不改** `src/`。中继协议变更必须先更新 `relay-protocol.md`，再改 Go；客户端跟随该文档。
+边界：服务端 **不改** `src/`；客户端 **不改** `relay/`。中继协议变更必须先更新 `relay-protocol.md`，再改 Go；客户端跟随该文档。
 
 ## 技术红线
 
