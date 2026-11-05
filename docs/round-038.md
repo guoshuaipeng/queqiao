@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端出包；鹊桥-服务端替换上架
-> 状态：**done（待产品验收）**
+> 状态：**done（产品已验收）**
 > 依据：R037 产品已验收。官网当前仍是 R034 的包（含 R031–R033）。R035 对方结束人话、R036 连上后「已连接」、R037 已连上后隐藏「粘贴后点「连接」」还没进正式下载。三轮 UI 已落地，该让官网跟上。
 
 R034 之后又走了三轮去协助端会话体验。下载到的安装包应该带上这些改动，而不是还停在「结束这次协助」那一版。
@@ -126,3 +126,28 @@ macOS「即将提供」。首页无端口 / 17891 / 放行入站 / 也可下载�
 
 - 未开下一轮；未重启 site / relay；未改 HTML；未改中继；未改 AI-SSH-Pro
 - 未读/打印 `/etc/remote-assist-site.env`；未把帮助脚本加进仓库 `tools/`
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照公网独立下载、核哈希，并查看 `docs/screenshots/r038-*` 后验收通过。出包 HEAD `0efc3c4`（含 R035 `b707804`、R036 `d24fb44`、R037 `0405491`）；客户端文档 `9859186`；服务端上架 `68c5abc`。
+
+公网文件与本机产物一致，且已与 R034 旧包区分：
+
+| 文件 | 字节 | SHA256 | Last-Modified |
+|------|------|--------|---------------|
+| http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe | 75,585,944 | 8B777AE324AB2528A434BB407018A6048708F10BF5E9220F2C5281B1E6866416 | 2026-11-06 03:46:37 Asia/Shanghai（Thu, 05 Nov 2026 19:46:37 GMT） |
+| http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz | 8,005,019 | AB2DF29FE1606D94A270D98D358B11F086B636BD649E47BDE5C6999D81C2ABD2 | 同上 |
+
+对照 R034：Windows 75,584,964 / `64A3231617963B4D6100036E34FA8A74DAB6FFC6978AE6E5142FE82A8B5EBCD0`；Linux 8,002,690 / `B20257AD6E7A6CFB4E5048BBD2099A8D0B5906DA96802C5C7BFFC60B8E789108`。Windows 文件头为 MZ，Linux 为 gzip。
+
+首页导语「Windows 和 Linux 都可下载使用」、Windows 旁注「若浏览器提示通常不会下载，选择保留即可。」、Linux 运行时说明（选运行时、不要选 SDK）与 macOS「即将提供」均未回退；首页无 17891。`/`、`/ask`、`/admin` 均为 HTTP 200。
+
+| 截图 | MD5 | 产品看到的 |
+|------|-----|------------|
+| `docs/screenshots/r038-home-download.png` | 0BBD37FE0BA45D54E5FCC79FD536D21D | 地址栏 121.196.45.81/#download；Windows / Linux 旁注与 macOS 即将提供都在 |
+| `docs/screenshots/r038-win-download.png` | AE800D51F09AD0180804816BEA9774A4 | 飞出 `RemoteAssist-Setup-0.1.0.exe` … 72.1 MB，与 75,585,944 字节相符 |
+| `docs/screenshots/r038-linux-download.png` | C6DB461B699BE46B891D9DCCC0CCF8F9 | 飞出 `queqiao-linux-x64.tar.gz`（无 -fd）… 7.6 MB，与 8,005,019 字节相符 |
+
+缺口：地址栏仍显示「不安全」；两张下载飞出都是下载中途；macOS 仍未正式可下；服务端声称 site/relay 进程号未变，产品未独立复核进程号。
+
+已开 R039（Avalonia 去协助端连上后五个常用操作出现在首屏；交给鹊桥-客户端；不改中继/官网/AI-SSH-Pro）。
