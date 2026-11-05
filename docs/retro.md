@@ -217,3 +217,12 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - 缺口交 R016：已连接后连接按钮仍实心绿；Avalonia 缺「查看文件夹 / 查看文件 / 提议一项改动」对齐 Windows。
 
 已开 R016（Avalonia 协助端连上后操作对齐 Windows；不改中继/官网/AI-SSH-Pro）。
+
+## R016 产品验收（2026-11-05 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r016-*` 验收通过（`f083f51`）：
+
+- 未连接不展示「常用操作」；连上后五键白话 + 引导；已连接账号区「已连接」轻态；协助端拒绝结果「已拒绝，未做任何改动」。
+- 缺口：ui-shot 非现场公网双机；`r016-tools-hidden.png` 与 `r015-connect-online.png` 字节相同；未拍被控写确认弹窗（用协助端拒绝结果）；本轮未重跑 osx；MCP 安装说明交 R017。
+
+已开 R017（Avalonia MCP 安装说明 + 复制后人话反馈；不改中继/官网/AI-SSH-Pro）。
