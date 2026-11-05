@@ -26,6 +26,7 @@ internal sealed class AgentTrayContext : ApplicationContext
 
         var menu = new ContextMenuStrip();
         menu.Items.Add("显示会话信息", null, (_, _) => ShowSessionInfo());
+        menu.Items.Add("复制 MCP 配置片段", null, (_, _) => CopyMcpConfigSnippet());
         menu.Items.Add("刷新会话码", null, (_, _) =>
         {
             _host.RefreshSessionCode();
@@ -102,6 +103,27 @@ internal sealed class AgentTrayContext : ApplicationContext
         }));
     }
 
+    private void CopyMcpConfigSnippet()
+    {
+        try
+        {
+            var exe = McpExeLocator.Resolve();
+            var payload = _host.QrPayload;
+            var text = RemoteAssist.Protocol.McpConfigSnippet.BuildClipboardBundle(exe, payload);
+            Clipboard.SetText(text);
+            var exists = File.Exists(exe);
+            var tip = exists
+                ? "已复制 Cursor mcp.json 片段（含当前会话载荷）。粘贴到 MCP 配置即可。"
+                : "已复制片段。请先运行 scripts\\publish-mcp.ps1，或把 command 改成实际 MCP exe 路径。"
+                  + Environment.NewLine + "当前猜测：" + exe;
+            _tray.ShowBalloonTip(4500, "远端协助", tip, exists ? ToolTipIcon.Info : ToolTipIcon.Warning);
+        }
+        catch (Exception ex)
+        {
+            _tray.ShowBalloonTip(4000, "远端协助", "复制失败：" + ex.Message, ToolTipIcon.Error);
+        }
+    }
+
     private void ShowSessionInfo() => _sessionForm.ShowAndActivate();
 
     private void ExitApp()
@@ -145,3 +167,4 @@ internal sealed class AgentTrayContext : ApplicationContext
         return (Icon)tmp.Clone();
     }
 }
+

@@ -49,10 +49,61 @@ dotnet run --project src/RemoteAssist.Mcp
 
 退出码：`2` 参数错误，`3` 配对失败。
 
+## 分发 MCP（publish）
+
+自包含单文件（推荐，Cursor 直接指 exe）：
+
+```powershell
+.\scripts\publish-mcp.ps1
+# 产物：artifacts\mcp-win-x64-sc\RemoteAssist.Mcp.exe
+```
+
+框架依赖备选（本机需 [.NET 8 Runtime x64](https://dotnet.microsoft.com/download/dotnet/8.0)）：
+
+```powershell
+.\scripts\publish-mcp.ps1 -FrameworkDependent
+# 产物：artifacts\mcp-win-x64-fd\
+```
+
+可选：`.\scripts\publish-helper.ps1` 同步打 Helper CLI。
+
 ## Cursor（mcp.json）示例
 
-把下面放进 Cursor 的 MCP 配置（路径按本机 SDK / 仓库调整）。  
+**推荐**：先 `publish-mcp.ps1`，再在 Agent 托盘右键 **「复制 MCP 配置片段」**（含当前会话载荷；env + args 两种写法）。粘贴进 Cursor MCP 配置即可。
+
+手动配置时，把下面放进 Cursor 的 MCP 配置。  
 **注意**：每次换会话码都要改 `REMOTE_ASSIST_PAYLOAD`（或改用 host+code 并更新 CODE）。
+
+### 指向 publish 出的 exe（推荐）
+
+```json
+{
+  "mcpServers": {
+    "remote-assist": {
+      "command": "E:/IdeaProjects/remote-assist/artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe",
+      "args": [],
+      "env": {
+        "REMOTE_ASSIST_PAYLOAD": "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=REPLACE"
+      }
+    }
+  }
+}
+```
+
+args 写法：
+
+```json
+{
+  "mcpServers": {
+    "remote-assist": {
+      "command": "E:/IdeaProjects/remote-assist/artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe",
+      "args": ["--payload", "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=REPLACE"]
+    }
+  }
+}
+```
+
+### 开发期：dotnet run
 
 ```json
 {
@@ -73,19 +124,6 @@ dotnet run --project src/RemoteAssist.Mcp
 }
 ```
 
-也可用已 publish 的单文件（若你另行 publish 了 Mcp）：
-
-```json
-{
-  "mcpServers": {
-    "remote-assist": {
-      "command": "E:/IdeaProjects/remote-assist/artifacts/mcp-win-x64/RemoteAssist.Mcp.exe",
-      "args": ["--payload", "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=REPLACE"]
-    }
-  }
-}
-```
-
 ## 通用宿主
 
 任意支持 **stdio MCP** 的宿主：
@@ -96,3 +134,4 @@ dotnet run --project src/RemoteAssist.Mcp
 
 工具：`list_processes` / `read_log_tail` / `list_dir` / `read_file` / `run_command`  
 `run_command` 在 Assist 权限下 **必须** Agent 本机确认，MCP 无法绕过。
+

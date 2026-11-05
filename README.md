@@ -56,7 +56,7 @@ dotnet run --project src/RemoteAssist.Agent
 
 默认行为：
 
-- **系统托盘常驻**（蓝点图标）。右键：显示会话信息、刷新会话码、**已配对客户端（断开）**、退出。
+- **系统托盘常驻**（蓝点图标）。右键：显示会话信息、**复制 MCP 配置片段**、刷新会话码、**已配对客户端（断开）**、退出。
 - 启动时弹出**会话信息窗**：大号会话码 + 二维码；**主机 IP 下拉**（过滤 127 / APIPA 169.254 / 198.18–19 虚拟网段，默认挑最合理局域网地址）；「复制载荷」。关闭窗口 = 隐藏到托盘。
 - **配对 / 写操作**：本机确认窗口（串行排队；超时拒绝）。
 
@@ -185,6 +185,25 @@ dotnet publish src/RemoteAssist.Agent -c Release -r win-x64 --self-contained tru
 .\scripts\publish-agent.ps1 -FrameworkDependent
 # 产物：artifacts\agent-win-x64-fd\
 ```
+## 分发 MCP（给 Cursor / 其它 stdio 宿主）
+
+```powershell
+.\scripts\publish-mcp.ps1
+# 产物：artifacts\mcp-win-x64-sc\RemoteAssist.Mcp.exe
+.\scripts\publish-mcp.ps1 -FrameworkDependent
+# 产物：artifacts\mcp-win-x64-fd\
+```
+
+Agent 托盘 **「复制 MCP 配置片段」** 会生成可粘贴的 Cursor `mcp.json`（含当前会话载荷；env 写法 + args 写法）。  
+详见 [docs/MCP.md](docs/MCP.md)。
+
+可选 Helper：
+
+```powershell
+.\scripts\publish-helper.ps1
+# 产物：artifacts\helper-win-x64-sc\
+```
+
 ## 已知限制（v1）
 
 - 无 TLS / 无端到端加密（仅信任局域网）
@@ -196,3 +215,4 @@ dotnet publish src/RemoteAssist.Agent -c Release -r win-x64 --self-contained tru
 ## 仓库
 
 计划发布到 Gitee 私有仓；当前本地 git，**默认不 push**。
+
