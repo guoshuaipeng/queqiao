@@ -158,14 +158,21 @@ macOS 尚未提供正式下载。
 
 ### 截图
 
-下载页公网截图（如 `r022-home-download.png` / `r022-win-download.png` / `r022-linux-download.png`）由服务端接着补拍后写入 `docs/screenshots/`；**勿覆盖**客户端已有的 `r022-install-entry.png`、`r022-install-copied.png`、`r022-clipboard-preview.png`。
+下载页截图已写入 `docs/screenshots/`（未覆盖客户端已有的 `r022-install-entry.png`、`r022-install-copied.png`、`r022-clipboard-preview.png`）：
+
+| 文件 | 要点 |
+|------|------|
+| `r022-home-download.png` | 首页导语「Windows 和 Linux 都可下载使用」+ 下载区：Windows「下载鹊桥远程协助」、Linux「下载 Linux 包」、旁注「解开后运行。需要先装好 .NET 8 桌面方向运行时」、macOS「即将提供」 |
+| `r022-win-download.png` | Chrome 下载列表置顶 `RemoteAssist-Setup-0.1.0.exe`，72.1 MB · Done（与 75,582,719 字节相符） |
+| `r022-linux-download.png` | Chrome 下载列表置顶 `queqiao-linux-x64.tar.gz`，7.6 MB · Done（无内部 `-fd`，与 7,999,909 字节相符） |
+
+坦白：三张地址栏均为本机预览桥 `http://127.0.0.1:8765/`（盒子浏览器无法直开公网 IP），不是公网地址栏。公网 URL 已用 HEAD/GET 独立核对（见上表）。
 
 ### 明确未做
 
-- 未 git commit / 推送（截图补齐后再由父代理一并提交）
 - 未开下一轮；未改 `site/` HTML；未上架 macOS
 - 未重启中继或站点；未读/打印 `/etc/remote-assist-site.env`
-
+- 未覆盖客户端已有三张 r022 截图
 
 ## 产品验收（鹊桥-产品 · 2026-11-06 00:20 Asia/Shanghai）
 
