@@ -4,6 +4,7 @@
 > 实现：鹊桥-客户端（跨平台被控 CLI / MCP / 发布小包；不改 `relay/`，不把 Windows WinForms 迁到 Avalonia，不重做 R006–R008）
 > 状态：**wip**
 > 依据：docs/PRODUCT.md「支持平台」第一步；docs/architecture.md §13（先 CLI/MCP + 确认，再补对等 GUI）；docs/roadmap.md 平台轨道
+> CLI 展示与终端确认原文见 `docs/first-run-mac-linux.md` 第 3、4 节（直接用字，不扩大本轮范围）。
 
 Windows P0（配对、确认、信任等级、MCP 提议闭环、同一安装包双模式）已在 R001–R008 收口。本轮开始平台轨道，不新开 Windows 功能面，也不把 Mac/Linux 一次做完。
 

@@ -1,6 +1,6 @@
 # Mac / Linux 场景闭环
 
-> 产品收口：2026-11-05 Asia/Shanghai。场景写三类用户闭环，体验写安装说明 / CLI 展示 / 终端确认原文（待补），产品合并写入。
+> 产品收口：2026-11-05 Asia/Shanghai。场景写三类用户闭环，体验写安装说明 / CLI 展示 / 终端确认原文（见 `docs/first-run-mac-linux.md`），产品合并写入。
 > 不改 R009：R009 仍是 Linux 可运行的被控 CLI + MCP + 终端确认，以及框架依赖小包。亲友和客户的完整主路径以下一阶段 Avalonia 被控窗为准。
 > 信任等级不另写文案，沿用 docs/trust-levels.md。
 
