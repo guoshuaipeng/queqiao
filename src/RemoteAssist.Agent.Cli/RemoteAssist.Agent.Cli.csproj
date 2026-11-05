@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>RemoteAssist.Agent</RootNamespace>
+    <AssemblyName>RemoteAssist.Agent.Cli</AssemblyName>
+    <Product>鹊桥</Product>
+    <DefineConstants>$(DefineConstants);AGENT_CLI</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RemoteAssist.Protocol\RemoteAssist.Protocol.csproj" />
+  </ItemGroup>
+
+  <!-- 复用 Agent 核心（无 WinForms / 托盘 / 桌面控制） -->
+  <ItemGroup>
+    <Compile Include="..\RemoteAssist.Agent\AgentHost.cs" Link="AgentHost.cs" />
+    <Compile Include="..\RemoteAssist.Agent\Services.cs" Link="Services.cs" />
+    <Compile Include="..\RemoteAssist.Agent\ConfirmModels.cs" Link="ConfirmModels.cs" />
+    <Compile Include="..\RemoteAssist.Agent\ConfirmPrompt.cs" Link="ConfirmPrompt.cs" />
+    <Compile Include="..\RemoteAssist.Agent\TrustLevelSession.cs" Link="TrustLevelSession.cs" />
+  </ItemGroup>
+
+</Project>

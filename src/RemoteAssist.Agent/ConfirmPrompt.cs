@@ -1,15 +1,20 @@
+#if !AGENT_CLI
 using System.Windows.Forms;
+#endif
 using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
 /// <summary>
 /// 配对确认与写操作确认共用串行队列：一次只弹出一个 UI，请求不丢。
+/// AGENT_CLI（net8.0 跨平台被控）仅控制台确认，无 WinForms。
 /// </summary>
 internal static class ConfirmPrompt
 {
     private static readonly SemaphoreSlim Queue = new(1, 1);
+#if !AGENT_CLI
     private static int _winFormsInit;
+#endif
 
     public static async Task<ConfirmOutcome> AskAsync(
         ConfirmRequestInfo info,
@@ -21,14 +26,14 @@ internal static class ConfirmPrompt
         {
             if (autoYes)
             {
-                Console.WriteLine($"[自动确认操作] source={info.Source}; {info.Tool}: {info.Summary}");
-                return new ConfirmOutcome(
-                    Approved: true,
-                    Channel: ConfirmChannel.AutoYes,
-                    Decision: ConfirmDecision.Approved,
-                    AtUtc: DateTimeOffset.UtcNow);
+                Console.WriteLine($"[自动确认] {info.Headline}");
+                return new ConfirmOutcome(true, ConfirmChannel.AutoYes, ConfirmDecision.Approved, DateTimeOffset.UtcNow);
             }
 
+#if AGENT_CLI
+            _ = headless;
+            return await Task.Run(() => AskConsole(info)).ConfigureAwait(false);
+#else
             if (headless)
                 return await Task.Run(() => AskConsole(info)).ConfigureAwait(false);
 
@@ -44,6 +49,7 @@ internal static class ConfirmPrompt
                     return AskConsole(info);
                 }
             }).ConfigureAwait(false);
+#endif
         }
         finally
         {
@@ -70,6 +76,10 @@ internal static class ConfirmPrompt
                     AtUtc: DateTimeOffset.UtcNow);
             }
 
+#if AGENT_CLI
+            _ = headless;
+            return await Task.Run(() => AskPairConsole(info)).ConfigureAwait(false);
+#else
             if (headless)
                 return await Task.Run(() => AskPairConsole(info)).ConfigureAwait(false);
 
@@ -85,6 +95,7 @@ internal static class ConfirmPrompt
                     return AskPairConsole(info);
                 }
             }).ConfigureAwait(false);
+#endif
         }
         finally
         {
@@ -92,11 +103,11 @@ internal static class ConfirmPrompt
         }
     }
 
+#if !AGENT_CLI
     internal static void EnsureWinFormsInitialized()
     {
         if (Interlocked.Exchange(ref _winFormsInit, 1) == 0)
         {
-            // 统一 App 可能已创建过窗口（ModeSelectForm），此时不能再 SetCompatibleTextRenderingDefault。
             try
             {
                 Application.EnableVisualStyles();
@@ -195,27 +206,31 @@ internal static class ConfirmPrompt
             throw error;
         return result ?? new PairOutcome(false, null, ConfirmChannel.Ui, ConfirmDecision.Denied, DateTimeOffset.UtcNow);
     }
+#else
+    internal static void EnsureWinFormsInitialized() { }
+#endif
 
     private static ConfirmOutcome AskConsole(ConfirmRequestInfo info)
     {
+        // docs/first-run-mac-linux.md §4
         Console.WriteLine();
         Console.WriteLine(WriteConfirmCopy.DialogTitle);
         Console.WriteLine(info.Headline);
         if (!string.IsNullOrWhiteSpace(info.Detail))
             Console.WriteLine(info.Detail);
-        Console.WriteLine($"超时: {info.TimeoutSeconds}s（无输入则自动拒绝）");
-        Console.Write("允许吗? [Y/N] > ");
+        Console.WriteLine("请输入 允许 或 拒绝（也可以输入 y 或 n）。");
+        Console.WriteLine(WriteConfirmCopy.CountdownText(info.TimeoutSeconds));
+        Console.Write("> ");
 
         var answer = ReadLineWithTimeout(TimeSpan.FromSeconds(info.TimeoutSeconds));
         var now = DateTimeOffset.UtcNow;
         if (answer is null)
         {
-            Console.WriteLine($"（{WriteConfirmCopy.TimedOutMessage}）");
+            Console.WriteLine(WriteConfirmCopy.TimedOutMessage);
             return new ConfirmOutcome(false, ConfirmChannel.Console, ConfirmDecision.TimedOut, now);
         }
 
-        var ans = answer.Trim().ToUpperInvariant();
-        if (ans is "Y" or "YES")
+        if (IsAllowAnswer(answer))
             return new ConfirmOutcome(true, ConfirmChannel.Console, ConfirmDecision.Approved, now);
         Console.WriteLine(WriteConfirmCopy.DeniedMessage);
         return new ConfirmOutcome(false, ConfirmChannel.Console, ConfirmDecision.Denied, now);
@@ -224,27 +239,49 @@ internal static class ConfirmPrompt
     private static PairOutcome AskPairConsole(PairRequestInfo info)
     {
         Console.WriteLine();
-        Console.WriteLine("!!!!!!!! 配对请求 !!!!!!!!");
-        Console.WriteLine($"来源 IP : {info.RemoteEndpoint}");
-        Console.WriteLine($"客户端  : {info.ClientName}");
+        Console.WriteLine(WriteConfirmCopy.DialogTitle);
+        Console.WriteLine($"对方请求连接本机（{info.ClientName}）");
         Console.WriteLine($"请求权限: {info.RequestedPermission}");
-        Console.WriteLine($"超时: {info.TimeoutSeconds}s（无输入则自动拒绝）");
-        Console.Write("允许吗? [Y]=按请求权限 / [G]=仅访客只读 / [N]=拒绝 > ");
+        Console.WriteLine(WriteConfirmCopy.CountdownText(info.TimeoutSeconds));
+        Console.Write($"[{WriteConfirmCopy.AllowButton}]=按请求权限 / [G]=仅访客只读 / [{WriteConfirmCopy.DenyButton}] > ");
 
         var answer = ReadLineWithTimeout(TimeSpan.FromSeconds(info.TimeoutSeconds));
         var now = DateTimeOffset.UtcNow;
         if (answer is null)
         {
-            Console.WriteLine("（超时，自动拒绝）");
+            Console.WriteLine($"（{WriteConfirmCopy.TimedOutMessage}）");
             return new PairOutcome(false, null, ConfirmChannel.Console, ConfirmDecision.TimedOut, now);
         }
 
-        var ans = answer.Trim().ToUpperInvariant();
-        if (ans is "N" or "NO")
+        var ans = answer.Trim();
+        if (IsDenyAnswer(ans))
             return new PairOutcome(false, null, ConfirmChannel.Console, ConfirmDecision.Denied, now);
-        if (ans is "G" or "GUEST")
+        if (ans.Equals("G", StringComparison.OrdinalIgnoreCase) ||
+            ans.Equals("GUEST", StringComparison.OrdinalIgnoreCase) ||
+            ans.Equals("访客", StringComparison.Ordinal))
             return new PairOutcome(true, PermissionLevel.Guest, ConfirmChannel.Console, ConfirmDecision.Approved, now);
-        return new PairOutcome(true, info.RequestedPermission, ConfirmChannel.Console, ConfirmDecision.Approved, now);
+        if (IsAllowAnswer(ans))
+            return new PairOutcome(true, info.RequestedPermission, ConfirmChannel.Console, ConfirmDecision.Approved, now);
+        Console.WriteLine(WriteConfirmCopy.DeniedMessage);
+        return new PairOutcome(false, null, ConfirmChannel.Console, ConfirmDecision.Denied, now);
+    }
+
+    private static bool IsAllowAnswer(string? answer)
+    {
+        if (string.IsNullOrWhiteSpace(answer)) return false;
+        var a = answer.Trim();
+        // first-run-mac-linux.md §4：允许 / y / Y
+        return a.Equals(WriteConfirmCopy.AllowButton, StringComparison.Ordinal) ||
+               a.Equals("y", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsDenyAnswer(string? answer)
+    {
+        if (string.IsNullOrWhiteSpace(answer)) return false;
+        var a = answer.Trim();
+        // first-run-mac-linux.md §4：拒绝 / n / N
+        return a.Equals(WriteConfirmCopy.DenyButton, StringComparison.Ordinal) ||
+               a.Equals("n", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? ReadLineWithTimeout(TimeSpan timeout)
@@ -255,4 +292,3 @@ internal static class ConfirmPrompt
         return null;
     }
 }
-

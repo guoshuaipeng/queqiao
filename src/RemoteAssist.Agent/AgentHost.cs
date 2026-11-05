@@ -292,6 +292,8 @@ internal sealed class AgentHost
         Console.WriteLine($"本机地址 : {string.Join(", ", LanIps)}");
         Console.WriteLine($"QR 主机  : {SelectedHost}");
         Console.WriteLine($"会话码   : {SessionCode}");
+        Console.WriteLine($"验证密码 : {SessionPassword}");
+        Console.WriteLine(FriendConnectGuide.FormatShareClipboard(SessionCode, SessionPassword));
         Console.WriteLine($"二维码载荷: {QrPayload}");
         Console.WriteLine($"审计日志 : {AuditPath}");
         Console.WriteLine($"确认方式 : {(_autoYes ? "自动(--yes)" : _headless ? "控制台(--headless)" : "本机窗口+托盘(默认)")}");
@@ -311,6 +313,15 @@ internal sealed class AgentHost
         Console.WriteLine("----------------------------------------");
     }
 
+    /// <summary>中继签发会话码后打印亲友向「会话码+验证密码」（CLI / headless）。</summary>
+    public void PrintShareCredentials()
+    {
+        Console.WriteLine();
+        Console.WriteLine(FriendConnectGuide.FormatShareClipboard(SessionCode, SessionPassword));
+        Console.WriteLine($"中继状态 : {RelayPhase}");
+        if (!string.IsNullOrWhiteSpace(LastRelayError))
+            Console.WriteLine($"中继错误 : {LastRelayError}");
+    }
     public void Start()
     {
         if (_cts is not null)

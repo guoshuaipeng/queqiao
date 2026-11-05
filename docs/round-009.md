@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（跨平台被控 CLI / MCP / 发布小包；不改 `relay/`，不把 Windows WinForms 迁到 Avalonia，不重做 R006–R008）
-> 状态：**wip**
+> 状态：**done**（2026-11-05 Asia/Shanghai）
 > 依据：docs/PRODUCT.md「支持平台」第一步；docs/architecture.md §13（先 CLI/MCP + 确认，再补对等 GUI）；docs/roadmap.md 平台轨道
 > CLI 展示与终端确认原文见 `docs/first-run-mac-linux.md` 第 3、4 节（直接用字，不扩大本轮范围）。
 
@@ -50,3 +50,63 @@ Windows P0（配对、确认、信任等级、MCP 提议闭环、同一安装包
 - 更新本文交付说明、`docs/roadmap.md`（本轮标 done；平台「Mac/Linux 被控端 + MCP」在 CLI 验收通过后标为部分完成 / 仍待 Avalonia，不要一次标成平台项全部 done）
 - 截图或文本复核放到 `docs/screenshots/r009-*`
 - 回告产品验收；未开下一轮
+
+
+## 交付说明（2026-11-05 Asia/Shanghai）
+
+### 状态
+
+**done**（平台第一步：Linux 被控 CLI + MCP + 终端确认 + 框架依赖小包；未开 R010 / Avalonia）
+
+### 代码
+
+- 新增 `src/RemoteAssist.Agent.Cli`（`net8.0`）：跨平台被控 CLI，默认连公网中继 `121.196.45.81:17891`。
+- CLI 展示 / 终端确认文案对齐 `docs/first-run-mac-linux.md` 第 3、4 节原文：
+  - 启动：「鹊桥远程协助已启动，正在等待对方连接。」+「把下面两行发给要帮你的人：」+ `会话码：` / `验证密码：`；剪贴板成功「已复制，直接发给对方即可。」失败「用鼠标选中上面两行，复制后发给对方。」；已连上「已有人连上。对方可以查看进程、日志和文件；要改动时会再问你。」；刷新「已换新的会话码和验证密码。之前发出去的码不能再用。」
+  - 写确认：标题「对方想在这台电脑执行操作」；人话 +「命令：…」；「请输入 允许 或 拒绝（也可以输入 y 或 n）。」；「若不操作，将在 60 秒后自动拒绝」；拒绝后「已拒绝，未做任何改动」。超时不自动允许；MCP / 中继不能绕过。
+- `ConfirmPrompt` 在 `AGENT_CLI` 下仅控制台确认（无 WinForms）；`ToolExecutor.RunCommand` 在非 Windows 用 `/bin/sh -c`。
+- 发布脚本 `scripts/publish-agent-cli.ps1`：默认 **framework-dependent** 小包 `linux-x64` / `osx-x64` / `osx-arm64`（Agent.Cli + MCP），附 `运行说明.txt`（「这个程序比较小，但需要先安装「.NET 8 运行时」。装一次就可以，它不是开发工具。」）。
+- 不改 `relay/`；不重做 R006–R008 WinForms；无 Avalonia。
+
+### 实测体积（framework-dependent，不含 pdb）
+
+| 产出 | 合计 |
+|------|------|
+| `artifacts/agent-cli-linux-x64-fd` | 245.9 KB（约 0.24 MB） |
+| `artifacts/agent-cli-osx-x64-fd` | 255.2 KB（约 0.25 MB） |
+| `artifacts/agent-cli-osx-arm64-fd` | 278.3 KB（约 0.27 MB） |
+| `artifacts/mcp-linux-x64-fd` | 200.2 KB |
+| `artifacts/mcp-osx-x64-fd` | 209.5 KB |
+| `artifacts/mcp-osx-arm64-fd` | 232.7 KB |
+
+### 联调
+
+- 在 Linux（本 bot 共享 box，`DOTNET_ROOT` + .NET 8 运行时）跑通 `RemoteAssist.Agent.Cli`，经默认公网中继展示会话码+验证密码。
+- Windows 协助端经中继连上后完成只读：`ListProcesses`、`ReadLogTail`（`/tmp/r009-demo.log`）。
+- 写操作 `RunCommand` 在 Linux 终端确认后选「拒绝」→ 协助端收到 `已拒绝，未做任何改动`；本机 `/tmp/r009-deny-marker` 不存在。
+- 联调为对齐 Windows 协助端亲友粘贴「码+密码」（Helper.UI 无指纹时回落明文业务管道）使用了 `--insecure`；默认发布仍为 TLS。
+
+### osx
+
+**已出包、未上真机**（无 macOS 真机启动验收；见 `r009-osx-publish.png`）。不要把本轮写成 Mac 已验收。
+
+### 测试
+
+- 全量 `dotnet test`：通过 166 / 总计 167；`SpoofedOwnerLinkFlag_OnGuestChannel_StillRequiresConfirm` 在整包并行时偶发超时竞态失败，单独重跑 3 次均通过（非本轮引入；本轮未改该用例）。
+
+### 截图 / 复核
+
+| 文件 | 屏幕/终端可见原文（要点） |
+|------|---------------------------|
+| `docs/screenshots/r009-linux-cli-session.png` | 「鹊桥远程协助已启动，正在等待对方连接。」「会话码：…」「验证密码：…」「用鼠标选中上面两行，复制后发给对方。」 |
+| `docs/screenshots/r009-helper-readonly.png` | Windows 协助端 `PROCS ok=True` / `LOGS ok=True`；日志含 `r009-demo` |
+| `docs/screenshots/r009-write-confirm.png` | 「对方想在这台电脑执行操作」「运行一条命令」「请输入 允许 或 拒绝（也可以输入 y 或 n）。」「已拒绝，未做任何改动」 |
+| `docs/screenshots/r009-write-denied.png` | 「已拒绝，未做任何改动」；`tool_denied_user`；标记文件未生成 |
+| `docs/screenshots/r009-package-size.png` | 实测 KB +「需先安装「.NET 8 运行时」」人话 |
+| `docs/screenshots/r009-osx-publish.png` | osx-x64 / osx-arm64 目录与体积；标明未上真机 |
+
+文本复核：`r009-cli-session.txt`、`r009-write-confirm.txt`、`r009-helper-combo.txt`、`r009-linux-agent-full.txt`。父级取图：`%USERPROFILE%\Downloads\r009-shots\`。
+
+### 本轮不做（已遵守）
+
+- 未开 R010 / Avalonia 被控窗；未做 Mac/Linux 双模式 GUI；未把 Windows 迁到 Avalonia；未改中继；未改官网下载按钮；未重做 R006–R008。

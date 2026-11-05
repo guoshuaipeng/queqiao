@@ -139,11 +139,19 @@ internal sealed record AuditEntry(string Raw, string Timestamp, string EventType
 
 internal static class ToolExecutor
 {
-    private static readonly HashSet<string> BlockedPathPrefixes = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> BlockedPathPrefixes = BuildBlockedPathPrefixes();
+
+    private static HashSet<string> BuildBlockedPathPrefixes()
     {
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\.ssh",
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Microsoft\Credentials",
-    };
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (!string.IsNullOrWhiteSpace(home))
+            set.Add(Path.Combine(home, ".ssh"));
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        if (!string.IsNullOrWhiteSpace(appData))
+            set.Add(Path.Combine(appData, "Microsoft", "Credentials"));
+        return set;
+    }
 
     public static string ListProcesses()
     {
@@ -209,17 +217,35 @@ internal static class ToolExecutor
         if (string.IsNullOrWhiteSpace(command))
             throw new ArgumentException("command is empty");
 
-        var psi = new System.Diagnostics.ProcessStartInfo
+        System.Diagnostics.ProcessStartInfo psi;
+        if (OperatingSystem.IsWindows())
         {
-            FileName = "cmd.exe",
-            Arguments = "/c " + command,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8
-        };
+            psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/c " + command,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+        }
+        else
+        {
+            psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "/bin/sh",
+                Arguments = "-c " + command,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+        }
 
         using var proc = System.Diagnostics.Process.Start(psi)
             ?? throw new InvalidOperationException("Failed to start process.");
