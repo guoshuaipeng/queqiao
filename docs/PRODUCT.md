@@ -35,9 +35,15 @@
 - 优先 **通用 stdio**（JSON-RPC + Content-Length）。
 - 工具与 Helper 同一客户端协议；`run_command` 走 Agent 确认流程。
 
+## 确认交互
+
+- Assist 写操作默认弹出**本机 WinForms 确认窗口**（来源 / 命令 / 允许 / 拒绝；默认 60s 超时拒绝）。
+- --headless 回退控制台；--yes 仅联调自动通过。
+- 配对确认 v1 仍用控制台。
+
 ## 审计
 
-每次配对、工具成功/失败、用户确认/拒绝写入本地审计日志。
+每次配对、工具成功/失败、用户确认/拒绝写入本地审计日志；确认记录含 `via`（ui/console/autoyes）、`result`、`at`。
 
 ## 明确不做（v1）
 

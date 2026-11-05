@@ -11,6 +11,7 @@ namespace RemoteAssist.Agent;
 internal static class Program
 {
     private const int DefaultPort = 17890;
+    private const int DefaultConfirmTimeoutSeconds = 60;
     private static readonly TimeSpan TokenTtl = TimeSpan.FromHours(2);
 
     private static string _sessionCode = "";
@@ -18,6 +19,8 @@ internal static class Program
     private static readonly ConcurrentDictionary<string, PendingConfirmation> Pending = new();
     private static AuditLog _audit = null!;
     private static bool _autoYes;
+    private static bool _headless;
+    private static int _confirmTimeoutSeconds = DefaultConfirmTimeoutSeconds;
     private static readonly object ConfirmUiLock = new();
 
     public static async Task Main(string[] args)
@@ -25,10 +28,13 @@ internal static class Program
         Console.OutputEncoding = System.Text.Encoding.UTF8;
         var port = DefaultPort;
         _autoYes = args.Any(a => a is "--yes" or "--auto-yes");
+        _headless = args.Any(a => a is "--headless");
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] is "--port" or "-p" && i + 1 < args.Length && int.TryParse(args[i + 1], out var p))
                 port = p;
+            if (args[i] is "--confirm-timeout" && i + 1 < args.Length && int.TryParse(args[i + 1], out var t))
+                _confirmTimeoutSeconds = Math.Clamp(t, 5, 600);
         }
 
         var auditPath = Path.Combine(
@@ -49,15 +55,23 @@ internal static class Program
         Console.WriteLine($"本机地址 : {string.Join(", ", localIps)}");
         Console.WriteLine($"会话码   : {_sessionCode}");
         Console.WriteLine($"审计日志 : {auditPath}");
+        Console.WriteLine($"确认方式 : {(_autoYes ? "自动(--yes)" : _headless ? "控制台(--headless)" : "本机窗口(默认)")}");
+        Console.WriteLine($"确认超时 : {_confirmTimeoutSeconds}s");
         Console.WriteLine();
         Console.WriteLine("协助端示例:");
         var tipHost = localIps.FirstOrDefault() ?? "127.0.0.1";
         Console.WriteLine($"  dotnet run --project src/RemoteAssist.Helper -- pair {tipHost} {_sessionCode}");
         Console.WriteLine();
-        Console.WriteLine(_autoYes ? "自动确认已开启 (--yes)，仅用于本地联调。" : "按 Ctrl+C 退出。写操作(Assist)会在本窗口弹出确认。");
+        if (_autoYes)
+            Console.WriteLine("自动确认已开启 (--yes)，仅用于本地联调。");
+        else if (_headless)
+            Console.WriteLine("无 UI 模式：写操作在本控制台确认（Y/N，超时自动拒绝）。");
+        else
+            Console.WriteLine("写操作(Assist)会弹出本机确认窗口；可用 --headless 回退控制台。");
+        Console.WriteLine("按 Ctrl+C 退出。");
         Console.WriteLine("----------------------------------------");
 
-        _audit.Write("agent_start", $"port={port}; code={_sessionCode}");
+        _audit.Write("agent_start", $"port={port}; code={_sessionCode}; confirm={(_autoYes ? "auto" : _headless ? "console" : "ui")}; timeout={_confirmTimeoutSeconds}s");
 
         Console.CancelKeyPress += (_, e) =>
         {
@@ -133,7 +147,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            _audit.Write("client_error", $"{remote}: {ex.Message}");
+            _audit.Write("client_error", $"{remote}; {ex.Message}");
         }
         finally
         {
@@ -164,7 +178,7 @@ internal static class Program
             ? lvl
             : PermissionLevel.Assist;
 
-        // v1: Agent operator must approve permission level via console
+        // v1: 配对仍用控制台确认（写操作才走 UI 窗口）
         PermissionLevel granted;
         if (_autoYes)
         {
@@ -173,26 +187,26 @@ internal static class Program
         }
         else
         {
-        lock (ConfirmUiLock)
-        {
-            Console.WriteLine();
-            Console.WriteLine($"[配对请求] 来自 {remote} 客户端={req.ClientName} 请求权限={requested}");
-            Console.Write("允许吗? [Y]=按请求权限 / [G]=仅访客只读 / [N]=拒绝 > ");
-            var ans = (Console.ReadLine() ?? "").Trim().ToUpperInvariant();
-            if (ans is "N" or "NO")
+            lock (ConfirmUiLock)
             {
-                _audit.Write("pair_reject", $"operator_denied {remote}");
-                granted = (PermissionLevel)(-1);
+                Console.WriteLine();
+                Console.WriteLine($"[配对请求] 来自 {remote} 客户端={req.ClientName} 请求权限={requested}");
+                Console.Write("允许吗? [Y]=按请求权限 / [G]=仅访客只读 / [N]=拒绝 > ");
+                var ans = (Console.ReadLine() ?? "").Trim().ToUpperInvariant();
+                if (ans is "N" or "NO")
+                {
+                    _audit.Write("pair_reject", $"operator_denied {remote}");
+                    granted = (PermissionLevel)(-1);
+                }
+                else if (ans is "G" or "GUEST")
+                {
+                    granted = PermissionLevel.Guest;
+                }
+                else
+                {
+                    granted = requested;
+                }
             }
-            else if (ans is "G" or "GUEST")
-            {
-                granted = PermissionLevel.Guest;
-            }
-            else
-            {
-                granted = requested;
-            }
-        }
         }
 
         if ((int)granted < 0)
@@ -256,24 +270,29 @@ internal static class Program
         }
 
         var args = req.Arguments ?? new Dictionary<string, string?>();
+        var source = $"{session.ClientName}";
 
         if (ToolCapabilities.RequiresConfirmation(tool, session.Permission))
         {
             var summary = BuildSummary(tool, args);
-            var approved = await AskOperatorConfirmAsync(tool, summary).ConfigureAwait(false);
-            if (!approved)
+            var info = new ConfirmRequestInfo(source, tool.ToString(), summary, _confirmTimeoutSeconds);
+            var outcome = await ConfirmPrompt.AskAsync(info, _autoYes, _headless).ConfigureAwait(false);
+            if (!outcome.Approved)
             {
-                _audit.Write("tool_denied_user", $"tool={tool}; {summary}");
+                _audit.Write("tool_denied_user", outcome.AuditDetail(tool.ToString(), summary, source));
+                var err = outcome.Decision == ConfirmDecision.TimedOut
+                    ? "确认超时，已自动拒绝"
+                    : "用户拒绝执行";
                 await FrameIo.WriteAsync(stream, "tool_result",
-                    new ToolResponse { Ok = false, Error = "用户拒绝执行", DeniedByUser = true },
+                    new ToolResponse { Ok = false, Error = err, DeniedByUser = true },
                     id: envelope.Id).ConfigureAwait(false);
                 return;
             }
-            _audit.Write("tool_confirmed", $"tool={tool}; {summary}");
+            _audit.Write("tool_confirmed", outcome.AuditDetail(tool.ToString(), summary, source));
         }
         else if (!ToolCapabilities.IsReadOnly(tool) && session.Permission == PermissionLevel.Admin)
         {
-            _audit.Write("tool_admin_auto", $"tool={tool}; {BuildSummary(tool, args)}");
+            _audit.Write("tool_admin_auto", $"tool={tool}; source={source}; {BuildSummary(tool, args)}");
         }
 
         try
@@ -323,7 +342,6 @@ internal static class Program
     {
         if (args.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v))
             return v!;
-        // also accept camelCase alternatives already matching
         throw new ArgumentException($"缺少参数: {key}");
     }
 
@@ -338,28 +356,6 @@ internal static class Program
 
     private static string GetArgOr(Dictionary<string, string?> args, string key, string fallback) =>
         args.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v! : fallback;
-
-    private static Task<bool> AskOperatorConfirmAsync(ToolKind tool, string summary)
-    {
-        if (_autoYes)
-        {
-            Console.WriteLine($"[自动确认操作] {tool}: {summary}");
-            return Task.FromResult(true);
-        }
-        return Task.Run(() =>
-        {
-            lock (ConfirmUiLock)
-            {
-                Console.WriteLine();
-                Console.WriteLine("!!!!!!!! 需要确认的操作 !!!!!!!!");
-                Console.WriteLine($"工具: {tool}");
-                Console.WriteLine($"详情: {summary}");
-                Console.Write("是否允许执行? [Y/N] > ");
-                var ans = (Console.ReadLine() ?? "").Trim().ToUpperInvariant();
-                return ans is "Y" or "YES";
-            }
-        });
-    }
 
     private static List<string> GetLanIPv4()
     {
@@ -377,4 +373,3 @@ internal static class Program
         }
     }
 }
-
