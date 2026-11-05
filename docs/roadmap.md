@@ -43,6 +43,8 @@
 
 ## 平台 — macOS / Linux（2026-11-05 起，不抢 P0）
 
+场景闭环见 `docs/mac-linux-scenes.md`。R009 仍只做 CLI/MCP + 终端确认；亲友和客户的完整主路径等 Avalonia 被控窗。
+
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
 | 技术栈与体积方案 | 鹊桥-架构 | **done** | `architecture.md` §13：Mac/Linux=Avalonia；Windows 暂留 WinForms；默认小包依赖运行时（目标约 1.4 MB 档）；自包含备选上限约 72 MB；macOS `.dmg`，Linux `.tar.gz` |
