@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**ready**
+> 状态：**delivered**
 > 依据：R031 产品已验收。`docs/quality.md` 仍有效的统一规则：被协助端「关闭窗口后继续在托盘运行」如果提示框和底栏各写一次，只留一处。
 
 Windows 接受协助端现在会把同一件事说两遍：启动时托盘气泡说「关闭主窗口会留在托盘 / 关闭主窗口不会退出」；窗口底栏默认又写「就绪。关闭窗口后会继续在托盘运行。」亲友开屏先看到一句常驻提醒，过两秒气泡再重复一遍。
@@ -46,3 +46,35 @@ Windows 接受协助端现在会把同一件事说两遍：启动时托盘气泡
 
 - 更新本文交付说明与截图
 - 回告产品验收；未开下一轮
+
+
+## 交付说明（客户端 · 2026-11-06 Asia/Shanghai）
+
+### 做了什么
+- 新增 `RemoteAssist.Protocol.TrayStayCopy`：
+  - `BalloonDefault` / `BalloonWithReturnHome`（沿用原有两句，无第三种说法）
+  - `HiddenToTrayFeedback` =「已隐藏到托盘。双击托盘图标可重新打开。」
+  - `RemovedDefaultStatusBar` = 原底栏常驻句（仅回归对照，不再作默认底栏）
+- Windows `MainForm`：底栏默认 `Text = ""`，不再写「就绪。关闭窗口后会继续在托盘运行。」
+- `OnFormClosing` 藏托盘后 `SetStatus(TrayStayCopy.HiddenToTrayFeedback)`（一次性反馈）
+- `AgentTrayContext` / `AgentDesktopUi` 启动气泡改为 `TrayStayCopy.BalloonFor(enableReturnHome)`
+- 未改 Avalonia 关窗提示；未改 R031 主状态/协助方列表；未改 Skill/MCP/`InstallInstructions`/`trust-levels`；未换公网包；未开下一轮
+
+### 测试
+- `RemoteAssist.Protocol.Tests`：**183** 通过（含 TrayStayCopy 3 项）
+
+### 截图（均为 **ui-shot**）
+| 文件 | 显示 | MD5 |
+|------|------|-----|
+| `docs/screenshots/r032-accept-statusbar-empty.png` | 接受协助就绪态；底栏空白；无「就绪。关闭窗口后会继续在托盘运行。」；「复制码+密码」仍是唯一实心主按钮 | EFD52E073BDC2A2DD0881E5E6ADD9A12 |
+| `docs/screenshots/r032-accept-hidden-to-tray-feedback.png` | 底栏一次性「已隐藏到托盘。双击托盘图标可重新打开。」（窗仍可见便于截图；非默认底栏） | 07B44EC33CBA1C49D205B4BD7CD4DD9C |
+
+### 启动气泡（未能真拍 NotifyIcon）
+ui-shot / DrawToBitmap 无法截取系统托盘气泡。证明方式：
+1. 气泡文案常量即原句：`TrayStayCopy.BalloonDefault`、`BalloonWithReturnHome`（测试锁死原文）
+2. `AgentTrayContext` 启动时调用 `TrayStayCopy.BalloonFor(enableReturnHome)`，未另造第三种说法
+3. 底栏已去掉与气泡重复的常驻句（见上表第一张）
+
+### 缺口 / 披露
+- 未实拍启动气泡本体；以常量+代码接线证明未改气泡口径。
+- 「已隐藏到托盘…」反馈图为关窗逻辑同款文案的 ui-shot 注入（窗未真正 Hide），便于同屏验收底栏。

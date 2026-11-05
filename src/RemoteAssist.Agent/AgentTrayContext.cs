@@ -1,3 +1,4 @@
+using RemoteAssist.Protocol;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -64,9 +65,7 @@ internal sealed class AgentDesktopUi : IDisposable
 
         ShowMain();
         _tray.ShowBalloonTip(2500, "鹊桥",
-            enableReturnHome
-                ? "被控模式已启动。可返回首页切换为控制端；关闭主窗口会留在托盘。"
-                : "已在托盘运行。关闭主窗口不会退出，可随时双击托盘图标打开。",
+            TrayStayCopy.BalloonFor(enableReturnHome),
             ToolTipIcon.Info);
     }
 

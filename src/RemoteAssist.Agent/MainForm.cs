@@ -598,7 +598,8 @@ internal sealed class MainForm : Form
             Size = new Size(728, 22),
             ForeColor = Color.FromArgb(0x1A, 0x73, 0xE8),
             Font = new Font(Font.FontFamily, 8.5F),
-            Text = "就绪。关闭窗口后会继续在托盘运行。"
+            // R032：底栏默认空白，托盘说明只留启动气泡一处
+            Text = ""
         };
 
         _trustTip = new Panel
@@ -905,7 +906,7 @@ internal sealed class MainForm : Form
         if (_exitApp || e.CloseReason != CloseReason.UserClosing) return;
         e.Cancel = true;
         Hide();
-        SetStatus("已隐藏到托盘。双击托盘图标可重新打开。");
+        SetStatus(TrayStayCopy.HiddenToTrayFeedback);
     }
 
     private void OnHostSelected(object? sender, EventArgs e)
@@ -1237,6 +1238,21 @@ internal sealed class MainForm : Form
     }
 
 
+
+
+    /// <summary>UiShot：接受协助就绪态——底栏空白，不含常驻托盘句。</summary>
+    internal void PrepareTrayStayIdleForShot()
+    {
+        PreparePeerIdleForShot();
+        SetStatus("");
+    }
+
+    /// <summary>UiShot：关窗藏托盘后的一次性底栏反馈（窗仍可见便于截图）。</summary>
+    internal void PrepareHiddenToTrayFeedbackForShot()
+    {
+        PreparePeerIdleForShot();
+        SetStatus(TrayStayCopy.HiddenToTrayFeedback);
+    }
 
     /// <summary>UiShot：还没人连上——主状态可发给对方；列表（暂无）。</summary>
     internal void PreparePeerIdleForShot()
