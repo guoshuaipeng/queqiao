@@ -17,4 +17,8 @@
     <InternalsVisibleTo Include="RemoteAssist.Protocol.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+  </ItemGroup>
+
 </Project>

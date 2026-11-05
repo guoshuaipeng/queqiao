@@ -92,7 +92,7 @@ internal static class ConfirmPrompt
         }
     }
 
-    private static void EnsureWinFormsInit()
+    internal static void EnsureWinFormsInitialized()
     {
         if (Interlocked.Exchange(ref _winFormsInit, 1) == 0)
         {
@@ -110,7 +110,7 @@ internal static class ConfirmPrompt
         {
             try
             {
-                EnsureWinFormsInit();
+                EnsureWinFormsInitialized();
                 using var dlg = new ConfirmDialog(info);
                 var dr = dlg.ShowDialog();
                 var now = DateTimeOffset.UtcNow;
@@ -151,7 +151,7 @@ internal static class ConfirmPrompt
         {
             try
             {
-                EnsureWinFormsInit();
+                EnsureWinFormsInitialized();
                 using var dlg = new PairConfirmDialog(info);
                 dlg.ShowDialog();
                 var now = DateTimeOffset.UtcNow;
@@ -241,3 +241,4 @@ internal static class ConfirmPrompt
         return null;
     }
 }
+
