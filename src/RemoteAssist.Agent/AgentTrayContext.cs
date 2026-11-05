@@ -4,13 +4,13 @@ using System.Windows.Forms;
 namespace RemoteAssist.Agent;
 
 /// <summary>
-/// 系统托盘常驻：会话信息 / 已配对客户端断开 / 刷新会话码 / 退出。
+/// 系统托盘常驻：打开主界面 / 已配对客户端断开 / 刷新会话码 / 退出。
 /// </summary>
 internal sealed class AgentTrayContext : ApplicationContext
 {
     private readonly AgentHost _host;
     private readonly NotifyIcon _tray;
-    private readonly SessionInfoForm _sessionForm;
+    private readonly MainForm _mainForm;
     private readonly Icon _icon;
     private readonly ToolStripMenuItem _clientsMenu;
 
@@ -19,18 +19,18 @@ internal sealed class AgentTrayContext : ApplicationContext
         _host = host;
         ConfirmPrompt.EnsureWinFormsInitialized();
 
-        _icon = CreateTrayIcon();
-        _sessionForm = new SessionInfoForm(host);
+        _icon = AppIcons.CreateTrayIcon();
+        _mainForm = new MainForm(host);
 
         _clientsMenu = new ToolStripMenuItem("已配对客户端");
 
         var menu = new ContextMenuStrip();
-        menu.Items.Add("显示会话信息", null, (_, _) => ShowSessionInfo());
+        menu.Items.Add("打开主界面", null, (_, _) => ShowMain());
         menu.Items.Add("复制 MCP 配置片段", null, (_, _) => CopyMcpConfigSnippet());
         menu.Items.Add("刷新会话码", null, (_, _) =>
         {
             _host.RefreshSessionCode();
-            ShowSessionInfo();
+            ShowMain();
         });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_clientsMenu);
@@ -41,16 +41,16 @@ internal sealed class AgentTrayContext : ApplicationContext
         _tray = new NotifyIcon
         {
             Icon = _icon,
-            Text = "远端协助 Agent",
+            Text = "远端协助",
             Visible = true,
             ContextMenuStrip = menu
         };
-        _tray.DoubleClick += (_, _) => ShowSessionInfo();
+        _tray.DoubleClick += (_, _) => ShowMain();
 
         _host.PairedClientsChanged += OnPairedClientsChanged;
 
-        ShowSessionInfo();
-        _tray.ShowBalloonTip(2500, "远端协助", "Agent 已在托盘运行。右键可查看会话码、断开客户端或退出。", ToolTipIcon.Info);
+        ShowMain();
+        _tray.ShowBalloonTip(2500, "远端协助", "已在托盘运行。关闭主窗口不会退出，可随时双击托盘图标打开。", ToolTipIcon.Info);
     }
 
     private void OnPairedClientsChanged()
@@ -58,12 +58,9 @@ internal sealed class AgentTrayContext : ApplicationContext
         try
         {
             var n = _host.ListPairedClients().Count;
-            _tray.Text = n == 0 ? "远端协助 Agent" : $"远端协助 Agent（{n} 个已配对）";
+            _tray.Text = n == 0 ? "远端协助" : $"远端协助（{n} 个已配对）";
         }
-        catch
-        {
-            /* ignore */
-        }
+        catch { /* ignore */ }
     }
 
     private void RebuildClientsMenu()
@@ -104,8 +101,7 @@ internal sealed class AgentTrayContext : ApplicationContext
 
     private void CopyMcpConfigSnippet()
     {
-        // 调用瞬间读取 QrPayload，与会话窗共用同一生成逻辑
-        IWin32Window? owner = _sessionForm.Visible && !_sessionForm.IsDisposed ? _sessionForm : null;
+        IWin32Window? owner = _mainForm.Visible && !_mainForm.IsDisposed ? _mainForm : null;
         var outcome = McpConfigCopyHelper.Copy(_host.QrPayload, owner);
 
         var tipIcon = outcome.Kind switch
@@ -125,13 +121,13 @@ internal sealed class AgentTrayContext : ApplicationContext
         _tray.ShowBalloonTip(5000, "远端协助", tip, tipIcon);
     }
 
-    private void ShowSessionInfo() => _sessionForm.ShowAndActivate();
+    private void ShowMain() => _mainForm.ShowAndActivate();
 
     private void ExitApp()
     {
         _host.PairedClientsChanged -= OnPairedClientsChanged;
         _tray.Visible = false;
-        _sessionForm.RequestExit();
+        _mainForm.RequestExit();
         _host.Stop();
         ExitThread();
     }
@@ -143,28 +139,13 @@ internal sealed class AgentTrayContext : ApplicationContext
             _host.PairedClientsChanged -= OnPairedClientsChanged;
             _tray.Visible = false;
             _tray.Dispose();
-            if (!_sessionForm.IsDisposed)
+            if (!_mainForm.IsDisposed)
             {
-                _sessionForm.RequestExit();
-                _sessionForm.Dispose();
+                _mainForm.RequestExit();
+                _mainForm.Dispose();
             }
             _icon.Dispose();
         }
         base.Dispose(disposing);
-    }
-
-    private static Icon CreateTrayIcon()
-    {
-        using var bmp = new Bitmap(16, 16);
-        using (var g = Graphics.FromImage(bmp))
-        {
-            g.Clear(Color.Transparent);
-            using var brush = new SolidBrush(Color.FromArgb(0x1A, 0x73, 0xE8));
-            g.FillEllipse(brush, 1, 1, 14, 14);
-            using var pen = new Pen(Color.White, 2);
-            g.DrawEllipse(pen, 4, 4, 8, 8);
-        }
-        using var tmp = Icon.FromHandle(bmp.GetHicon());
-        return (Icon)tmp.Clone();
     }
 }

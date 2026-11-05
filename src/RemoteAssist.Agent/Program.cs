@@ -9,7 +9,6 @@ internal static class Program
 
     public static async Task Main(string[] args)
     {
-        Console.OutputEncoding = System.Text.Encoding.UTF8;
         var port = DefaultPort;
         var autoYes = args.Any(a => a is "--yes" or "--auto-yes");
         var headless = args.Any(a => a is "--headless");
@@ -23,6 +22,17 @@ internal static class Program
                 confirmTimeoutSeconds = Math.Clamp(t, 5, 600);
         }
 
+        // WinExe：CLI / headless 需要控制台；UI 模式可不挂控制台
+        if (headless || autoYes)
+            NativeConsole.EnsureForCli();
+        else
+        {
+            // 开发时从终端启动仍尽量挂上父控制台，便于看审计；失败则静默（安装后双击无黑窗）
+            NativeConsole.TryAttachParent();
+        }
+
+        try { Console.OutputEncoding = System.Text.Encoding.UTF8; } catch { /* ignore */ }
+
         var auditPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RemoteAssist", "audit.log");
@@ -30,7 +40,6 @@ internal static class Program
         var host = new AgentHost(port, autoYes, headless, confirmTimeoutSeconds, audit, auditPath, insecure);
         host.PrintBanner();
 
-        // headless / --yes：纯 CLI，不启托盘与会话窗
         if (headless || autoYes)
         {
             host.Start();
@@ -45,7 +54,6 @@ internal static class Program
             return;
         }
 
-        // UI 模式：STA 消息循环 + 托盘；监听在后台
         await RunTrayUiAsync(host).ConfigureAwait(false);
     }
 
@@ -75,7 +83,12 @@ internal static class Program
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[托盘 UI 失败] {ex}");
+                try { Console.WriteLine($"[主界面失败] {ex}"); } catch { /* ignore */ }
+                try
+                {
+                    MessageBox.Show(ex.ToString(), "远端协助启动失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                catch { /* ignore */ }
                 tcs.TrySetException(ex);
                 return;
             }
@@ -93,3 +106,4 @@ internal static class Program
         return tcs.Task;
     }
 }
+

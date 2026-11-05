@@ -33,6 +33,7 @@ internal sealed class AgentHost
 
     public int Port { get; }
     public string AuditPath { get; }
+    public AuditLog Audit => _audit;
     public IReadOnlyList<string> LanIps { get; }
 
     public event Action? SessionChanged;
@@ -564,4 +565,5 @@ internal sealed class AgentHost
     private static string GetArgOr(Dictionary<string, string?> args, string key, string fallback) =>
         args.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v! : fallback;
 }
+
 

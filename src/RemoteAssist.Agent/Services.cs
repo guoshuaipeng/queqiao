@@ -46,15 +46,88 @@ internal sealed class AuditLog
 
     public AuditLog(string path) => _path = path;
 
+    public string FilePath => _path;
+
+    /// <summary>新审计行写入后触发（UI 可订阅刷新）。</summary>
+    public event Action? EntryWritten;
+
     public void Write(string eventType, string detail)
     {
         var line = $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz}\t{eventType}\t{detail}";
         lock (_lock)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
             File.AppendAllText(_path, line + Environment.NewLine, Encoding.UTF8);
         }
         Console.WriteLine($"[AUDIT] {line}");
+        try { EntryWritten?.Invoke(); } catch { /* ignore UI errors */ }
+    }
+
+    /// <summary>读取最近若干条审计行（文件尾部，按时间正序返回，旧→新）。</summary>
+    public IReadOnlyList<AuditEntry> ReadRecent(int maxLines = 50)
+    {
+        maxLines = Math.Clamp(maxLines, 1, 500);
+        string[] lines;
+        lock (_lock)
+        {
+            if (!File.Exists(_path))
+                return Array.Empty<AuditEntry>();
+            // 小文件直接读；大文件仍可接受（审计日志通常不大）
+            lines = File.ReadAllLines(_path, Encoding.UTF8);
+        }
+
+        var take = lines.Length <= maxLines ? lines : lines[^maxLines..];
+        var list = new List<AuditEntry>(take.Length);
+        foreach (var line in take)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            list.Add(AuditEntry.Parse(line));
+        }
+        return list;
+    }
+}
+
+/// <summary>审计日志一行的可读解析。</summary>
+internal sealed record AuditEntry(string Raw, string Timestamp, string EventType, string Detail)
+{
+    public static AuditEntry Parse(string line)
+    {
+        var parts = line.Split('\t', 3);
+        if (parts.Length >= 3)
+            return new AuditEntry(line, parts[0], parts[1], parts[2]);
+        if (parts.Length == 2)
+            return new AuditEntry(line, parts[0], parts[1], "");
+        return new AuditEntry(line, "", "raw", line);
+    }
+
+    public string DisplaySummary
+    {
+        get
+        {
+            var label = EventType switch
+            {
+                "pair_ok" => "配对成功",
+                "pair_reject" => "配对拒绝",
+                "pair_timeout" => "配对超时",
+                "tool_ok" => "工具成功",
+                "tool_error" => "工具失败",
+                "tool_confirmed" => "已确认执行",
+                "tool_denied_user" => "用户拒绝执行",
+                "tool_denied_perm" => "权限不足",
+                "tool_admin_auto" => "管理员自动执行",
+                "session_refresh" => "刷新会话码",
+                "session_kick" => "断开客户端",
+                "host_selected" => "切换主机 IP",
+                "client_disconnect" => "客户端断开",
+                "client_error" => "客户端错误",
+                "listen_start" => "开始监听",
+                "listen_stop" => "停止监听",
+                _ => EventType
+            };
+            var ts = Timestamp.Length >= 19 ? Timestamp[..19] : Timestamp;
+            var detail = Detail.Length > 80 ? Detail[..77] + "…" : Detail;
+            return string.IsNullOrEmpty(detail) ? $"{ts}  {label}" : $"{ts}  {label}  ·  {detail}";
+        }
     }
 }
 
@@ -173,4 +246,5 @@ internal static class ToolExecutor
         }
     }
 }
+
 
