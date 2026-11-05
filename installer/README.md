@@ -29,7 +29,7 @@ cd E:\IdeaProjects\remote-assist
 |---|---|
 | 安装目录 | `%LOCALAPPDATA%\Programs\RemoteAssist` |
 | 主程序 | `RemoteAssist.exe` |
-| 开始菜单 | 「远端协助」+ 卸载 |
+| 开始菜单 | 「鹊桥远程协助」+ 卸载 |
 | 桌面快捷方式 | 可选 |
 | 开机自启 | 可选 |
 

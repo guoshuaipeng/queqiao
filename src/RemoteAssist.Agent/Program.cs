@@ -86,7 +86,7 @@ internal static class Program
                 try { Console.WriteLine($"[主界面失败] {ex}"); } catch { /* ignore */ }
                 try
                 {
-                    MessageBox.Show(ex.ToString(), "远端协助启动失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(ex.ToString(), "鹊桥启动失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 catch { /* ignore */ }
                 tcs.TrySetException(ex);

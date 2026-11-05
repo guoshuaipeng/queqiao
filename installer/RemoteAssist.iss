@@ -1,7 +1,7 @@
 ; RemoteAssist — Inno Setup 6 script (unified App: accept + control)
 ; 构建：先 publish App，再 ISCC 本脚本。见 scripts\build-installer.ps1
 
-#define MyAppName "远端协助"
+#define MyAppName "鹊桥远程协助"
 #define MyAppNameEn "RemoteAssist"
 #define MyAppVersion "0.1.0"
 #define MyAppPublisher "RemoteAssist"

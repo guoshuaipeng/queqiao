@@ -39,7 +39,7 @@ internal sealed class MainForm : Form
         _host = host;
         _enableReturnHome = enableReturnHome;
 
-        Text = "远端协助";
+        Text = "鹊桥";
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         MinimizeBox = true;
@@ -63,7 +63,7 @@ internal sealed class MainForm : Form
             Size = new Size(500, 28),
             ForeColor = Color.White,
             Font = new Font(Font.FontFamily, 14F, FontStyle.Bold),
-            Text = "远端协助",
+            Text = "鹊桥",
             BackColor = Color.Transparent
         });
         _headerSubtitle = new Label
@@ -274,7 +274,7 @@ internal sealed class MainForm : Form
         statusCard.Controls.Add(btnDisconnect);
         statusCard.Controls.Add(btnKick);
 
-        var actionCard = MakeCard(392, 296, 352, 100);
+        var actionCard = MakeCard(392, 296, 352, 132);
         actionCard.Controls.Add(new Label
         {
             AutoSize = false,
@@ -283,7 +283,18 @@ internal sealed class MainForm : Form
             Font = new Font(Font.FontFamily, 10.5F, FontStyle.Bold),
             Text = "分享给协助方"
         });
-        var btnCopyPayload = MakeButton("复制载荷", 16, 48, 100);
+        var btnCopyCodePwd = MakeButton("复制码+密码", 16, 40, 160);
+        btnCopyCodePwd.Font = new Font(Font.FontFamily, 9.5F, FontStyle.Bold);
+        btnCopyCodePwd.Click += (_, _) =>
+        {
+            try
+            {
+                Clipboard.SetText($"会话码：{_host.SessionCode}{Environment.NewLine}验证密码：{_host.SessionPassword}");
+                SetStatus("已复制会话码和验证密码。");
+            }
+            catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
+        };
+        var btnCopyPayload = MakeButton("复制载荷", 16, 78, 100);
         btnCopyPayload.Click += (_, _) =>
         {
             try
@@ -293,13 +304,13 @@ internal sealed class MainForm : Form
             }
             catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
         };
-        var btnCopyMcp = MakeButton("复制 MCP 配置", 124, 48, 120);
+        var btnCopyMcp = MakeButton("复制 MCP 配置", 124, 78, 120);
         btnCopyMcp.Click += (_, _) =>
         {
             var outcome = McpConfigCopyHelper.Copy(_host.QrPayload, this);
             SetStatus(outcome.Message);
         };
-        var btnCopyCode = MakeButton("复制会话码", 252, 48, 84);
+        var btnCopyCode = MakeButton("复制会话码", 252, 78, 84);
         btnCopyCode.Click += (_, _) =>
         {
             try
@@ -309,22 +320,23 @@ internal sealed class MainForm : Form
             }
             catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
         };
+        actionCard.Controls.Add(btnCopyCodePwd);
         actionCard.Controls.Add(btnCopyPayload);
         actionCard.Controls.Add(btnCopyMcp);
         actionCard.Controls.Add(btnCopyCode);
 
         // 右侧说明
-        var tipCard = MakeCard(392, 412, 352, 88);
+        var tipCard = MakeCard(392, 444, 352, 72);
         tipCard.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(16, 12),
             Size = new Size(320, 64),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "亲友使用：安装后打开本程序 → 把会话码或二维码发给协助方。\n协助方连上后，本机弹出确认窗，你点允许才执行。\n关闭本窗口不会退出，程序继续在托盘运行。"
+            Text = "亲友使用：点「复制码+密码」发给协助方（或扫二维码）。\n协助方连上后本机弹出确认，你点允许才执行。\n关闭窗口不退出，程序继续在托盘运行。"
         });
 
-        var auditFull = MakeCard(16, 516, 728, 90);
+        var auditFull = MakeCard(16, 530, 728, 78);
         auditFull.Controls.Add(new Label
         {
             AutoSize = false,
@@ -543,7 +555,7 @@ internal sealed class MainForm : Form
     private void UpdateListenLabel()
     {
         if (_host.PreferRelay)
-            _listenValue.Text = $"中继 {_host.RelayEndpointAddress} · 码 {_host.SessionCode} · 密码已出示 · LAN :{_host.Port}";
+            _listenValue.Text = $"中继 {_host.RelayEndpointAddress} · 码 {_host.SessionCode} · 密码已出示 · 本机 :{_host.Port}";
         else
             _listenValue.Text = $"局域网监听 :{_host.Port} · 主机 {_host.SelectedHost}";
     }

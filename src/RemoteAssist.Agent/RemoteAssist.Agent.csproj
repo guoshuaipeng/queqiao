@@ -17,6 +17,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="RemoteAssist.Protocol.Tests" />
     <InternalsVisibleTo Include="RemoteAssist" />
+    <InternalsVisibleTo Include="UiShot" />
   </ItemGroup>
 
   <ItemGroup>

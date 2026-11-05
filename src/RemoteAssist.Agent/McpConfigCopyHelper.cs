@@ -95,7 +95,7 @@ internal static class McpConfigCopyHelper
 
         var page = new TaskDialogPage
         {
-            Caption = "远端协助",
+            Caption = "鹊桥",
             Heading = "未找到 RemoteAssist.Mcp.exe",
             Text =
                 "复制 MCP 配置前需要先发布 MCP 可执行文件。" + Environment.NewLine + Environment.NewLine +

@@ -96,8 +96,16 @@ internal static class ConfirmPrompt
     {
         if (Interlocked.Exchange(ref _winFormsInit, 1) == 0)
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            // 统一 App 可能已创建过窗口（ModeSelectForm），此时不能再 SetCompatibleTextRenderingDefault。
+            try
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+            }
+            catch (InvalidOperationException)
+            {
+                // 已由宿主 Program 初始化过 WinForms。
+            }
         }
     }
 

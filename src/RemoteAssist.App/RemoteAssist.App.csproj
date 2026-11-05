@@ -9,7 +9,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <RootNamespace>RemoteAssist.App</RootNamespace>
     <AssemblyName>RemoteAssist</AssemblyName>
-    <Product>远端协助</Product>
+    <Product>鹊桥远程协助</Product>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <NoWarn>$(NoWarn);CS0436</NoWarn>
   </PropertyGroup>
@@ -19,5 +19,8 @@
     <ProjectReference Include="..\RemoteAssist.Helper.UI\RemoteAssist.Helper.UI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="UiShot" />
+  </ItemGroup>
 </Project>
 

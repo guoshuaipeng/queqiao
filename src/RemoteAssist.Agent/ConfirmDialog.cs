@@ -16,7 +16,7 @@ internal sealed class ConfirmDialog : Form
 
     public ConfirmDialog(ConfirmRequestInfo info)
     {
-        Text = "远端协助 — 确认操作";
+        Text = "鹊桥 — 确认操作";
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;

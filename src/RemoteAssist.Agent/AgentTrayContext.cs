@@ -54,7 +54,7 @@ internal sealed class AgentDesktopUi : IDisposable
         _tray = new NotifyIcon
         {
             Icon = _icon,
-            Text = "远端协助 · 被控",
+            Text = "鹊桥 · 被控",
             Visible = true,
             ContextMenuStrip = menu
         };
@@ -63,7 +63,7 @@ internal sealed class AgentDesktopUi : IDisposable
         _host.PairedClientsChanged += OnPairedClientsChanged;
 
         ShowMain();
-        _tray.ShowBalloonTip(2500, "远端协助",
+        _tray.ShowBalloonTip(2500, "鹊桥",
             enableReturnHome
                 ? "被控模式已启动。可返回首页切换为控制端；关闭主窗口会留在托盘。"
                 : "已在托盘运行。关闭主窗口不会退出，可随时双击托盘图标打开。",
@@ -75,7 +75,7 @@ internal sealed class AgentDesktopUi : IDisposable
         try
         {
             var n = _host.ListPairedClients().Count;
-            _tray.Text = n == 0 ? "远端协助 · 被控" : $"远端协助 · 被控（{n} 个已配对）";
+            _tray.Text = n == 0 ? "鹊桥 · 被控" : $"鹊桥 · 被控（{n} 个已配对）";
         }
         catch { /* ignore */ }
     }
@@ -100,7 +100,7 @@ internal sealed class AgentDesktopUi : IDisposable
             {
                 if (_host.DisconnectSession(token))
                 {
-                    _tray.ShowBalloonTip(2000, "远端协助", $"已断开 {c.ClientName}", ToolTipIcon.Info);
+                    _tray.ShowBalloonTip(2000, "鹊桥", $"已断开 {c.ClientName}", ToolTipIcon.Info);
                     RebuildClientsMenu();
                 }
             }));
@@ -111,7 +111,7 @@ internal sealed class AgentDesktopUi : IDisposable
         _clientsMenu.DropDownItems.Add(new ToolStripMenuItem("断开全部", null, (_, _) =>
         {
             var n = _host.DisconnectAllSessions();
-            _tray.ShowBalloonTip(2000, "远端协助", $"已断开 {n} 个会话", ToolTipIcon.Info);
+            _tray.ShowBalloonTip(2000, "鹊桥", $"已断开 {n} 个会话", ToolTipIcon.Info);
             RebuildClientsMenu();
         }));
     }
@@ -135,7 +135,7 @@ internal sealed class AgentDesktopUi : IDisposable
         var tip = outcome.Message;
         if (tip.Length > 220)
             tip = tip[..217] + "…";
-        _tray.ShowBalloonTip(5000, "远端协助", tip, tipIcon);
+        _tray.ShowBalloonTip(5000, "鹊桥", tip, tipIcon);
     }
 
     public void ShowMain() => _mainForm.ShowAndActivate();

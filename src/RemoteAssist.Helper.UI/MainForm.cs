@@ -44,7 +44,7 @@ internal sealed class MainForm : Form
         _enableReturnHome = enableReturnHome;
         _settings = HelperUiSettings.Load();
 
-        Text = "远端协助 · 协助端";
+        Text = "鹊桥 · 协助端";
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         MinimizeBox = true;
@@ -67,7 +67,7 @@ internal sealed class MainForm : Form
             Size = new Size(500, 28),
             ForeColor = Color.White,
             Font = new Font(Font.FontFamily, 14F, FontStyle.Bold),
-            Text = "远端协助 · 协助端",
+            Text = "鹊桥 · 协助端",
             BackColor = Color.Transparent
         });
         header.Controls.Add(new Label
