@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**delivered**
+> 状态：**done（产品已验收）**
 > 依据：R036 产品已验收。连上之后主按钮已经是不可点的「已连接」，但旁边仍写着「粘贴后点「连接」」，看起来还要再点一次。
 
 按钮态已经对齐了。接下来把这句过时的操作提示收起来：已经连上，就不要再叫人去点「连接」。
@@ -78,3 +78,25 @@
 - 六张均为 **ui-shot**（非真连中继实拍）；Win 连上态用控件校验：按钮「已连接」/禁用/非绿，且可见文本不含粘贴提示原文。
 - 对方结束 / 自己断开四张与对应 `r036-*-reconnect.png` **MD5 相同**（那些图里粘贴提示本来就在；本轮连上态两张 MD5 已与 r036 区分）。未覆盖任何 r022–r036 截图文件。
 - r037 六张 MD5 互不相同。
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r037-*` 与源码独立验收通过（功能 `0405491`，文档 `60b7ac3`）。Protocol.Tests 191 通过。
+
+- `HelperSessionCopy.PasteThenConnectHint` 仍是「粘贴后点「连接」」；显隐用 `ShowPasteThenConnectHint`（已连上为 false）。Windows `Helper.UI.MainForm` 与 Avalonia `HelperWindow` 都接到。
+- 已连上：不见「粘贴后点「连接」」；保留灰色不可点「已连接」与主状态「已连接对方电脑」。Windows 五个常用操作仍可见；账号区仍是「连接这台电脑」。
+- 对方结束后提示重新出现，且「对方已结束这次协助。」与实心「连接」仍在。自己断开四张与对应 `r036-*` / `r035-*` 像素相同（已披露）。
+- 未改 ConnectedButtonText / ConnectButtonText / R035 三句主状态 / R003 / EndAssistCopy / R031 / InstallInstructions / Skill / trust-levels「才问你」。
+
+| 截图 | MD5 | 产品看到的 |
+|------|-----|------------|
+| `docs/screenshots/r037-helper-connected-no-paste-hint.png` | 4823519DDC78D758059472703A2A6ABD | Windows 灰色不可点「已连接」；「已连接对方电脑」；不见「粘贴后点「连接」」；五键可见；账号区「连接这台电脑」 |
+| `docs/screenshots/r037-helper-peer-ended-hint-back.png` | 4054F5B75E449DE032AF37C9CFB890E8 | 与 `r035-helper-peer-ended.png` / `r036-helper-peer-ended-reconnect.png` 相同：「对方已结束这次协助。」+ 实心「连接」+ 「粘贴后点「连接」」在 |
+| `docs/screenshots/r037-helper-self-disconnect-hint-back.png` | 46D5815D703A7AA50796A529B6EF2EAA | 与对应 R035/R036 图相同：「状态：未连接」+ 实心「连接」+ 提示在 |
+| `docs/screenshots/r037-avalonia-helper-connected-no-paste-hint.png` | E9BA7E3CCCF466F10CB0FF60844408FC | Avalonia 灰禁「已连接」；「已连接对方电脑」；不见「粘贴后点「连接」」；账号区「连接这台电脑」 |
+| `docs/screenshots/r037-avalonia-helper-peer-ended-hint-back.png` | A5D5B996AC38C3AD417A2D453E5E5518 | 与对应 R035/R036 图相同：「对方已结束这次协助。」+ 实心「连接」+ 提示在 |
+| `docs/screenshots/r037-avalonia-helper-self-disconnect-hint-back.png` | 991BF347449A1D5A885A0578509B2916 | 与对应 R035/R036 图相同：「状态：未连接」+ 实心「连接」+ 提示在 |
+
+缺口：六张均为 ui-shot；对方结束/自己断开四张与 R036 对应图 MD5 相同（已披露，未覆盖旧文件）；Avalonia 已连上图可视区域仍未收入五个常用操作。
+
+已开 R038（官网安装包跟上含 R035–R037 的客户端；客户端出包、服务端替换上架；不改首页旁注、不改 AI-SSH-Pro）。
