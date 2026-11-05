@@ -114,12 +114,16 @@ internal static class Program
                 Console.WriteLine("own-btn=[" + (own?.Text ?? "") + "]");
             }
 
+            // 与真连接路径一致：先展开常用操作，再同步「已连接对方电脑」状态文案
             var setUi = main.GetType().GetMethod("SetConnectedUi", BindingFlags.Instance | BindingFlags.NonPublic);
             setUi?.Invoke(main, new object[] { true });
+            var setStatus = main.GetType().GetMethod("SetStatus", BindingFlags.Instance | BindingFlags.NonPublic);
+            setStatus?.Invoke(main, new object[] { "已连接对方电脑" });
             Application.DoEvents();
             Thread.Sleep(200);
             Application.DoEvents();
             SaveForm(main, Path.Combine(outDir, "r006-helper-connected.png"));
+            Console.WriteLine("connected-status=[" + FindStatusText(main) + "]");
             helper.Form.Hide();
         }
 
