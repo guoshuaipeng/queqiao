@@ -123,7 +123,8 @@ internal static class Program
             Thread.Sleep(200);
             Application.DoEvents();
             SaveForm(main, Path.Combine(outDir, "r006-helper-connected.png"));
-            Console.WriteLine("connected-status=[" + FindStatusText(main) + "]");
+            var statusLbl = FindControl(main, c => c is Label lbl && lbl.Name == "statusLine") as Label;
+            Console.WriteLine("connected-status=[" + (statusLbl?.Text ?? "") + "]");
             helper.Form.Hide();
         }
 
