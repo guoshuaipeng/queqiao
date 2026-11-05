@@ -31,6 +31,7 @@ internal sealed class MainWindow : Window
     private TextBox _accountUserBox = null!;
     private TextBox _accountPassBox = null!;
     private TextBlock _accountBindStatus = null!;
+    private TextBlock _mcpFeedback = null!;
     private readonly HelperUiSettings _settings;
     private bool _advancedOpen;
     private bool _suppressTrustRadio;
@@ -305,6 +306,66 @@ internal sealed class MainWindow : Window
         };
         stack.Children.Add(_accountBindStatus);
 
+        // R018：可选 MCP 说明（高级内；不抢「复制码+密码」；不自动监听）
+        stack.Children.Add(new TextBlock
+        {
+            Name = "mcpGuideTitle",
+            Text = McpInstallGuide.SectionTitle,
+            FontWeight = FontWeight.SemiBold,
+            FontSize = 14,
+            Margin = new Thickness(0, 8, 0, 0)
+        });
+        stack.Children.Add(new TextBlock
+        {
+            Name = "mcpOptionalNote",
+            Text = "可选。接受协助时不会自动对外开启 MCP；只有你主动复制配置给智能体时才用得上。",
+            FontSize = 12,
+            Foreground = Brush.Parse("#5F6368"),
+            TextWrapping = TextWrapping.Wrap
+        });
+        stack.Children.Add(new TextBlock
+        {
+            Name = "mcpSteps",
+            Text = McpInstallGuide.StepsBlock,
+            FontSize = 12,
+            Foreground = Brush.Parse("#3C4043"),
+            TextWrapping = TextWrapping.Wrap
+        });
+        var mcpRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+        var btnCopyMcp = new Button
+        {
+            Name = "copyMcpConfigBtn",
+            Content = McpInstallGuide.CopyConfigButton,
+            Width = 140,
+            Height = 32,
+            Background = Brushes.White,
+            Foreground = Brush.Parse("#1A73E8"),
+            BorderBrush = Brush.Parse("#DADEE3"),
+            BorderThickness = new Thickness(1),
+            FontWeight = FontWeight.Normal
+        };
+        btnCopyMcp.Click += async (_, _) => await CopyMcpConfigAsync();
+        mcpRow.Children.Add(btnCopyMcp);
+        mcpRow.Children.Add(new TextBlock
+        {
+            Name = "mcpSideNote",
+            Text = "详细参数见产品文档；写操作仍须本机确认",
+            FontSize = 12,
+            Foreground = Brush.Parse("#5F6368"),
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap
+        });
+        stack.Children.Add(mcpRow);
+        _mcpFeedback = new TextBlock
+        {
+            Name = "mcpFeedback",
+            Text = "",
+            FontSize = 12,
+            Foreground = Brush.Parse("#0F9D58"),
+            TextWrapping = TextWrapping.Wrap
+        };
+        stack.Children.Add(_mcpFeedback);
+
         stack.Children.Add(new TextBlock
         {
             Name = "confirmedChangesTitle",
@@ -449,7 +510,7 @@ internal sealed class MainWindow : Window
         _advancedPanel.IsVisible = _advancedOpen;
         _btnAdvanced.Content = _advancedOpen ? "高级 ▾" : "高级 ▸";
         if (_advancedOpen)
-            Height = Math.Max(Height, 860);
+            Height = Math.Max(Height, 980);
     }
 
     private async void OnTrustRadioChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -793,6 +854,38 @@ internal sealed class MainWindow : Window
         if (!_advancedOpen) ToggleAdvanced();
     }
 
+    /// <summary>UiShot：高级内 MCP 入口 + 可选/不自动开启说明；「复制码+密码」仍为主按钮。</summary>
+    internal void PrepareMcpEntryForShot()
+    {
+        OpenAdvancedForShot();
+        _mcpFeedback.Text = "";
+        _status.Text = "已连上网络，可以发给对方了";
+        Height = Math.Max(Height, 1040);
+        Width = Math.Max(Width, 520);
+        // 滚到 MCP 区附近，同时保留上方主按钮在构图中
+        _scroll.Offset = new Vector(0, 220);
+    }
+
+    /// <summary>UiShot：复制 MCP 配置后人话反馈（只出现一次）。</summary>
+    internal void PrepareMcpCopiedForShot()
+    {
+        PrepareMcpEntryForShot();
+        _mcpFeedback.Text = McpInstallGuide.CopiedOkHint;
+        _mcpFeedback.Foreground = Brush.Parse("#0F9D58");
+        // 故意不改 _status，避免与反馈句重复
+        _scroll.Offset = new Vector(0, 280);
+    }
+
+    /// <summary>UiShot：强调「复制码+密码」实心主按钮 vs「复制 MCP 配置」轻按钮。</summary>
+    internal void PrepareMcpPrimaryContrastForShot()
+    {
+        PrepareMcpEntryForShot();
+        _hint.Text = "点「复制码+密码」发给对方。对方连上后本机弹出确认，你点允许才开始协助。";
+        _status.Text = "「复制码+密码」是本屏主按钮；MCP 配置在高级里，可选。";
+        _scroll.Offset = new Vector(0, 0);
+    }
+
+
     internal void CloseAdvancedForShot()
     {
         if (_advancedOpen) ToggleAdvanced();
@@ -812,6 +905,44 @@ internal sealed class MainWindow : Window
         var dlg = new FullTrustConfirmWindow();
         dlg.Show(this);
         return dlg;
+    }
+
+    private async Task CopyMcpConfigAsync()
+    {
+        try
+        {
+            var payload = _shotMode
+                ? PairQrPayload.BuildRelay(RelayEndpoint.DefaultEndpoint, "AB12CD", "3471", fingerprint: null, useTls: false)
+                : _host.QrPayload;
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                _mcpFeedback.Text = "当前没有可用的会话，请稍后再试";
+                _mcpFeedback.Foreground = Brush.Parse("#D93025");
+                return;
+            }
+
+            var exists = McpExeLocator.TryResolveExisting(out var exe);
+            if (!exists)
+                exe = McpExeLocator.Resolve();
+
+            var clip = Clipboard;
+            if (clip is null)
+            {
+                _mcpFeedback.Text = "复制失败：剪贴板不可用";
+                _mcpFeedback.Foreground = Brush.Parse("#D93025");
+                return;
+            }
+
+            await clip.SetTextAsync(McpConfigSnippet.BuildClipboardBundle(exe, payload)).ConfigureAwait(true);
+            // 只写 MCP 反馈行一次，不写进状态行，避免重复（R017 教训）
+            _mcpFeedback.Text = exists ? McpInstallGuide.CopiedOkHint : McpInstallGuide.CopiedPlaceholderHint;
+            _mcpFeedback.Foreground = Brush.Parse("#0F9D58");
+        }
+        catch (Exception ex)
+        {
+            _mcpFeedback.Text = "复制 MCP 配置失败：" + ex.Message;
+            _mcpFeedback.Foreground = Brush.Parse("#D93025");
+        }
     }
 
     private async Task CopyShareAsync()

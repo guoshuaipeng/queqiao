@@ -5,7 +5,7 @@ using Avalonia.Threading;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R017：MCP / 复制安装说明轻按钮入口 + 复制后人话反馈。</summary>
+/// <summary>R018：接受协助端高级内可选 MCP 说明 + 复制反馈（只一次）+ 主按钮对比。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -14,20 +14,25 @@ internal static class UiShotRunner
         await Dispatcher.UIThread.InvokeAsync(() => { });
         await Task.Delay(400).ConfigureAwait(true);
 
-        var helper = new HelperWindow(shotDir: outDir, enableReturnHome: true);
-        helper.Show();
+        var host = Program.SharedHost ?? Program.CreateHost();
+        var accept = new MainWindow(host, shotDir: outDir, enableReturnHome: true);
+        accept.Show();
         await Task.Delay(350).ConfigureAwait(true);
 
-        helper.PrepareInstallGuideEntryForShot();
+        accept.PrepareMcpEntryForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r017-install-entry.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(accept, Path.Combine(outDir, "r018-mcp-entry.png")).ConfigureAwait(true);
 
-        helper.PrepareInstallCopiedForShot();
+        accept.PrepareMcpCopiedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r017-install-copied.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(accept, Path.Combine(outDir, "r018-mcp-copied.png")).ConfigureAwait(true);
 
-        helper.PrepareClose();
-        helper.Close();
+        accept.PrepareMcpPrimaryContrastForShot();
+        await Task.Delay(250).ConfigureAwait(true);
+        await CaptureWindowAsync(accept, Path.Combine(outDir, "r018-copy-primary.png")).ConfigureAwait(true);
+
+        accept.AllowCloseWithoutPrompt();
+        accept.Close();
 
         Console.WriteLine("ui-shot written to " + outDir);
         await Task.CompletedTask;
