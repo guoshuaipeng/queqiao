@@ -64,9 +64,7 @@ public class ToolCapabilitiesTests
     [Fact]
     public void Assist_CannotBypassConfirmationForWrites()
     {
-        // Product rule: Assist mode write ops always need local confirmation — never auto-approve.
         Assert.True(ToolCapabilities.RequiresConfirmation(ToolKind.RunCommand, PermissionLevel.Assist));
         Assert.False(ToolCapabilities.IsReadOnly(ToolKind.RunCommand));
     }
 }
-

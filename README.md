@@ -91,6 +91,15 @@ dotnet run --project src/RemoteAssist.Mcp --no-build
 
 默认写入：`%LOCALAPPDATA%\RemoteAssist\audit.log`
 
+### 一键联调（可选）
+
+Agent 加 `--yes` 会自动同意配对与写操作（**仅本地冒烟**，正式协助不要开）：
+
+```powershell
+dotnet run --project src/RemoteAssist.Agent -- --port 17890 --yes
+dotnet run --project src/RemoteAssist.Helper -- oneshot 127.0.0.1 <会话码>
+```
+
 ## 已知限制（v1）
 
 - 无 TLS / 无端到端加密（仅信任局域网）
