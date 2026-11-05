@@ -72,6 +72,11 @@ public class WriteConfirmCopyTests
         Assert.Contains("macOS 尚未提供正式下载", clip);
         Assert.Contains("如果你手头有安装包，也可以一起发出去", clip);
         Assert.Contains("如果系统问起是否允许联网，选择允许", clip);
+        Assert.Contains(".NET 8 运行时", clip);
+        Assert.Contains("https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0", clip);
+        Assert.Contains("不要选 SDK", clip);
+        Assert.Contains("不是开发工具", clip);
+        Assert.DoesNotContain("自动下载", clip);
         Assert.DoesNotContain("如果电脑问是否允许连网", clip);
         Assert.Contains("接受协助", clip);
         Assert.Contains("复制码+密码", clip);
