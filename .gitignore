@@ -42,3 +42,7 @@ artifacts/
 *.swp
 *~
 .DS_Store
+
+# relay local account store
+relay/data/
+

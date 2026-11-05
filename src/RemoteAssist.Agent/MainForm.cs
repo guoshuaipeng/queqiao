@@ -14,6 +14,7 @@ internal sealed class MainForm : Form
 {
     private readonly AgentHost _host;
     private readonly Label _codeLabel;
+    private readonly Label _pwdLabel;
     private readonly ComboBox _hostCombo;
     private readonly Label _portValue;
     private readonly Label _tlsValue;
@@ -72,7 +73,7 @@ internal sealed class MainForm : Form
             Size = new Size(_enableReturnHome ? 600 : 700, 22),
             ForeColor = Color.FromArgb(0xE3, 0xF0, 0xFF),
             Font = new Font(Font.FontFamily, 9F),
-            Text = "被协助端 · 局域网会话码配对 · 危险操作需本机确认",
+            Text = "被协助端 · 默认公网中继（code+密码）· 危险操作需本机确认",
             BackColor = Color.Transparent
         };
         header.Controls.Add(_headerSubtitle);
@@ -102,7 +103,7 @@ internal sealed class MainForm : Form
             AutoSize = false,
             Location = new Point(16, 12),
             Size = new Size(328, 22),
-            Text = "把会话码告诉协助方，或让对方扫二维码",
+            Text = "把「会话码 + 验证密码」告诉协助方，或让对方扫二维码（经中继）",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
         sessionCard.Controls.Add(new Label
@@ -163,10 +164,31 @@ internal sealed class MainForm : Form
         };
         sessionCard.Controls.Add(_codeLabel);
 
+        sessionCard.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 148),
+            Size = new Size(70, 22),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Text = "验证密码",
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
+        });
+        _pwdLabel = new Label
+        {
+            AutoSize = false,
+            Location = new Point(90, 144),
+            Size = new Size(250, 30),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Font = new Font("Consolas", 16F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(0xC5, 0x22, 0x1F),
+            Text = ""
+        };
+        sessionCard.Controls.Add(_pwdLabel);
+
         _qrBox = new PictureBox
         {
-            Location = new Point(70, 164),
-            Size = new Size(220, 220),
+            Location = new Point(70, 184),
+            Size = new Size(200, 200),
             SizeMode = PictureBoxSizeMode.Zoom,
             BorderStyle = BorderStyle.FixedSingle,
             BackColor = Color.White
@@ -176,7 +198,7 @@ internal sealed class MainForm : Form
         sessionCard.Controls.Add(new Label
         {
             AutoSize = false,
-            Location = new Point(16, 392),
+            Location = new Point(16, 396),
             Size = new Size(70, 22),
             TextAlign = ContentAlignment.MiddleLeft,
             Text = "TLS 指纹"
@@ -184,7 +206,7 @@ internal sealed class MainForm : Form
         _tlsValue = new Label
         {
             AutoSize = false,
-            Location = new Point(86, 392),
+            Location = new Point(86, 396),
             Size = new Size(258, 22),
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Consolas", 8.5F),
@@ -481,6 +503,7 @@ internal sealed class MainForm : Form
 
         _portValue.Text = $":{_host.Port}";
         _codeLabel.Text = _host.SessionCode;
+        if (_pwdLabel is not null) _pwdLabel.Text = _host.SessionPassword;
         var payload = _host.QrPayload;
 
         if (_host.UseTls && _host.CertificateFingerprint is { } fp)
@@ -519,12 +542,10 @@ internal sealed class MainForm : Form
 
     private void UpdateListenLabel()
     {
-        var tls = _host.UseTls ? "TLS 开" : "明文";
-        var n = _host.ListPairedClients().Count;
-        _listenValue.Text = $"监听 {_host.Port} · {tls} · 已配对 {n} 个";
-        _headerSubtitle.Text = n == 0
-            ? "被协助端 · 局域网会话码配对 · 危险操作需本机确认"
-            : $"被协助端 · 已有 {n} 个协助方连接 · 可随时断开";
+        if (_host.PreferRelay)
+            _listenValue.Text = $"中继 {_host.RelayEndpointAddress} · 码 {_host.SessionCode} · 密码已出示 · LAN :{_host.Port}";
+        else
+            _listenValue.Text = $"局域网监听 :{_host.Port} · 主机 {_host.SelectedHost}";
     }
 
     private void RefreshClients()

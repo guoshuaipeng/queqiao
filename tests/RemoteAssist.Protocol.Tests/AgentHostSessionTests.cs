@@ -64,7 +64,7 @@ public class AgentHostSessionTests
         var port = GetFreePort();
         var auditPath = Path.Combine(Path.GetTempPath(), "ra-test-audit-" + Guid.NewGuid().ToString("N") + ".log");
         var audit = new AuditLog(auditPath);
-        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath);
+        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath, insecure: false, preferRelay: false);
         try
         {
             host.SetSelectedHost("127.0.0.1");

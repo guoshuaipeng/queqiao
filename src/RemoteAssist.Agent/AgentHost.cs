@@ -30,6 +30,12 @@ internal sealed class AgentHost
     private readonly bool _insecure;
     private X509Certificate2? _serverCert;
     private string? _certFingerprint;
+    private string _sessionPassword;
+    private readonly bool _preferRelay;
+    private readonly string _relayEndpoint;
+    private readonly string? _accountToken;
+    private readonly string _deviceId;
+    private readonly string _deviceDisplayName;
 
     public int Port { get; }
     public string AuditPath { get; }
@@ -46,7 +52,12 @@ internal sealed class AgentHost
         int confirmTimeoutSeconds,
         AuditLog audit,
         string auditPath,
-        bool insecure = false)
+        bool insecure = false,
+        bool preferRelay = true,
+        string? relayEndpoint = null,
+        string? accountToken = null,
+        string? deviceId = null,
+        string? deviceDisplayName = null)
     {
         Port = port;
         _autoYes = autoYes;
@@ -55,8 +66,20 @@ internal sealed class AgentHost
         _audit = audit;
         AuditPath = auditPath;
         _insecure = insecure;
+        _preferRelay = preferRelay;
+        _relayEndpoint = string.IsNullOrWhiteSpace(relayEndpoint)
+            ? RelayEndpoint.DefaultEndpoint
+            : relayEndpoint.Trim();
+        _accountToken = string.IsNullOrWhiteSpace(accountToken) ? null : accountToken.Trim();
+        _deviceId = string.IsNullOrWhiteSpace(deviceId)
+            ? HelperUiSettings.EnsureDeviceId()
+            : deviceId.Trim();
+        _deviceDisplayName = string.IsNullOrWhiteSpace(deviceDisplayName)
+            ? Environment.MachineName
+            : deviceDisplayName.Trim();
         LanIps = LanAddressSelector.EnumerateLocalIPv4();
         _sessionCode = SessionCodeGenerator.Generate(6);
+        _sessionPassword = SessionPasswordGenerator.Generate(4);
         _selectedHost = LanIps.FirstOrDefault() ?? "127.0.0.1";
         if (!_insecure)
         {
@@ -69,6 +92,16 @@ internal sealed class AgentHost
     {
         get { lock (_codeLock) return _sessionCode; }
     }
+
+    public string SessionPassword
+    {
+        get { lock (_codeLock) return _sessionPassword; }
+    }
+
+    public bool PreferRelay => _preferRelay;
+    public string RelayEndpointAddress => _relayEndpoint;
+    public bool AccountBound => !string.IsNullOrWhiteSpace(_accountToken);
+    public string DeviceId => _deviceId;
 
     /// <summary>写入 QR 载荷的主机 IP（可在会话窗下拉切换；可显式设为 127.0.0.1 等）。</summary>
     public string SelectedHost
@@ -100,11 +133,20 @@ internal sealed class AgentHost
         {
             lock (_codeLock)
             {
+                if (_preferRelay)
+                {
+                    if (_insecure)
+                        return PairQrPayload.BuildRelay(_relayEndpoint, _sessionCode, _sessionPassword, fingerprint: null, useTls: false);
+                    var fpR = _certFingerprint
+                        ?? throw new InvalidOperationException("TLS 证书尚未生成，请先 Start()");
+                    return PairQrPayload.BuildRelay(_relayEndpoint, _sessionCode, _sessionPassword, fingerprint: fpR, useTls: true);
+                }
+
                 if (_insecure)
-                    return PairQrPayload.Build(SelectedHost, Port, _sessionCode, fingerprint: null, useTls: false);
+                    return PairQrPayload.BuildLan(SelectedHost, Port, _sessionCode, fingerprint: null, useTls: false);
                 var fp = _certFingerprint
                     ?? throw new InvalidOperationException("TLS 证书尚未生成，请先 Start()");
-                return PairQrPayload.Build(SelectedHost, Port, _sessionCode, fingerprint: fp, useTls: true);
+                return PairQrPayload.BuildLan(SelectedHost, Port, _sessionCode, fingerprint: fp, useTls: true);
             }
         }
     }
@@ -175,6 +217,7 @@ internal sealed class AgentHost
         lock (_codeLock)
         {
             _sessionCode = SessionCodeGenerator.Generate(6);
+            _sessionPassword = SessionPasswordGenerator.Generate(4);
             code = _sessionCode;
         }
 
@@ -196,7 +239,7 @@ internal sealed class AgentHost
     public void PrintBanner()
     {
         Console.WriteLine("========================================");
-        Console.WriteLine("  RemoteAssist Agent (局域网 v1)");
+        Console.WriteLine("  RemoteAssist Agent (中继默认 / LAN 可调试)");
         Console.WriteLine("========================================");
         Console.WriteLine($"监听端口 : {Port}");
         Console.WriteLine($"传输加密 : {(_insecure ? "明文 --insecure（仅调试）" : "TLS 1.2/1.3 + 证书指纹钉扎（默认）")}");
@@ -226,7 +269,7 @@ internal sealed class AgentHost
 
     public void Start()
     {
-        if (_listener is not null)
+        if (_cts is not null)
             return;
 
         if (!_insecure && _serverCert is not null)
@@ -235,10 +278,19 @@ internal sealed class AgentHost
             _audit.Write("tls_off", "insecure plaintext");
 
         _cts = new CancellationTokenSource();
+        _audit.Write("agent_start",
+            $"relay={_preferRelay}; relayEp={_relayEndpoint}; port={Port}; code={SessionCode}; host={SelectedHost}; tls={(!_insecure).ToString().ToLowerInvariant()}; confirm={(_autoYes ? "auto" : _headless ? "console" : "ui-tray")}; timeout={_confirmTimeoutSeconds}s; account={AccountBound}");
+
+        if (_preferRelay)
+        {
+            _ = Task.Run(() => RelayGuestLoopAsync(_cts.Token));
+            if (AccountBound)
+                _ = Task.Run(() => RelayDeviceLoopAsync(_cts.Token));
+        }
+
+        // LAN listener kept for advanced/debug even when prefer relay
         _listener = new TcpListener(IPAddress.Any, Port);
         _listener.Start();
-        _audit.Write("agent_start",
-            $"port={Port}; code={SessionCode}; host={SelectedHost}; tls={(!_insecure).ToString().ToLowerInvariant()}; confirm={(_autoYes ? "auto" : _headless ? "console" : "ui-tray")}; timeout={_confirmTimeoutSeconds}s");
         _ = Task.Run(() => AcceptLoopAsync(_cts.Token));
     }
 
@@ -259,6 +311,90 @@ internal sealed class AgentHost
         _serverCert = null;
         lock (_codeLock) _certFingerprint = null;
         PairedClientsChanged?.Invoke();
+    }
+
+
+    private async Task RelayGuestLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            string code;
+            string password;
+            lock (_codeLock)
+            {
+                code = _sessionCode;
+                password = _sessionPassword;
+            }
+
+            if (!RelayEndpoint.TryParse(_relayEndpoint, out var host, out var port, out var err))
+            {
+                _audit.Write("relay_bad_endpoint", err);
+                try { await Task.Delay(5000, ct).ConfigureAwait(false); } catch { break; }
+                continue;
+            }
+
+            RelayClient? relay = null;
+            try
+            {
+                _audit.Write("relay_guest_dial", $"ep={host}:{port}; code={code}");
+                relay = await RelayClient.RegisterGuestAsync(host, port, code, "agent", password, ct)
+                    .ConfigureAwait(false);
+                await HandleStreamAsync(relay, relay.Stream, $"relay-guest/{host}:{port}", ownerLink: false, ct)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _audit.Write("relay_guest_error", ex.Message);
+                try { await Task.Delay(2000, ct).ConfigureAwait(false); } catch { break; }
+            }
+            finally
+            {
+                try { relay?.Dispose(); } catch { /* ignore */ }
+            }
+        }
+    }
+
+    private async Task RelayDeviceLoopAsync(CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(_accountToken))
+            return;
+
+        while (!ct.IsCancellationRequested)
+        {
+            if (!RelayEndpoint.TryParse(_relayEndpoint, out var host, out var port, out var err))
+            {
+                _audit.Write("relay_bad_endpoint", err);
+                try { await Task.Delay(5000, ct).ConfigureAwait(false); } catch { break; }
+                continue;
+            }
+
+            RelayClient? relay = null;
+            try
+            {
+                _audit.Write("relay_device_online", $"device={_deviceId}");
+                relay = await RelayClient.DeviceOnlineAsync(host, port, _accountToken!, _deviceId, _deviceDisplayName, ct)
+                    .ConfigureAwait(false);
+                await HandleStreamAsync(relay, relay.Stream, $"relay-device/{_deviceId}", ownerLink: true, ct)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _audit.Write("relay_device_error", ex.Message);
+                try { await Task.Delay(3000, ct).ConfigureAwait(false); } catch { break; }
+            }
+            finally
+            {
+                try { relay?.Dispose(); } catch { /* ignore */ }
+            }
+        }
     }
 
     private async Task AcceptLoopAsync(CancellationToken ct)
@@ -293,66 +429,75 @@ internal sealed class AgentHost
     private async Task HandleClientAsync(TcpClient client)
     {
         var remote = client.Client.RemoteEndPoint?.ToString() ?? "?";
-        _audit.Write("client_connect", remote);
+        await HandleStreamAsync(client, client.GetStream(), remote, ownerLink: false, CancellationToken.None)
+            .ConfigureAwait(false);
+    }
+
+    private async Task HandleStreamAsync(
+        IDisposable transport,
+        Stream rawStream,
+        string remote,
+        bool ownerLink,
+        CancellationToken outerCt)
+    {
+        _audit.Write("client_connect", remote + (ownerLink ? "; ownerLink=1" : ""));
         SessionState? session = null;
-        using var connCts = new CancellationTokenSource();
+        using var connCts = CancellationTokenSource.CreateLinkedTokenSource(outerCt);
 
         try
         {
-            using (client)
+            Stream stream = rawStream;
+            System.Net.Security.SslStream? ssl = null;
+            try
             {
-                Stream stream = client.GetStream();
-                System.Net.Security.SslStream? ssl = null;
-                try
+                if (!_insecure)
                 {
-                    if (!_insecure)
+                    if (_serverCert is null)
+                        throw new InvalidOperationException("TLS enabled but server certificate missing");
+                    ssl = await TlsTransport.AuthenticateAsServerAsync(stream, _serverCert, connCts.Token)
+                        .ConfigureAwait(false);
+                    stream = ssl;
+                }
+
+                while (!connCts.IsCancellationRequested)
+                {
+                    WireEnvelope? envelope;
+                    try
                     {
-                        if (_serverCert is null)
-                            throw new InvalidOperationException("TLS enabled but server certificate missing");
-                        ssl = await TlsTransport.AuthenticateAsServerAsync(stream, _serverCert, connCts.Token)
-                            .ConfigureAwait(false);
-                        stream = ssl;
+                        envelope = await FrameIo.ReadAsync(stream, connCts.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
                     }
 
-                    while (!connCts.IsCancellationRequested)
+                    if (envelope is null)
+                        break;
+
+                    switch (envelope.Type.ToLowerInvariant())
                     {
-                        WireEnvelope? envelope;
-                        try
-                        {
-                            envelope = await FrameIo.ReadAsync(stream, connCts.Token).ConfigureAwait(false);
-                        }
-                        catch (OperationCanceledException)
-                        {
+                        case "pair":
+                            session = await HandlePairAsync(stream, envelope, remote, connCts, ownerLink)
+                                .ConfigureAwait(false);
                             break;
-                        }
-
-                        if (envelope is null)
+                        case "tool":
+                            await HandleToolAsync(stream, envelope, session).ConfigureAwait(false);
                             break;
-
-                        switch (envelope.Type.ToLowerInvariant())
-                        {
-                            case "pair":
-                                session = await HandlePairAsync(stream, envelope, remote, connCts).ConfigureAwait(false);
-                                break;
-                            case "tool":
-                                await HandleToolAsync(stream, envelope, session).ConfigureAwait(false);
-                                break;
-                            case "ping":
-                                await FrameIo.WriteAsync(stream, "pong", new { }, token: session?.Token, id: envelope.Id)
-                                    .ConfigureAwait(false);
-                                break;
-                            default:
-                                await FrameIo.WriteAsync(stream, "error",
-                                    new ErrorPayload { Message = $"Unknown type: {envelope.Type}" },
-                                    id: envelope.Id).ConfigureAwait(false);
-                                break;
-                        }
+                        case "ping":
+                            await FrameIo.WriteAsync(stream, "pong", new { }, token: session?.Token, id: envelope.Id)
+                                .ConfigureAwait(false);
+                            break;
+                        default:
+                            await FrameIo.WriteAsync(stream, "error",
+                                new ErrorPayload { Message = $"Unknown type: {envelope.Type}" },
+                                id: envelope.Id).ConfigureAwait(false);
+                            break;
                     }
                 }
-                finally
-                {
-                    try { ssl?.Dispose(); } catch { /* ignore */ }
-                }
+            }
+            finally
+            {
+                try { ssl?.Dispose(); } catch { /* ignore */ }
             }
         }
         catch (Exception ex)
@@ -369,6 +514,7 @@ internal sealed class AgentHost
                 PairedClientsChanged?.Invoke();
             }
             _audit.Write("client_disconnect", remote);
+            try { transport.Dispose(); } catch { /* ignore */ }
         }
     }
 
@@ -376,7 +522,8 @@ internal sealed class AgentHost
         Stream stream,
         WireEnvelope envelope,
         string remote,
-        CancellationTokenSource connCts)
+        CancellationTokenSource connCts,
+        bool ownerLinkChannel)
     {
         var req = FrameIo.DeserializePayload<PairRequest>(envelope);
         if (req is null)
@@ -386,41 +533,54 @@ internal sealed class AgentHost
             return null;
         }
 
-        var code = SessionCodeGenerator.Normalize(req.SessionCode);
-        string current;
-        lock (_codeLock) current = _sessionCode;
-        if (!string.Equals(code, current, StringComparison.Ordinal))
-        {
-            _audit.Write("pair_reject", $"bad_code from {remote}");
-            await FrameIo.WriteAsync(stream, "pair_result",
-                new PairResponse { Ok = false, Error = "会话码错误" }, id: envelope.Id).ConfigureAwait(false);
-            return null;
-        }
-
         var requested = Enum.TryParse<PermissionLevel>(req.RequestedPermission, true, out var lvl)
             ? lvl
             : PermissionLevel.Assist;
 
-        var pairInfo = new PairRequestInfo(
-            RemoteEndpoint: remote,
-            ClientName: req.ClientName,
-            RequestedPermission: requested,
-            TimeoutSeconds: _confirmTimeoutSeconds);
-        var pairOutcome = await ConfirmPrompt.AskPairAsync(pairInfo, _autoYes, _headless).ConfigureAwait(false);
-
-        if (!pairOutcome.Approved || pairOutcome.GrantedPermission is null)
+        PermissionLevel granted;
+        if (ownerLinkChannel && req.OwnerLink)
         {
-            var reason = pairOutcome.Decision == ConfirmDecision.TimedOut ? "pair_timeout" : "pair_reject";
-            _audit.Write(reason, pairOutcome.AuditDetail(remote, req.ClientName, requested));
-            var err = pairOutcome.Decision == ConfirmDecision.TimedOut
-                ? "配对确认超时，已自动拒绝"
-                : "对方拒绝了配对";
-            await FrameIo.WriteAsync(stream, "pair_result",
-                new PairResponse { Ok = false, Error = err }, id: envelope.Id).ConfigureAwait(false);
-            return null;
+            // 账号免密：本机已用账号在中继上线，自动授予 Assist（仍审计）
+            granted = requested == PermissionLevel.Admin ? PermissionLevel.Assist : requested;
+            if (granted == PermissionLevel.Guest)
+                granted = PermissionLevel.Assist;
+            _audit.Write("pair_owner_auto", $"client={req.ClientName}; remote={remote}; perm={granted}");
         }
+        else
+        {
+            var code = SessionCodeGenerator.Normalize(req.SessionCode);
+            string current;
+            lock (_codeLock) current = _sessionCode;
+            if (!string.Equals(code, current, StringComparison.Ordinal))
+            {
+                _audit.Write("pair_reject", $"bad_code from {remote}");
+                await FrameIo.WriteAsync(stream, "pair_result",
+                    new PairResponse { Ok = false, Error = "会话码错误" }, id: envelope.Id).ConfigureAwait(false);
+                return null;
+            }
 
-        var granted = pairOutcome.GrantedPermission.Value;
+            var pairInfo = new PairRequestInfo(
+                RemoteEndpoint: remote,
+                ClientName: req.ClientName,
+                RequestedPermission: requested,
+                TimeoutSeconds: _confirmTimeoutSeconds);
+            var pairOutcome = await ConfirmPrompt.AskPairAsync(pairInfo, _autoYes, _headless).ConfigureAwait(false);
+
+            if (!pairOutcome.Approved || pairOutcome.GrantedPermission is null)
+            {
+                var reason = pairOutcome.Decision == ConfirmDecision.TimedOut ? "pair_timeout" : "pair_reject";
+                _audit.Write(reason, pairOutcome.AuditDetail(remote, req.ClientName, requested));
+                var err = pairOutcome.Decision == ConfirmDecision.TimedOut
+                    ? "配对确认超时，已自动拒绝"
+                    : "对方拒绝了配对";
+                await FrameIo.WriteAsync(stream, "pair_result",
+                    new PairResponse { Ok = false, Error = err }, id: envelope.Id).ConfigureAwait(false);
+                return null;
+            }
+
+            granted = pairOutcome.GrantedPermission.Value;
+            _audit.Write("pair_ok", pairOutcome.AuditDetail(remote, req.ClientName, requested));
+        }
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
         var expires = DateTimeOffset.UtcNow.Add(TokenTtl);
         var session = new SessionState
@@ -434,7 +594,14 @@ internal sealed class AgentHost
             ConnectionCts = connCts
         };
         _sessions[token] = session;
-        _audit.Write("pair_ok", pairOutcome.AuditDetail(remote, req.ClientName, requested));
+        if (!(ownerLinkChannel && req.OwnerLink))
+        {
+            // pair_ok already audited in confirm branch; owner path audited as pair_owner_auto
+        }
+        else
+        {
+            // already audited
+        }
         PairedClientsChanged?.Invoke();
 
         await FrameIo.WriteAsync(stream, "pair_result", new PairResponse

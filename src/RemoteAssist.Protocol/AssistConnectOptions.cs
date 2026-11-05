@@ -19,6 +19,21 @@ public sealed class AssistConnectOptions
     /// <summary>true = 明文 TCP（仅调试）。默认 false = TLS。</summary>
     public bool Insecure { get; init; }
 
+    /// <summary>true = 先出连中继再跑业务 TLS/配对。</summary>
+    public bool ViaRelay { get; init; }
+
+    /// <summary>中继 host:port；ViaRelay 时必填。</summary>
+    public string? RelayEndpoint { get; init; }
+
+    /// <summary>会话验证密码（中继 guest 路径）。</summary>
+    public string? Password { get; init; }
+
+    /// <summary>账号免密控制自己的设备。</summary>
+    public bool OwnerLink { get; init; }
+
+    public string? AccountToken { get; init; }
+    public string? DeviceId { get; init; }
+
     /// <summary>
     /// 从 argv + 环境变量解析。
     /// env: REMOTE_ASSIST_PAYLOAD / HOST / PORT / CODE / PERM / FP / INSECURE
@@ -278,3 +293,4 @@ public sealed class AssistConnectOptions
         return resolveErr;
     }
 }
+

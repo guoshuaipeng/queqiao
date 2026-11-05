@@ -21,7 +21,11 @@ internal sealed class MainForm : Form
     private readonly Label _statusLabel;
     private readonly TextBox _argBox;
     private readonly TextBox _outputBox;
+    private readonly TextBox _pwdBox;
     private readonly TextBox _relayBox;
+    private readonly TextBox _accountUserBox;
+    private readonly TextBox _accountPassBox;
+    private readonly ListBox _deviceList;
     private readonly Button _btnConnect;
     private readonly Button _btnDisconnect;
     private readonly Button[] _toolButtons;
@@ -45,7 +49,7 @@ internal sealed class MainForm : Form
         MaximizeBox = false;
         MinimizeBox = true;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(780, 760);
+        ClientSize = new Size(780, 860);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
@@ -73,7 +77,7 @@ internal sealed class MainForm : Form
             Size = new Size(_enableReturnHome ? 620 : 720, 22),
             ForeColor = Color.FromArgb(0xE8, 0xF5, 0xE9),
             Font = new Font(Font.FontFamily, 9F),
-            Text = "粘贴对方会话码 / 载荷 → 确认 host·端口·TLS 指纹 → 连接后排障（写操作需对方本机确认）",
+            Text = "输入对方会话码+验证密码（经中继）或粘贴载荷；也可登录账号免密控制自己的机器",
             BackColor = Color.Transparent
         });
         Controls.Add(header);
@@ -105,7 +109,7 @@ internal sealed class MainForm : Form
             AutoSize = false,
             Location = new Point(16, 40),
             Size = new Size(520, 20),
-            Text = "会话载荷或会话码（推荐粘贴整段 remoteassist:pair?...）",
+            Text = "会话载荷 / 会话码（中继：再填验证密码；推荐整段 remoteassist:pair?...）",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
 
@@ -144,12 +148,22 @@ internal sealed class MainForm : Form
         _portBox.TextChanged += (_, _) => RefreshPreview();
         pairCard.Controls.Add(_portBox);
 
-        pairCard.Controls.Add(Lbl("权限", 350, 100));
+        pairCard.Controls.Add(Lbl("密码", 350, 100));
+        _pwdBox = new TextBox
+        {
+            Location = new Point(390, 98),
+            Size = new Size(100, 26),
+            Font = new Font("Consolas", 9.5F)
+        };
+        _pwdBox.TextChanged += (_, _) => RefreshPreview();
+        pairCard.Controls.Add(_pwdBox);
+
+        pairCard.Controls.Add(Lbl("权限", 500, 100));
         _permBox = new ComboBox
         {
             DropDownStyle = ComboBoxStyle.DropDownList,
-            Location = new Point(390, 98),
-            Size = new Size(100, 26)
+            Location = new Point(540, 98),
+            Size = new Size(90, 26)
         };
         _permBox.Items.AddRange(new object[] { "Assist", "Guest", "Admin" });
         _permBox.SelectedIndex = 0;
@@ -158,9 +172,9 @@ internal sealed class MainForm : Form
 
         _insecureBox = new CheckBox
         {
-            Location = new Point(510, 100),
-            Size = new Size(200, 24),
-            Text = "明文调试（--insecure）",
+            Location = new Point(640, 100),
+            Size = new Size(100, 24),
+            Text = "明文",
             ForeColor = Color.FromArgb(0xB0, 0x60, 0x00)
         };
         _insecureBox.CheckedChanged += (_, _) => RefreshPreview();
@@ -287,8 +301,8 @@ internal sealed class MainForm : Form
 
         Controls.Add(toolCard);
 
-        var settingsCard = MakeCard(16, 622, 748, 110);
-        settingsCard.Controls.Add(SectionTitle("3. 设置（中继占位）", 12, 10));
+        var settingsCard = MakeCard(16, 622, 748, 220);
+        settingsCard.Controls.Add(SectionTitle("3. 中继与账号", 12, 10));
         settingsCard.Controls.Add(new Label
         {
             AutoSize = false,
@@ -306,6 +320,33 @@ internal sealed class MainForm : Form
             BackColor = Color.FromArgb(0xEE, 0xF0, 0xF3)
         };
         settingsCard.Controls.Add(_relayBox);
+        settingsCard.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 72),
+            Size = new Size(700, 20),
+            Text = "账号（可选）：登录后可在设备列表免密控制自己的被控机",
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
+        });
+        _accountUserBox = new TextBox { Location = new Point(16, 96), Size = new Size(140, 26), Text = _settings.AccountUser ?? "" };
+        _accountPassBox = new TextBox { Location = new Point(164, 96), Size = new Size(140, 26), UseSystemPasswordChar = true };
+        settingsCard.Controls.Add(_accountUserBox);
+        settingsCard.Controls.Add(_accountPassBox);
+        var btnReg = MakeButton("注册", 314, 94, 60);
+        btnReg.Click += async (_, _) => await AccountAuthAsync(register: true).ConfigureAwait(true);
+        var btnLogin = MakeButton("登录", 380, 94, 60);
+        btnLogin.Click += async (_, _) => await AccountAuthAsync(register: false).ConfigureAwait(true);
+        var btnList = MakeButton("刷新设备", 446, 94, 80);
+        btnList.Click += async (_, _) => await RefreshDevicesAsync().ConfigureAwait(true);
+        var btnOwn = MakeButton("免密连接选中", 532, 94, 120);
+        btnOwn.Click += async (_, _) => await ConnectOwnedDeviceAsync().ConfigureAwait(true);
+        settingsCard.Controls.Add(btnReg);
+        settingsCard.Controls.Add(btnLogin);
+        settingsCard.Controls.Add(btnList);
+        settingsCard.Controls.Add(btnOwn);
+        _deviceList = new ListBox { Location = new Point(16, 128), Size = new Size(700, 70) };
+        settingsCard.Controls.Add(_deviceList);
+
 
         var btnSaveRelay = MakeButton("保存", 406, 38, 70);
         btnSaveRelay.Click += (_, _) => SaveRelaySetting();
@@ -327,7 +368,7 @@ internal sealed class MainForm : Form
             Location = new Point(16, 72),
             Size = new Size(710, 28),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = RelayPlaceholder.UpcomingHint + " · 当前 v1 仍走局域网直连。"
+            Text = RelayPlaceholder.UpcomingHint
         });
 
         Controls.Add(settingsCard);
@@ -401,13 +442,16 @@ internal sealed class MainForm : Form
 
     private void OnInputChanged()
     {
-        if (ConnectDraftParser.TryPeekPayload(_inputBox.Text, out var host, out var port, out _, out var fp, out var useTls))
+        if (PairQrPayload.TryParseFull(_inputBox.Text, out var host, out var port, out _, out var fp, out var useTls, out var viaRelay, out var relayEp, out var pwd))
         {
             _hostBox.Text = host;
             _portBox.Text = port.ToString();
             if (!string.IsNullOrEmpty(fp))
                 _fpBox.Text = fp;
             _insecureBox.Checked = !useTls;
+                if (!string.IsNullOrWhiteSpace(pwd)) _pwdBox.Text = pwd;
+                if (!string.IsNullOrWhiteSpace(relayEp)) _relayBox.Text = relayEp;
+                if (viaRelay) { /* host shows relay host */ }
         }
 
         RefreshPreview();
@@ -439,6 +483,9 @@ internal sealed class MainForm : Form
             _fpBox.Text,
             perm,
             _insecureBox.Checked,
+            _pwdBox.Text,
+            _relayBox.Text,
+            preferRelay: _settings.PreferRelay,
             out options,
             out preview,
             out error);
@@ -567,11 +614,10 @@ internal sealed class MainForm : Form
             return;
         }
 
-        _settings.RelayEndpoint = string.IsNullOrEmpty(text) ? null : text;
+        _settings.RelayEndpoint = string.IsNullOrEmpty(text) ? RelayEndpoint.DefaultEndpoint : text;
+        _settings.PreferRelay = true;
         _settings.Save();
-        SetStatus(string.IsNullOrEmpty(text)
-            ? "已清除中继设置（v1 未启用）。"
-            : $"已保存中继占位：{text}（即将支持，当前不连接）");
+        SetStatus($"已保存中继：{_settings.RelayEndpoint}（默认经中继连接）");
     }
 
 
@@ -606,6 +652,115 @@ internal sealed class MainForm : Form
         Disconnect();
     }
 
+
+    private async Task AccountAuthAsync(bool register)
+    {
+        if (!RelayEndpoint.TryParse(_relayBox.Text, out var host, out var port, out var err))
+        {
+            MessageBox.Show(this, err, "中继地址", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        var user = _accountUserBox.Text?.Trim() ?? "";
+        var pass = _accountPassBox.Text ?? "";
+        if (user.Length == 0 || pass.Length == 0)
+        {
+            MessageBox.Show(this, "请填写用户名和密码", "账号", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        try
+        {
+            var tok = await RelayClient.AuthAsync(host, port, register, user, pass).ConfigureAwait(true);
+            _settings.AccountUser = user;
+            _settings.AccountToken = tok;
+            _settings.RelayEndpoint = $"{host}:{port}";
+            _settings.Save();
+            SetStatus((register ? "注册" : "登录") + "成功，已保存令牌");
+            await RefreshDevicesAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "账号失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private async Task RefreshDevicesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_settings.AccountToken))
+        {
+            SetStatus("请先登录账号");
+            return;
+        }
+        if (!RelayEndpoint.TryParse(_relayBox.Text, out var host, out var port, out var err))
+        {
+            MessageBox.Show(this, err, "中继地址", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        try
+        {
+            var list = await RelayClient.ListDevicesAsync(host, port, _settings.AccountToken!).ConfigureAwait(true);
+            _deviceList.Items.Clear();
+            foreach (var d in list)
+                _deviceList.Items.Add($"{d.Id}\t{d.Name}\t{(d.Online ? "在线" : "离线")}");
+            SetStatus($"设备 {list.Count} 台");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "设备列表失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private async Task ConnectOwnedDeviceAsync()
+    {
+        if (_client is not null) { SetStatus("已连接，请先断开"); return; }
+        if (_deviceList.SelectedItem is null || string.IsNullOrWhiteSpace(_settings.AccountToken))
+        {
+            MessageBox.Show(this, "请先登录并选中一台设备", "免密连接", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        var row = _deviceList.SelectedItem.ToString() ?? "";
+        var deviceId = row.Split('\t')[0];
+        if (!RelayEndpoint.TryParse(_relayBox.Text, out var host, out var port, out var err))
+        {
+            MessageBox.Show(this, err, "中继地址", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        var fp = _fpBox.Text?.Trim();
+        var insecure = _insecureBox.Checked;
+        if (!insecure && string.IsNullOrWhiteSpace(fp))
+        {
+            MessageBox.Show(this, "免密连接需要 TLS 指纹（可先用 code+密码连一次自动回填），或勾选明文调试", "免密连接", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        _busy = true;
+        try
+        {
+            var opts = new AssistConnectOptions
+            {
+                Host = host,
+                Port = port,
+                Code = "OWNER",
+                Permission = PermissionLevel.Assist,
+                Fingerprint = insecure ? null : TlsCertUtil.NormalizeFingerprint(fp),
+                Insecure = insecure,
+                ViaRelay = true,
+                RelayEndpoint = $"{host}:{port}",
+                OwnerLink = true,
+                AccountToken = _settings.AccountToken,
+                DeviceId = deviceId
+            };
+            var client = await AssistClient.PairAsync(opts, "helper-ui-owner").ConfigureAwait(true);
+            _client = client;
+            SetConnectedUi(true);
+            SetStatus($"已免密连接设备 {deviceId} · 权限={client.Permission}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "免密连接失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            SetConnectedUi(false);
+        }
+        finally { _busy = false; }
+    }
+
     private void SetStatus(string text) => _statusLabel.Text = text;
 
     private void AppendOutput(string text)
@@ -615,3 +770,4 @@ internal sealed class MainForm : Form
             _outputBox.Text = _outputBox.Text[^100_000..];
     }
 }
+

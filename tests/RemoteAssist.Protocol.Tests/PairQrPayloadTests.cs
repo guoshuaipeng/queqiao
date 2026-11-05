@@ -81,4 +81,20 @@ public class PairQrPayloadTests
         Assert.Equal(17890, port);
         Assert.Equal("HELLO1", code);
     }
+
+    [Fact]
+    public void BuildRelay_RoundTrips()
+    {
+        const string fp = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+        var payload = PairQrPayload.BuildRelay("127.0.0.1:17891", "AB12CD", "X7Y9", fp, useTls: true);
+        Assert.True(PairQrPayload.TryParseFull(payload, out var host, out var port, out var code, out var gotFp, out var tls, out var viaRelay, out var relay, out var pwd));
+        Assert.True(viaRelay);
+        Assert.Equal("127.0.0.1", host);
+        Assert.Equal(17891, port);
+        Assert.Equal("AB12CD", code);
+        Assert.Equal("X7Y9", pwd);
+        Assert.Equal("127.0.0.1:17891", relay);
+        Assert.Equal(fp, gotFp);
+        Assert.True(tls);
+    }
 }

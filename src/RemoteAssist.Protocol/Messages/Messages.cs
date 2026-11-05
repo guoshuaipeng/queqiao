@@ -27,6 +27,10 @@ public sealed class PairRequest
 
     [JsonPropertyName("clientName")]
     public string ClientName { get; set; } = "helper";
+
+    /// <summary>账号免密设备链路：被控端在中继 DEVICE ONLINE 路径上可自动批准。</summary>
+    [JsonPropertyName("ownerLink")]
+    public bool OwnerLink { get; set; }
 }
 
 public sealed class PairResponse
@@ -94,3 +98,4 @@ public sealed class ErrorPayload
     [JsonPropertyName("message")]
     public string Message { get; set; } = "";
 }
+

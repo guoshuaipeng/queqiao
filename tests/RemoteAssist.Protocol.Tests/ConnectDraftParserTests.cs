@@ -30,12 +30,14 @@ public class ConnectDraftParserTests
         Assert.False(ConnectDraftParser.TryParse(
             "ABC123", "127.0.0.1", "17890", null,
             PermissionLevel.Guest, insecure: false,
+            passwordField: null, relayField: null, preferRelay: false,
             out _, out _, out var err));
         Assert.Contains("指纹", err);
 
         Assert.True(ConnectDraftParser.TryParse(
             "ABC123", "127.0.0.1", "17890", null,
             PermissionLevel.Guest, insecure: true,
+            passwordField: null, relayField: null, preferRelay: false,
             out var opts, out _, out _));
         Assert.True(opts.Insecure);
         Assert.Equal(PermissionLevel.Guest, opts.Permission);
@@ -48,6 +50,7 @@ public class ConnectDraftParserTests
         Assert.True(ConnectDraftParser.TryParse(
             payload, hostField: "192.168.0.9", portField: "20001", fingerprintField: SampleFp,
             PermissionLevel.Admin, insecure: false,
+            passwordField: null, relayField: null, preferRelay: false,
             out var opts, out _, out _));
         Assert.Equal("192.168.0.9", opts.Host);
         Assert.Equal(20001, opts.Port);
@@ -113,6 +116,6 @@ public class RelayEndpointTests
     public void UpcomingHint_MentionsIp()
     {
         Assert.Contains("IP", RelayPlaceholder.UpcomingHint);
-        Assert.Equal("NotImplemented_v1_LAN_only", RelayPlaceholder.Status);
+        Assert.Equal("Implemented_relay_mvp", RelayPlaceholder.Status);
     }
 }

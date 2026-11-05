@@ -73,7 +73,7 @@ internal sealed class ModeSelectForm : Form
             Location = new Point(24, 360),
             Size = new Size(512, 40),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "v1 默认局域网直连（可 TLS）。公网中继后续版本启用；也可用命令行参数 --accept / --control 直达对应模式。"
+            Text = "默认经公网中继（code+密码）；局域网仍可用于高级调试。可用 --accept / --control 直达模式。"
         });
     }
 
@@ -151,3 +151,4 @@ internal sealed class ModeSelectForm : Form
         return (Icon)tmp.Clone();
     }
 }
+

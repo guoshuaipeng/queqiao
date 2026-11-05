@@ -118,7 +118,7 @@ public class TlsTransportSmokeTests
         var port = GetFreePort();
         var auditPath = Path.Combine(Path.GetTempPath(), "ra-qr-" + Guid.NewGuid().ToString("N") + ".log");
         var audit = new AuditLog(auditPath);
-        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath, insecure: false);
+        var host = new AgentHost(port, autoYes: true, headless: true, confirmTimeoutSeconds: 30, audit, auditPath, insecure: false, preferRelay: false);
         try
         {
             Assert.True(PairQrPayload.TryParse(host.QrPayload, out _, out var p, out _, out var fp, out var tls));
