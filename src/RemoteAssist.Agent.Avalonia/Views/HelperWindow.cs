@@ -36,6 +36,9 @@ internal sealed class HelperWindow : Window
     private readonly Button _btnOwnConnect;
     private readonly TextBlock _ownSelectHint;
     private readonly TextBlock _accountStatus;
+    private readonly Button _btnInstallGuide;
+    private readonly Button _btnCopyMcp;
+    private readonly TextBlock _mcpHint;
 
     private AssistClient? _client;
     private bool _busy;
@@ -130,6 +133,32 @@ internal sealed class HelperWindow : Window
             FontSize = 14,
             FontWeight = FontWeight.SemiBold
         });
+        var installRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12
+        };
+        installRow.Children.Add(new TextBlock
+        {
+            Text = "先让对方装好「鹊桥远程协助」",
+            Foreground = Brush.Parse("#5F6368"),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        });
+        _btnInstallGuide = new Button
+        {
+            Name = "copyInstallGuideBtn",
+            Content = "复制安装说明",
+            Width = 140,
+            Height = 28,
+            Background = Brushes.White,
+            Foreground = Brush.Parse("#1A73E8"),
+            BorderBrush = Brush.Parse("#DADEE3"),
+            BorderThickness = new Thickness(1),
+            FontWeight = FontWeight.Normal
+        };
+        _btnInstallGuide.Click += async (_, _) => await CopyInstallInstructionsAsync();
+        installRow.Children.Add(_btnInstallGuide);
+        pairStack.Children.Add(installRow);
         pairStack.Children.Add(new TextBlock
         {
             Text = "粘贴对方发来的会话码和验证密码",
@@ -305,6 +334,64 @@ internal sealed class HelperWindow : Window
         accountCard.Child = accountStack;
         body.Children.Add(accountCard);
 
+        // ---- R017：MCP 安装说明（与 Windows Helper 同文案/轻按钮；始终可见，不因未连接隐藏）----
+        var mcpCard = new Border
+        {
+            Background = Brushes.White,
+            BorderBrush = Brush.Parse("#DADEE3"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(16)
+        };
+        var mcpStack = new StackPanel { Spacing = 10 };
+        mcpStack.Children.Add(new TextBlock
+        {
+            Text = McpInstallGuide.SectionTitle,
+            FontSize = 14,
+            FontWeight = FontWeight.SemiBold
+        });
+        mcpStack.Children.Add(new TextBlock
+        {
+            Text = McpInstallGuide.StepsBlock,
+            Foreground = Brush.Parse("#3C4043"),
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 13
+        });
+        var mcpRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+        _btnCopyMcp = new Button
+        {
+            Name = "copyMcpConfigBtn",
+            Content = McpInstallGuide.CopyConfigButton,
+            Width = 140,
+            Height = 32,
+            Background = Brushes.White,
+            Foreground = Brush.Parse("#1A73E8"),
+            BorderBrush = Brush.Parse("#DADEE3"),
+            BorderThickness = new Thickness(1),
+            FontWeight = FontWeight.Normal
+        };
+        _btnCopyMcp.Click += async (_, _) => await CopyMcpConfigFromUiAsync();
+        mcpRow.Children.Add(_btnCopyMcp);
+        mcpRow.Children.Add(new TextBlock
+        {
+            Text = "详细参数见产品文档；写操作仍须对方本机确认",
+            Foreground = Brush.Parse("#5F6368"),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap
+        });
+        mcpStack.Children.Add(mcpRow);
+        _mcpHint = new TextBlock
+        {
+            Text = "",
+            Foreground = Brush.Parse("#0F9D58"),
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 12
+        };
+        mcpStack.Children.Add(_mcpHint);
+        mcpCard.Child = mcpStack;
+        body.Children.Add(mcpCard);
+
+
         _toolCard = new Border
         {
             Background = Brushes.White,
@@ -438,6 +525,86 @@ internal sealed class HelperWindow : Window
         e.Cancel = true;
         RequestHome();
         await Task.CompletedTask;
+    }
+
+    private async Task CopyInstallInstructionsAsync()
+    {
+        try
+        {
+            var clip = Clipboard;
+            if (clip is null)
+            {
+                _failHint.Text = "复制失败：剪贴板不可用";
+                return;
+            }
+            await clip.SetTextAsync(WriteConfirmCopy.InstallInstructionsClipboard).ConfigureAwait(true);
+            _preview.Text = WriteConfirmCopy.InstallCopiedHint;
+            _preview.Foreground = Brush.Parse("#0F9D58");
+            _mcpHint.Text = "";
+            _failHint.Text = "";
+            _status.Text = WriteConfirmCopy.InstallCopiedHint;
+        }
+        catch (Exception ex)
+        {
+            _failHint.Text = "复制失败：" + ex.Message;
+        }
+    }
+
+    private async Task CopyMcpConfigFromUiAsync()
+    {
+        try
+        {
+            if (!TryBuildOptions(out var opts, out _, out _))
+            {
+                _failHint.Text = McpInstallGuide.NeedCodePasswordHint;
+                _preview.Foreground = Brush.Parse("#C5221F");
+                _mcpHint.Text = "";
+                return;
+            }
+
+            var useTls = !opts.Insecure && !string.IsNullOrWhiteSpace(opts.Fingerprint);
+            string payload;
+            if (opts.ViaRelay)
+            {
+                var relay = string.IsNullOrWhiteSpace(opts.RelayEndpoint)
+                    ? RelayEndpoint.DefaultEndpoint
+                    : opts.RelayEndpoint!;
+                var pwd = opts.Password ?? "";
+                if (!useTls)
+                    payload = PairQrPayload.BuildRelay(relay, opts.Code, pwd, fingerprint: null, useTls: false);
+                else
+                    payload = PairQrPayload.BuildRelay(relay, opts.Code, pwd, opts.Fingerprint, useTls: true);
+            }
+            else
+            {
+                if (!useTls)
+                    payload = PairQrPayload.BuildLan(opts.Host, opts.Port, opts.Code, fingerprint: null, useTls: false);
+                else
+                    payload = PairQrPayload.BuildLan(opts.Host, opts.Port, opts.Code, opts.Fingerprint, useTls: true);
+            }
+
+            var exists = McpExeLocator.TryResolveExisting(out var exe);
+            if (!exists)
+                exe = McpExeLocator.Resolve();
+
+            var clip = Clipboard;
+            if (clip is null)
+            {
+                _failHint.Text = "复制失败：剪贴板不可用";
+                return;
+            }
+            await clip.SetTextAsync(McpConfigSnippet.BuildClipboardBundle(exe, payload)).ConfigureAwait(true);
+            var hint = exists ? McpInstallGuide.CopiedOkHint : McpInstallGuide.CopiedPlaceholderHint;
+            _preview.Text = hint;
+            _preview.Foreground = Brush.Parse("#0F9D58");
+            _mcpHint.Text = hint;
+            _failHint.Text = "";
+            _status.Text = hint;
+        }
+        catch (Exception ex)
+        {
+            _failHint.Text = "复制 MCP 配置失败：" + ex.Message;
+        }
     }
 
     private async Task PasteFromClipboardAsync()
@@ -1085,6 +1252,30 @@ internal sealed class HelperWindow : Window
         _accountStatus.Text = "已登录（截图）";
         _output.Text = "";
     }
+
+    /// <summary>UiShot：MCP / 复制安装说明入口可见（轻按钮，非实心绿）。</summary>
+    internal void PrepareInstallGuideEntryForShot()
+    {
+        PrepareIdleForShot();
+        _pasteBox.Text = "";
+        _preview.Text = "粘贴后点「连接」";
+        _preview.Foreground = Brush.Parse("#5F6368");
+        _mcpHint.Text = "";
+        _failHint.Text = "";
+        _status.Text = "状态：未连接";
+        Height = Math.Max(Height, 900);
+    }
+
+    /// <summary>UiShot：已点「复制安装说明」后人话反馈（Windows 同等文案）。</summary>
+    internal void PrepareInstallCopiedForShot()
+    {
+        PrepareInstallGuideEntryForShot();
+        _preview.Text = WriteConfirmCopy.InstallCopiedHint;
+        _preview.Foreground = Brush.Parse("#0F9D58");
+        _status.Text = WriteConfirmCopy.InstallCopiedHint;
+        _mcpHint.Text = "";
+    }
+
 
 
 

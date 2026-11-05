@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（Avalonia；不改 `relay/`，不迁 Windows 到 Avalonia，不重做 R006–R016）
-> 状态：**wip**
+> 状态：**ready-for-product**
 > 依据：R016 产品已验收（f083f51）；Windows 已验收的 MCP / 「复制安装说明」入口（R005，quality.md §3）；PRODUCT.md「可选 MCP 给 Agent；仅接受协助时不自动对外监听 MCP」。
 
 R016 已产品验收 Avalonia 协助端连上后五键白话与已连接按钮轻态。Linux Avalonia 界面上还缺与 Windows 同等的 MCP 安装说明入口。
@@ -43,3 +43,35 @@ R016 已产品验收 Avalonia 协助端连上后五键白话与已连接按钮�
 
 - 更新本文交付说明与截图
 - 回告产品验收；未开下一轮
+
+## 交付说明（鹊桥-客户端 · 2026-11-05 Asia/Shanghai）
+
+### 实现摘要
+
+- **「复制安装说明」**：协助端「连接对方」卡内，与 Windows 同位置语义——「先让对方装好「鹊桥远程协助」」旁轻按钮（白底蓝字，非实心绿）。复制 `WriteConfirmCopy.InstallInstructionsClipboard`，反馈 `WriteConfirmCopy.InstallCopiedHint`（「请把安装包和这段说明一起发出去」）。
+- **MCP 安装说明卡**：`McpInstallGuide.SectionTitle` / `StepsBlock` / 「复制 MCP 配置」轻按钮 +「详细参数见产品文档；写操作仍须对方本机确认」。复制走 `McpConfigSnippet.BuildClipboardBundle` + `McpExeLocator`，反馈 `CopiedOkHint` / `CopiedPlaceholderHint`。缺会话码时提示 `NeedCodePasswordHint`。
+- **未改** R013–R016 已验收原文；未在接受协助路径自动对外监听 MCP（MainWindow 无 MCP 监听启动）。
+- **osx**：与 Linux 同树可出包；本轮未重跑 publish、**未上真机**，不写成 Mac 已验收。
+
+### 截图（`docs/screenshots/r017-*`，已复制 `%USERPROFILE%\Downloads\r017-shots\`）
+
+| 文件 | 要点 | MD5 |
+|------|------|-----|
+| `r017-install-entry.png` | 「复制安装说明」轻按钮 +「如何安装 MCP」卡与「复制 MCP 配置」轻按钮可见；ui-shot | 8ED52115F70AF18402F98BABF64CF47B |
+| `r017-install-copied.png` | 复制后反馈「请把安装包和这段说明一起发出去」；ui-shot | 87BBE7532447153E3D7F0EFF529E445F |
+
+截图为 **ui-shot**。MD5 互异，且不同于 r015/r016。亲友界面不出现 Assist、Admin、ownerLink、TLS、端口号、deviceId、offline。
+
+### 测试
+
+`dotnet test`：169 通过 / 0 失败（RemoteAssist.sln Release）。
+
+### 明确未做
+
+- 未开 R018 / 下一轮
+- 未改 `relay/`、官网下载、AI-SSH-Pro
+- 未把 Windows 迁到 Avalonia；未重做 R006–R016
+- 未改 R013–R016 已验收文案；未改 `docs/trust-levels.md`「才问你」
+- 仅接受协助时不自动对外监听 MCP（本轮未新增监听）
+- 现场公网双机非本轮必须，未做
+
