@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（Windows WinForms 与 Linux Avalonia 去协助端；不改中继 / 官网站点实现）
-> 状态：**ready-for-product**
+> 状态：**产品已验收**
 > 依据：R020 产品已验收（上架 `8ce2bd9`）；PRODUCT.md 协助闭环第 1 步「把安装包下载地址或本机安装包目录发给远端用户」；官网已可下 Windows / Linux 包。
 
 R020 已让官网能下到跟上已验收界面的 Linux 包。去协助端「复制安装说明」仍主要按「把安装包文件一起发出去」来写，亲友还要靠对方传一个大文件。本轮把官网下载地址写进说明，让对方自己下载也能装上。
@@ -100,4 +100,21 @@ macOS 尚未提供正式下载。
 - 未改 R013–R016 已验收原文；未改 MCP 三步 /「复制 MCP 配置」反馈；未改 `docs/trust-levels.md`「才问你」
 - 未写端口号、17891、TLS、stdio、内部磁盘路径
 - 现场公网双机非本轮必须，未做
+
+## 产品验收（2026-11-05 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r021-*` 与交付逐字文案验收通过（实现 `632928a`）：
+
+- 去协助端「复制安装说明」仍是轻按钮；「连接」仍是唯一实心绿主按钮（`r021-install-entry.png`）。
+- 复制反馈为「说明里已带上官网下载地址，发给对方即可」，只出现一次（`r021-install-copied.png` / `r021-hint.txt`）。
+- 剪贴板正文含官网入口 `http://121.196.45.81/`、Windows / Linux 直链；macOS 写「尚未提供正式下载」；保留「如果你手头有安装包，也可以一起发出去」；无端口号、`17891`、TLS、stdio、内部路径（`r021-clipboard-preview.png` / `r021-clipboard-text.txt`）。
+- Windows WinForms 与 Linux Avalonia 共用 `WriteConfirmCopy` 常量，交付说明已写明；本轮截图为 Avalonia ui-shot。
+
+缺口（不阻断）：
+
+- `r021-install-entry.png` 与 `r017-install-entry.png` 字节相同（入口控件视觉未改，仅文案变，交付已坦白）。
+- 未单独拍 WinForms 窗；以共享常量 + 交付说明为准。
+- ui-shot，非现场公网双机。
+
+已开 R022（官网安装包跟上含 R021 的客户端；安装说明「允许连网」改为跨平台中性措辞）。
 
