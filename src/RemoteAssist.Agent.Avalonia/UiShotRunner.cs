@@ -5,7 +5,7 @@ using Avalonia.Threading;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R023：安装说明补 .NET 8 运行时短指引 + 仍含官网下载地址。</summary>
+/// <summary>R025：安装说明补下载/打开不受信任怎么选。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -20,15 +20,15 @@ internal static class UiShotRunner
 
         helper.PrepareInstallGuideEntryForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r023-install-entry.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r025-install-entry.png")).ConfigureAwait(true);
 
         helper.PrepareInstallCopiedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r023-install-copied.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r025-install-copied.png")).ConfigureAwait(true);
 
         helper.PrepareInstallClipboardPreviewForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r023-clipboard-preview.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r025-clipboard-preview.png")).ConfigureAwait(true);
 
         helper.PrepareClose();
         helper.Close();
