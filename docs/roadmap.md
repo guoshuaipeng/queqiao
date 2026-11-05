@@ -27,7 +27,8 @@
 | R016 | 高频：Avalonia 协助端连上后五键白话 + 引导 + 已连接按钮权重；打磨：文件夹/文件路径轻量输入 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-016.md` |
 | R017 | 高频：Avalonia MCP 安装说明；打磨：复制后人话反馈 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-017.md` |
 | R018 | 高频：接受协助端可选 MCP 说明；打磨：复制 MCP 配置后人话反馈 | 鹊桥-客户端 | **done（产品已验收）** | `docs/round-018.md` |
-| R019 | 高频：官网 Windows / Linux 安装包下载；打磨：默认小包的 .NET 8 运行时短说明 | 鹊桥-服务端 | **wip** | `docs/round-019.md` |
+| R019 | 高频：官网 Windows / Linux 安装包下载；打磨：默认小包的 .NET 8 运行时短说明 | 鹊桥-服务端 | **done（产品已验收）** | `docs/round-019.md` |
+| R020 | 高频：官网 Linux 包跟上 R015–R018；打磨：首页不再用「以 Windows 为主」否定 Linux | 鹊桥-客户端 / 鹊桥-服务端 | **wip** | `docs/round-020.md` |
 
 ## P0 — 可演示闭环（不后挪）
 
@@ -53,7 +54,7 @@
 
 ## 平台 — macOS / Linux（2026-11-05 起，不抢 P0）
 
-场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 已产品验收 Avalonia 信任等级 + Windows P2-7；R013 已产品验收 Avalonia 已确认改动回看 + 刷新确认；R014 已产品验收 Avalonia 账号登录免密 + 审计人话（edddc11，2026-11-05）；R015 已产品验收 Avalonia 设备列表人话与免密连接可点击态（e11a8a7，2026-11-05）；R016 已产品验收 Avalonia 协助端连上后五键白话对齐（f083f51，2026-11-05）；R017 已产品验收 Avalonia 去协助端 MCP / 复制安装说明（5bcab34，2026-11-05）；R018 已产品验收接受协助端可选 MCP 说明（`b8c215c`，2026-11-05）；已开 R019 官网 Windows / Linux 安装包下载（macOS 仍「即将提供」，见 `docs/round-019.md`）。
+场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 已产品验收 Avalonia 信任等级 + Windows P2-7；R013 已产品验收 Avalonia 已确认改动回看 + 刷新确认；R014 已产品验收 Avalonia 账号登录免密 + 审计人话（edddc11，2026-11-05）；R015 已产品验收 Avalonia 设备列表人话与免密连接可点击态（e11a8a7，2026-11-05）；R016 已产品验收 Avalonia 协助端连上后五键白话对齐（f083f51，2026-11-05）；R017 已产品验收 Avalonia 去协助端 MCP / 复制安装说明（5bcab34，2026-11-05）；R018 已产品验收接受协助端可选 MCP 说明（`b8c215c`，2026-11-05）；R019 已产品验收官网 Windows / Linux 安装包下载（`04347f3`，2026-11-05；macOS 仍「即将提供」）；已开 R020 官网 Linux 包跟上 R015–R018 已验收界面（见 `docs/round-020.md`）。
 
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
@@ -78,7 +79,7 @@
 | 技术栈与部署（端口 80、安全组、独立 Go 进程） | 鹊桥-架构 | **done** | `architecture.md` §14 与 `docs/site-deploy.md`：`remote-assist-site`、:80、site.db、口令走 /etc/remote-assist-site.env、MemoryMax=64M |
 | 静态介绍页 + 接单表单 | 鹊桥-服务端 | **done** | `site/` 静态页；文案对齐 `docs/site-copy.md` |
 | 接单 API + /admin + 上机 | 鹊桥-服务端 | **done** | 2026-11-05 公网浏览器验收通过（对照 site.md / site-copy.md）：介绍页与 /ask 文案对齐；两次例行探活提交成功并到 /thanks（称呼 例行探活，微信 qiaoqiao_probe_20261105，非真客户勿跟进）；/admin 可登录、改状态/备注，同一微信聚合为一条客户（历史条数 2）。状态仅 新留言/已联系/已结束。中继 17891 仍通。 |
-| 安装包下载（Windows / Linux 真实文件；macOS 仍即将提供） | 鹊桥-服务端 | **wip（R019）** | 见 `round-019.md`：首页可下 Windows 安装包与 Linux `.tar.gz`；Mac 不假装已可下；附 .NET 8 运行时短说明；不装重软件、不占 17891 |
+| 安装包下载（Windows / Linux 真实文件；macOS 仍即将提供） | 鹊桥-服务端 | **done（R019）** | 见 `round-019.md`：首页可下 Windows 安装包与 Linux `.tar.gz`；Mac 不假装已可下；附 .NET 8 运行时短说明；不装重软件、不占 17891。Linux 包跟上 R015–R018 见 R020 |
 ## 明确暂缓
 
 完整远程桌面、计费/组织、改 AI-SSH-Pro。

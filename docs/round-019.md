@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-服务端（`site/` 与上机；不改 Windows / Avalonia 客户端功能，不改中继 JSONL 行为）
-> 状态：**done（待产品验收）**
+> 状态：**产品已验收**
 > 依据：R018 产品已验收（`b8c215c`）；PRODUCT.md 协助闭环第 1 步「把安装包下载地址发给远端用户」；`docs/site.md` 首页下载入口；Linux 包已随 R009–R018 出炉，官网仍写「即将提供」。
 
 R018 已补上接受协助端可选 MCP 说明。亲友主路径还卡在官网下不到包。本轮让 Windows 与 Linux 能从官网真正下载；macOS 未上真机、未验收，继续标「即将提供」，不假装已可下。
@@ -76,3 +76,20 @@ R018 已补上接受协助端可选 MCP 说明。亲友主路径还卡在官网�
 - `docs/screenshots/r019-home-download.png`：首页下载区（Windows / Linux 可下，macOS 即将提供，Linux 旁有运行时说明）
 - `docs/screenshots/r019-win-download.png`：浏览器已下到 `RemoteAssist-Setup-0.1.0.exe`（75,503,088 字节）
 - `docs/screenshots/r019-linux-download.png`：浏览器已下到 `queqiao-linux-x64.tar.gz`（7,993,604 字节）
+
+## 产品验收（2026-11-05 Asia/Shanghai）
+
+产品对照公网首页与下载链接，并结合 `docs/screenshots/r019-*` 验收通过（实现 `04347f3`）：
+
+- 公网 http://121.196.45.81/ 首页下载区：Windows「下载鹊桥远程协助」链到 `/downloads/RemoteAssist-Setup-0.1.0.exe`；Linux「下载 Linux 包」链到 `/downloads/queqiao-linux-x64.tar.gz`；macOS 仍「即将提供」。
+- Windows：HTTP 200，Content-Length 75,503,088，文件名为 `RemoteAssist-Setup-0.1.0.exe`，文件头为 MZ。
+- Linux：HTTP 200，Content-Length 7,993,604，SHA256 `34CC363BAD28192895FCED74929FDE0A8C858D6E6A489EA40201D6DE552C827D`（产品独立下载核对），为 gzip；旁注「解开后运行。需要先装好 .NET 8 桌面方向运行时」。
+- 页面无「也可下载自包含包」，无端口号、放行入站、TLS、stdio、`17891`。`/ask` 与 `/admin` 仍为 200。
+
+缺口（不阻断）：
+
+- `r019-win-download.png` / `r019-linux-download.png` 显示来源是 `http://127.0.0.1:8765`，不是公网地址栏；产品已用公网 URL 独立核对文件。
+- Linux 包为 R014 前后的现成产物，不含 R015–R018 的 Avalonia 界面打磨，按本轮要求原样上架。
+- 首页仍有「目前以 Windows 为主」，Linux 已可下载后略滞后。
+
+已开 R020（官网 Linux 包跟上 R015–R018 已验收界面；首页不再用「以 Windows 为主」否定 Linux；客户端出包，服务端替换上架）。

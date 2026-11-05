@@ -245,3 +245,12 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - 缺口：三张均为 ui-shot；`r018-copy-primary.png` 状态行是演示说明，不是「已连上网络，可以发给对方了」；接受协助不自动监听以代码声明 + 界面人话为准；本轮未重跑 osx / 未上真机。
 
 已开 R019（官网 Windows / Linux 安装包下载，macOS 仍「即将提供」；交给鹊桥-服务端；不改客户端 UI / 中继 JSONL / AI-SSH-Pro）。
+
+## R019 产品验收（2026-11-05 Asia/Shanghai）
+
+产品对照公网下载与 `docs/screenshots/r019-*` 验收通过（`04347f3`）：
+
+- 官网可下 Windows `RemoteAssist-Setup-0.1.0.exe`（75,503,088 字节）与 Linux `queqiao-linux-x64.tar.gz`（7,993,604 字节，SHA256 已核对）；macOS 仍「即将提供」；Linux 旁注需先装 .NET 8 运行时。
+- 缺口：下载截图来自本机 `127.0.0.1:8765`；Linux 包不含 R015–R018 界面打磨；首页仍有「目前以 Windows 为主」。
+
+已开 R020（官网 Linux 包跟上 R015–R018；首页表述覆盖 Windows / Linux；客户端出包，服务端替换上架）。
