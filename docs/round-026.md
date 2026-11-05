@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（出包）+ 鹊桥-服务端（替换官网文件）
-> 状态：**ready**
+> 状态：**ready-for-product**（客户端已出包，待服务端上架）
 > 依据：R025 产品已验收（安装说明与官网旁注已含「通常不会下载」时怎么选）；公网 Windows / Linux 包仍是 R024 产物（75,583,762 / 8,000,095），亲友从官网下到的客户端「复制安装说明」还没有这一句。
 
 R025 已让去协助端复制的安装说明，以及官网 Windows 旁注，告诉对方浏览器提示通常不会下载时选保留。但公网仍挂着 R024 的包：对方按说明去官网下载后，自己再当协助方时，复制出来的说明又变回没有这一句的旧文案。本轮把官网包换到含 R025 的客户端。
@@ -59,3 +59,37 @@ R025 已让去协助端复制的安装说明，以及官网 Windows 旁注，告
 
 - 更新本文交付说明与截图 / 公网记录
 - 回告产品验收；未开下一轮
+
+## 交付说明（鹊桥-客户端 · 2026-11-06 Asia/Shanghai）
+
+### 实现摘要
+
+- 基于已推送 HEAD `73b2fea`（含 R025 `f423db1`）打出 Windows Inno 与 Linux framework-dependent 包；**未改**业务代码与已验收安装说明/MCP/trust-levels「才问你」。
+- Linux 产物 DLL 已核对含 R025「如果浏览器提示通常不会下载，选择保留…选择仍要运行。」以及 R023 .NET 指引。
+- **未改** `site/`、未上生产机；公网上架交鹊桥-服务端。未把 macOS 当正式可下；Linux 为 FD 非 SC。
+
+### 本机产物
+
+| 项 | Windows | Linux |
+|------|---------|-------|
+| 绝对路径 | `E:\IdeaProjects\remote-assist\artifacts\installer\RemoteAssist-Setup-0.1.0.exe` | `E:\IdeaProjects\remote-assist\artifacts\queqiao-linux-x64-fd.tar.gz` |
+| 公网文件名 | `RemoteAssist-Setup-0.1.0.exe` | `queqiao-linux-x64.tar.gz`（**去掉内部 `-fd`**） |
+| 字节 | 75,580,750 | 8,000,125 |
+| MB | 72.08 | 7.63 |
+| mtime | 2026-11-06 01:35:02 Asia/Shanghai | 2026-11-06 01:34:36 Asia/Shanghai |
+| SHA256 | `2A8EE24DA2A91157986686D4F22BF8D1AD960CFD4CEB60E031864401B6F59E26` | `14B0C7EF5050050469FBF7ECA522001F06529527F38C27ACE657BB0069832F76` |
+| 构建命令 | `scripts\build-installer.ps1` | `scripts\publish-agent-avalonia.ps1 -Runtimes linux-x64` |
+| 形态 | Inno Setup（与现官网同形态） | framework-dependent（含 `RemoteAssist.Agent.Avalonia` + `运行说明.txt`） |
+
+出包 HEAD：`73b2fea70185fae2bce7e0162006e57855fc2c01` — `docs(R025): 产品验收通过并开 R026（官网安装包跟上 R025）`（祖先含 `f423db1`）。
+
+对照 R024 旧包：Windows 75,583,762 / `236EDEE7…FB58` → 新 `2A8EE24D…9E26`；Linux 8,000,095 / `305F9E40…E586` → 新 `14B0C7EF…2F76` — **大小与 SHA256 均不同**。
+
+公网替换与首页不回退核对：**交鹊桥-服务端**。
+
+### 明确未做
+
+- 未开下一轮；未改 `relay/`、`site/`、AI-SSH-Pro；未上生产机
+- 未改安装说明 / MCP / trust-levels「才问你」；未改业务功能
+- 未把 macOS 当正式可下；未打 Linux SC 冒充本轮产物
+
