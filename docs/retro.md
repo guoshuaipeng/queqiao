@@ -196,3 +196,13 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - 缺口（不阻断）：未单独截宽松/完全信任自动放行进已确认列表（复用 R007 ConfirmedChangeList）。`preference=AskEveryTime` 记入 R014 打磨。osx 已出包、未上真机。
 
 已开 R014（Avalonia 账号登录免密连自有设备 + 最近审计人话；不改中继/官网/AI-SSH-Pro；不迁 Windows）。
+
+## R014 产品验收（2026-11-05 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r014-*` 验收通过（`edddc11`）：
+
+- 去协助：账号/密码可见标签；未选中连接禁用；选中在线后可免密连；免密成功文案保留写操作仍须本机确认。
+- 最近审计人话（无 `preference=`）；已确认列表标题未改；osx 已出包、未上真机。
+- 缺口交 R015：设备列表露出内部 id；选中后连接按钮仍灰色次要样式；登录/列表/免密连为 ui-shot，非现场公网双机结对。
+
+已开 R015（Avalonia 设备列表人话与免密连接可点击态 + 离线不可连；打磨免密连上后常用操作可用；不改中继/官网/AI-SSH-Pro）。
