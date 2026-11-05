@@ -16,7 +16,8 @@
 | R005 | 高频：界面上的 MCP 安装指引；打磨：已连网收起允许横幅、避免「设置」折行 | 鹊桥-客户端 | **done** | `docs/round-005.md` |
 | R006 | 质感：刷新会话码不抢点击 → 账号标签与免密选设备 → 连上后白话操作 → 首页卡片（见 quality.md） | 鹊桥-客户端 | **done**（产品已验收） | `docs/quality.md`、`docs/round-006.md` |
 | R007 | 被协助端信任等级（每次询问 / 宽松 / 完全信任）+ 打磨本机已确认改动回看 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-007.md`、`docs/trust-levels.md` |
-| R008 | 高频：MCP 提议命令闭环；打磨：双模式安装包扫尾 | 鹊桥-客户端 | **done** | `docs/round-008.md` |
+| R008 | 高频：MCP 提议命令闭环；打磨：双模式安装包扫尾 | 鹊桥-客户端 | **done**（产品已验收） | `docs/round-008.md` |
+| R009 | 高频：Mac/Linux 被控 CLI + MCP + 本机确认；打磨：框架依赖小包 | 鹊桥-客户端 | **wip** | `docs/round-009.md` |
 
 ## P0 — 可演示闭环（不后挪）
 
@@ -45,7 +46,7 @@
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
 | 技术栈与体积方案 | 鹊桥-架构 | **done** | `architecture.md` §13：Mac/Linux=Avalonia；Windows 暂留 WinForms；默认小包依赖运行时（目标约 1.4 MB 档）；自包含备选上限约 72 MB；macOS `.dmg`，Linux `.tar.gz` |
-| Mac/Linux 被控端 + MCP（先） | 鹊桥-客户端 | **todo** | 经默认中继配对；只读查询；写操作本机确认；命令行（CLI/MCP）与 Avalonia 界面都要，不是二选一。默认发依赖 .NET 8 运行时的小包（附安装说明）；自包含为备选 |
+| Mac/Linux 被控端 + MCP（先） | 鹊桥-客户端 | **wip（R009：先 CLI/MCP + 确认）** | 经默认中继配对；只读查询；写操作本机确认；命令行（CLI/MCP）与 Avalonia 界面都要，不是二选一。R009 先做 CLI/MCP + 终端确认 + 框架依赖小包；Avalonia 被控窗下一步。默认发依赖 .NET 8 运行时的小包（附安装说明）；自包含为备选 |
 | Mac/Linux 双模式 GUI（后） | 鹊桥-客户端 | **todo** | 与 Windows 对等：接受协助 / 去协助 |
 
 ## P2 — 体验（backlog，按易用性排序）
