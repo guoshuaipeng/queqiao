@@ -69,7 +69,7 @@ internal sealed class MainForm : Form
         {
             AutoSize = false,
             Location = new Point(20, 36),
-            Size = new Size(700, 22),
+            Size = new Size(_enableReturnHome ? 600 : 700, 22),
             ForeColor = Color.FromArgb(0xE3, 0xF0, 0xFF),
             Font = new Font(Font.FontFamily, 9F),
             Text = "被协助端 · 局域网会话码配对 · 危险操作需本机确认",
@@ -81,8 +81,9 @@ internal sealed class MainForm : Form
             var btnHome = new Button
             {
                 Text = "返回首页",
-                Location = new Point(640, 16),
                 Size = new Size(100, 32),
+                Location = new Point(header.ClientSize.Width - 100 - 16, 16),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 FlatStyle = FlatStyle.Flat,
                 ForeColor = Color.White,
                 BackColor = Color.FromArgb(0x15, 0x5F, 0xC0),
@@ -91,6 +92,7 @@ internal sealed class MainForm : Form
             btnHome.FlatAppearance.BorderColor = Color.White;
             btnHome.Click += (_, _) => HomeRequested?.Invoke();
             header.Controls.Add(btnHome);
+            btnHome.BringToFront();
         }
 
 

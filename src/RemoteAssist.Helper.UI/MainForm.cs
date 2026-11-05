@@ -70,7 +70,7 @@ internal sealed class MainForm : Form
         {
             AutoSize = false,
             Location = new Point(20, 36),
-            Size = new Size(720, 22),
+            Size = new Size(_enableReturnHome ? 620 : 720, 22),
             ForeColor = Color.FromArgb(0xE8, 0xF5, 0xE9),
             Font = new Font(Font.FontFamily, 9F),
             Text = "粘贴对方会话码 / 载荷 → 确认 host·端口·TLS 指纹 → 连接后排障（写操作需对方本机确认）",
@@ -83,8 +83,9 @@ internal sealed class MainForm : Form
             var btnHome = new Button
             {
                 Text = "返回首页",
-                Location = new Point(660, 16),
                 Size = new Size(100, 32),
+                Location = new Point(header.ClientSize.Width - 100 - 16, 16),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 FlatStyle = FlatStyle.Flat,
                 ForeColor = Color.White,
                 BackColor = Color.FromArgb(0x0B, 0x7A, 0x45),
@@ -93,6 +94,7 @@ internal sealed class MainForm : Form
             btnHome.FlatAppearance.BorderColor = Color.White;
             btnHome.Click += (_, _) => RequestHome();
             header.Controls.Add(btnHome);
+            btnHome.BringToFront();
         }
 
         var pairCard = MakeCard(16, 80, 748, 220);
