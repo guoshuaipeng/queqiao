@@ -6,7 +6,7 @@ using RemoteAssist.Protocol;
 namespace RemoteAssist.Agent;
 
 /// <summary>
-/// 配对确认窗口：显示来源 IP、客户端、请求权限；允许 / 仅访客 / 拒绝；超时自动拒绝。
+/// 访客配对确认窗（R003）：白话文案；超时自动拒绝。ownerLink 不走此窗。
 /// </summary>
 internal sealed class PairConfirmDialog : Form
 {
@@ -22,75 +22,57 @@ internal sealed class PairConfirmDialog : Form
     {
         _requested = info.RequestedPermission;
 
-        Text = "鹊桥 — 确认配对";
+        Text = "有人想协助这台电脑";
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = true;
         TopMost = true;
-        ClientSize = new Size(520, 260);
+        ClientSize = new Size(480, 220);
         UiWindowPlacement.PlaceDialog(this);
         Font = new Font("Microsoft YaHei UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+        BackColor = Color.White;
 
         var title = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 12),
-            Size = new Size(488, 28),
-            Font = new Font(Font, FontStyle.Bold),
-            Text = "有人请求与本机建立协助会话"
+            Location = new Point(20, 16),
+            Size = new Size(440, 28),
+            Font = new Font(Font.FontFamily, 12F, FontStyle.Bold),
+            Text = "有人想协助这台电脑"
         };
 
-        var remoteLabel = new Label
+        var body = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 48),
-            Size = new Size(488, 24),
-            Text = $"来源 IP：{info.RemoteEndpoint}"
-        };
-
-        var clientLabel = new Label
-        {
-            AutoSize = false,
-            Location = new Point(16, 76),
-            Size = new Size(488, 24),
-            Text = $"客户端：{info.ClientName}"
-        };
-
-        var permLabel = new Label
-        {
-            AutoSize = false,
-            Location = new Point(16, 104),
-            Size = new Size(488, 24),
-            Text = $"请求权限：{info.RequestedPermission}"
-        };
-
-        var hint = new Label
-        {
-            AutoSize = false,
-            Location = new Point(16, 136),
-            Size = new Size(488, 40),
-            ForeColor = Color.DimGray,
-            Text = "「允许」按请求权限授权；「仅访客」只读；「拒绝」断开。配对与写操作确认会排队，一次只弹一个窗。"
+            Location = new Point(20, 52),
+            Size = new Size(440, 72),
+            ForeColor = Color.FromArgb(0x3C, 0x40, 0x43),
+            Text = "对方可以查看进程、日志和文件，不能直接改你的电脑。真正要改动时，还会再问你。"
         };
 
         _remainingSeconds = Math.Max(1, info.TimeoutSeconds);
         _countdownLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 184),
-            Size = new Size(200, 24),
-            ForeColor = Color.DarkRed,
-            Text = $"超时将自动拒绝（{_remainingSeconds}s）"
+            Location = new Point(20, 132),
+            Size = new Size(280, 24),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = $"若不操作，将在 {_remainingSeconds} 秒后自动拒绝"
         };
 
         var allowBtn = new Button
         {
-            Text = "允许",
-            Location = new Point(200, 212),
-            Size = new Size(96, 32)
+            Text = "允许协助",
+            Location = new Point(236, 168),
+            Size = new Size(110, 34),
+            Font = new Font(Font.FontFamily, 10F, FontStyle.Bold),
+            BackColor = Color.FromArgb(0x1A, 0x73, 0xE8),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat
         };
+        allowBtn.FlatAppearance.BorderSize = 0;
         allowBtn.Click += (_, _) =>
         {
             GrantedPermission = _requested;
@@ -98,24 +80,11 @@ internal sealed class PairConfirmDialog : Form
             Close();
         };
 
-        var guestBtn = new Button
-        {
-            Text = "仅访客",
-            Location = new Point(304, 212),
-            Size = new Size(96, 32)
-        };
-        guestBtn.Click += (_, _) =>
-        {
-            GrantedPermission = PermissionLevel.Guest;
-            DialogResult = DialogResult.OK;
-            Close();
-        };
-
         var denyBtn = new Button
         {
             Text = "拒绝",
-            Location = new Point(408, 212),
-            Size = new Size(96, 32)
+            Location = new Point(356, 168),
+            Size = new Size(96, 34)
         };
         denyBtn.Click += (_, _) =>
         {
@@ -128,13 +97,9 @@ internal sealed class PairConfirmDialog : Form
         CancelButton = denyBtn;
 
         Controls.Add(title);
-        Controls.Add(remoteLabel);
-        Controls.Add(clientLabel);
-        Controls.Add(permLabel);
-        Controls.Add(hint);
+        Controls.Add(body);
         Controls.Add(_countdownLabel);
         Controls.Add(allowBtn);
-        Controls.Add(guestBtn);
         Controls.Add(denyBtn);
 
         _timer = new System.Windows.Forms.Timer { Interval = 1000 };
@@ -150,7 +115,7 @@ internal sealed class PairConfirmDialog : Form
                 Close();
                 return;
             }
-            _countdownLabel.Text = $"超时将自动拒绝（{_remainingSeconds}s）";
+            _countdownLabel.Text = $"若不操作，将在 {_remainingSeconds} 秒后自动拒绝";
         };
 
         Shown += (_, _) =>

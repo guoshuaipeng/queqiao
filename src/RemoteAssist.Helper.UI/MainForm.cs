@@ -8,7 +8,7 @@ using RemoteAssist.Relay.Stub;
 namespace RemoteAssist.Helper.UI;
 
 /// <summary>
-/// 协助端主界面：粘贴会话载荷 / 配对向导 / 常用排障操作 / 中继设置占位。
+/// 协助端主界面（R003）：默认粘贴码+密码连中继；高级折叠；失败用时刻 B 白话。
 /// </summary>
 internal sealed class MainForm : Form
 {
@@ -20,6 +20,7 @@ internal sealed class MainForm : Form
     private readonly CheckBox _insecureBox;
     private readonly Label _previewLabel;
     private readonly Label _statusLabel;
+    private readonly Label _failHintLabel;
     private readonly TextBox _argBox;
     private readonly TextBox _outputBox;
     private readonly TextBox _pwdBox;
@@ -30,6 +31,9 @@ internal sealed class MainForm : Form
     private readonly Button _btnConnect;
     private readonly Button _btnDisconnect;
     private readonly Button[] _toolButtons;
+    private readonly Panel _advancedPanel;
+    private readonly Button _btnAdvanced;
+    private bool _advancedOpen;
 
     private AssistClient? _client;
     private readonly HelperUiSettings _settings;
@@ -37,20 +41,21 @@ internal sealed class MainForm : Form
     private readonly bool _enableReturnHome;
     private bool _returningHome;
 
-    /// <summary>统一 App 中请求返回模式选择页。</summary>
     public event Action? HomeRequested;
 
     public MainForm(bool enableReturnHome = false)
     {
         _enableReturnHome = enableReturnHome;
         _settings = HelperUiSettings.Load();
+        if (!_settings.PreferRelay)
+            _settings.PreferRelay = true;
 
         Text = "鹊桥 · 协助端";
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         MinimizeBox = true;
         StartPosition = FormStartPosition.Manual;
-        ClientSize = new Size(780, 860);
+        ClientSize = new Size(780, 820);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
@@ -80,7 +85,7 @@ internal sealed class MainForm : Form
             Size = new Size(_enableReturnHome ? 620 : 720, 22),
             ForeColor = Color.FromArgb(0xE8, 0xF5, 0xE9),
             Font = new Font(Font.FontFamily, 9F),
-            Text = "输入对方会话码+验证密码（经中继）或粘贴载荷；也可登录账号免密控制自己的机器",
+            Text = "粘贴对方发来的会话码和验证密码，或登录账号免密控制自己的机器",
             BackColor = Color.Transparent
         });
         Controls.Add(header);
@@ -104,123 +109,196 @@ internal sealed class MainForm : Form
             btnHome.BringToFront();
         }
 
-        var pairCard = MakeCard(16, 80, 748, 220);
+        var pairCard = MakeCard(16, 80, 748, 200);
         pairCard.Controls.Add(SectionTitle("1. 配对", 12, 10));
-
         pairCard.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(16, 40),
-            Size = new Size(520, 20),
-            Text = "会话载荷 / 会话码（中继：再填验证密码；推荐整段 remoteassist:pair?...）",
+            Size = new Size(560, 20),
+            Text = "粘贴对方发来的会话码和验证密码",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
 
         _inputBox = new TextBox
         {
-            Location = new Point(16, 62),
-            Size = new Size(600, 26),
-            Font = new Font("Consolas", 9.5F)
+            Location = new Point(16, 64),
+            Size = new Size(600, 52),
+            Font = new Font("Consolas", 9.5F),
+            Multiline = true,
+            AcceptsReturn = true,
+            ScrollBars = ScrollBars.Vertical
         };
         _inputBox.TextChanged += (_, _) => OnInputChanged();
         pairCard.Controls.Add(_inputBox);
 
-        var btnClip = MakeButton("从剪贴板", 626, 60, 100);
+        var btnClip = MakeButton("从剪贴板", 626, 64, 100);
+        btnClip.Height = 52;
         btnClip.Click += (_, _) => PasteClipboard();
         pairCard.Controls.Add(btnClip);
 
-        pairCard.Controls.Add(Lbl("主机", 16, 100));
-        _hostBox = new TextBox
-        {
-            Location = new Point(56, 98),
-            Size = new Size(150, 26),
-            Font = new Font("Consolas", 9.5F),
-            Text = _settings.LastHost ?? ""
-        };
-        _hostBox.TextChanged += (_, _) => RefreshPreview();
-        pairCard.Controls.Add(_hostBox);
-
-        pairCard.Controls.Add(Lbl("端口", 220, 100));
-        _portBox = new TextBox
-        {
-            Location = new Point(260, 98),
-            Size = new Size(70, 26),
-            Font = new Font("Consolas", 9.5F),
-            Text = (_settings.LastPort ?? ConnectDraftParser.DefaultPort).ToString()
-        };
-        _portBox.TextChanged += (_, _) => RefreshPreview();
-        pairCard.Controls.Add(_portBox);
-
-        pairCard.Controls.Add(Lbl("密码", 350, 100));
+        // password kept for advanced/manual; auto-filled by share paste
         _pwdBox = new TextBox
         {
-            Location = new Point(390, 98),
-            Size = new Size(100, 26),
-            Font = new Font("Consolas", 9.5F)
+            Location = new Point(16, 124),
+            Size = new Size(200, 26),
+            Font = new Font("Consolas", 9.5F),
+            Visible = false
         };
         _pwdBox.TextChanged += (_, _) => RefreshPreview();
         pairCard.Controls.Add(_pwdBox);
 
-        pairCard.Controls.Add(Lbl("权限", 500, 100));
-        _permBox = new ComboBox
-        {
-            DropDownStyle = ComboBoxStyle.DropDownList,
-            Location = new Point(540, 98),
-            Size = new Size(90, 26)
-        };
-        _permBox.Items.AddRange(new object[] { "Assist", "Guest", "Admin" });
-        _permBox.SelectedIndex = 0;
-        _permBox.SelectedIndexChanged += (_, _) => RefreshPreview();
-        pairCard.Controls.Add(_permBox);
-
-        _insecureBox = new CheckBox
-        {
-            Location = new Point(640, 100),
-            Size = new Size(100, 24),
-            Text = "明文",
-            ForeColor = Color.FromArgb(0xB0, 0x60, 0x00)
-        };
-        _insecureBox.CheckedChanged += (_, _) => RefreshPreview();
-        pairCard.Controls.Add(_insecureBox);
-
-        pairCard.Controls.Add(Lbl("TLS指纹", 16, 136));
-        _fpBox = new TextBox
-        {
-            Location = new Point(86, 134),
-            Size = new Size(640, 26),
-            Font = new Font("Consolas", 8.5F)
-        };
-        _fpBox.TextChanged += (_, _) => RefreshPreview();
-        pairCard.Controls.Add(_fpBox);
-
         _previewLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 170),
-            Size = new Size(540, 36),
-            Font = new Font("Consolas", 9F),
-            ForeColor = Color.FromArgb(0x20, 0x24, 0x27),
-            Text = "将连接：—"
+            Location = new Point(16, 124),
+            Size = new Size(440, 28),
+            Font = new Font(Font.FontFamily, 9F),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = "粘贴后点「连接」"
         };
         pairCard.Controls.Add(_previewLabel);
 
-        _btnConnect = MakeButton("连接", 566, 172, 80);
+        _btnConnect = MakeButton("连接", 470, 122, 100);
+        _btnConnect.Height = 32;
         _btnConnect.BackColor = Color.FromArgb(0x0F, 0x9D, 0x58);
         _btnConnect.ForeColor = Color.White;
         _btnConnect.FlatStyle = FlatStyle.Flat;
         _btnConnect.Click += async (_, _) => await ConnectAsync().ConfigureAwait(true);
         pairCard.Controls.Add(_btnConnect);
 
-        _btnDisconnect = MakeButton("断开", 654, 172, 70);
+        _btnDisconnect = MakeButton("断开", 580, 122, 70);
+        _btnDisconnect.Height = 32;
         _btnDisconnect.Enabled = false;
         _btnDisconnect.Click += (_, _) => Disconnect();
         pairCard.Controls.Add(_btnDisconnect);
 
+        _failHintLabel = new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 158),
+            Size = new Size(710, 32),
+            ForeColor = Color.FromArgb(0xC5, 0x22, 0x1F),
+            Text = ""
+        };
+        pairCard.Controls.Add(_failHintLabel);
         Controls.Add(pairCard);
 
-        var toolCard = MakeCard(16, 316, 748, 290);
-        toolCard.Controls.Add(SectionTitle("2. 常用操作（连接后）", 12, 10));
+        _btnAdvanced = MakeButton("高级 ▸", 16, 290, 100);
+        _btnAdvanced.Click += (_, _) => ToggleAdvanced();
+        Controls.Add(_btnAdvanced);
 
+        _advancedPanel = MakeCard(16, 326, 748, 150);
+        _advancedPanel.Visible = false;
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 8),
+            Size = new Size(200, 22),
+            Font = new Font(Font.FontFamily, 9.5F, FontStyle.Bold),
+            Text = "高级（调试）"
+        });
+
+        _advancedPanel.Controls.Add(Lbl("主机", 12, 40));
+        _hostBox = new TextBox
+        {
+            Location = new Point(56, 38),
+            Size = new Size(140, 26),
+            Font = new Font("Consolas", 9.5F),
+            Text = _settings.LastHost ?? ""
+        };
+        _hostBox.TextChanged += (_, _) => RefreshPreview();
+        _advancedPanel.Controls.Add(_hostBox);
+
+        _advancedPanel.Controls.Add(Lbl("端口", 210, 40));
+        _portBox = new TextBox
+        {
+            Location = new Point(250, 38),
+            Size = new Size(70, 26),
+            Font = new Font("Consolas", 9.5F),
+            Text = "" // 默认不填 17890；中继路径不用
+        };
+        _portBox.TextChanged += (_, _) => RefreshPreview();
+        _advancedPanel.Controls.Add(_portBox);
+
+        _advancedPanel.Controls.Add(Lbl("密码", 340, 40));
+        var pwdVisible = new TextBox
+        {
+            Location = new Point(380, 38),
+            Size = new Size(100, 26),
+            Font = new Font("Consolas", 9.5F)
+        };
+        // sync visible advanced pwd with hidden field used by parser
+        pwdVisible.TextChanged += (_, _) =>
+        {
+            if (_pwdBox.Text != pwdVisible.Text)
+                _pwdBox.Text = pwdVisible.Text;
+        };
+        _pwdBox.TextChanged += (_, _) =>
+        {
+            if (pwdVisible.Text != _pwdBox.Text)
+                pwdVisible.Text = _pwdBox.Text;
+        };
+        _advancedPanel.Controls.Add(pwdVisible);
+
+        _advancedPanel.Controls.Add(Lbl("权限", 500, 40));
+        _permBox = new ComboBox
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Location = new Point(540, 38),
+            Size = new Size(90, 26)
+        };
+        _permBox.Items.AddRange(new object[] { "Assist", "Guest", "Admin" });
+        _permBox.SelectedIndex = 0;
+        _permBox.SelectedIndexChanged += (_, _) => RefreshPreview();
+        _advancedPanel.Controls.Add(_permBox);
+
+        _insecureBox = new CheckBox
+        {
+            Location = new Point(640, 40),
+            Size = new Size(90, 24),
+            Text = "明文",
+            ForeColor = Color.FromArgb(0xB0, 0x60, 0x00)
+        };
+        _insecureBox.CheckedChanged += (_, _) => RefreshPreview();
+        _advancedPanel.Controls.Add(_insecureBox);
+
+        _advancedPanel.Controls.Add(Lbl("TLS指纹", 12, 78));
+        _fpBox = new TextBox
+        {
+            Location = new Point(86, 76),
+            Size = new Size(640, 26),
+            Font = new Font("Consolas", 8.5F)
+        };
+        _fpBox.TextChanged += (_, _) => RefreshPreview();
+        _advancedPanel.Controls.Add(_fpBox);
+
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 112),
+            Size = new Size(80, 24),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Text = "中继"
+        });
+        _relayBox = new TextBox
+        {
+            Location = new Point(86, 110),
+            Size = new Size(280, 26),
+            Font = new Font("Consolas", 9.5F),
+            Text = _settings.RelayEndpoint ?? "",
+            BackColor = Color.FromArgb(0xEE, 0xF0, 0xF3)
+        };
+        _advancedPanel.Controls.Add(_relayBox);
+        var btnSaveRelay = MakeButton("保存中继", 380, 108, 90);
+        btnSaveRelay.Click += (_, _) => SaveRelaySetting();
+        _advancedPanel.Controls.Add(btnSaveRelay);
+        Controls.Add(_advancedPanel);
+
+        var toolTop = 292;
+        var toolCard = MakeCard(16, toolTop, 748, 250);
+        toolCard.Name = "tool";
+        toolCard.Controls.Add(SectionTitle("2. 常用操作（连接后）", 12, 10));
         _statusLabel = new Label
         {
             AutoSize = false,
@@ -243,7 +321,6 @@ internal sealed class MainForm : Form
             b.Enabled = false;
             toolCard.Controls.Add(b);
         }
-
         toolCard.Controls.Add(new Label
         {
             AutoSize = false,
@@ -259,11 +336,10 @@ internal sealed class MainForm : Form
             Font = new Font("Consolas", 9.5F)
         };
         toolCard.Controls.Add(_argBox);
-
         _outputBox = new TextBox
         {
             Location = new Point(16, 164),
-            Size = new Size(710, 110),
+            Size = new Size(710, 70),
             Multiline = true,
             ScrollBars = ScrollBars.Vertical,
             ReadOnly = true,
@@ -271,140 +347,115 @@ internal sealed class MainForm : Form
             BackColor = Color.White
         };
         toolCard.Controls.Add(_outputBox);
-
         btnProcs.Click += async (_, _) => await RunToolAsync(ToolKind.ListProcesses, new Dictionary<string, string?>()).ConfigureAwait(true);
         btnLs.Click += async (_, _) =>
         {
-            var path = RequireArg("path");
-            if (path is null) return;
-            await RunToolAsync(ToolKind.ListDir, new Dictionary<string, string?> { ["path"] = path }).ConfigureAwait(true);
+            var p = RequireArg("path");
+            if (p is null) return;
+            await RunToolAsync(ToolKind.ListDir, new Dictionary<string, string?> { ["path"] = p }).ConfigureAwait(true);
         };
         btnLogs.Click += async (_, _) =>
         {
-            var path = RequireArg("path");
-            if (path is null) return;
-            await RunToolAsync(ToolKind.ReadLogTail, new Dictionary<string, string?>
-            {
-                ["path"] = path,
-                ["lines"] = "80"
-            }).ConfigureAwait(true);
+            var p = RequireArg("path");
+            if (p is null) return;
+            await RunToolAsync(ToolKind.ReadLogTail, new Dictionary<string, string?> { ["path"] = p, ["lines"] = "80" }).ConfigureAwait(true);
         };
         btnCat.Click += async (_, _) =>
         {
-            var path = RequireArg("path");
-            if (path is null) return;
-            await RunToolAsync(ToolKind.ReadFile, new Dictionary<string, string?> { ["path"] = path }).ConfigureAwait(true);
+            var p = RequireArg("path");
+            if (p is null) return;
+            await RunToolAsync(ToolKind.ReadFile, new Dictionary<string, string?> { ["path"] = p }).ConfigureAwait(true);
         };
         btnRun.Click += async (_, _) =>
         {
-            var cmd = RequireArg("command");
-            if (cmd is null) return;
-            await RunToolAsync(ToolKind.RunCommand, new Dictionary<string, string?> { ["command"] = cmd }).ConfigureAwait(true);
+            var c = RequireArg("command");
+            if (c is null) return;
+            await RunToolAsync(ToolKind.RunCommand, new Dictionary<string, string?> { ["command"] = c }).ConfigureAwait(true);
         };
-
         Controls.Add(toolCard);
 
-        var settingsCard = MakeCard(16, 622, 748, 220);
-        settingsCard.Controls.Add(SectionTitle("3. 中继与账号", 12, 10));
+        var settingsCard = MakeCard(16, 558, 748, 220);
+        settingsCard.Name = "settings";
+        settingsCard.Controls.Add(SectionTitle("3. 账号（可选）", 12, 10));
         settingsCard.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(16, 40),
-            Size = new Size(100, 24),
-            TextAlign = ContentAlignment.MiddleLeft,
-            Text = "中继服务器"
-        });
-        _relayBox = new TextBox
-        {
-            Location = new Point(116, 40),
-            Size = new Size(280, 26),
-            Font = new Font("Consolas", 9.5F),
-            Text = _settings.RelayEndpoint ?? "",
-            BackColor = Color.FromArgb(0xEE, 0xF0, 0xF3)
-        };
-        settingsCard.Controls.Add(_relayBox);
-        settingsCard.Controls.Add(new Label
-        {
-            AutoSize = false,
-            Location = new Point(16, 72),
             Size = new Size(700, 20),
-            Text = "账号（可选）：登录后免密连自己的机器（无需再确认配对；写操作仍须对方本机确认）",
+            Text = "登录后免密连自己的机器（无需再确认配对；写操作仍须对方本机确认）",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
-        _accountUserBox = new TextBox { Location = new Point(16, 96), Size = new Size(140, 26), Text = _settings.AccountUser ?? "" };
-        _accountPassBox = new TextBox { Location = new Point(164, 96), Size = new Size(140, 26), UseSystemPasswordChar = true };
+        _accountUserBox = new TextBox { Location = new Point(16, 68), Size = new Size(140, 26), Text = _settings.AccountUser ?? "" };
+        _accountPassBox = new TextBox { Location = new Point(164, 68), Size = new Size(140, 26), UseSystemPasswordChar = true };
         settingsCard.Controls.Add(_accountUserBox);
         settingsCard.Controls.Add(_accountPassBox);
-        var btnReg = MakeButton("注册", 314, 94, 60);
+        var btnReg = MakeButton("注册", 314, 66, 60);
         btnReg.Click += async (_, _) => await AccountAuthAsync(register: true).ConfigureAwait(true);
-        var btnLogin = MakeButton("登录", 380, 94, 60);
+        var btnLogin = MakeButton("登录", 380, 66, 60);
         btnLogin.Click += async (_, _) => await AccountAuthAsync(register: false).ConfigureAwait(true);
-        var btnList = MakeButton("刷新设备", 446, 94, 80);
+        var btnList = MakeButton("刷新设备", 446, 66, 80);
         btnList.Click += async (_, _) => await RefreshDevicesAsync().ConfigureAwait(true);
-        var btnOwn = MakeButton("免密连接选中", 532, 94, 120);
+        var btnOwn = MakeButton("免密连接选中", 532, 66, 120);
         btnOwn.Click += async (_, _) => await ConnectOwnedDeviceAsync().ConfigureAwait(true);
         settingsCard.Controls.Add(btnReg);
         settingsCard.Controls.Add(btnLogin);
         settingsCard.Controls.Add(btnList);
         settingsCard.Controls.Add(btnOwn);
-        _deviceList = new ListBox { Location = new Point(16, 128), Size = new Size(700, 70) };
+        _deviceList = new ListBox { Location = new Point(16, 104), Size = new Size(700, 90) };
         settingsCard.Controls.Add(_deviceList);
-
-
-        var btnSaveRelay = MakeButton("保存", 406, 38, 70);
-        btnSaveRelay.Click += (_, _) => SaveRelaySetting();
-        settingsCard.Controls.Add(btnSaveRelay);
-
-        settingsCard.Controls.Add(new Label
-        {
-            AutoSize = false,
-            Location = new Point(490, 40),
-            Size = new Size(250, 24),
-            TextAlign = ContentAlignment.MiddleLeft,
-            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "默认 " + RelayEndpoint.DefaultEndpoint
-        });
-
         Controls.Add(settingsCard);
 
         FormClosing += OnFormClosing;
-
         RefreshPreview();
         SetConnectedUi(false);
+        LayoutForAdvanced();
+    }
+
+    private void ToggleAdvanced()
+    {
+        _advancedOpen = !_advancedOpen;
+        _advancedPanel.Visible = _advancedOpen;
+        _btnAdvanced.Text = _advancedOpen ? "高级 ▾" : "高级 ▸";
+        LayoutForAdvanced();
+    }
+
+    private void LayoutForAdvanced()
+    {
+        var shift = _advancedOpen ? _advancedPanel.Height + 8 : 0;
+        foreach (Control c in Controls)
+        {
+            if (c.Name is "tool" or "settings")
+            {
+                // base positions: tool=292, settings=558 when advanced closed under btn at 290
+            }
+        }
+        var tool = Controls.Find("tool", false).FirstOrDefault();
+        var settings = Controls.Find("settings", false).FirstOrDefault();
+        if (tool is not null) tool.Top = 292 + shift;
+        if (settings is not null) settings.Top = 558 + shift;
+        ClientSize = new Size(780, 820 + shift);
     }
 
     private static Panel MakeCard(int x, int y, int w, int h) => new()
     {
-        Location = new Point(x, y),
-        Size = new Size(w, h),
-        BackColor = Color.White,
-        BorderStyle = BorderStyle.FixedSingle
+        Location = new Point(x, y), Size = new Size(w, h), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle
     };
 
     private static Label SectionTitle(string text, int x, int y) => new()
     {
-        AutoSize = false,
-        Location = new Point(x, y),
-        Size = new Size(400, 24),
-        Font = new Font("Microsoft YaHei UI", 10.5F, FontStyle.Bold),
-        Text = text
+        AutoSize = false, Location = new Point(x, y), Size = new Size(400, 24),
+        Font = new Font("Microsoft YaHei UI", 10.5F, FontStyle.Bold), Text = text
     };
 
     private static Label Lbl(string text, int x, int y) => new()
     {
-        AutoSize = false,
-        Location = new Point(x, y),
-        Size = new Size(52, 26),
-        TextAlign = ContentAlignment.MiddleLeft,
-        Text = text
+        AutoSize = false, Location = new Point(x, y), Size = new Size(52, 26),
+        TextAlign = ContentAlignment.MiddleLeft, Text = text
     };
 
     private static Button MakeButton(string text, int x, int y, int w) => new()
     {
-        Text = text,
-        Location = new Point(x, y),
-        Size = new Size(w, 28),
-        FlatStyle = FlatStyle.System
+        Text = text, Location = new Point(x, y), Size = new Size(w, 28), FlatStyle = FlatStyle.System
     };
 
     private void PasteClipboard()
@@ -413,54 +464,110 @@ internal sealed class MainForm : Form
         {
             if (!Clipboard.ContainsText())
             {
-                SetStatus("剪贴板没有文本。");
+                SetFailHint("请粘贴会话码和验证密码");
                 return;
             }
-
             var text = Clipboard.GetText()?.Trim() ?? "";
             if (text.Length == 0)
             {
-                SetStatus("剪贴板为空。");
+                SetFailHint("请粘贴会话码和验证密码");
                 return;
             }
-
-            _inputBox.Text = text;
-            OnInputChanged();
-            SetStatus("已从剪贴板粘贴。");
+            ApplyPastedText(text);
         }
         catch (Exception ex)
         {
-            SetStatus("读取剪贴板失败：" + ex.Message);
+            SetFailHint("读取剪贴板失败：" + ex.Message);
         }
+    }
+
+    private void ApplyPastedText(string text)
+    {
+        if (text.StartsWith(PairQrPayload.SchemePrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            _inputBox.Text = text;
+            OnInputChanged();
+            SetStatus("已粘贴会话信息。");
+            ClearFailHint();
+            return;
+        }
+
+        if (FriendConnectGuide.TryParseShareText(text, out var code, out var password))
+        {
+            _inputBox.Text = string.IsNullOrWhiteSpace(password)
+                ? code
+                : FriendConnectGuide.FormatShareClipboard(code, password!);
+            if (!string.IsNullOrWhiteSpace(password))
+                _pwdBox.Text = password;
+            OnInputChanged();
+            SetStatus("已填入会话码和验证密码。");
+            ClearFailHint();
+            return;
+        }
+
+        SetFailHint("请粘贴会话码和验证密码");
     }
 
     private void OnInputChanged()
     {
-        if (PairQrPayload.TryParseFull(_inputBox.Text, out var host, out var port, out _, out var fp, out var useTls, out var viaRelay, out var relayEp, out var pwd))
+        var text = _inputBox.Text ?? "";
+        if (PairQrPayload.TryParseFull(text, out var host, out var port, out _, out var fp, out var useTls, out var viaRelay, out var relayEp, out var pwd))
         {
             _hostBox.Text = host;
-            _portBox.Text = port.ToString();
-            if (!string.IsNullOrEmpty(fp))
-                _fpBox.Text = fp;
+            if (_advancedOpen) _portBox.Text = port.ToString();
+            if (!string.IsNullOrEmpty(fp)) _fpBox.Text = fp;
             _insecureBox.Checked = !useTls;
-                if (!string.IsNullOrWhiteSpace(pwd)) _pwdBox.Text = pwd;
-                if (!string.IsNullOrWhiteSpace(relayEp)) _relayBox.Text = relayEp;
-                if (viaRelay) { /* host shows relay host */ }
+            if (!string.IsNullOrWhiteSpace(pwd)) _pwdBox.Text = pwd;
+            if (!string.IsNullOrWhiteSpace(relayEp)) _relayBox.Text = relayEp;
+            _ = viaRelay;
+        }
+        else if (FriendConnectGuide.TryParseShareText(text, out var code, out var password))
+        {
+            if (!string.IsNullOrWhiteSpace(password))
+                _pwdBox.Text = password;
+            // keep multiline share text in box for user clarity; parser uses code+pwd fields
+            if (text.Contains('\n') || text.Contains('：') || text.Contains(':'))
+            {
+                // normalize display optionally — leave as-is
+            }
+            else
+            {
+                _inputBox.TextChanged -= InputShield;
+            }
+            _ = code;
         }
 
         RefreshPreview();
     }
 
+    private void InputShield(object? s, EventArgs e) { }
+
     private void RefreshPreview()
     {
-        if (!TryBuildOptions(out _, out var preview, out var err))
+        // 空态：未点连接前不报「无法连接」
+        var raw = (_inputBox.Text ?? "").Trim();
+        if (raw.Length == 0 && string.IsNullOrWhiteSpace(_pwdBox.Text))
         {
-            _previewLabel.Text = string.IsNullOrEmpty(err) ? "将连接：—" : "无法连接：" + err;
-            _previewLabel.ForeColor = Color.FromArgb(0xC5, 0x22, 0x1F);
+            _previewLabel.Text = "粘贴后点「连接」";
+            _previewLabel.ForeColor = Color.FromArgb(0x5F, 0x63, 0x68);
             return;
         }
 
-        _previewLabel.Text = preview;
+        if (!TryBuildOptions(out var opts, out _, out var err))
+        {
+            // 有输入但还不完整：温和提示，不出现 remoteassist:pair / 无法连接
+            if (err.Contains("remoteassist", StringComparison.OrdinalIgnoreCase) ||
+                err.Contains("载荷", StringComparison.Ordinal))
+                _previewLabel.Text = "请粘贴会话码和验证密码";
+            else if (err.Contains("密码", StringComparison.Ordinal))
+                _previewLabel.Text = "还需要验证密码";
+            else
+                _previewLabel.Text = "请粘贴会话码和验证密码";
+            _previewLabel.ForeColor = Color.FromArgb(0x5F, 0x63, 0x68);
+            return;
+        }
+
+        _previewLabel.Text = FriendConnectGuide.FriendConnectionPreview(opts.Code);
         _previewLabel.ForeColor = Color.FromArgb(0x20, 0x24, 0x27);
     }
 
@@ -470,16 +577,28 @@ internal sealed class MainForm : Form
             ? p
             : PermissionLevel.Assist;
 
+        var input = _inputBox.Text ?? "";
+        // 若是两行分享文案，提取纯会话码给解析器
+        if (!input.StartsWith(PairQrPayload.SchemePrefix, StringComparison.OrdinalIgnoreCase) &&
+            FriendConnectGuide.TryParseShareText(input, out var code, out var sharePwd))
+        {
+            input = code;
+            if (!string.IsNullOrWhiteSpace(sharePwd) && string.IsNullOrWhiteSpace(_pwdBox.Text))
+                _pwdBox.Text = sharePwd;
+        }
+
+        // 默认 preferRelay；空端口不要回落成展示 17890 的失败路径
+        var portField = string.IsNullOrWhiteSpace(_portBox.Text) ? null : _portBox.Text;
         return ConnectDraftParser.TryParse(
-            _inputBox.Text,
+            input,
             _hostBox.Text,
-            _portBox.Text,
+            portField,
             _fpBox.Text,
             perm,
             _insecureBox.Checked,
             _pwdBox.Text,
             _relayBox.Text,
-            preferRelay: _settings.PreferRelay,
+            preferRelay: true,
             out options,
             out preview,
             out error);
@@ -494,31 +613,62 @@ internal sealed class MainForm : Form
             return;
         }
 
+        ClearFailHint();
+        var raw = (_inputBox.Text ?? "").Trim();
+        if (raw.Length == 0 && string.IsNullOrWhiteSpace(_pwdBox.Text))
+        {
+            SetFailHint("请粘贴会话码和验证密码");
+            return;
+        }
+
         if (!TryBuildOptions(out var opts, out var preview, out var err))
         {
-            MessageBox.Show(this, err, "无法连接", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            var tip = (err.Contains("密码", StringComparison.Ordinal))
+                ? "请粘贴会话码和验证密码"
+                : "请粘贴会话码和验证密码";
+            SetFailHint(tip);
             return;
         }
 
         _busy = true;
         _btnConnect.Enabled = false;
-        SetStatus("正在连接… " + preview);
+        SetStatus("正在连接…");
         try
         {
+            // 中继访客默认允许明文业务管道（指纹可在高级补）；避免亲友被 TLS 指纹拦住
+            if (opts.ViaRelay && !opts.Insecure && string.IsNullOrWhiteSpace(opts.Fingerprint))
+            {
+                opts = new AssistConnectOptions
+                {
+                    Host = opts.Host,
+                    Port = opts.Port,
+                    Code = opts.Code,
+                    Permission = opts.Permission,
+                    Fingerprint = null,
+                    Insecure = true,
+                    ViaRelay = true,
+                    RelayEndpoint = opts.RelayEndpoint,
+                    Password = opts.Password
+                };
+            }
+
             var client = await AssistClient.PairAsync(opts, "helper-ui").ConfigureAwait(true);
             _client = client;
             _settings.LastHost = opts.Host;
             _settings.LastPort = opts.Port;
+            _settings.PreferRelay = true;
             _settings.Save();
             SetConnectedUi(true);
-            var tokenPreview = client.Token is { Length: >= 8 } t ? t[..8] : (client.Token ?? "");
-            SetStatus($"已连接 {opts.Host}:{opts.Port} · 权限={client.Permission} · token={tokenPreview}…");
-            AppendOutput($"PAIR_OK perm={client.Permission}\r\n");
+            SetStatus("已连接对方电脑");
+            AppendOutput("PAIR_OK\r\n");
+            ClearFailHint();
+            _ = preview;
         }
         catch (Exception ex)
         {
-            SetStatus("连接失败：" + ex.Message);
-            MessageBox.Show(this, ex.Message, "连接失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            var friendly = FriendConnectGuide.FriendlyOrRaw(ex);
+            SetStatus("连接失败");
+            SetFailHint(friendly);
             SetConnectedUi(false);
         }
         finally
@@ -529,9 +679,12 @@ internal sealed class MainForm : Form
         }
     }
 
+    private void SetFailHint(string text) => _failHintLabel.Text = text;
+    private void ClearFailHint() => _failHintLabel.Text = "";
+
     private void Disconnect()
     {
-        try { _client?.Dispose(); } catch { /* ignore */ }
+        try { _client?.Dispose(); } catch { }
         _client = null;
         SetConnectedUi(false);
         SetStatus("状态：未连接");
@@ -541,14 +694,8 @@ internal sealed class MainForm : Form
     {
         _btnConnect.Enabled = !connected;
         _btnDisconnect.Enabled = connected;
-        foreach (var b in _toolButtons)
-            b.Enabled = connected;
+        foreach (var b in _toolButtons) b.Enabled = connected;
         _inputBox.Enabled = !connected;
-        _hostBox.Enabled = !connected;
-        _portBox.Enabled = !connected;
-        _fpBox.Enabled = !connected;
-        _permBox.Enabled = !connected;
-        _insecureBox.Enabled = !connected;
     }
 
     private string? RequireArg(string key)
@@ -560,14 +707,12 @@ internal sealed class MainForm : Form
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return null;
         }
-
         return v;
     }
 
     private async Task RunToolAsync(ToolKind tool, Dictionary<string, string?> args)
     {
         if (_client is null || _busy) return;
-
         _busy = true;
         SetStatus($"执行 {tool} …");
         try
@@ -576,13 +721,11 @@ internal sealed class MainForm : Form
             if (!resp.Ok)
             {
                 var msg = resp.Error ?? "失败";
-                if (resp.DeniedByUser)
-                    msg = "对方拒绝：" + msg;
+                if (resp.DeniedByUser) msg = "对方拒绝：" + msg;
                 SetStatus(msg);
                 AppendOutput($"[{tool}] FAIL: {msg}\r\n");
                 return;
             }
-
             SetStatus($"{tool} 成功");
             AppendOutput($"[{tool}] OK\r\n{resp.Result}\r\n");
         }
@@ -591,10 +734,7 @@ internal sealed class MainForm : Form
             SetStatus("调用失败：" + ex.Message);
             AppendOutput($"[{tool}] ERR: {ex.Message}\r\n");
         }
-        finally
-        {
-            _busy = false;
-        }
+        finally { _busy = false; }
     }
 
     private void SaveRelaySetting()
@@ -602,18 +742,14 @@ internal sealed class MainForm : Form
         var text = _relayBox.Text?.Trim() ?? "";
         if (text.Length > 0 && !RelayPlaceholder.TryParseEndpoint(text, out _, out _, out var err))
         {
-            MessageBox.Show(this,
-                err + "\r\n\r\n仍可留空；填写仅为以后公网中继预留。",
-                "中继地址格式", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, err, "中继地址格式", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
-
         _settings.RelayEndpoint = string.IsNullOrEmpty(text) ? RelayEndpoint.DefaultEndpoint : text;
         _settings.PreferRelay = true;
         _settings.Save();
-        SetStatus($"已保存中继：{_settings.RelayEndpoint}（默认经中继连接）");
+        SetStatus("已保存中继设置");
     }
-
 
     private void RequestHome()
     {
@@ -621,14 +757,10 @@ internal sealed class MainForm : Form
         if (_client is not null)
         {
             var r = MessageBox.Show(this,
-                "当前已连接被控端。返回首页将断开连接。是否继续？",
-                "返回首页",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question,
-                MessageBoxDefaultButton.Button2);
+                "当前已连接。返回首页将断开连接。是否继续？",
+                "返回首页", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
             if (r != DialogResult.Yes) return;
         }
-
         _returningHome = true;
         HomeRequested?.Invoke();
     }
@@ -637,15 +769,12 @@ internal sealed class MainForm : Form
     {
         if (_enableReturnHome && !_returningHome && e.CloseReason == CloseReason.UserClosing)
         {
-            // 统一 App：关窗 = 回首页，而不是退出进程
             e.Cancel = true;
             RequestHome();
             return;
         }
-
         Disconnect();
     }
-
 
     private async Task AccountAuthAsync(bool register)
     {
@@ -673,7 +802,7 @@ internal sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "账号失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, FriendConnectGuide.FriendlyOrRaw(ex), "账号失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -699,7 +828,7 @@ internal sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "设备列表失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(this, FriendConnectGuide.FriendlyOrRaw(ex), "设备列表失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -719,12 +848,7 @@ internal sealed class MainForm : Form
             return;
         }
         var fp = _fpBox.Text?.Trim();
-        var insecure = _insecureBox.Checked;
-        if (!insecure && string.IsNullOrWhiteSpace(fp))
-        {
-            MessageBox.Show(this, "免密连接需要 TLS 指纹（可先用 code+密码连一次自动回填），或勾选明文调试", "免密连接", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
+        var insecure = _insecureBox.Checked || string.IsNullOrWhiteSpace(fp);
         _busy = true;
         try
         {
@@ -745,11 +869,11 @@ internal sealed class MainForm : Form
             var client = await AssistClient.PairAsync(opts, "helper-ui-owner").ConfigureAwait(true);
             _client = client;
             SetConnectedUi(true);
-            SetStatus($"已用你的账号连接，无需再确认配对 · 设备 {deviceId} · 权限={client.Permission}（写操作仍须对方本机确认）");
+            SetStatus("已用你的账号连接，无需再确认配对（写操作仍须对方本机确认）");
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "免密连接失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            SetFailHint(FriendConnectGuide.FriendlyOrRaw(ex));
             SetConnectedUi(false);
         }
         finally { _busy = false; }
@@ -764,4 +888,3 @@ internal sealed class MainForm : Form
             _outputBox.Text = _outputBox.Text[^100_000..];
     }
 }
-

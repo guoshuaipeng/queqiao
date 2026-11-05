@@ -29,6 +29,11 @@ public sealed class HelperUiSettings
 
     /// <summary>统一 App 主窗口上次位置/大小（本机；不写中继）。</summary>
     public WindowPlacementState? WindowPlacement { get; set; }
+    /// <summary>被协助端是否已关闭「请点允许连网」横幅。</summary>
+    public bool NetworkAllowBannerDismissed { get; set; }
+
+    /// <summary>用户是否点过「可能取消了防火墙」相关引导。</summary>
+    public bool NetworkAllowMaybeDenied { get; set; }
 
     public static string SettingsDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RemoteAssist");

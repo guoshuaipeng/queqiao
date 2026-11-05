@@ -4,41 +4,52 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using QRCoder;
 using RemoteAssist;
+using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
 /// <summary>
-/// Agent 主界面（产品化）：会话码 / 二维码 / TLS 指纹 / 配对状态 / 审计列表。
-/// 关闭窗口默认隐藏到托盘，不退出进程。
+/// 被协助端主界面（R003）：首屏会话码+密码+复制；连不上引导；高级折叠调试信息。
 /// </summary>
 internal sealed class MainForm : Form
 {
     private readonly AgentHost _host;
+    private readonly HelperUiSettings _settings;
     private readonly Label _codeLabel;
     private readonly Label _pwdLabel;
     private readonly ComboBox _hostCombo;
     private readonly Label _portValue;
     private readonly Label _tlsValue;
     private readonly Label _listenValue;
+    private readonly Label _listenRawValue;
     private readonly Label _statusLabel;
     private readonly Label _headerSubtitle;
+    private readonly Label _bannerText;
+    private readonly Panel _banner;
+    private readonly Button _btnFirewall;
+    private readonly Button _btnBannerDismiss;
     private readonly PictureBox _qrBox;
     private readonly ListView _clientsView;
     private readonly ListView _auditView;
+    private readonly Panel _advancedPanel;
+    private readonly Button _btnAdvanced;
+    private bool _advancedOpen;
     private Image? _qrImage;
     private bool _exitApp;
     private bool _suppressHostChange;
     private readonly System.Windows.Forms.Timer _auditTimer;
     private ToolTip? _tip;
     private readonly bool _enableReturnHome;
+    private readonly ContextMenuStrip _moreMenu;
+    private readonly Dictionary<Control, int> _baseTops = new();
 
-    /// <summary>统一 App 中请求返回模式选择页。</summary>
     public event Action? HomeRequested;
 
     public MainForm(AgentHost host, bool enableReturnHome = false)
     {
         _host = host;
         _enableReturnHome = enableReturnHome;
+        _settings = HelperUiSettings.Load();
 
         Text = "鹊桥";
         FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -46,7 +57,7 @@ internal sealed class MainForm : Form
         MinimizeBox = true;
         StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = true;
-        ClientSize = new Size(760, 640);
+        ClientSize = new Size(760, 620);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
@@ -57,7 +68,8 @@ internal sealed class MainForm : Form
         {
             Location = new Point(0, 0),
             Size = new Size(760, 64),
-            BackColor = Color.FromArgb(0x1A, 0x73, 0xE8)
+            BackColor = Color.FromArgb(0x1A, 0x73, 0xE8),
+            Name = "header"
         };
         header.Controls.Add(new Label
         {
@@ -76,7 +88,7 @@ internal sealed class MainForm : Form
             Size = new Size(_enableReturnHome ? 600 : 700, 22),
             ForeColor = Color.FromArgb(0xE3, 0xF0, 0xFF),
             Font = new Font(Font.FontFamily, 9F),
-            Text = "被协助端 · 默认公网中继（code+密码）· 危险操作需本机确认",
+            Text = "接受协助 · 把会话码和验证密码发给对方",
             BackColor = Color.Transparent
         };
         header.Controls.Add(_headerSubtitle);
@@ -99,65 +111,72 @@ internal sealed class MainForm : Form
             btnHome.BringToFront();
         }
 
+        _banner = new Panel
+        {
+            Location = new Point(0, 64),
+            Size = new Size(760, 72),
+            BackColor = Color.FromArgb(0xFE, 0xF7, 0xE0),
+            Visible = false,
+            Name = "banner"
+        };
+        _bannerText = new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 8),
+            Size = new Size(540, 56),
+            ForeColor = Color.FromArgb(0x5F, 0x3A, 0x00),
+            Text = FriendConnectGuide.MomentAAllow
+        };
+        _btnFirewall = new Button
+        {
+            Text = FriendConnectGuide.OpenFirewallButtonText,
+            Location = new Point(564, 10),
+            Size = new Size(160, 28),
+            Visible = false
+        };
+        _btnFirewall.Click += (_, _) => FriendConnectGuide.OpenWindowsFirewallSettings();
+        _btnBannerDismiss = new Button
+        {
+            Text = "知道了",
+            Location = new Point(564, 42),
+            Size = new Size(72, 24)
+        };
+        _btnBannerDismiss.Click += (_, _) => DismissBanner();
+        var btnMaybeDenied = new Button
+        {
+            Text = "我点了取消",
+            Location = new Point(644, 42),
+            Size = new Size(88, 24)
+        };
+        btnMaybeDenied.Click += (_, _) => ShowDeniedBanner();
+        _banner.Controls.Add(_bannerText);
+        _banner.Controls.Add(_btnFirewall);
+        _banner.Controls.Add(_btnBannerDismiss);
+        _banner.Controls.Add(btnMaybeDenied);
 
-        var sessionCard = MakeCard(16, 80, 360, 420);
+        const int y0 = 80;
+
+        var sessionCard = MakeCard(16, y0, 360, 360);
         sessionCard.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(16, 12),
             Size = new Size(328, 22),
-            Text = "把「会话码 + 验证密码」告诉协助方，或让对方扫二维码（经中继）",
+            Text = "把会话码和验证密码发给协助方",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
         sessionCard.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(16, 42),
-            Size = new Size(60, 26),
-            TextAlign = ContentAlignment.MiddleLeft,
-            Text = "本机 IP"
-        });
-
-        _hostCombo = new ComboBox
-        {
-            DropDownStyle = ComboBoxStyle.DropDownList,
-            Location = new Point(76, 42),
-            Size = new Size(200, 26)
-        };
-        foreach (var ip in _host.LanIps)
-            _hostCombo.Items.Add(ip);
-        if (!_hostCombo.Items.Contains("127.0.0.1"))
-            _hostCombo.Items.Add("127.0.0.1");
-        var selected = _host.SelectedHost;
-        var idx = _hostCombo.Items.IndexOf(selected);
-        _hostCombo.SelectedIndex = idx >= 0 ? idx : 0;
-        _hostCombo.SelectedIndexChanged += OnHostSelected;
-        sessionCard.Controls.Add(_hostCombo);
-
-        _portValue = new Label
-        {
-            AutoSize = false,
-            Location = new Point(284, 42),
-            Size = new Size(60, 26),
-            TextAlign = ContentAlignment.MiddleLeft,
-            Font = new Font("Consolas", 10F, FontStyle.Bold),
-            Text = $":{_host.Port}"
-        };
-        sessionCard.Controls.Add(_portValue);
-
-        sessionCard.Controls.Add(new Label
-        {
-            AutoSize = false,
-            Location = new Point(16, 78),
             Size = new Size(328, 20),
             Text = "会话码",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
-
         _codeLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 100),
+            Location = new Point(16, 64),
             Size = new Size(328, 52),
             Font = new Font("Consolas", 32F, FontStyle.Bold),
             TextAlign = ContentAlignment.MiddleCenter,
@@ -166,11 +185,10 @@ internal sealed class MainForm : Form
             Text = ""
         };
         sessionCard.Controls.Add(_codeLabel);
-
         sessionCard.Controls.Add(new Label
         {
             AutoSize = false,
-            Location = new Point(16, 148),
+            Location = new Point(16, 124),
             Size = new Size(70, 22),
             TextAlign = ContentAlignment.MiddleLeft,
             Text = "验证密码",
@@ -179,7 +197,7 @@ internal sealed class MainForm : Form
         _pwdLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(90, 144),
+            Location = new Point(90, 120),
             Size = new Size(250, 30),
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Consolas", 16F, FontStyle.Bold),
@@ -188,37 +206,47 @@ internal sealed class MainForm : Form
         };
         sessionCard.Controls.Add(_pwdLabel);
 
+        var btnCopyCodePwd = MakeButton("复制码+密码", 16, 160, 200);
+        btnCopyCodePwd.Font = new Font(Font.FontFamily, 10F, FontStyle.Bold);
+        btnCopyCodePwd.Height = 36;
+        btnCopyCodePwd.Click += (_, _) =>
+        {
+            try
+            {
+                Clipboard.SetText(FriendConnectGuide.FormatShareClipboard(_host.SessionCode, _host.SessionPassword));
+                SetStatus("已复制会话码和验证密码。");
+            }
+            catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
+        };
+        sessionCard.Controls.Add(btnCopyCodePwd);
+
+        var btnMore = MakeButton("更多", 228, 164, 100);
+        _moreMenu = new ContextMenuStrip();
+        _moreMenu.Items.Add("复制载荷", null, (_, _) => CopyPayload());
+        _moreMenu.Items.Add("复制 MCP 配置", null, (_, _) =>
+        {
+            var outcome = McpConfigCopyHelper.Copy(_host.QrPayload, this);
+            SetStatus(outcome.Message);
+        });
+        _moreMenu.Items.Add("复制会话码", null, (_, _) =>
+        {
+            try { Clipboard.SetText(_host.SessionCode); SetStatus("已复制会话码。"); }
+            catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
+        });
+        btnMore.Click += (_, _) => _moreMenu.Show(btnMore, new Point(0, btnMore.Height));
+        sessionCard.Controls.Add(btnMore);
+
         _qrBox = new PictureBox
         {
-            Location = new Point(70, 184),
-            Size = new Size(200, 200),
+            Location = new Point(80, 212),
+            Size = new Size(180, 130),
             SizeMode = PictureBoxSizeMode.Zoom,
             BorderStyle = BorderStyle.FixedSingle,
             BackColor = Color.White
         };
         sessionCard.Controls.Add(_qrBox);
 
-        sessionCard.Controls.Add(new Label
-        {
-            AutoSize = false,
-            Location = new Point(16, 396),
-            Size = new Size(70, 22),
-            TextAlign = ContentAlignment.MiddleLeft,
-            Text = "TLS 指纹"
-        });
-        _tlsValue = new Label
-        {
-            AutoSize = false,
-            Location = new Point(86, 396),
-            Size = new Size(258, 22),
-            TextAlign = ContentAlignment.MiddleLeft,
-            Font = new Font("Consolas", 8.5F),
-            ForeColor = Color.FromArgb(0x3C, 0x40, 0x43),
-            Text = ""
-        };
-        sessionCard.Controls.Add(_tlsValue);
-
-        var statusCard = MakeCard(392, 80, 352, 200);
+        var statusCard = MakeCard(392, y0, 352, 200);
         statusCard.Controls.Add(new Label
         {
             AutoSize = false,
@@ -231,23 +259,22 @@ internal sealed class MainForm : Form
         {
             AutoSize = false,
             Location = new Point(16, 40),
-            Size = new Size(320, 22),
-            Text = ""
+            Size = new Size(320, 44),
+            Text = FriendConnectGuide.StatusReadyToShare
         };
         statusCard.Controls.Add(_listenValue);
         statusCard.Controls.Add(new Label
         {
             AutoSize = false,
-            Location = new Point(16, 68),
+            Location = new Point(16, 88),
             Size = new Size(320, 20),
-            Text = "已配对客户端",
+            Text = "已连接的协助方",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
-
         _clientsView = new ListView
         {
-            Location = new Point(16, 90),
-            Size = new Size(320, 72),
+            Location = new Point(16, 110),
+            Size = new Size(320, 48),
             View = View.Details,
             FullRowSelect = true,
             HeaderStyle = ColumnHeaderStyle.None,
@@ -256,126 +283,135 @@ internal sealed class MainForm : Form
         };
         _clientsView.Columns.Add("client", 300);
         statusCard.Controls.Add(_clientsView);
-
-        var btnRefresh = MakeButton("刷新会话码", 16, 168, 100);
+        var btnRefresh = MakeButton("刷新会话码", 16, 164, 100);
         btnRefresh.Click += (_, _) =>
         {
             _host.RefreshSessionCode();
             SetStatus("已刷新会话码（旧配对已全部断开）。");
             RefreshClients();
         };
-        var btnDisconnect = MakeButton("断开全部", 124, 168, 90);
+        var btnDisconnect = MakeButton("断开全部", 124, 164, 90);
         btnDisconnect.Click += (_, _) =>
         {
             var n = _host.DisconnectAllSessions();
-            SetStatus(n == 0 ? "当前没有已配对客户端。" : $"已断开 {n} 个会话。");
+            SetStatus(n == 0 ? "当前没有已连接的协助方。" : $"已断开 {n} 个会话。");
             RefreshClients();
         };
-        var btnKick = MakeButton("断开选中", 222, 168, 90);
+        var btnKick = MakeButton("断开选中", 222, 164, 90);
         btnKick.Click += (_, _) => DisconnectSelected();
         statusCard.Controls.Add(btnRefresh);
         statusCard.Controls.Add(btnDisconnect);
         statusCard.Controls.Add(btnKick);
 
-        var actionCard = MakeCard(392, 296, 352, 132);
-        actionCard.Controls.Add(new Label
-        {
-            AutoSize = false,
-            Location = new Point(16, 12),
-            Size = new Size(320, 22),
-            Font = new Font(Font.FontFamily, 10.5F, FontStyle.Bold),
-            Text = "分享给协助方"
-        });
-        var btnCopyCodePwd = MakeButton("复制码+密码", 16, 40, 160);
-        btnCopyCodePwd.Font = new Font(Font.FontFamily, 9.5F, FontStyle.Bold);
-        btnCopyCodePwd.Click += (_, _) =>
-        {
-            try
-            {
-                Clipboard.SetText($"会话码：{_host.SessionCode}{Environment.NewLine}验证密码：{_host.SessionPassword}");
-                SetStatus("已复制会话码和验证密码。");
-            }
-            catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
-        };
-        var btnCopyPayload = MakeButton("复制载荷", 16, 78, 100);
-        btnCopyPayload.Click += (_, _) =>
-        {
-            try
-            {
-                Clipboard.SetText(_host.QrPayload);
-                SetStatus("已复制会话载荷（含 IP / 端口 / 会话码 / TLS 指纹）。");
-            }
-            catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
-        };
-        var btnCopyMcp = MakeButton("复制 MCP 配置", 124, 78, 120);
-        btnCopyMcp.Click += (_, _) =>
-        {
-            var outcome = McpConfigCopyHelper.Copy(_host.QrPayload, this);
-            SetStatus(outcome.Message);
-        };
-        var btnCopyCode = MakeButton("复制会话码", 252, 78, 84);
-        btnCopyCode.Click += (_, _) =>
-        {
-            try
-            {
-                Clipboard.SetText(_host.SessionCode);
-                SetStatus("已复制会话码。");
-            }
-            catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
-        };
-        actionCard.Controls.Add(btnCopyCodePwd);
-        actionCard.Controls.Add(btnCopyPayload);
-        actionCard.Controls.Add(btnCopyMcp);
-        actionCard.Controls.Add(btnCopyCode);
-
-        // 右侧说明
-        var tipCard = MakeCard(392, 444, 352, 72);
+        var tipCard = MakeCard(392, y0 + 216, 352, 88);
         tipCard.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(16, 12),
             Size = new Size(320, 64),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "亲友使用：点「复制码+密码」发给协助方（或扫二维码）。\n协助方连上后本机弹出确认，你点允许才执行。\n关闭窗口不退出，程序继续在托盘运行。"
+            Text = "点「复制码+密码」发给对方。对方连上后本机弹出确认，你点允许才开始协助。关闭窗口不退出，程序继续在托盘运行。"
         });
 
-        var auditFull = MakeCard(16, 530, 728, 78);
-        auditFull.Controls.Add(new Label
+        _btnAdvanced = MakeButton("高级 ▸", 16, y0 + 376, 100);
+        _btnAdvanced.Click += (_, _) => ToggleAdvanced();
+
+        _advancedPanel = MakeCard(16, y0 + 412, 728, 150);
+        _advancedPanel.Visible = false;
+        _advancedPanel.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(12, 8),
             Size = new Size(200, 20),
             Font = new Font(Font.FontFamily, 9.5F, FontStyle.Bold),
+            Text = "高级（调试）"
+        });
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 36),
+            Size = new Size(60, 26),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Text = "本机 IP"
+        });
+        _hostCombo = new ComboBox
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Location = new Point(76, 36),
+            Size = new Size(180, 26)
+        };
+        foreach (var ip in _host.LanIps)
+            _hostCombo.Items.Add(ip);
+        if (!_hostCombo.Items.Contains("127.0.0.1"))
+            _hostCombo.Items.Add("127.0.0.1");
+        var selected = _host.SelectedHost;
+        var ix = _hostCombo.Items.IndexOf(selected);
+        _hostCombo.SelectedIndex = ix >= 0 ? ix : 0;
+        _hostCombo.SelectedIndexChanged += OnHostSelected;
+        _advancedPanel.Controls.Add(_hostCombo);
+        _portValue = new Label
+        {
+            AutoSize = false,
+            Location = new Point(270, 36),
+            Size = new Size(80, 26),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Font = new Font("Consolas", 10F, FontStyle.Bold),
+            Text = $":{_host.Port}"
+        };
+        _advancedPanel.Controls.Add(_portValue);
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(360, 36),
+            Size = new Size(70, 26),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Text = "TLS 指纹"
+        });
+        _tlsValue = new Label
+        {
+            AutoSize = false,
+            Location = new Point(430, 36),
+            Size = new Size(280, 26),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Font = new Font("Consolas", 8.5F),
+            ForeColor = Color.FromArgb(0x3C, 0x40, 0x43),
+            Text = ""
+        };
+        _advancedPanel.Controls.Add(_tlsValue);
+        _listenRawValue = new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 68),
+            Size = new Size(700, 20),
+            Font = new Font("Consolas", 8F),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = ""
+        };
+        _advancedPanel.Controls.Add(_listenRawValue);
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 92),
+            Size = new Size(120, 20),
             Text = "最近审计"
         });
-        var openAudit = new LinkLabel
-        {
-            AutoSize = true,
-            Location = new Point(620, 8),
-            Text = "打开日志文件"
-        };
+        var openAudit = new LinkLabel { AutoSize = true, Location = new Point(620, 92), Text = "打开日志文件" };
         openAudit.LinkClicked += (_, _) =>
         {
             try
             {
-                var path = _host.AuditPath;
-                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                if (!File.Exists(path))
-                    File.WriteAllText(path, "");
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = path,
-                    UseShellExecute = true
-                });
+                var ap = _host.AuditPath;
+                Directory.CreateDirectory(Path.GetDirectoryName(ap)!);
+                if (!File.Exists(ap)) File.WriteAllText(ap, "");
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = ap, UseShellExecute = true });
             }
             catch (Exception ex) { SetStatus("无法打开审计日志：" + ex.Message); }
         };
-        auditFull.Controls.Add(openAudit);
-
+        _advancedPanel.Controls.Add(openAudit);
         _auditView = new ListView
         {
-            Location = new Point(12, 30),
-            Size = new Size(704, 50),
+            Location = new Point(12, 112),
+            Size = new Size(704, 30),
             View = View.Details,
             FullRowSelect = true,
             HeaderStyle = ColumnHeaderStyle.None,
@@ -384,12 +420,12 @@ internal sealed class MainForm : Form
             BackColor = Color.White
         };
         _auditView.Columns.Add("line", 680);
-        auditFull.Controls.Add(_auditView);
+        _advancedPanel.Controls.Add(_auditView);
 
         _statusLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 612),
+            Location = new Point(16, 592),
             Size = new Size(728, 22),
             ForeColor = Color.FromArgb(0x1A, 0x73, 0xE8),
             Font = new Font(Font.FontFamily, 8.5F),
@@ -397,55 +433,107 @@ internal sealed class MainForm : Form
         };
 
         Controls.Add(header);
+        Controls.Add(_banner);
         Controls.Add(sessionCard);
         Controls.Add(statusCard);
-        Controls.Add(actionCard);
         Controls.Add(tipCard);
-        Controls.Add(auditFull);
+        Controls.Add(_btnAdvanced);
+        Controls.Add(_advancedPanel);
         Controls.Add(_statusLabel);
+
+        foreach (Control c in Controls)
+        {
+            if (c.Name is "header" or "banner") continue;
+            _baseTops[c] = c.Top;
+        }
 
         FormClosing += OnFormClosing;
         _host.SessionChanged += OnSessionChanged;
         _host.PairedClientsChanged += OnPairedClientsChanged;
+        _host.RelayStatusChanged += OnRelayStatusChanged;
         _host.Audit.EntryWritten += OnAuditWritten;
 
         _auditTimer = new System.Windows.Forms.Timer { Interval = 2500 };
         _auditTimer.Tick += (_, _) => RefreshAudit();
         _auditTimer.Start();
 
+        Shown += (_, _) => MaybeShowBanner();
+
         RefreshFromHost();
         RefreshClients();
         RefreshAudit();
+        UpdateFriendStatus();
+    }
+
+    private void MaybeShowBanner()
+    {
+        if (_settings.NetworkAllowBannerDismissed) return;
+        if (_settings.NetworkAllowMaybeDenied) ShowDeniedBanner();
+        else
+        {
+            _bannerText.Text = FriendConnectGuide.MomentAAllow;
+            _btnFirewall.Visible = false;
+            _banner.Visible = true;
+            RelayoutForBanner();
+        }
+    }
+
+    private void ShowDeniedBanner()
+    {
+        _settings.NetworkAllowMaybeDenied = true;
+        _settings.Save();
+        _bannerText.Text = FriendConnectGuide.MomentADenied + Environment.NewLine + FriendConnectGuide.MomentAFirewallHint;
+        _btnFirewall.Visible = true;
+        _banner.Visible = true;
+        RelayoutForBanner();
+    }
+
+    private void DismissBanner()
+    {
+        _settings.NetworkAllowBannerDismissed = true;
+        _settings.Save();
+        _banner.Visible = false;
+        RelayoutForBanner();
+    }
+
+    private void RelayoutForBanner()
+    {
+        var shift = _banner.Visible ? _banner.Height : 0;
+        foreach (var kv in _baseTops)
+            kv.Key.Top = kv.Value + shift;
+        ClientSize = new Size(760, 620 + shift);
+    }
+
+    private void ToggleAdvanced()
+    {
+        _advancedOpen = !_advancedOpen;
+        _advancedPanel.Visible = _advancedOpen;
+        _btnAdvanced.Text = _advancedOpen ? "高级 ▾" : "高级 ▸";
+    }
+
+    private void CopyPayload()
+    {
+        try { Clipboard.SetText(_host.QrPayload); SetStatus("已复制会话载荷。"); }
+        catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
     }
 
     private static Panel MakeCard(int x, int y, int w, int h) => new()
     {
-        Location = new Point(x, y),
-        Size = new Size(w, h),
-        BackColor = Color.White,
-        BorderStyle = BorderStyle.FixedSingle
+        Location = new Point(x, y), Size = new Size(w, h), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle
     };
 
     private static Button MakeButton(string text, int x, int y, int w) => new()
     {
-        Text = text,
-        Location = new Point(x, y),
-        Size = new Size(w, 28),
-        FlatStyle = FlatStyle.System
+        Text = text, Location = new Point(x, y), Size = new Size(w, 28), FlatStyle = FlatStyle.System
     };
 
-    public void RequestExit()
-    {
-        _exitApp = true;
-        Close();
-    }
+    public void RequestExit() { _exitApp = true; Close(); }
 
     public void ShowAndActivate()
     {
         UiWindowPlacement.MainWindow = this;
         Show();
-        if (WindowState == FormWindowState.Minimized)
-            WindowState = FormWindowState.Normal;
+        if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
         Activate();
         BringToFront();
     }
@@ -454,20 +542,19 @@ internal sealed class MainForm : Form
     {
         if (_clientsView.SelectedItems.Count == 0 || _clientsView.SelectedItems[0].Tag is not string token)
         {
-            SetStatus("请先在列表中选中一个客户端。");
+            SetStatus("请先在列表中选中一个协助方。");
             return;
         }
         if (_host.DisconnectSession(token))
         {
-            SetStatus("已断开选中客户端。");
+            SetStatus("已断开选中协助方。");
             RefreshClients();
         }
     }
 
     private void OnFormClosing(object? sender, FormClosingEventArgs e)
     {
-        if (_exitApp || e.CloseReason != CloseReason.UserClosing)
-            return;
+        if (_exitApp || e.CloseReason != CloseReason.UserClosing) return;
         e.Cancel = true;
         Hide();
         SetStatus("已隐藏到托盘。双击托盘图标可重新打开。");
@@ -476,8 +563,7 @@ internal sealed class MainForm : Form
     private void OnHostSelected(object? sender, EventArgs e)
     {
         if (_suppressHostChange) return;
-        if (_hostCombo.SelectedItem is string ip)
-            _host.SetSelectedHost(ip);
+        if (_hostCombo.SelectedItem is string ip) _host.SetSelectedHost(ip);
     }
 
     private void OnSessionChanged()
@@ -485,6 +571,14 @@ internal sealed class MainForm : Form
         if (IsDisposed) return;
         if (InvokeRequired) { BeginInvoke(RefreshFromHost); return; }
         RefreshFromHost();
+        UpdateFriendStatus();
+    }
+
+    private void OnRelayStatusChanged()
+    {
+        if (IsDisposed) return;
+        if (InvokeRequired) { BeginInvoke(OnRelayStatusChanged); return; }
+        UpdateFriendStatus();
     }
 
     private void OnPairedClientsChanged()
@@ -492,6 +586,7 @@ internal sealed class MainForm : Form
         if (IsDisposed) return;
         if (InvokeRequired) { BeginInvoke(RefreshClients); return; }
         RefreshClients();
+        UpdateFriendStatus();
     }
 
     private void OnAuditWritten()
@@ -516,14 +611,13 @@ internal sealed class MainForm : Form
                 _hostCombo.Items.Add(want);
                 idx = _hostCombo.Items.Count - 1;
             }
-            if (idx >= 0)
-                _hostCombo.SelectedIndex = idx;
+            if (idx >= 0) _hostCombo.SelectedIndex = idx;
         }
         finally { _suppressHostChange = false; }
 
         _portValue.Text = $":{_host.Port}";
         _codeLabel.Text = _host.SessionCode;
-        if (_pwdLabel is not null) _pwdLabel.Text = _host.SessionPassword;
+        _pwdLabel.Text = _host.SessionPassword;
         var payload = _host.QrPayload;
 
         if (_host.UseTls && _host.CertificateFingerprint is { } fp)
@@ -535,12 +629,11 @@ internal sealed class MainForm : Form
         }
         else
         {
-            _tlsValue.Text = "明文模式（--insecure）";
+            _tlsValue.Text = "明文模式（仅调试）";
             _tlsValue.ForeColor = Color.DarkOrange;
         }
 
-        UpdateListenLabel();
-
+        UpdateFriendStatus();
         try
         {
             using var generator = new QRCodeGenerator();
@@ -560,12 +653,34 @@ internal sealed class MainForm : Form
 
     private ToolTip Tip() => _tip ??= new ToolTip { ShowAlways = true };
 
-    private void UpdateListenLabel()
+    private void UpdateFriendStatus()
     {
-        if (_host.PreferRelay)
-            _listenValue.Text = $"中继 {_host.RelayEndpointAddress} · 码 {_host.SessionCode} · 密码已出示 · 本机 :{_host.Port}";
+        var phase = _host.RelayPhase;
+        var clients = _host.ListPairedClients().Count;
+        if (clients > 0 || phase == "paired")
+            _listenValue.Text = "对方已连接";
+        else if (phase == "waiting")
+            _listenValue.Text = FriendConnectGuide.StatusWaitingPeer;
+        else if (phase is "ready")
+            _listenValue.Text = FriendConnectGuide.StatusReadyToShare;
+        else if (phase == "error")
+        {
+            var friendly = FriendConnectGuide.Classify(_host.LastRelayError);
+            _listenValue.Text = friendly is FriendConnectFailKind.None or FriendConnectFailKind.Other
+                ? FriendConnectGuide.FailRelayUnreachable
+                : FriendConnectGuide.MessageFor(friendly);
+        }
+        else if (phase is "dialing" or "starting")
+            _listenValue.Text = "正在连网…";
         else
-            _listenValue.Text = $"局域网监听 :{_host.Port} · 主机 {_host.SelectedHost}";
+            _listenValue.Text = FriendConnectGuide.StatusReadyToShare;
+
+        _listenRawValue.Text = _host.PreferRelay
+            ? $"phase={phase}; code={_host.SessionCode}"
+            : $"lan port={_host.Port} host={_host.SelectedHost}";
+
+        if (FriendConnectGuide.LooksTechnicalLeak(_listenValue.Text))
+            _listenValue.Text = FriendConnectGuide.StatusReadyToShare;
     }
 
     private void RefreshClients()
@@ -578,16 +693,13 @@ internal sealed class MainForm : Form
             {
                 var shortTok = c.Token.Length >= 8 ? c.Token[..8] : c.Token;
                 var ownerTag = c.OwnerLink ? "账号免密 · " : "";
-                _clientsView.Items.Add(new ListViewItem($"{ownerTag}{c.ClientName} · {c.Permission} · {c.RemoteEndpoint} · {shortTok}…")
-                {
-                    Tag = c.Token
-                });
+                _clientsView.Items.Add(new ListViewItem($"{ownerTag}{c.ClientName} · {shortTok}…") { Tag = c.Token });
             }
             if (_clientsView.Items.Count == 0)
                 _clientsView.Items.Add(new ListViewItem("（暂无）") { ForeColor = Color.Gray });
         }
         finally { _clientsView.EndUpdate(); }
-        UpdateListenLabel();
+        UpdateFriendStatus();
     }
 
     private void RefreshAudit()
@@ -600,13 +712,16 @@ internal sealed class MainForm : Form
             {
                 _auditView.Items.Clear();
                 foreach (var e in entries.Reverse())
-                    _auditView.Items.Add(new ListViewItem(e.DisplaySummary));
+                {
+                    var line = FriendConnectGuide.LooksTechnicalLeak(e.DisplaySummary) ? e.EventType : e.DisplaySummary;
+                    _auditView.Items.Add(new ListViewItem(line));
+                }
                 if (_auditView.Items.Count == 0)
                     _auditView.Items.Add(new ListViewItem("（暂无审计记录）") { ForeColor = Color.Gray });
             }
             finally { _auditView.EndUpdate(); }
         }
-        catch { /* ignore */ }
+        catch { }
     }
 
     private void SetStatus(string text) => _statusLabel.Text = text;
@@ -617,11 +732,13 @@ internal sealed class MainForm : Form
         {
             _host.SessionChanged -= OnSessionChanged;
             _host.PairedClientsChanged -= OnPairedClientsChanged;
+            _host.RelayStatusChanged -= OnRelayStatusChanged;
             _host.Audit.EntryWritten -= OnAuditWritten;
             _auditTimer.Stop();
             _auditTimer.Dispose();
             _qrImage?.Dispose();
             _tip?.Dispose();
+            _moreMenu.Dispose();
         }
         base.Dispose(disposing);
     }
@@ -674,25 +791,13 @@ internal static class NativeConsole
 
     public static void EnsureForCli()
     {
-        if (!AttachConsole(AttachParentProcess))
-            AllocConsole();
-        try
-        {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-            Console.InputEncoding = System.Text.Encoding.UTF8;
-        }
-        catch { /* ignore */ }
+        if (!AttachConsole(AttachParentProcess)) AllocConsole();
+        try { Console.OutputEncoding = System.Text.Encoding.UTF8; Console.InputEncoding = System.Text.Encoding.UTF8; } catch { }
     }
 
-    /// <summary>仅挂接父终端（安装后双击启动时失败则保持无控制台黑窗）。</summary>
     public static void TryAttachParent()
     {
         AttachConsole(AttachParentProcess);
-        try
-        {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-            Console.InputEncoding = System.Text.Encoding.UTF8;
-        }
-        catch { /* ignore */ }
+        try { Console.OutputEncoding = System.Text.Encoding.UTF8; Console.InputEncoding = System.Text.Encoding.UTF8; } catch { }
     }
 }

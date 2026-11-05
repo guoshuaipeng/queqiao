@@ -45,6 +45,15 @@ internal sealed class AgentHost
 
     public event Action? SessionChanged;
     public event Action? PairedClientsChanged;
+    /// <summary>中继访客通道状态变化（供 UI 亲友向文案）。</summary>
+    public event Action? RelayStatusChanged;
+
+    private volatile string _relayPhase = "starting";
+    private volatile string? _lastRelayError;
+
+    /// <summary>starting / dialing / ready / waiting / paired / error</summary>
+    public string RelayPhase => _relayPhase;
+    public string? LastRelayError => _lastRelayError;
 
     public AgentHost(
         int port,
@@ -327,6 +336,13 @@ internal sealed class AgentHost
     }
 
 
+    private void SetRelayPhase(string phase, string? error)
+    {
+        _relayPhase = phase;
+        _lastRelayError = error;
+        try { RelayStatusChanged?.Invoke(); } catch { /* UI */ }
+    }
+
     private async Task RelayGuestLoopAsync(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
@@ -344,6 +360,7 @@ internal sealed class AgentHost
             RelayClient? relay = null;
             try
             {
+                SetRelayPhase("dialing", null);
                 _audit.Write("relay_guest_dial", $"ep={host}:{port}");
                 // JSONL: guest_host 由服务端签发 code；配对完成后再跑业务 TLS
                 var (client, code) = await RelayClient.GuestHostAsync(
@@ -351,6 +368,7 @@ internal sealed class AgentHost
                         onCodeAssigned: c =>
                         {
                             lock (_codeLock) _sessionCode = c;
+                            SetRelayPhase("ready", null);
                             SessionChanged?.Invoke();
                             _audit.Write("relay_guest_code", $"code={c}");
                         },
@@ -358,8 +376,10 @@ internal sealed class AgentHost
                     .ConfigureAwait(false);
                 relay = client;
                 lock (_codeLock) _sessionCode = code;
+                SetRelayPhase("waiting", null);
                 SessionChanged?.Invoke();
                 _audit.Write("relay_guest_paired", $"code={code}");
+                SetRelayPhase("paired", null);
                 await HandleStreamAsync(relay, relay.Stream, $"relay-guest/{host}:{port}", ownerLink: false, ct)
                     .ConfigureAwait(false);
             }
@@ -369,6 +389,7 @@ internal sealed class AgentHost
             }
             catch (Exception ex)
             {
+                SetRelayPhase("error", ex.Message);
                 _audit.Write("relay_guest_error", ex.Message);
                 try { await Task.Delay(2000, ct).ConfigureAwait(false); } catch { break; }
             }
