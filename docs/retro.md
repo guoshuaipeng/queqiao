@@ -165,3 +165,13 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - 默认 FD 小包 linux-x64 18.88 MB / osx-x64 26.37 MB / osx-arm64 26.38 MB；「争取个位数 MB」未达到（Skia），不阻断。osx **已出包、未上真机**。
 
 已开 R011（Avalonia 双模式 / 去协助；不迁 Windows、不改中继/官网、不拆 P2-7；个位数 MB 不作硬指标）。
+
+## R011 产品验收（2026-11-05 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r011-*` 验收通过（`678c011`）：
+
+- Linux Avalonia 首页双模式卡片齐；接受协助保留 R010 被控文案并「返回首页」；去协助别人一次粘贴、连上后白话只读、写拒绝「已拒绝，未做任何改动」。
+- 连不上引导对齐 R003 语义，未写端口、未套「点允许连网」。
+- FD 小包与 Linux `.tar.gz` 已记录；osx **已出包、未上真机**。
+
+已开 R012（Avalonia 被控端信任等级 + Windows P2-7；不改中继/官网/AI-SSH-Pro）。
