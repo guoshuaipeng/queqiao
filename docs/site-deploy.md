@@ -21,6 +21,7 @@
 | 监听 | `SITE_ADDR=:80`（全网卡；MVP 用 `http://121.196.45.81`） |
 | 绑 80 | systemd `AmbientCapabilities=CAP_NET_BIND_SERVICE`，进程不以 root 跑业务 |
 | 数据 | `SITE_DATA=/var/lib/remote-assist-site/site.db`（目录 `chmod 750`，属主 `rasite`） |
+| 安装包 | `SITE_DOWNLOADS=/var/lib/remote-assist-site/downloads`（把 Windows `.exe` 与 Linux `.tar.gz` 拷到此目录；不进 git、不 `go:embed`） |
 | 环境文件 | `/etc/remote-assist-site.env`（`chmod 600`，不进 git） |
 | 内存上限 | `MemoryMax=64M`（必要时可调到 128M）；`CPUQuota=30%` |
 | 重启 | `Restart=on-failure`；**不要** `BindsTo=` / `PartOf=` 中继单元 |
@@ -47,6 +48,7 @@ Group=rasite
 EnvironmentFile=/etc/remote-assist-site.env
 Environment=SITE_ADDR=:80
 Environment=SITE_DATA=/var/lib/remote-assist-site/site.db
+Environment=SITE_DOWNLOADS=/var/lib/remote-assist-site/downloads
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
@@ -65,9 +67,10 @@ WantedBy=multi-user.target
 
 ```bash
 useradd --system --home /var/lib/remote-assist-site --shell /sbin/nologin rasite
-mkdir -p /var/lib/remote-assist-site
+mkdir -p /var/lib/remote-assist-site /var/lib/remote-assist-site/downloads
 chown -R rasite:rasite /var/lib/remote-assist-site
-chmod 750 /var/lib/remote-assist-site
+chmod 750 /var/lib/remote-assist-site /var/lib/remote-assist-site/downloads
+# 将 Windows 安装包与 Linux .tar.gz 拷入 downloads/（公开文件名见首页链接），不要把运营口令放进该目录
 ```
 
 ## 运营口令
@@ -81,6 +84,8 @@ chmod 750 /var/lib/remote-assist-site
 
 ```
 SITE_ADDR=:80
+SITE_DATA=/var/lib/remote-assist-site/site.db
+SITE_DOWNLOADS=/var/lib/remote-assist-site/downloads
 SITE_ADMIN_PASSWORD=
 ```
 

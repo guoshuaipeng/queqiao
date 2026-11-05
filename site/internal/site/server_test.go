@@ -26,13 +26,19 @@ func testStatic() fstest.MapFS {
 
 func newTestServer(t *testing.T) *Server {
 	t.Helper()
+	return newTestServerWithDownloads(t, "")
+}
+
+func newTestServerWithDownloads(t *testing.T, downloadsDir string) *Server {
+	t.Helper()
 	dir := t.TempDir()
 	db := filepath.Join(dir, "site.db")
 	srv, err := NewServer(Config{
-		Addr:     ":8088",
-		DataPath: db,
-		Password: "dev",
-		Static:   testStatic(),
+		Addr:         ":8088",
+		DataPath:     db,
+		Password:     "dev",
+		DownloadsDir: downloadsDir,
+		Static:       testStatic(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -242,3 +248,72 @@ func TestResolveAdminPassword(t *testing.T) {
 	}
 	_ = os.DevNull
 }
+
+func TestDownloadsServeAndReject(t *testing.T) {
+	dl := t.TempDir()
+	payload := []byte("hello-queqiao-download")
+	name := "probe.txt"
+	if err := os.WriteFile(filepath.Join(dl, name), payload, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	srv := newTestServerWithDownloads(t, dl)
+
+	req := httptest.NewRequest(http.MethodGet, "/downloads/"+name, nil)
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("serve code=%d body=%s", rr.Code, rr.Body.String())
+	}
+	if got := rr.Body.Bytes(); string(got) != string(payload) {
+		t.Fatalf("body=%q", got)
+	}
+	if cd := rr.Header().Get("Content-Disposition"); !strings.Contains(cd, name) {
+		t.Fatalf("Content-Disposition=%q", cd)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/downloads/missing-file.bin", nil)
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("missing code=%d", rr.Code)
+	}
+
+	// ServeMux may redirect bare ".." before our handler; never allow OK.
+	for _, bad := range []string{
+		"/downloads/..",
+		"/downloads/%2e%2e",
+		"/downloads/" + url.PathEscape(".."),
+	} {
+		req = httptest.NewRequest(http.MethodGet, bad, nil)
+		rr = httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rr, req)
+		if rr.Code == http.StatusOK {
+			t.Fatalf("traversal must not serve file: %s code=%d body=%q", bad, rr.Code, rr.Body.String())
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/downloads/x", nil)
+	rr = httptest.NewRecorder()
+	req.SetPathValue("name", "..")
+	srv.handleDownload(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("direct .. name code=%d", rr.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/downloads/x", nil)
+	rr = httptest.NewRecorder()
+	req.SetPathValue("name", ".." + string(os.PathSeparator) + name)
+	srv.handleDownload(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("separator traversal code=%d", rr.Code)
+	}
+
+	empty := newTestServerWithDownloads(t, "")
+	req = httptest.NewRequest(http.MethodGet, "/downloads/"+name, nil)
+	rr = httptest.NewRecorder()
+	empty.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("empty downloads dir should 404, code=%d", rr.Code)
+	}
+}
+

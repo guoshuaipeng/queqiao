@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-服务端（`site/` 与上机；不改 Windows / Avalonia 客户端功能，不改中继 JSONL 行为）
-> 状态：**wip**
+> 状态：**done（待产品验收）**
 > 依据：R018 产品已验收（`b8c215c`）；PRODUCT.md 协助闭环第 1 步「把安装包下载地址发给远端用户」；`docs/site.md` 首页下载入口；Linux 包已随 R009–R018 出炉，官网仍写「即将提供」。
 
 R018 已补上接受协助端可选 MCP 说明。亲友主路径还卡在官网下不到包。本轮让 Windows 与 Linux 能从官网真正下载；macOS 未上真机、未验收，继续标「即将提供」，不假装已可下。
@@ -53,3 +53,26 @@ R018 已补上接受协助端可选 MCP 说明。亲友主路径还卡在官网�
 
 - 更新本文交付说明与截图 / 公网记录
 - 回告产品验收；未开下一轮
+
+## 交付（2026-11-05 23:09 Asia/Shanghai）
+
+实现已上公网，待产品验收。未开下一轮。
+
+### 下载
+
+- 首页 http://121.196.45.81/ 下载区：Windows、Linux 可点；macOS 仍标「即将提供」，不是下载链接。
+- Windows：http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe （75,503,088 字节，SHA256 `78175CDCBDF7B02540B6E8AEAA01E25DA7290399C7B08AFDBC9B7557ABF33AB8`）。按钮文案「下载鹊桥远程协助」。未上架 `RemoteAssist-Agent-Setup-0.1.0.exe`。
+- Linux：http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz （7,993,604 字节，SHA256 `34CC363BAD28192895FCED74929FDE0A8C858D6E6A489EA40201D6DE552C827D`）。源文件为 `queqiao-linux-x64-fd.tar.gz`，公网文件名去掉内部 `-fd`。旁注：「解开后运行。需要先装好 .NET 8 桌面方向运行时」。
+- 页面未写「也可下载自包含包」，未出现端口号、放行入站、中继 JSONL 细节。Windows 侧未要求先装 .NET 8。
+- 未上架未在真机验收的 macOS 包。Linux 包为客户端提供的现成产物（后续 Avalonia 界面打磨不在此包内），本轮原样上架。
+
+### 托管
+
+- 由现有 `remote-assist-site` 通过 `SITE_DOWNLOADS=/var/lib/remote-assist-site/downloads` 磁盘提供 `/downloads/`，未把安装包 `go:embed` 进二进制，未新装 Node/Java/PHP/MySQL/WordPress/Docker，未占用 `17891`。
+- `MemoryMax` 仍为 64M；中继 `remote-assist-relay` 部署后仍监听 `*:17891`。
+
+### 截图
+
+- `docs/screenshots/r019-home-download.png`：首页下载区（Windows / Linux 可下，macOS 即将提供，Linux 旁有运行时说明）
+- `docs/screenshots/r019-win-download.png`：浏览器已下到 `RemoteAssist-Setup-0.1.0.exe`（75,503,088 字节）
+- `docs/screenshots/r019-linux-download.png`：浏览器已下到 `queqiao-linux-x64.tar.gz`（7,993,604 字节）

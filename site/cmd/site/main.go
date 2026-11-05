@@ -26,13 +26,18 @@ func main() {
 	pass := os.Getenv("SITE_ADMIN_PASSWORD")
 	// ResolveAdminPassword inside NewServer: empty + local addr => "dev";
 	// production :80 requires explicit password. Never log the password.
+	downloads := os.Getenv("SITE_DOWNLOADS")
+	if downloads == "" {
+		downloads = filepath.Join(".", "downloads")
+	}
 
 	srv, err := site.NewServer(site.Config{
-		Addr:     addr,
-		DataPath: data,
-		Password: pass,
-		Logger:   logger,
-		Static:   sitefs.FS,
+		Addr:         addr,
+		DataPath:     data,
+		Password:     pass,
+		DownloadsDir: downloads,
+		Logger:       logger,
+		Static:       sitefs.FS,
 	})
 	if err != nil {
 		logger.Error("init failed", "err", err)
@@ -40,7 +45,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("site listening", "addr", addr, "data", data)
+		logger.Info("site listening", "addr", addr, "data", data, "downloads", downloads)
 		if err := srv.ListenAndServe(); err != nil {
 			logger.Error("server stopped", "err", err)
 			os.Exit(1)

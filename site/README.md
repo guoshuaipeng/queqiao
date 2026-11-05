@@ -10,6 +10,7 @@
 | `/ask` | 接单表单 |
 | `/thanks` | 提交成功（无单号） |
 | `/admin` | 运营后台（口令） |
+| `GET /downloads/<文件名>` | 安装包下载（来自 `SITE_DOWNLOADS`，不进二进制） |
 | `POST /api/ask` | 接单 API |
 
 后台状态仅：`新留言` / `已联系` / `已结束`。
@@ -20,6 +21,7 @@
 |------|------|------|
 | `SITE_ADDR` | `:8088` | 监听地址。生产为 `:80` |
 | `SITE_DATA` | `./data/site.db` | SQLite 路径 |
+| `SITE_DOWNLOADS` | `./downloads` | 安装包目录；`GET /downloads/<文件名>` 从磁盘流式提供，缺文件返回 404，无目录列表 |
 | `SITE_ADMIN_PASSWORD` | （见下） | 后台口令；**永不写入日志** |
 
 口令规则：
@@ -37,12 +39,16 @@ cd E:\IdeaProjects\remote-assist\site
 $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
 $env:SITE_ADDR=":8088"
 $env:SITE_DATA=".\data\site.db"
+$env:SITE_DOWNLOADS=".\downloads"
 $env:SITE_ADMIN_PASSWORD="dev"
 go run .\cmd\site
 ```
 
 浏览器打开 http://127.0.0.1:8088/  
 后台 http://127.0.0.1:8088/admin （口令 `dev`）
+
+
+把 Windows / Linux 安装包放到 `SITE_DOWNLOADS` 目录后即可通过 `/downloads/文件名` 下载。包文件**不要** `go:embed` 进二进制（生产 `MemoryMax=64M`）。缺文件或空目录返回 404，不提供目录浏览。
 
 ## 测试
 

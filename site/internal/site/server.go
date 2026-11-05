@@ -6,16 +6,19 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
 type Config struct {
-	Addr     string
-	DataPath string
-	Password string
-	Logger   *slog.Logger
-	Static   fs.FS
+	Addr         string
+	DataPath     string
+	Password     string
+	DownloadsDir string
+	Logger       *slog.Logger
+	Static       fs.FS
 }
 
 type Server struct {
@@ -90,6 +93,61 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /admin/api/customers", s.requireAdmin(s.handleListCustomers))
 	s.mux.HandleFunc("POST /admin/api/status", s.requireAdmin(s.handleSetStatus))
 	s.mux.HandleFunc("POST /admin/api/note", s.requireAdmin(s.handleSetNote))
+
+	s.mux.HandleFunc("GET /downloads/{name}", s.handleDownload)
+}
+
+
+func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
+	dir := strings.TrimSpace(s.cfg.DownloadsDir)
+	if dir == "" {
+		http.NotFound(w, r)
+		return
+	}
+	name := r.PathValue("name")
+	if name == "" || name == "." || name == ".." || strings.Contains(name, "/") || strings.Contains(name, "\\") || strings.Contains(name, "..") {
+		http.NotFound(w, r)
+		return
+	}
+	if filepath.Base(name) != name {
+		http.NotFound(w, r)
+		return
+	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	full := filepath.Join(absDir, name)
+	absFile, err := filepath.Abs(full)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	sep := string(os.PathSeparator)
+	if absFile != absDir && !strings.HasPrefix(absFile, absDir+sep) {
+		http.NotFound(w, r)
+		return
+	}
+	fi, err := os.Stat(absFile)
+	if err != nil || !fi.Mode().IsRegular() {
+		http.NotFound(w, r)
+		return
+	}
+	ctype := "application/octet-stream"
+	lower := strings.ToLower(name)
+	switch {
+	case strings.HasSuffix(lower, ".tar.gz") || strings.HasSuffix(lower, ".tgz"):
+		ctype = "application/gzip"
+	case strings.HasSuffix(lower, ".exe"):
+		ctype = "application/octet-stream"
+	case strings.HasSuffix(lower, ".zip"):
+		ctype = "application/zip"
+	}
+	w.Header().Set("Content-Type", ctype)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+name+"\"")
+	http.ServeFile(w, r, absFile)
 }
 
 func (s *Server) serveFile(name string) http.HandlerFunc {
