@@ -5,7 +5,7 @@ using Avalonia.Threading;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R021：去协助端「复制安装说明」带官网下载地址 + 复制反馈（只一次）。</summary>
+/// <summary>R022：安装说明连网话术中性 + 剪贴板仍含官网下载地址。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -20,15 +20,15 @@ internal static class UiShotRunner
 
         helper.PrepareInstallGuideEntryForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r021-install-entry.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r022-install-entry.png")).ConfigureAwait(true);
 
         helper.PrepareInstallCopiedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r021-install-copied.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r022-install-copied.png")).ConfigureAwait(true);
 
         helper.PrepareInstallClipboardPreviewForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r021-clipboard-preview.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r022-clipboard-preview.png")).ConfigureAwait(true);
 
         helper.PrepareClose();
         helper.Close();

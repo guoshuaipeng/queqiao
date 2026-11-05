@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（出包 + 安装说明小改）+ 鹊桥-服务端（替换官网文件）
-> 状态：**todo**
+> 状态：**ready-for-product**（客户端出包+话术已交付，待服务端上架）
 > 依据：R021 产品已验收（`632928a`）；官网 Windows / Linux 包仍是 R021 之前产物，亲友从官网下到的客户端「复制安装说明」还没有带下载地址。
 
 R021 已让去协助端复制的安装说明带上官网下载地址。但公网仍挂着旧包：对方按说明去官网下载后，自己再当协助方时，复制出来的说明又变回旧文案。本轮把官网包换到含 R021 的客户端，并顺手把安装说明里偏 Windows 防火墙的「点允许连网」改成跨平台中性说法。
@@ -57,3 +57,71 @@ R021 已让去协助端复制的安装说明带上官网下载地址。但公网
 
 - 更新本文交付说明与截图 / 公网记录
 - 回告产品验收；未开下一轮
+
+## 交付说明（鹊桥-客户端 · 2026-11-05 Asia/Shanghai）
+
+### 实现摘要
+
+- 打磨：共享常量 `WriteConfirmCopy.InstallInstructions` 末句由「如果电脑问是否允许连网，点「允许」」改为「如果系统问起是否允许联网，选择允许。」；Windows WinForms 与 Linux Avalonia **共用同一常量**。
+- 保留 R021 已验收：官网入口与 Win/Linux 直链、macOS「尚未提供正式下载」、手头安装包可选句、反馈「说明里已带上官网下载地址，发给对方即可」、轻按钮「复制安装说明」、唯一实心绿「连接」。
+- 高频出包：Windows Inno `RemoteAssist-Setup-0.1.0.exe` + Linux FD `queqiao-linux-x64-fd.tar.gz`（上架公网文件名去掉 `-fd` → `queqiao-linux-x64.tar.gz`）。
+- **未改** MCP 三步 /「复制 MCP 配置」反馈、R013–R020 原文、`docs/trust-levels.md`「才问你」；未改 `site/`、未上生产机；未把 macOS 当正式产物；Linux 为 FD 非 SC。
+
+### 最终逐字文案
+
+**InstallCopiedHint**
+
+> 说明里已带上官网下载地址，发给对方即可
+
+**InstallInstructions / InstallInstructionsClipboard**
+
+```
+请打开官网下载「鹊桥远程协助」：http://121.196.45.81/
+Windows 安装包：http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe
+Linux 包：http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz（解开后运行，需要先装好 .NET 8 桌面方向运行时）
+macOS 尚未提供正式下载。
+如果你手头有安装包，也可以一起发出去。
+装好后打开，选「接受协助」，再点「复制码+密码」，把复制出来的发给我。
+如果系统问起是否允许联网，选择允许。
+```
+
+### 本机产物
+
+| 项 | Windows | Linux |
+|------|---------|-------|
+| 绝对路径 | `E:\IdeaProjects\remote-assist\artifacts\installer\RemoteAssist-Setup-0.1.0.exe` | `E:\IdeaProjects\remote-assist\artifacts\queqiao-linux-x64-fd.tar.gz` |
+| 公网文件名 | `RemoteAssist-Setup-0.1.0.exe` | `queqiao-linux-x64.tar.gz`（**去掉内部 `-fd`**） |
+| 字节 | 75,582,719 | 7,999,909 |
+| MB | 72.08 | 7.63 |
+| mtime | 2026-11-05 23:58:02 Asia/Shanghai | 2026-11-05 23:57:35 Asia/Shanghai |
+| SHA256 | `6AC3CE69AD0FB40C245CF2071D7E8E3EA454E97637595F6D68F4B20484400CD1` | `B90E3B28F323174F3C1CB35D3CACDB017C5C47F368D10CFF8D5571DECD0AB1CE` |
+| 构建命令 | `scripts\build-installer.ps1` | `scripts\publish-agent-avalonia.ps1 -Runtimes linux-x64` |
+| 形态 | Inno Setup（与现官网同形态） | framework-dependent（含 `RemoteAssist.Agent.Avalonia` + `运行说明.txt`） |
+
+对照旧包：Windows 旧 75,503,088 / `78175CDC…ABF33AB8`；Linux 旧 7,999,640 / `EC1C7211…9DCE3650` — **大小与 SHA256 均不同**。出包前源码/产物 DLL 已核对含新联网句、不含旧句。
+
+出包工作树对应本交付提交（含 R021 `632928a` + 本轮连网话术）；见本 commit。
+
+### 截图（`docs/screenshots/r022-*`，已复制 `%USERPROFILE%\Downloads\r022-shots\`）
+
+| 文件 | 要点 | MD5 |
+|------|------|-----|
+| `r022-install-entry.png` | 「复制安装说明」轻按钮；「连接」实心绿；ui-shot | 8ED52115F70AF18402F98BABF64CF47B |
+| `r022-install-copied.png` | 反馈「说明里已带上官网下载地址，发给对方即可」只一次；ui-shot | ED902C943BD0D4906580AA772E8E054A |
+| `r022-clipboard-preview.png` | 预览含官网下载地址 + 新句「如果系统问起是否允许联网，选择允许。」；macOS 尚未提供正式下载；ui-shot | 1AB69573818494B172CE7E67518247DE |
+
+三张 MD5 互异。坦白：`r022-install-entry.png` 与 r017/r021 入口图字节相同；`r022-install-copied.png` 与 r021 反馈图字节相同（入口与反馈句本轮未改视觉/文案）；**`r022-clipboard-preview.png` 为新字节**（含新联网句）。
+
+公网替换与下载页核对：**交鹊桥-服务端**（客户端只交出包路径）。
+
+### 测试
+
+`dotnet test`：169 通过 / 0 失败（RemoteAssist.sln Release）。
+
+### 明确未做
+
+- 未开下一轮；未改 `relay/`、`site/`、AI-SSH-Pro；未上生产机
+- 未把 macOS 当正式可下；未打 Linux SC 冒充本轮产物
+- 未重打 `RemoteAssist-Agent-Setup-0.1.0.exe` 当官网主包
+- 未改 MCP 三步 /「复制 MCP 配置」反馈；未改 R013–R020 原文；未改 trust-levels「才问你」
+

@@ -71,6 +71,8 @@ public class WriteConfirmCopyTests
         Assert.Contains(".NET 8 桌面方向运行时", clip);
         Assert.Contains("macOS 尚未提供正式下载", clip);
         Assert.Contains("如果你手头有安装包，也可以一起发出去", clip);
+        Assert.Contains("如果系统问起是否允许联网，选择允许", clip);
+        Assert.DoesNotContain("如果电脑问是否允许连网", clip);
         Assert.Contains("接受协助", clip);
         Assert.Contains("复制码+密码", clip);
         Assert.DoesNotContain("17890", clip);
