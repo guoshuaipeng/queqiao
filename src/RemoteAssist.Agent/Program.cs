@@ -21,7 +21,6 @@ internal static class Program
     private static bool _autoYes;
     private static bool _headless;
     private static int _confirmTimeoutSeconds = DefaultConfirmTimeoutSeconds;
-    private static readonly object ConfirmUiLock = new();
 
     public static async Task Main(string[] args)
     {
@@ -55,7 +54,7 @@ internal static class Program
         Console.WriteLine($"本机地址 : {string.Join(", ", localIps)}");
         Console.WriteLine($"会话码   : {_sessionCode}");
         Console.WriteLine($"审计日志 : {auditPath}");
-        Console.WriteLine($"确认方式 : {(_autoYes ? "自动(--yes)" : _headless ? "控制台(--headless)" : "本机窗口(默认)")}");
+        Console.WriteLine($"确认方式 : {(_autoYes ? "自动(--yes)" : _headless ? "控制台(--headless)" : "本机窗口(默认，配对+写操作)")}");
         Console.WriteLine($"确认超时 : {_confirmTimeoutSeconds}s");
         Console.WriteLine();
         Console.WriteLine("协助端示例:");
@@ -65,9 +64,9 @@ internal static class Program
         if (_autoYes)
             Console.WriteLine("自动确认已开启 (--yes)，仅用于本地联调。");
         else if (_headless)
-            Console.WriteLine("无 UI 模式：写操作在本控制台确认（Y/N，超时自动拒绝）。");
+            Console.WriteLine("无 UI 模式：配对与写操作均在本控制台确认（超时自动拒绝）。");
         else
-            Console.WriteLine("写操作(Assist)会弹出本机确认窗口；可用 --headless 回退控制台。");
+            Console.WriteLine("配对与写操作(Assist)会弹出本机确认窗口（串行排队）；可用 --headless 回退控制台。");
         Console.WriteLine("按 Ctrl+C 退出。");
         Console.WriteLine("----------------------------------------");
 
@@ -178,44 +177,26 @@ internal static class Program
             ? lvl
             : PermissionLevel.Assist;
 
-        // v1: 配对仍用控制台确认（写操作才走 UI 窗口）
-        PermissionLevel granted;
-        if (_autoYes)
-        {
-            granted = requested;
-            Console.WriteLine($"[自动确认配对] {remote} => {granted}");
-        }
-        else
-        {
-            lock (ConfirmUiLock)
-            {
-                Console.WriteLine();
-                Console.WriteLine($"[配对请求] 来自 {remote} 客户端={req.ClientName} 请求权限={requested}");
-                Console.Write("允许吗? [Y]=按请求权限 / [G]=仅访客只读 / [N]=拒绝 > ");
-                var ans = (Console.ReadLine() ?? "").Trim().ToUpperInvariant();
-                if (ans is "N" or "NO")
-                {
-                    _audit.Write("pair_reject", $"operator_denied {remote}");
-                    granted = (PermissionLevel)(-1);
-                }
-                else if (ans is "G" or "GUEST")
-                {
-                    granted = PermissionLevel.Guest;
-                }
-                else
-                {
-                    granted = requested;
-                }
-            }
-        }
+        var pairInfo = new PairRequestInfo(
+            RemoteEndpoint: remote,
+            ClientName: req.ClientName,
+            RequestedPermission: requested,
+            TimeoutSeconds: _confirmTimeoutSeconds);
+        var pairOutcome = await ConfirmPrompt.AskPairAsync(pairInfo, _autoYes, _headless).ConfigureAwait(false);
 
-        if ((int)granted < 0)
+        if (!pairOutcome.Approved || pairOutcome.GrantedPermission is null)
         {
+            var reason = pairOutcome.Decision == ConfirmDecision.TimedOut ? "pair_timeout" : "pair_reject";
+            _audit.Write(reason, pairOutcome.AuditDetail(remote, req.ClientName, requested));
+            var err = pairOutcome.Decision == ConfirmDecision.TimedOut
+                ? "配对确认超时，已自动拒绝"
+                : "对方拒绝了配对";
             await FrameIo.WriteAsync(stream, "pair_result",
-                new PairResponse { Ok = false, Error = "对方拒绝了配对" }, id: envelope.Id).ConfigureAwait(false);
+                new PairResponse { Ok = false, Error = err }, id: envelope.Id).ConfigureAwait(false);
             return null;
         }
 
+        var granted = pairOutcome.GrantedPermission.Value;
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
         var expires = DateTimeOffset.UtcNow.Add(TokenTtl);
         var session = new SessionState
@@ -226,7 +207,7 @@ internal static class Program
             ClientName = req.ClientName
         };
         Sessions[token] = session;
-        _audit.Write("pair_ok", $"client={req.ClientName}; perm={granted}; remote={remote}");
+        _audit.Write("pair_ok", pairOutcome.AuditDetail(remote, req.ClientName, requested));
 
         await FrameIo.WriteAsync(stream, "pair_result", new PairResponse
         {

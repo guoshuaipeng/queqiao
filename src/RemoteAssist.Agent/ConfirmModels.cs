@@ -1,3 +1,5 @@
+using RemoteAssist.Protocol;
+
 namespace RemoteAssist.Agent;
 
 internal enum ConfirmChannel
@@ -29,3 +31,20 @@ internal sealed record ConfirmRequestInfo(
     string Tool,
     string Summary,
     int TimeoutSeconds);
+
+internal sealed record PairRequestInfo(
+    string RemoteEndpoint,
+    string ClientName,
+    PermissionLevel RequestedPermission,
+    int TimeoutSeconds);
+
+internal sealed record PairOutcome(
+    bool Approved,
+    PermissionLevel? GrantedPermission,
+    ConfirmChannel Channel,
+    ConfirmDecision Decision,
+    DateTimeOffset AtUtc)
+{
+    public string AuditDetail(string remote, string clientName, PermissionLevel requested) =>
+        $"client={clientName}; remote={remote}; requested={requested}; granted={(GrantedPermission?.ToString() ?? "none")}; via={Channel.ToString().ToLowerInvariant()}; result={Decision.ToString().ToLowerInvariant()}; at={AtUtc:o}";
+}

@@ -56,16 +56,17 @@ dotnet run --project src/RemoteAssist.Agent
 
 记下输出的 **会话码** 与 **本机 IP**。
 
-- **配对**：仍在 Agent 控制台确认（`Y` / `G` 仅访客 / `N` 拒绝）。
-- **写操作（Assist）**：默认弹出**本机确认窗口**，显示请求来源、拟执行命令；点「允许」或「拒绝」。默认 **60 秒无操作自动拒绝**。
+- **配对**：默认弹出**本机配对确认窗口**（来源 IP、客户端、请求权限；「允许」/「仅访客」/「拒绝」；超时自动拒绝）。
+- **写操作（Assist）**：弹出**本机操作确认窗口**（来源、拟执行命令；「允许」/「拒绝」；默认 60s 超时拒绝）。
+- **排队**：配对与写操作共用串行确认队列，一次只弹一个窗，请求不丢。
 
 常用参数：
 
 | 参数 | 含义 |
 |---|---|
 | `--port 17890` | 监听端口 |
-| `--confirm-timeout 60` | 写操作确认超时（秒，5–600） |
-| `--headless` | 无 UI：写操作回退控制台 Y/N（超时自动拒绝） |
+| `--confirm-timeout 60` | 配对/写操作确认超时（秒，5–600） |
+| `--headless` | 无 UI：配对与写操作回退控制台（超时自动拒绝） |
 | `--yes` | 自动同意配对与写操作（**仅本地冒烟**） |
 
 ### 终端 B — Helper（协助端）
@@ -75,7 +76,7 @@ cd E:\IdeaProjects\remote-assist
 dotnet run --project src/RemoteAssist.Helper -- pair 127.0.0.1 <会话码>
 ```
 
-Agent 控制台确认配对后，在 Helper：
+Agent 本机窗口确认配对后，在 Helper：
 
 ```text
 helper> procs
@@ -103,7 +104,9 @@ dotnet run --project src/RemoteAssist.Mcp --no-build
 
 默认写入：`%LOCALAPPDATA%\RemoteAssist\audit.log`
 
-写操作确认/拒绝会记录：
+**配对**确认/拒绝会记录：`pair_ok` / `pair_reject` / `pair_timeout`，含 `requested` / `granted` / `via` / `result` / `remote`。
+
+**写操作**确认/拒绝会记录：
 
 - `via=ui|console|autoyes` — 确认方式
 - `result=approved|denied|timedout` — 结果
@@ -129,7 +132,6 @@ dotnet run --project src/RemoteAssist.Agent -- --headless --confirm-timeout 30
 
 - 无 TLS / 无端到端加密（仅信任局域网）
 - 确认 UI 为简易 WinForms 对话框（非系统托盘常驻）
-- 配对确认仍为控制台（写操作才弹窗）
 - 无公网中继 / 无扫码 UI（会话码为文本）
 - `run_command` 经 `cmd.exe /c`，超时约 15s
 - 部分敏感路径硬编码拦截，未做完整沙箱
