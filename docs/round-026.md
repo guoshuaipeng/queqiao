@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（出包）+ 鹊桥-服务端（替换官网文件）
-> 状态：**done（待产品验收）**
+> 状态：**done（产品已验收）**
 > 依据：R025 产品已验收（安装说明与官网旁注已含「通常不会下载」时怎么选）；公网 Windows / Linux 包仍是 R024 产物（75,583,762 / 8,000,095），亲友从官网下到的客户端「复制安装说明」还没有这一句。
 
 R025 已让去协助端复制的安装说明，以及官网 Windows 旁注，告诉对方浏览器提示通常不会下载时选保留。但公网仍挂着 R024 的包：对方按说明去官网下载后，自己再当协助方时，复制出来的说明又变回没有这一句的旧文案。本轮把官网包换到含 R025 的客户端。
@@ -134,3 +134,19 @@ Linux 旁注原文仍为：「解开后运行。需要先装好 .NET 8 桌面方
 
 - 未开下一轮；未重启 site / relay；未改 HTML；未改中继
 - 未读/打印 `/etc/remote-assist-site.env`；未把帮助脚本加进仓库 `tools/`
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照公网下载与 `docs/screenshots/r026-*` 独立验收通过（出包 HEAD `73b2fea` / 交付 `62ac5ce`，上架 `a97a2f5`）。
+
+独立核对：
+
+- 公网 Windows http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe：HEAD Content-Length **75,580,750**，Content-Disposition `RemoteAssist-Setup-0.1.0.exe`，Last-Modified Thu, 05 Nov 2026 17:37:58 GMT（**2026-11-06 01:37:58 Asia/Shanghai**）。相对 R024 旧包 75,583,762 已变化，与客户端交付字节一致。
+- 公网 Linux http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz：HEAD Content-Length **8,000,125**，Content-Disposition `queqiao-linux-x64.tar.gz`（无内部 `-fd`）；产品完整下载后 SHA256 `14B0C7EF5050050469FBF7ECA522001F06529527F38C27ACE657BB0069832F76`，与客户端交付一致。相对 R024 旧包 8,000,095 / `305F9E40…E586` 已变化。
+- 首页 Windows 旁注仍是「若浏览器提示通常不会下载，选择保留即可。」Linux 旁注仍是「解开后运行。需要先装好 .NET 8 桌面方向运行时。打开 [微软 .NET 8 下载页](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，选运行时、不要选 SDK。」导语仍是「Windows 和 Linux 都可下载使用」；macOS 仍「即将提供」。未见端口 / 17891 / 放行入站 / 自包含 / TLS / stdio / 证书 / 签名 / SmartScreen。`/`、`/ask`、`/admin` HTTP 200。
+- `docs/screenshots/r026-home-download.png`：地址栏可见 `121.196.45.81/#download`；Windows / Linux 旁注与 macOS「即将提供」均可见。
+- `docs/screenshots/r026-win-download.png` / `r026-linux-download.png`：同一页 + Edge 下载浮层，可见 `RemoteAssist-Setup-0.1.0.exe` 与 `queqiao-linux-x64.tar.gz`（无 `-fd`）。未覆盖 `r022-*`～`r025-*`。
+
+缺口：两张下载浮层图几乎相同（同一浮层里两个文件名都可见，与前几轮同类缺口，不挡验收，因产品已独立 HEAD / 下载核对公网文件）；浏览器仍提示「通常不会下载」（R025 已补指引，本轮包已含该句）；macOS 仍未正式可下。
+
+已开 R027（去协助端 Skill 薄封装：复制一段只讲如何安装 MCP 的技能说明；不改中继/官网/AI-SSH-Pro）。
