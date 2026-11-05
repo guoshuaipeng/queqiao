@@ -58,7 +58,7 @@ R016 已产品验收 Avalonia 协助端连上后五键白话与已连接按钮�
 | 文件 | 要点 | MD5 |
 |------|------|-----|
 | `r017-install-entry.png` | 「复制安装说明」轻按钮 +「如何安装 MCP」卡与「复制 MCP 配置」轻按钮可见；ui-shot | 8ED52115F70AF18402F98BABF64CF47B |
-| `r017-install-copied.png` | 复制后反馈「请把安装包和这段说明一起发出去」；ui-shot | 87BBE7532447153E3D7F0EFF529E445F |
+| `r017-install-copied.png` | 复制后反馈「请把安装包和这段说明一起发出去」；ui-shot | E8B50E41736D1349263FAE50E1BD663F |
 
 截图为 **ui-shot**。MD5 互异，且不同于 r015/r016。亲友界面不出现 Assist、Admin、ownerLink、TLS、端口号、deviceId、offline。
 

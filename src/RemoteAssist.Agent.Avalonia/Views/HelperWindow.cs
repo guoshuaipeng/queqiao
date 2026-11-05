@@ -538,11 +538,11 @@ internal sealed class HelperWindow : Window
                 return;
             }
             await clip.SetTextAsync(WriteConfirmCopy.InstallInstructionsClipboard).ConfigureAwait(true);
+            // 与 Windows 一致：InstallCopiedHint 只写预览行一次，不写状态行
             _preview.Text = WriteConfirmCopy.InstallCopiedHint;
             _preview.Foreground = Brush.Parse("#0F9D58");
             _mcpHint.Text = "";
             _failHint.Text = "";
-            _status.Text = WriteConfirmCopy.InstallCopiedHint;
         }
         catch (Exception ex)
         {
@@ -1272,7 +1272,7 @@ internal sealed class HelperWindow : Window
         PrepareInstallGuideEntryForShot();
         _preview.Text = WriteConfirmCopy.InstallCopiedHint;
         _preview.Foreground = Brush.Parse("#0F9D58");
-        _status.Text = WriteConfirmCopy.InstallCopiedHint;
+        // 状态行保持「状态：未连接」，避免与预览行重复同一句反馈
         _mcpHint.Text = "";
     }
 
