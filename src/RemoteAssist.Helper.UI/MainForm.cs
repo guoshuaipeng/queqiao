@@ -55,7 +55,7 @@ internal sealed class MainForm : Form
         MaximizeBox = false;
         MinimizeBox = true;
         StartPosition = FormStartPosition.Manual;
-        ClientSize = new Size(780, 870);
+        ClientSize = new Size(780, 1040);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
@@ -424,6 +424,36 @@ internal sealed class MainForm : Form
         settingsCard.Controls.Add(_deviceList);
         Controls.Add(settingsCard);
 
+        var mcpCard = MakeCard(16, 838, 748, 180);
+        mcpCard.Name = "mcp";
+        mcpCard.Controls.Add(SectionTitle(McpInstallGuide.SectionTitle, 12, 10));
+        mcpCard.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 40),
+            Size = new Size(710, 72),
+            ForeColor = Color.FromArgb(0x3C, 0x40, 0x43),
+            Text = McpInstallGuide.StepsBlock
+        });
+        var btnCopyMcp = MakeButton(McpInstallGuide.CopyConfigButton, 16, 122, 140);
+        btnCopyMcp.Height = 34;
+        btnCopyMcp.Font = new Font(Font.FontFamily, 10F, FontStyle.Bold);
+        btnCopyMcp.BackColor = Color.FromArgb(0x1A, 0x73, 0xE8);
+        btnCopyMcp.ForeColor = Color.White;
+        btnCopyMcp.FlatStyle = FlatStyle.Flat;
+        btnCopyMcp.FlatAppearance.BorderSize = 0;
+        btnCopyMcp.Click += (_, _) => CopyMcpConfigFromUi();
+        mcpCard.Controls.Add(btnCopyMcp);
+        mcpCard.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(170, 128),
+            Size = new Size(550, 28),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = "详细参数见产品文档；写操作仍须对方本机确认"
+        });
+        Controls.Add(mcpCard);
+
         FormClosing += OnFormClosing;
         RefreshPreview();
         SetConnectedUi(false);
@@ -450,9 +480,11 @@ internal sealed class MainForm : Form
         }
         var tool = Controls.Find("tool", false).FirstOrDefault();
         var settings = Controls.Find("settings", false).FirstOrDefault();
+        var mcp = Controls.Find("mcp", false).FirstOrDefault();
         if (tool is not null) tool.Top = 342 + shift;
         if (settings is not null) settings.Top = 608 + shift;
-        ClientSize = new Size(780, 870 + shift);
+        if (mcp is not null) mcp.Top = 838 + shift;
+        ClientSize = new Size(780, 1040 + shift);
     }
 
     private static Panel MakeCard(int x, int y, int w, int h) => new()
@@ -478,6 +510,62 @@ internal sealed class MainForm : Form
     };
 
 
+
+    private void CopyMcpConfigFromUi()
+    {
+        try
+        {
+            if (!TryBuildOptions(out var opts, out _, out _))
+            {
+                // 与连接逻辑一致：缺指纹时按明文生成 MCP 配置，避免亲友被 TLS 拦住
+                var saved = _insecureBox.Checked;
+                _insecureBox.Checked = true;
+                var ok = TryBuildOptions(out opts, out _, out _);
+                _insecureBox.Checked = saved;
+                if (!ok)
+                {
+                    SetFailHint(McpInstallGuide.NeedCodePasswordHint);
+                    _previewLabel.ForeColor = Color.FromArgb(0xC5, 0x22, 0x1F);
+                    return;
+                }
+            }
+
+            var useTls = !opts.Insecure && !string.IsNullOrWhiteSpace(opts.Fingerprint);
+            string payload;
+            if (opts.ViaRelay)
+            {
+                var relay = string.IsNullOrWhiteSpace(opts.RelayEndpoint)
+                    ? (string.IsNullOrWhiteSpace(_relayBox.Text) ? RelayEndpoint.DefaultEndpoint : _relayBox.Text.Trim())
+                    : opts.RelayEndpoint!;
+                var pwd = opts.Password ?? _pwdBox.Text ?? "";
+                if (!useTls)
+                    payload = PairQrPayload.BuildRelay(relay, opts.Code, pwd, fingerprint: null, useTls: false);
+                else
+                    payload = PairQrPayload.BuildRelay(relay, opts.Code, pwd, opts.Fingerprint, useTls: true);
+            }
+            else
+            {
+                if (!useTls)
+                    payload = PairQrPayload.BuildLan(opts.Host, opts.Port, opts.Code, fingerprint: null, useTls: false);
+                else
+                    payload = PairQrPayload.BuildLan(opts.Host, opts.Port, opts.Code, opts.Fingerprint, useTls: true);
+            }
+
+            var exists = McpExeLocator.TryResolveExisting(out var exe);
+            if (!exists)
+                exe = McpExeLocator.Resolve();
+
+            Clipboard.SetText(McpConfigSnippet.BuildClipboardBundle(exe, payload));
+            _previewLabel.Text = exists ? McpInstallGuide.CopiedOkHint : McpInstallGuide.CopiedPlaceholderHint;
+            _previewLabel.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+            SetFailHint("");
+            SetStatus(exists ? McpInstallGuide.CopiedOkHint : McpInstallGuide.CopiedPlaceholderHint);
+        }
+        catch (Exception ex)
+        {
+            SetFailHint("复制 MCP 配置失败：" + ex.Message);
+        }
+    }
     private void CopyInstallInstructions()
     {
         try

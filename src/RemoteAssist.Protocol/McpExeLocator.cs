@@ -1,9 +1,9 @@
-namespace RemoteAssist.Agent;
+namespace RemoteAssist.Protocol;
 
 /// <summary>
 /// 猜测本机 RemoteAssist.Mcp.exe 与仓库 scripts/publish-mcp.ps1 路径。
 /// </summary>
-internal static class McpExeLocator
+public static class McpExeLocator
 {
     private static readonly string[] RelativeCandidates =
     [

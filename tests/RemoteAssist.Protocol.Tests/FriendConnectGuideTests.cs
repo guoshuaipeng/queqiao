@@ -70,6 +70,9 @@ public class FriendConnectGuideTests
         Assert.Contains("RemoteAssist.Agent", FriendConnectGuide.MomentAAllow);
         Assert.DoesNotContain("17890", FriendConnectGuide.MomentAAllow);
         Assert.DoesNotContain("放行入站", FriendConnectGuide.MomentAAllow);
-        Assert.Equal("打开防火墙设置", FriendConnectGuide.OpenFirewallButtonText);
+        Assert.Equal("打开防火墙设\u2060置", FriendConnectGuide.OpenFirewallButtonText);
+        Assert.Contains("设", FriendConnectGuide.MomentAAllow);
+        Assert.Contains("置", FriendConnectGuide.MomentAAllow);
+        Assert.Contains("\u2060", FriendConnectGuide.MomentAAllow);
     }
 }

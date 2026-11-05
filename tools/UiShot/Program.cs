@@ -17,89 +17,70 @@ internal static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        var runDesc = WriteConfirmCopy.Describe(ToolKind.RunCommand, new Dictionary<string, string?>
-        {
-            ["command"] = "echo hello"
-        });
-        using (var confirm = new ConfirmDialog(new ConfirmRequestInfo(
-                   Source: "协助方",
-                   Tool: "RunCommand",
-                   Summary: runDesc.Headline,
-                   TimeoutSeconds: 60,
-                   Detail: runDesc.Detail)))
-        {
-            confirm.Show();
-            Application.DoEvents();
-            Thread.Sleep(200);
-            Application.DoEvents();
-            SaveForm(confirm, Path.Combine(outDir, "r004-write-confirm.png"));
-            confirm.Hide();
-        }
-
-        var delDesc = WriteConfirmCopy.Describe(ToolKind.RunCommand, new Dictionary<string, string?>
-        {
-            ["command"] = "del C:\\temp\\demo.txt"
-        });
-        using (var confirmDel = new ConfirmDialog(new ConfirmRequestInfo(
-                   Source: "协助方",
-                   Tool: "RunCommand",
-                   Summary: delDesc.Headline,
-                   TimeoutSeconds: 60,
-                   Detail: delDesc.Detail)))
-        {
-            confirmDel.Show();
-            Application.DoEvents();
-            Thread.Sleep(150);
-            Application.DoEvents();
-            SaveForm(confirmDel, Path.Combine(outDir, "r004-write-confirm-delete.png"));
-            confirmDel.Hide();
-        }
-
+        // Helper: MCP install guide visible
         using (var helper = new HelperDesktopController(enableReturnHome: true))
         {
             helper.Show();
             Application.DoEvents();
-            // simulate post-copy tip for screenshot visibility
-            var form = helper.Form;
-            var preview = FindPreview(form);
-            if (preview is not null)
+            Thread.Sleep(250);
+            Application.DoEvents();
+            // scroll/size already shows MCP card near bottom — capture full form
+            SaveForm(helper.Form, Path.Combine(outDir, "r005-helper-mcp-guide.png"));
+            helper.Form.Hide();
+        }
+
+        // Agent: network ready => banner hidden; friend path no MCP
+        var settings = HelperUiSettings.Load();
+        settings.NetworkAllowBannerDismissed = false;
+        settings.NetworkAllowMaybeDenied = false;
+        settings.Save();
+
+        var auditPath = Path.Combine(Path.GetTempPath(), "remote-assist-uishot-r005-audit.log");
+        var audit = new AuditLog(auditPath);
+        var host = new AgentHost(
+            port: 17995,
+            autoYes: true,
+            headless: false,
+            confirmTimeoutSeconds: 30,
+            audit: audit,
+            auditPath: auditPath,
+            insecure: true,
+            preferRelay: true,
+            enableLanListen: false);
+        try
+        {
+            host.Start();
+            // wait until relay phase ready if possible
+            for (var i = 0; i < 40; i++)
             {
-                preview.Text = WriteConfirmCopy.InstallCopiedHint;
-                preview.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+                if (host.RelayPhase is "ready" or "waiting" or "paired") break;
+                Thread.Sleep(100);
             }
+
+            using var form = new RemoteAssist.Agent.MainForm(host, enableReturnHome: true);
+            form.Show();
             Application.DoEvents();
-            Thread.Sleep(300);
+            Thread.Sleep(600);
             Application.DoEvents();
-            SaveForm(form, Path.Combine(outDir, "r004-helper-install-guide.png"));
+            SaveForm(form, Path.Combine(outDir, "r005-agent-ready-no-banner.png"));
+
+            // Force denied recovery banner
+            typeof(RemoteAssist.Agent.MainForm)
+                .GetMethod("ShowDeniedBanner", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .Invoke(form, null);
+            Application.DoEvents();
+            Thread.Sleep(200);
+            Application.DoEvents();
+            SaveForm(form, Path.Combine(outDir, "r005-agent-denied-banner.png"));
             form.Hide();
         }
+        finally
+        {
+            host.Stop();
+        }
 
-        Console.WriteLine("OK wrote r004 shots to " + outDir);
+        Console.WriteLine("OK wrote r005 shots to " + outDir);
         return 0;
-    }
-
-    private static Label? FindPreview(Control root)
-    {
-        foreach (Control c in root.Controls)
-        {
-            if (c is Label lbl && lbl.Text.Contains("粘贴后点", StringComparison.Ordinal))
-                return lbl;
-            var nested = FindPreview(c);
-            if (nested is not null) return nested;
-        }
-        // also match after we may have already changed text — search by size/location heuristic
-        foreach (Control c in root.Controls)
-        {
-            if (c is Panel)
-            {
-                foreach (Control child in c.Controls)
-                {
-                    if (child is Label l && l.Location is { X: 16, Y: 164 })
-                        return l;
-                }
-            }
-        }
-        return null;
     }
 
     private static void SaveForm(Form form, string path)

@@ -114,7 +114,7 @@ internal sealed class MainForm : Form
         _banner = new Panel
         {
             Location = new Point(0, 64),
-            Size = new Size(760, 72),
+            Size = new Size(760, 88),
             BackColor = Color.FromArgb(0xFE, 0xF7, 0xE0),
             Visible = false,
             Name = "banner"
@@ -122,15 +122,15 @@ internal sealed class MainForm : Form
         _bannerText = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 8),
-            Size = new Size(540, 56),
+            Location = new Point(16, 6),
+            Size = new Size(728, 44),
             ForeColor = Color.FromArgb(0x5F, 0x3A, 0x00),
             Text = FriendConnectGuide.MomentAAllow
         };
         _btnFirewall = new Button
         {
             Text = FriendConnectGuide.OpenFirewallButtonText,
-            Location = new Point(564, 10),
+            Location = new Point(16, 52),
             Size = new Size(160, 28),
             Visible = false
         };
@@ -138,15 +138,15 @@ internal sealed class MainForm : Form
         _btnBannerDismiss = new Button
         {
             Text = "知道了",
-            Location = new Point(564, 42),
-            Size = new Size(72, 24)
+            Location = new Point(560, 52),
+            Size = new Size(72, 28)
         };
         _btnBannerDismiss.Click += (_, _) => DismissBanner();
         var btnMaybeDenied = new Button
         {
             Text = "我点了取消",
-            Location = new Point(644, 42),
-            Size = new Size(88, 24)
+            Location = new Point(644, 52),
+            Size = new Size(100, 28)
         };
         btnMaybeDenied.Click += (_, _) => ShowDeniedBanner();
         _banner.Controls.Add(_bannerText);
@@ -465,35 +465,89 @@ internal sealed class MainForm : Form
         UpdateFriendStatus();
     }
 
-    private void MaybeShowBanner()
-    {
-        if (_settings.NetworkAllowBannerDismissed) return;
-        if (_settings.NetworkAllowMaybeDenied) ShowDeniedBanner();
-        else
-        {
-            _bannerText.Text = FriendConnectGuide.MomentAAllow;
-            _btnFirewall.Visible = false;
-            _banner.Visible = true;
-            RelayoutForBanner();
-        }
-    }
+    private void MaybeShowBanner() => RefreshBannerVisibility();
 
     private void ShowDeniedBanner()
     {
         _settings.NetworkAllowMaybeDenied = true;
+        _settings.NetworkAllowBannerDismissed = false;
         _settings.Save();
-        _bannerText.Text = FriendConnectGuide.MomentADenied + Environment.NewLine + FriendConnectGuide.MomentAFirewallHint;
-        _btnFirewall.Visible = true;
-        _banner.Visible = true;
-        RelayoutForBanner();
+        ApplyDeniedBannerUi();
     }
 
     private void DismissBanner()
     {
         _settings.NetworkAllowBannerDismissed = true;
+        _settings.NetworkAllowMaybeDenied = false;
         _settings.Save();
         _banner.Visible = false;
         RelayoutForBanner();
+    }
+
+    /// <summary>
+    /// R005：已连上网络时收起「请点允许」；仅未连上或用户点了「我点了取消」时显示。
+    /// </summary>
+    private void RefreshBannerVisibility()
+    {
+        if (_settings.NetworkAllowMaybeDenied)
+        {
+            ApplyDeniedBannerUi();
+            return;
+        }
+
+        if (_settings.NetworkAllowBannerDismissed)
+        {
+            if (_banner.Visible)
+            {
+                _banner.Visible = false;
+                RelayoutForBanner();
+            }
+            return;
+        }
+
+        if (IsNetworkReadyForShare())
+        {
+            if (_banner.Visible)
+            {
+                _banner.Visible = false;
+                RelayoutForBanner();
+            }
+            return;
+        }
+
+        _bannerText.Text = FriendConnectGuide.MomentAAllow;
+        _btnFirewall.Visible = false;
+        if (!_banner.Visible)
+        {
+            _banner.Visible = true;
+            RelayoutForBanner();
+        }
+    }
+
+    private void ApplyDeniedBannerUi()
+    {
+        _bannerText.Text = FriendConnectGuide.MomentADenied + Environment.NewLine + FriendConnectGuide.MomentAFirewallHint;
+        _btnFirewall.Visible = true;
+        if (!_banner.Visible)
+        {
+            _banner.Visible = true;
+            RelayoutForBanner();
+        }
+        else
+        {
+            RelayoutForBanner();
+        }
+    }
+
+    private bool IsNetworkReadyForShare()
+    {
+        var phase = _host.RelayPhase;
+        if (phase is "ready" or "waiting" or "paired")
+            return true;
+        var text = _listenValue.Text ?? "";
+        return text == FriendConnectGuide.StatusReadyToShare
+               || text == FriendConnectGuide.StatusWaitingPeer
+               || text == "对方已连接";
     }
 
     private void RelayoutForBanner()
@@ -681,6 +735,8 @@ internal sealed class MainForm : Form
 
         if (FriendConnectGuide.LooksTechnicalLeak(_listenValue.Text))
             _listenValue.Text = FriendConnectGuide.StatusReadyToShare;
+
+        RefreshBannerVisibility();
     }
 
     private void RefreshClients()
