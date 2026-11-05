@@ -187,7 +187,7 @@ internal sealed class HelperWindow : Window
         clipBtn.Click += async (_, _) => await PasteFromClipboardAsync();
         _btnConnect = new Button
         {
-            Content = "连接",
+            Content = HelperSessionCopy.ConnectButtonText,
             Width = 120,
             Height = 36,
             FontWeight = FontWeight.Bold,
@@ -818,9 +818,11 @@ internal sealed class HelperWindow : Window
     private void SetConnectedUi(bool connected)
     {
         _btnConnect.IsEnabled = !connected;
+        _btnConnect.Content = HelperSessionCopy.SessionConnectButtonLabel(connected);
         _pasteBox.IsEnabled = !connected;
         if (connected)
         {
+            // R036：已连上 →「已连接」浅灰不可点（不再保留禁用的「连接」）
             _btnConnect.Background = Brush.Parse("#E8EAED");
             _btnConnect.Foreground = Brush.Parse("#9AA0A6");
         }
@@ -930,7 +932,7 @@ internal sealed class HelperWindow : Window
         {
             // 已连接：账号区不再保持实心绿主权重
             ApplyOwnConnectStyle(OwnConnectVisual.ConnectedLight);
-            _btnOwnConnect.Content = "已连接";
+            _btnOwnConnect.Content = HelperSessionCopy.ConnectedButtonText;
             _ownSelectHint.Text = "免密已连接「" + name + "」";
             return;
         }
@@ -1343,11 +1345,11 @@ internal sealed class HelperWindow : Window
         Width = Math.Max(Width, 720);
     }
 
-    /// <summary>UiShot：强调已连接后账号区「已连接」轻态 + 会话码「连接」灰禁。</summary>
+    /// <summary>UiShot：强调已连接后账号区「已连接」轻态 + 会话码主按钮「已连接」灰禁。</summary>
     internal void PrepareConnectedButtonLightForShot()
     {
         PrepareOwnerConnectedForShot();
-        _output.Text = "（截图）账号区为「已连接」轻态；上方会话码「连接」已灰禁用。";
+        _output.Text = "（截图）账号区为「已连接」轻态；上方会话码主按钮为不可点「已连接」。";
         _accountStatus.Text = "免密已连接 · 按钮轻态（截图）";
     }
 

@@ -184,7 +184,7 @@ internal sealed class MainForm : Form
         };
         pairCard.Controls.Add(_previewLabel);
 
-        _btnConnect = MakeButton("连接", 450, 160, 120);
+        _btnConnect = MakeButton(HelperSessionCopy.ConnectButtonText, 450, 160, 120);
         _btnConnect.Height = 36;
         _btnConnect.Font = new Font(Font.FontFamily, 11F, FontStyle.Bold);
         _btnConnect.BackColor = Color.FromArgb(0x0F, 0x9D, 0x58);
@@ -946,6 +946,20 @@ internal sealed class MainForm : Form
     private void SetConnectedUi(bool connected)
     {
         _btnConnect.Enabled = !connected;
+        _btnConnect.Text = HelperSessionCopy.SessionConnectButtonLabel(connected);
+        if (connected)
+        {
+            // R036：已连上 → 不可点「已连接」，非实心绿
+            _btnConnect.BackColor = Color.FromArgb(0xE8, 0xEA, 0xED);
+            _btnConnect.ForeColor = Color.FromArgb(0x9A, 0xA0, 0xA6);
+            _btnConnect.Cursor = Cursors.Default;
+        }
+        else
+        {
+            _btnConnect.BackColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+            _btnConnect.ForeColor = Color.White;
+            _btnConnect.Cursor = Cursors.Hand;
+        }
         _btnDisconnect.Enabled = connected;
         foreach (var b in _toolButtons) b.Enabled = connected;
         _inputBox.Enabled = !connected;

@@ -48,4 +48,18 @@ public class HelperSessionCopyTests
         Assert.False(HelperSessionCopy.ShowCommonTools(
             connected: HelperSessionCopy.ShowCommonTools(false))); // after peer end → false
     }
+
+    [Fact]
+    public void SessionConnectButton_ConnectedLabel_NotSolidConnect()
+    {
+        Assert.Equal("连接", HelperSessionCopy.ConnectButtonText);
+        Assert.Equal("已连接", HelperSessionCopy.ConnectedButtonText);
+        Assert.Equal("已连接", HelperSessionCopy.SessionConnectButtonLabel(connected: true));
+        Assert.Equal("连接", HelperSessionCopy.SessionConnectButtonLabel(connected: false));
+        Assert.NotEqual(HelperSessionCopy.ConnectButtonText, HelperSessionCopy.ConnectedButtonText);
+        Assert.Equal("对方已结束这次协助。", HelperSessionCopy.StatusPeerEndedAssist);
+        Assert.Equal("状态：未连接", HelperSessionCopy.StatusDisconnectedSelf);
+        Assert.Equal("连接失败", HelperSessionCopy.StatusConnectFailed);
+        Assert.Equal("已连接对方电脑", HelperSessionCopy.StatusConnected);
+    }
 }

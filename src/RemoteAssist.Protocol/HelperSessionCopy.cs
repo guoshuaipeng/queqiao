@@ -3,7 +3,7 @@ using System;
 namespace RemoteAssist.Protocol;
 
 /// <summary>
-/// 去协助端会话主状态（R035）：对方结束 / 自己断开 / 未连上失败 三类分场景。
+/// 去协助端会话主状态与会话码主按钮文案（R035/R036）。
 /// </summary>
 public static class HelperSessionCopy
 {
@@ -24,6 +24,16 @@ public static class HelperSessionCopy
     /// </summary>
     public static string StatusAfterConnectedSessionEnd(bool selfInitiatedDisconnect) =>
         selfInitiatedDisconnect ? StatusDisconnectedSelf : StatusPeerEndedAssist;
+
+    /// <summary>会话码区主按钮：未连上时可点实心绿。</summary>
+    public const string ConnectButtonText = "连接";
+
+    /// <summary>会话码区主按钮：已连上后不可点（非实心绿）。账号区免密连上后的文案也可复用此句。</summary>
+    public const string ConnectedButtonText = "已连接";
+
+    /// <summary>会话码主按钮文案：连上 →「已连接」；否则 →「连接」。</summary>
+    public static string SessionConnectButtonLabel(bool connected) =>
+        connected ? ConnectedButtonText : ConnectButtonText;
 
     /// <summary>R016：仅已连接时展示五个常用操作。</summary>
     public static bool ShowCommonTools(bool connected) => connected;
