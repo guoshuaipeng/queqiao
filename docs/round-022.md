@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（出包 + 安装说明小改）+ 鹊桥-服务端（替换官网文件）
-> 状态：**ready-for-product**（客户端出包+话术已交付，待服务端上架）
+> 状态：**产品已验收**
 > 依据：R021 产品已验收（`632928a`）；官网 Windows / Linux 包仍是 R021 之前产物，亲友从官网下到的客户端「复制安装说明」还没有带下载地址。
 
 R021 已让去协助端复制的安装说明带上官网下载地址。但公网仍挂着旧包：对方按说明去官网下载后，自己再当协助方时，复制出来的说明又变回旧文案。本轮把官网包换到含 R021 的客户端，并顺手把安装说明里偏 Windows 防火墙的「点允许连网」改成跨平台中性说法。
@@ -125,3 +125,64 @@ macOS 尚未提供正式下载。
 - 未重打 `RemoteAssist-Agent-Setup-0.1.0.exe` 当官网主包
 - 未改 MCP 三步 /「复制 MCP 配置」反馈；未改 R013–R020 原文；未改 trust-levels「才问你」
 
+
+
+## 交付说明（鹊桥-服务端 · 2026-11-06 Asia/Shanghai）
+
+### 上架摘要
+
+已将客户端交出的 R022 包替换到公网 `remote-assist-site` 下载目录（`/var/lib/remote-assist-site/downloads`），未改 `site/` HTML，未重启 `remote-assist-site` / `remote-assist-relay`，未上架 macOS，未改接单页与后台已验收文案，未占用 17891，未把安装包嵌进站点进程。
+
+### 公网文件
+
+| 项 | Windows | Linux |
+|------|---------|-------|
+| URL | http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe | http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz |
+| Content-Disposition 文件名 | `RemoteAssist-Setup-0.1.0.exe` | `queqiao-linux-x64.tar.gz`（**无**内部 `-fd`） |
+| Content-Length / 字节 | 75,582,719 | 7,999,909 |
+| SHA256（公网 GET 正文） | `6AC3CE69AD0FB40C245CF2071D7E8E3EA454E97637595F6D68F4B20484400CD1` | `B90E3B28F323174F3C1CB35D3CACDB017C5C47F368D10CFF8D5571DECD0AB1CE` |
+| Content-Type | application/octet-stream | application/gzip |
+| Last-Modified | 2026-11-05 16:06:49 GMT → **2026-11-06 00:06:49 Asia/Shanghai** | 同左 |
+| 文件头 | MZ (`4d5a`) | gzip (`1f8b08`) |
+
+与客户端交付表一致；相对旧包（Windows 75,503,088 / `78175CDC…`；Linux 7,999,640 / `EC1C7211…`）字节与 SHA256 均不同。服务器侧 `sha256sum` 与公网 GET 一致。
+
+### 首页与路由抽查
+
+- 首页导语仍含「Windows 和 Linux 都可下载使用」，**未**出现「目前以 Windows 为主」
+- Linux 旁注仍是「解开后运行。需要先装好 .NET 8 桌面方向运行时」
+- macOS 仍「即将提供」
+- 亲友可见首页未写端口号、「放行入站」、「也可下载自包含包」、TLS、stdio、17891
+- `/ask`、`/admin` 均为 HTTP 200
+- `remote-assist-site`、`remote-assist-relay` 均为 active；relay 仍在听 `*:17891`（仅检查，未重启）
+
+### 截图
+
+下载页公网截图（如 `r022-home-download.png` / `r022-win-download.png` / `r022-linux-download.png`）由服务端接着补拍后写入 `docs/screenshots/`；**勿覆盖**客户端已有的 `r022-install-entry.png`、`r022-install-copied.png`、`r022-clipboard-preview.png`。
+
+### 明确未做
+
+- 未 git commit / 推送（截图补齐后再由父代理一并提交）
+- 未开下一轮；未改 `site/` HTML；未上架 macOS
+- 未重启中继或站点；未读/打印 `/etc/remote-assist-site.env`
+
+
+## 产品验收（鹊桥-产品 · 2026-11-06 00:20 Asia/Shanghai）
+
+对照本轮交付说明、`docs/screenshots/r022-*`、公网 HEAD/GET 验收 **通过**。
+
+### 核对
+
+- 公网 Windows：`Content-Length` 75,582,719；`Content-Disposition` 文件名 `RemoteAssist-Setup-0.1.0.exe`；与客户端出包字节一致（本机产物 SHA256 `6AC3CE69AD0FB40C245CF2071D7E8E3EA454E97637595F6D68F4B20484400CD1`）。相对 R021 旧包 75,503,088 已变化。
+- 公网 Linux：GET 正文 7,999,909 字节，SHA256 `B90E3B28F323174F3C1CB35D3CACDB017C5C47F368D10CFF8D5571DECD0AB1CE`（产品经公网下载核对）；文件名无内部 `-fd`；文件头 gzip；相对旧包 `EC1C7211…9DCE3650` 已变化。
+- 首页导语「Windows 和 Linux 都可下载使用」；无「目前以 Windows 为主」；Linux 旁注仍提 .NET 8 桌面方向运行时；macOS「即将提供」；亲友首页未见端口 / 17891 / 放行入站 / stdio / TLS。
+- `/` `/ask` `/admin` 均为 HTTP 200。
+- 客户端截图：`r022-clipboard-preview.png` 含官网入口、Win/Linux 直链、macOS 尚未提供正式下载、新句「如果系统问起是否允许联网，选择允许。」；`r022-install-entry.png` / `r022-install-copied.png` 仍为轻按钮「复制安装说明」+ 唯一实心绿「连接」+ 反馈「说明里已带上官网下载地址，发给对方即可」。
+
+### 缺口（不阻断）
+
+- 服务端尚未补公网地址栏下载区截图（`r022-home-download.png` 等）；交 R023 打磨一并补上，**勿覆盖**客户端已有三张。
+- 入口/反馈两图与 R017/R021 字节相同（本轮未改其视觉）；ui-shot，非现场公网双机。
+- 本轮未把 macOS 写成可下；未改接单页/后台已验收文案。
+
+出包 HEAD：`71893d2`。已开 R023。
