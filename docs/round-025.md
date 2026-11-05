@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（复制安装说明）+ 鹊桥-服务端（官网 Windows 旁注）
-> 状态：**done（待产品验收）**
+> 状态：**done（产品已验收）**
 > 依据：R024 产品已验收（公网包已含 R023 运行时指引）；亲友从官网用浏览器下载 Windows 安装包时，会看到「通常不会下载…请在打开前确保信任」。安装说明和官网目前只讲了缺 .NET 怎么装、系统问起联网怎么选，没讲这一步。
 
 R024 验收时，产品在公网下载截图里看到 Edge 对 `RemoteAssist-Setup-0.1.0.exe` 提示「通常不会下载」。这是 Windows 亲友从官网下载后的下一个台阶：不知道该点保留还是该停手。本轮用一句白话补上，不谈证书、签名或 HTTP。
@@ -159,3 +159,19 @@ macOS 尚未提供正式下载。
 ### 明确未做
 
 - 未开下一轮；未替换公网安装包；未重启中继；未改接单页 / 后台；未改 `docs/architecture.md`、`relay-deploy.md`、`round-005/006/007.md`、`tools/`；未改 `docs/site-copy.md`（无下载区上屏文案）。
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r025-*` 与公网首页独立验收通过（文案 `f423db1`，旁注 `40cae49`）。
+
+独立核对：
+
+- 客户端 `InstallInstructions` 全文末尾已追加「如果浏览器提示通常不会下载，选择保留；如果打开时系统提示不认识这个程序，选择仍要运行。」剪贴板预览 `r025-clipboard-preview.png` 可见该句，以及官网入口/Win/Linux 直链、macOS 尚未提供正式下载、联网中性句、.NET 8 运行时两句。`InstallCopiedHint` 仍为「说明里已带上官网下载地址，发给对方即可」，反馈只出现一次。
+- `r025-install-entry.png` / `r025-install-copied.png` 分别与 r023（及更早同源）入口图、反馈图字节相同（MD5 `8ED52115…` / `ED902C94…`），予以记录，不挡验收：入口与反馈按要求未改。
+- 公网首页 Windows 下载按钮旁已是「若浏览器提示通常不会下载，选择保留即可。」Linux 旁注仍是「解开后运行。需要先装好 .NET 8 桌面方向运行时。打开 [微软 .NET 8 下载页](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，选运行时、不要选 SDK。」导语仍是「Windows 和 Linux 都可下载使用」；macOS 仍「即将提供」。未见端口 / 17891 / 放行入站 / 自包含 / TLS / stdio / 证书 / 签名 / SmartScreen。
+- `docs/screenshots/r025-home-download.png`：地址栏可见 `121.196.45.81/#download`；Windows 新旁注、Linux 旁注与 macOS「即将提供」均可见。未覆盖 `r022-*` / `r023-*` / `r024-*`。
+- 公网安装包未替换：Windows HEAD Content-Length 仍 **75,583,762**，Linux 仍 **8,000,095**，Content-Disposition 仍为 `queqiao-linux-x64.tar.gz`（无 `-fd`），Last-Modified 仍为 Thu, 05 Nov 2026 17:04:16 GMT（2026-11-06 01:04:16 Asia/Shanghai）。`/`、`/ask`、`/admin` HTTP 200。
+
+缺口：入口/反馈图与前轮字节相同；本轮未换公网安装包（交 R026）；clipboard / 入口 / 反馈为 ui-shot。
+
+已开 R026（官网安装包跟上含 R025 的客户端；替换后首页 Windows / Linux 旁注与导语不回退）。
