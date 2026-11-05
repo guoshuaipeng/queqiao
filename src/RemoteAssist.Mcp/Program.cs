@@ -36,17 +36,16 @@ internal static class Program
 
         try
         {
-            _client = await AssistClient.PairAsync(opts.Host, opts.Port, opts.Code, opts.Permission, "mcp")
-                .ConfigureAwait(false);
+            _client = await AssistClient.PairAsync(opts, "mcp").ConfigureAwait(false);
             await Console.Error.WriteLineAsync(
-                    $"[mcp] paired {opts.Host}:{opts.Port} perm={_client.Permission}")
+                    $"[mcp] paired {opts.Host}:{opts.Port} perm={_client.Permission} tls={(!opts.Insecure).ToString().ToLowerInvariant()}")
                 .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             await Console.Error.WriteLineAsync("[mcp] 配对失败: " + ex.Message).ConfigureAwait(false);
             await Console.Error.WriteLineAsync(
-                    $"  目标 {opts.Host}:{opts.Port} code={opts.Code} perm={opts.Permission}").ConfigureAwait(false);
+                    $"  目标 {opts.Host}:{opts.Port} code={opts.Code} perm={opts.Permission} tls={(!opts.Insecure).ToString().ToLowerInvariant()} fp={(opts.Fingerprint is null ? "-" : opts.Fingerprint[..Math.Min(16, opts.Fingerprint.Length)] + "…")}").ConfigureAwait(false);
             await Console.Error.WriteLineAsync(
                     "  请确认 Agent 已在局域网启动，会话码未过期，且本机已在 Agent 确认配对。")
                 .ConfigureAwait(false);

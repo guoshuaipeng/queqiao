@@ -28,12 +28,13 @@
 ## 连接
 
 - **v1：仅局域网** TCP 直连（默认端口 `17890`）。
+- **传输：默认 TLS 1.2/1.3**（Agent 进程内临时自签证书；QR 载荷带 `fp=` SHA-256 指纹，客户端钉扎校验）。`--insecure` 明文仅调试。
 - **后期：公网中继隧道** — 代码占位见 `src/RemoteAssist.Relay.Stub`。可选自建 relay 或临时用 FRP 类方案。
 
 ## 会话展示与托盘
 
 - 默认 **系统托盘常驻**：菜单含显示会话信息、刷新会话码、**已配对客户端（一键断开 / 断开全部）**、退出。
-- **会话信息窗**：大号会话码 + 二维码（`remoteassist:pair?v=1&host=&port=&code=`）；**主机 IP 下拉**（排除环回 / APIPA / 198.18–19）；「复制载荷」；关闭窗 = 回托盘。
+- **会话信息窗**：大号会话码 + 二维码（`remoteassist:pair?v=1&host=&port=&code=&tls=1&fp=`）；**主机 IP 下拉**（排除环回 / APIPA / 198.18–19）；「复制载荷」；关闭窗 = 回托盘。
 - Helper 支持：手输 `host + code`、整段载荷、`--payload`、`--clipboard`。
 - `--headless` / `--yes`：**不启托盘与窗体**，保持 CLI。
 
@@ -60,9 +61,10 @@
 - 账号体系与云端用户中心
 - 公网中继（仅 stub）
 - 修改 AI-SSH-Pro 本体
+- 正式 CA / 客户端证书互认（v1 用自签 + 指纹）
 
 ## 技术选型
 
 - Windows Agent / Helper / MCP：**.NET 8**
 - 二维码：QRCoder
-- 传输：长度前缀 JSON over TCP（局域网）
+- 传输：长度前缀 JSON over TCP；默认 SslStream TLS + 指纹钉扎（局域网）

@@ -39,10 +39,11 @@ internal static class Program
             RemoteAssist Helper — 协助端 CLI（局域网）
 
             用法:
-              pair <host> <sessionCode> [--port 17890] [--perm Assist|Guest|Admin]
-              pair <remoteassist:pair?v=1&host=...&port=...&code=...> [--perm Assist]
+              pair <host> <sessionCode> --fp <SHA256指纹> [--port 17890] [--perm Assist|Guest|Admin]
+              pair <remoteassist:pair?v=1&host=...&port=...&code=...&tls=1&fp=...> [--perm Assist]
               pair --payload <载荷> [--perm Assist]
               pair --clipboard [--perm Assist]
+              调试明文: 加 --insecure（Agent 也需 --insecure）
 
               oneshot 同上（冒烟：配对 → procs → run）
 
@@ -59,11 +60,11 @@ internal static class Program
 
     private static async Task<int> CmdPairAsync(string[] args)
     {
-        if (!TryParseConnectArgs(args, out var host, out var port, out var code, out var perm, out var err))
+        if (!TryParseConnectArgs(args, out var host, out var port, out var code, out var perm, out var fp, out var insecure, out var err))
             return Fail(err);
 
-        Console.WriteLine($"正在配对 {host}:{port} 会话码={code} 权限={perm} ...");
-        using var client = await AssistClient.PairAsync(host, port, code, perm, "helper-cli").ConfigureAwait(false);
+        Console.WriteLine($"正在配对 {host}:{port} 会话码={code} 权限={perm} 传输={(insecure ? "明文" : "TLS")} ...");
+        using var client = await AssistClient.PairAsync(host, port, code, perm, "helper-cli", fp, useTls: !insecure).ConfigureAwait(false);
         Console.WriteLine($"配对成功。权限={client.Permission} token={client.Token![..8]}…");
         Console.WriteLine("输入 help 查看命令，quit 退出。");
 
@@ -132,11 +133,11 @@ internal static class Program
 
     private static async Task<int> CmdOneshotAsync(string[] args)
     {
-        if (!TryParseConnectArgs(args, out var host, out var port, out var code, out _, out var err))
+        if (!TryParseConnectArgs(args, out var host, out var port, out var code, out _, out var fp, out var insecure, out var err))
             return Fail(err);
 
-        using var client = await AssistClient.PairAsync(host, port, code, PermissionLevel.Assist, "helper-oneshot").ConfigureAwait(false);
-        Console.WriteLine($"PAIR_OK perm={client.Permission} host={host}:{port}");
+        using var client = await AssistClient.PairAsync(host, port, code, PermissionLevel.Assist, "helper-oneshot", fp, useTls: !insecure).ConfigureAwait(false);
+        Console.WriteLine($"PAIR_OK perm={client.Permission} host={host}:{port} tls={(!insecure).ToString().ToLowerInvariant()}");
 
         var procs = await client.InvokeToolAsync(ToolKind.ListProcesses).ConfigureAwait(false);
         if (!procs.Ok) return Fail("procs failed: " + procs.Error);
@@ -163,12 +164,16 @@ internal static class Program
         out int port,
         out string code,
         out PermissionLevel perm,
+        out string? fingerprint,
+        out bool insecure,
         out string error)
     {
         host = "";
         port = DefaultPort;
         code = "";
         perm = PermissionLevel.Assist;
+        fingerprint = null;
+        insecure = false;
         error = "";
 
         var positional = new List<string>();
@@ -176,6 +181,8 @@ internal static class Program
         var fromClipboard = false;
         var portOverride = false;
         var portValue = DefaultPort;
+        string? fpOverride = null;
+        var insecureFlag = false;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -210,6 +217,19 @@ internal static class Program
                     return false;
                 }
             }
+            else if (a is "--fp" or "--fingerprint")
+            {
+                if (i + 1 >= args.Length)
+                {
+                    error = "--fp 需要证书指纹";
+                    return false;
+                }
+                fpOverride = args[++i];
+            }
+            else if (a is "--insecure")
+            {
+                insecureFlag = true;
+            }
             else if (a.StartsWith('-'))
             {
                 error = $"未知选项: {a}";
@@ -239,6 +259,19 @@ internal static class Program
         code = target.Code;
         // 载荷自带 port；若用户同时给了 --port，以 --port 覆盖（便于本机 127.0.0.1 转发调试）
         port = portOverride ? portValue : target.Port;
+
+        fingerprint = fpOverride is not null
+            ? TlsCertUtil.NormalizeFingerprint(fpOverride)
+            : target.Fingerprint;
+
+        insecure = insecureFlag || !target.UseTls;
+
+        if (!insecure && string.IsNullOrEmpty(TlsCertUtil.NormalizeFingerprint(fingerprint)))
+        {
+            error = "默认 TLS 需要证书指纹：请使用含 fp= 的载荷，或 --fp <指纹>；明文调试加 --insecure";
+            return false;
+        }
+
         return true;
     }
 

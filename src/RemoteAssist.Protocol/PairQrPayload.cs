@@ -1,14 +1,20 @@
 namespace RemoteAssist.Protocol;
 
 /// <summary>
-/// 会话码二维码载荷。v1 Helper 仍用手输码；载荷便于以后扫码与手机展示。
-/// 格式：remoteassist:pair?v=1&amp;host=...&amp;port=...&amp;code=...
+/// 会话码二维码载荷。
+/// 格式：remoteassist:pair?v=1&amp;host=...&amp;port=...&amp;code=...&amp;tls=1&amp;fp=&lt;SHA256&gt;
+/// tls=0 表示明文（仅 --insecure 调试）。
 /// </summary>
 public static class PairQrPayload
 {
     public const string SchemePrefix = "remoteassist:pair";
 
-    public static string Build(string host, int port, string code)
+    public static string Build(
+        string host,
+        int port,
+        string code,
+        string? fingerprint = null,
+        bool useTls = true)
     {
         if (string.IsNullOrWhiteSpace(host))
             throw new ArgumentException("host is required", nameof(host));
@@ -19,14 +25,44 @@ public static class PairQrPayload
         if (string.IsNullOrWhiteSpace(normalized))
             throw new ArgumentException("code is required", nameof(code));
 
-        return $"{SchemePrefix}?v=1&host={Uri.EscapeDataString(host.Trim())}&port={port}&code={Uri.EscapeDataString(normalized)}";
+        var sb = new System.Text.StringBuilder();
+        sb.Append(SchemePrefix)
+            .Append("?v=1&host=").Append(Uri.EscapeDataString(host.Trim()))
+            .Append("&port=").Append(port)
+            .Append("&code=").Append(Uri.EscapeDataString(normalized));
+
+        if (useTls)
+        {
+            var fp = TlsCertUtil.NormalizeFingerprint(fingerprint);
+            if (string.IsNullOrEmpty(fp))
+                throw new ArgumentException("TLS 载荷需要证书指纹 fingerprint", nameof(fingerprint));
+            sb.Append("&tls=1&fp=").Append(Uri.EscapeDataString(fp));
+        }
+        else
+        {
+            sb.Append("&tls=0");
+        }
+
+        return sb.ToString();
     }
 
-    public static bool TryParse(string payload, out string host, out int port, out string code)
+    /// <summary>兼容旧调用：仅解析 host/port/code。</summary>
+    public static bool TryParse(string payload, out string host, out int port, out string code) =>
+        TryParse(payload, out host, out port, out code, out _, out _);
+
+    public static bool TryParse(
+        string payload,
+        out string host,
+        out int port,
+        out string code,
+        out string? fingerprint,
+        out bool useTls)
     {
         host = "";
         port = 0;
         code = "";
+        fingerprint = null;
+        useTls = true;
         if (string.IsNullOrWhiteSpace(payload))
             return false;
 
@@ -59,6 +95,26 @@ public static class PairQrPayload
         host = h.Trim();
         port = p;
         code = SessionCodeGenerator.Normalize(c);
-        return code.Length > 0;
+        if (code.Length == 0)
+            return false;
+
+        if (map.TryGetValue("tls", out var tlsStr) &&
+            (tlsStr == "0" || tlsStr.Equals("false", StringComparison.OrdinalIgnoreCase) ||
+             tlsStr.Equals("off", StringComparison.OrdinalIgnoreCase)))
+        {
+            useTls = false;
+        }
+        else
+        {
+            useTls = true;
+        }
+
+        if (map.TryGetValue("fp", out var fpRaw) && !string.IsNullOrWhiteSpace(fpRaw))
+            fingerprint = TlsCertUtil.NormalizeFingerprint(fpRaw);
+        else
+            fingerprint = null;
+
+        // 旧载荷无 tls/fp：仍视为「想用 TLS」，但缺指纹需调用方用 --fp 或 --insecure 补齐
+        return true;
     }
 }

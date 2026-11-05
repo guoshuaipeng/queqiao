@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using RemoteAssist.Protocol;
 using RemoteAssist.Protocol.Messages;
@@ -26,6 +27,9 @@ internal sealed class AgentHost
     private readonly int _confirmTimeoutSeconds;
     private TcpListener? _listener;
     private CancellationTokenSource? _cts;
+    private readonly bool _insecure;
+    private X509Certificate2? _serverCert;
+    private string? _certFingerprint;
 
     public int Port { get; }
     public string AuditPath { get; }
@@ -40,7 +44,8 @@ internal sealed class AgentHost
         bool headless,
         int confirmTimeoutSeconds,
         AuditLog audit,
-        string auditPath)
+        string auditPath,
+        bool insecure = false)
     {
         Port = port;
         _autoYes = autoYes;
@@ -48,9 +53,15 @@ internal sealed class AgentHost
         _confirmTimeoutSeconds = Math.Clamp(confirmTimeoutSeconds, 5, 600);
         _audit = audit;
         AuditPath = auditPath;
+        _insecure = insecure;
         LanIps = LanAddressSelector.EnumerateLocalIPv4();
         _sessionCode = SessionCodeGenerator.Generate(6);
         _selectedHost = LanIps.FirstOrDefault() ?? "127.0.0.1";
+        if (!_insecure)
+        {
+            _serverCert = TlsCertUtil.CreateEphemeralServerCert();
+            _certFingerprint = TlsCertUtil.Sha256Fingerprint(_serverCert);
+        }
     }
 
     public string SessionCode
@@ -74,12 +85,26 @@ internal sealed class AgentHost
 
     public string PrimaryHost => SelectedHost;
 
+    /// <summary>当前 TLS 证书 SHA-256 指纹；明文模式为 null。</summary>
+    public string? CertificateFingerprint
+    {
+        get { lock (_codeLock) return _certFingerprint; }
+    }
+
+    public bool UseTls => !_insecure;
+
     public string QrPayload
     {
         get
         {
             lock (_codeLock)
-                return PairQrPayload.Build(SelectedHost, Port, _sessionCode);
+            {
+                if (_insecure)
+                    return PairQrPayload.Build(SelectedHost, Port, _sessionCode, fingerprint: null, useTls: false);
+                var fp = _certFingerprint
+                    ?? throw new InvalidOperationException("TLS 证书尚未生成，请先 Start()");
+                return PairQrPayload.Build(SelectedHost, Port, _sessionCode, fingerprint: fp, useTls: true);
+            }
         }
     }
 
@@ -173,6 +198,9 @@ internal sealed class AgentHost
         Console.WriteLine("  RemoteAssist Agent (局域网 v1)");
         Console.WriteLine("========================================");
         Console.WriteLine($"监听端口 : {Port}");
+        Console.WriteLine($"传输加密 : {(_insecure ? "明文 --insecure（仅调试）" : "TLS 1.2/1.3 + 证书指纹钉扎（默认）")}");
+        if (!_insecure && _certFingerprint is not null)
+            Console.WriteLine($"证书指纹 : {_certFingerprint}");
         Console.WriteLine($"本机地址 : {string.Join(", ", LanIps)}");
         Console.WriteLine($"QR 主机  : {SelectedHost}");
         Console.WriteLine($"会话码   : {SessionCode}");
@@ -200,11 +228,16 @@ internal sealed class AgentHost
         if (_listener is not null)
             return;
 
+        if (!_insecure && _serverCert is not null)
+            _audit.Write("tls_cert", $"fp={_certFingerprint}");
+        else if (_insecure)
+            _audit.Write("tls_off", "insecure plaintext");
+
         _cts = new CancellationTokenSource();
         _listener = new TcpListener(IPAddress.Any, Port);
         _listener.Start();
         _audit.Write("agent_start",
-            $"port={Port}; code={SessionCode}; host={SelectedHost}; confirm={(_autoYes ? "auto" : _headless ? "console" : "ui-tray")}; timeout={_confirmTimeoutSeconds}s");
+            $"port={Port}; code={SessionCode}; host={SelectedHost}; tls={(!_insecure).ToString().ToLowerInvariant()}; confirm={(_autoYes ? "auto" : _headless ? "console" : "ui-tray")}; timeout={_confirmTimeoutSeconds}s");
         _ = Task.Run(() => AcceptLoopAsync(_cts.Token));
     }
 
@@ -221,6 +254,9 @@ internal sealed class AgentHost
             }
         }
         _audit.Write("agent_stop", "listener stopped");
+        try { _serverCert?.Dispose(); } catch { /* ignore */ }
+        _serverCert = null;
+        lock (_codeLock) _certFingerprint = null;
         PairedClientsChanged?.Invoke();
     }
 
@@ -264,40 +300,57 @@ internal sealed class AgentHost
         {
             using (client)
             {
-                var stream = client.GetStream();
-                while (!connCts.IsCancellationRequested)
+                Stream stream = client.GetStream();
+                System.Net.Security.SslStream? ssl = null;
+                try
                 {
-                    WireEnvelope? envelope;
-                    try
+                    if (!_insecure)
                     {
-                        envelope = await FrameIo.ReadAsync(stream, connCts.Token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break;
+                        if (_serverCert is null)
+                            throw new InvalidOperationException("TLS enabled but server certificate missing");
+                        ssl = await TlsTransport.AuthenticateAsServerAsync(stream, _serverCert, connCts.Token)
+                            .ConfigureAwait(false);
+                        stream = ssl;
                     }
 
-                    if (envelope is null)
-                        break;
-
-                    switch (envelope.Type.ToLowerInvariant())
+                    while (!connCts.IsCancellationRequested)
                     {
-                        case "pair":
-                            session = await HandlePairAsync(stream, envelope, remote, connCts).ConfigureAwait(false);
+                        WireEnvelope? envelope;
+                        try
+                        {
+                            envelope = await FrameIo.ReadAsync(stream, connCts.Token).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException)
+                        {
                             break;
-                        case "tool":
-                            await HandleToolAsync(stream, envelope, session).ConfigureAwait(false);
+                        }
+
+                        if (envelope is null)
                             break;
-                        case "ping":
-                            await FrameIo.WriteAsync(stream, "pong", new { }, token: session?.Token, id: envelope.Id)
-                                .ConfigureAwait(false);
-                            break;
-                        default:
-                            await FrameIo.WriteAsync(stream, "error",
-                                new ErrorPayload { Message = $"Unknown type: {envelope.Type}" },
-                                id: envelope.Id).ConfigureAwait(false);
-                            break;
+
+                        switch (envelope.Type.ToLowerInvariant())
+                        {
+                            case "pair":
+                                session = await HandlePairAsync(stream, envelope, remote, connCts).ConfigureAwait(false);
+                                break;
+                            case "tool":
+                                await HandleToolAsync(stream, envelope, session).ConfigureAwait(false);
+                                break;
+                            case "ping":
+                                await FrameIo.WriteAsync(stream, "pong", new { }, token: session?.Token, id: envelope.Id)
+                                    .ConfigureAwait(false);
+                                break;
+                            default:
+                                await FrameIo.WriteAsync(stream, "error",
+                                    new ErrorPayload { Message = $"Unknown type: {envelope.Type}" },
+                                    id: envelope.Id).ConfigureAwait(false);
+                                break;
+                        }
                     }
+                }
+                finally
+                {
+                    try { ssl?.Dispose(); } catch { /* ignore */ }
                 }
             }
         }
@@ -319,7 +372,7 @@ internal sealed class AgentHost
     }
 
     private async Task<SessionState?> HandlePairAsync(
-        NetworkStream stream,
+        Stream stream,
         WireEnvelope envelope,
         string remote,
         CancellationTokenSource connCts)
@@ -396,7 +449,7 @@ internal sealed class AgentHost
         return session;
     }
 
-    private async Task HandleToolAsync(NetworkStream stream, WireEnvelope envelope, SessionState? sessionHint)
+    private async Task HandleToolAsync(Stream stream, WireEnvelope envelope, SessionState? sessionHint)
     {
         var session = ResolveSession(envelope.Token, sessionHint);
         if (session is null)

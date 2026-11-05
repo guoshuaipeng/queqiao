@@ -4,10 +4,12 @@ namespace RemoteAssist.Protocol.Tests;
 
 public class McpConfigSnippetTests
 {
+    private const string SampleFp = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+
     [Fact]
     public void BuildCursorEnvPayload_ContainsExeAndPayload()
     {
-        var payload = PairQrPayload.Build("192.168.1.10", 17890, "ABC123");
+        var payload = PairQrPayload.Build("192.168.1.10", 17890, "ABC123", SampleFp);
         var json = McpConfigSnippet.BuildCursorEnvPayload(
             @"E:\IdeaProjects\remote-assist\artifacts\mcp-win-x64-sc\RemoteAssist.Mcp.exe",
             payload);
@@ -24,7 +26,7 @@ public class McpConfigSnippetTests
     [Fact]
     public void BuildCursorArgsPayload_UsesPayloadArg()
     {
-        var payload = PairQrPayload.Build("10.0.0.1", 19000, "ZZ9900");
+        var payload = PairQrPayload.Build("10.0.0.1", 19000, "ZZ9900", SampleFp);
         var json = McpConfigSnippet.BuildCursorArgsPayload(@"C:\tools\RemoteAssist.Mcp.exe", payload);
         Assert.Contains("\"--payload\"", json);
         Assert.Contains(payload, json);
@@ -35,7 +37,7 @@ public class McpConfigSnippetTests
     [Fact]
     public void BuildClipboardBundle_IncludesBothStyles()
     {
-        var payload = PairQrPayload.Build("127.0.0.1", 17890, "TEST01");
+        var payload = PairQrPayload.Build("127.0.0.1", 17890, "TEST01", SampleFp);
         var text = McpConfigSnippet.BuildClipboardBundle(
             McpConfigSnippet.DefaultRelativeExeHint.Replace('/', Path.DirectorySeparatorChar),
             payload);

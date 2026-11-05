@@ -68,6 +68,8 @@ public class LanAddressSelectorTests
 
 public class PairTargetResolverTests
 {
+    private const string SampleFp = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+
     [Fact]
     public void Resolve_HostAndCode()
     {
@@ -76,26 +78,31 @@ public class PairTargetResolverTests
         Assert.Equal("192.168.1.5", r.Host);
         Assert.Equal(17890, r.Port);
         Assert.Equal("ABC123", r.Code);
+        Assert.Null(r.Fingerprint);
+        Assert.True(r.UseTls);
     }
 
     [Fact]
     public void Resolve_FullPayloadAsPositional()
     {
-        var payload = PairQrPayload.Build("10.0.0.9", 19000, "ZZZZ01");
+        var payload = PairQrPayload.Build("10.0.0.9", 19000, "ZZZZ01", SampleFp);
         Assert.True(PairTargetResolver.TryResolve(new[] { payload }, null, 17890, out var r, out _));
         Assert.Equal("10.0.0.9", r.Host);
         Assert.Equal(19000, r.Port);
         Assert.Equal("ZZZZ01", r.Code);
+        Assert.Equal(SampleFp, r.Fingerprint);
+        Assert.True(r.UseTls);
     }
 
     [Fact]
     public void Resolve_ExplicitPayload_WinsOverPositional()
     {
-        var payload = PairQrPayload.Build("10.0.0.1", 17890, "AAAA11");
+        var payload = PairQrPayload.Build("10.0.0.1", 17890, "AAAA11", SampleFp);
         Assert.True(PairTargetResolver.TryResolve(
             new[] { "ignored", "BBBB22" }, payload, 17890, out var r, out _));
         Assert.Equal("10.0.0.1", r.Host);
         Assert.Equal("AAAA11", r.Code);
+        Assert.Equal(SampleFp, r.Fingerprint);
     }
 
     [Fact]

@@ -13,6 +13,7 @@ internal static class Program
         var port = DefaultPort;
         var autoYes = args.Any(a => a is "--yes" or "--auto-yes");
         var headless = args.Any(a => a is "--headless");
+        var insecure = args.Any(a => a is "--insecure");
         var confirmTimeoutSeconds = DefaultConfirmTimeoutSeconds;
         for (var i = 0; i < args.Length; i++)
         {
@@ -26,7 +27,7 @@ internal static class Program
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RemoteAssist", "audit.log");
         var audit = new AuditLog(auditPath);
-        var host = new AgentHost(port, autoYes, headless, confirmTimeoutSeconds, audit, auditPath);
+        var host = new AgentHost(port, autoYes, headless, confirmTimeoutSeconds, audit, auditPath, insecure);
         host.PrintBanner();
 
         // headless / --yes：纯 CLI，不启托盘与会话窗

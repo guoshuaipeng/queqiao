@@ -13,10 +13,16 @@ public sealed class AssistConnectOptions
     public required string Code { get; init; }
     public PermissionLevel Permission { get; init; } = PermissionLevel.Assist;
 
+    /// <summary>期望的 Agent 证书 SHA-256 指纹（TLS 钉扎）。</summary>
+    public string? Fingerprint { get; init; }
+
+    /// <summary>true = 明文 TCP（仅调试）。默认 false = TLS。</summary>
+    public bool Insecure { get; init; }
+
     /// <summary>
     /// 从 argv + 环境变量解析。
-    /// env: REMOTE_ASSIST_PAYLOAD / HOST / PORT / CODE / PERM
-    /// args: --payload|-P, --host, --port|-p, --code, --perm；或 positional 载荷 / host+code
+    /// env: REMOTE_ASSIST_PAYLOAD / HOST / PORT / CODE / PERM / FP / INSECURE
+    /// args: --payload|-P, --host, --port|-p, --code, --perm, --fp, --insecure；或 positional 载荷 / host+code
     /// </summary>
     public static bool TryParse(
         IReadOnlyList<string> args,
@@ -33,6 +39,8 @@ public sealed class AssistConnectOptions
         int? argPort = null;
         string? argCode = null;
         PermissionLevel? argPerm = null;
+        string? argFp = null;
+        bool? argInsecure = null;
 
         for (var i = 0; i < args.Count; i++)
         {
@@ -82,6 +90,19 @@ public sealed class AssistConnectOptions
                 }
                 argPerm = pl;
             }
+            else if (a is "--fp" or "--fingerprint")
+            {
+                if (i + 1 >= args.Count)
+                {
+                    error = "--fp 需要证书指纹（SHA-256 hex）";
+                    return false;
+                }
+                argFp = args[++i];
+            }
+            else if (a is "--insecure")
+            {
+                argInsecure = true;
+            }
             else if (a is "-h" or "--help" or "help")
             {
                 error = "help";
@@ -89,7 +110,7 @@ public sealed class AssistConnectOptions
             }
             else if (a.StartsWith('-'))
             {
-                error = $"未知选项: {a}（支持 --payload/--host/--port/--code/--perm）";
+                error = $"未知选项: {a}（支持 --payload/--host/--port/--code/--perm/--fp/--insecure）";
                 return false;
             }
             else
@@ -103,6 +124,8 @@ public sealed class AssistConnectOptions
         var envPortStr = NullIfEmpty(getEnv("REMOTE_ASSIST_PORT"));
         var envCode = NullIfEmpty(getEnv("REMOTE_ASSIST_CODE"));
         var envPermStr = NullIfEmpty(getEnv("REMOTE_ASSIST_PERM"));
+        var envFp = NullIfEmpty(getEnv("REMOTE_ASSIST_FP"));
+        var envInsecure = ParseTruthy(getEnv("REMOTE_ASSIST_INSECURE"));
 
         var explicitPayload = NullIfEmpty(argPayload) ?? envPayload;
 
@@ -130,11 +153,16 @@ public sealed class AssistConnectOptions
         var host = target.Host;
         var port = target.Port;
         var code = target.Code;
+        var fp = target.Fingerprint;
+        var useTlsFromPayload = target.UseTls;
 
         // 显式命令行可覆盖载荷内字段（本机调试 / 端口转发）
         if (argHost is not null) host = argHost.Trim();
         if (argPort is int pOverride) port = pOverride;
         if (argCode is not null) code = SessionCodeGenerator.Normalize(argCode);
+        if (argFp is not null) fp = TlsCertUtil.NormalizeFingerprint(argFp);
+        else if (envFp is not null && string.IsNullOrEmpty(fp))
+            fp = TlsCertUtil.NormalizeFingerprint(envFp);
 
         if (string.IsNullOrWhiteSpace(host))
         {
@@ -145,6 +173,20 @@ public sealed class AssistConnectOptions
         if (string.IsNullOrWhiteSpace(code))
         {
             error = "会话码不能为空（REMOTE_ASSIST_CODE / --code / 载荷内 code）";
+            return false;
+        }
+
+        var insecure = false;
+        if (argInsecure == true)
+            insecure = true;
+        else if (envInsecure)
+            insecure = true;
+        else if (!useTlsFromPayload)
+            insecure = true;
+
+        if (!insecure && string.IsNullOrEmpty(TlsCertUtil.NormalizeFingerprint(fp)))
+        {
+            error = "默认 TLS 需要证书指纹：请使用含 fp= 的会话载荷，或设 --fp / REMOTE_ASSIST_FP；明文调试用 --insecure / REMOTE_ASSIST_INSECURE=1";
             return false;
         }
 
@@ -166,17 +208,20 @@ public sealed class AssistConnectOptions
             Host = host,
             Port = port,
             Code = code,
-            Permission = perm
+            Permission = perm,
+            Fingerprint = insecure ? null : TlsCertUtil.NormalizeFingerprint(fp),
+            Insecure = insecure
         };
         return true;
     }
 
     public static string UsageText => """
         连接参数（环境变量或启动参数；同名字段命令行优先）:
-          REMOTE_ASSIST_PAYLOAD / --payload <remoteassist:pair?v=1&host=...&port=...&code=...>
-          或 REMOTE_ASSIST_HOST + REMOTE_ASSIST_CODE（可选 PORT，默认 17890）
-          或 --host <ip> --code <会话码> [--port 17890]
+          REMOTE_ASSIST_PAYLOAD / --payload <remoteassist:pair?v=1&host=...&port=...&code=...&tls=1&fp=...>
+          或 REMOTE_ASSIST_HOST + REMOTE_ASSIST_CODE + REMOTE_ASSIST_FP（可选 PORT，默认 17890）
+          或 --host <ip> --code <会话码> --fp <指纹> [--port 17890]
           可选 REMOTE_ASSIST_PERM / --perm  Assist|Guest|Admin（默认 Assist）
+          调试明文: --insecure 或 REMOTE_ASSIST_INSECURE=1（Agent 也需 --insecure）
         """;
 
     private static List<string> BuildPositional(
@@ -185,7 +230,6 @@ public sealed class AssistConnectOptions
         string? host,
         string? code)
     {
-        // 已有 payload：positional 可空
         if (explicitPayload is not null)
             return positional;
 
@@ -195,7 +239,6 @@ public sealed class AssistConnectOptions
 
         if (positional.Count >= 2)
         {
-            // host+code positional；若另有 host/code 覆盖值则替换
             var list = new List<string>(positional);
             if (!string.IsNullOrWhiteSpace(host)) list[0] = host!;
             if (!string.IsNullOrWhiteSpace(code)) list[1] = code!;
@@ -213,6 +256,13 @@ public sealed class AssistConnectOptions
 
     private static string? NullIfEmpty(string? v) =>
         string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+
+    private static bool ParseTruthy(string? v)
+    {
+        if (string.IsNullOrWhiteSpace(v)) return false;
+        v = v.Trim();
+        return v is "1" or "true" or "TRUE" or "yes" or "YES" or "on" or "ON";
+    }
 
     private static string FormatResolveError(string resolveErr)
     {

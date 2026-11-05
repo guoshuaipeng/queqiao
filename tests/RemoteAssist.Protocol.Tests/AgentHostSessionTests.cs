@@ -20,7 +20,9 @@ public class AgentHostSessionTests
         {
             Assert.Empty(host.ListPairedClients());
 
-            using var client = await AssistClient.PairAsync("127.0.0.1", port, host.SessionCode, PermissionLevel.Assist, "test-client");
+            using var client = await AssistClient.PairAsync(
+                "127.0.0.1", port, host.SessionCode, PermissionLevel.Assist, "test-client",
+                host.CertificateFingerprint, useTls: true);
             // 等配对登记
             for (var i = 0; i < 20 && host.ListPairedClients().Count == 0; i++)
                 await Task.Delay(50);
@@ -68,10 +70,12 @@ public class AgentHostSessionTests
             host.SetSelectedHost("127.0.0.1");
             Assert.Equal("127.0.0.1", host.SelectedHost);
             var payload = host.QrPayload;
-            Assert.True(PairQrPayload.TryParse(payload, out var h, out var p, out var c));
+            Assert.True(PairQrPayload.TryParse(payload, out var h, out var p, out var c, out var fp, out var tls));
             Assert.Equal("127.0.0.1", h);
             Assert.Equal(port, p);
             Assert.Equal(host.SessionCode, c);
+            Assert.True(tls);
+            Assert.Equal(host.CertificateFingerprint, fp);
         }
         finally
         {

@@ -17,7 +17,7 @@
 
 ## 解决方案结构
 
-- `src/RemoteAssist.Protocol` — 共享消息 / 权限 / 会话契约 / TCP 帧 / 客户端 / 二维码载荷 / 局域网地址筛选
+- `src/RemoteAssist.Protocol` — 共享消息 / 权限 / 会话契约 / TCP·TLS 帧 / 客户端 / 二维码载荷（含 fp） / 局域网地址筛选
 - `src/RemoteAssist.Agent` — 被协助端（会话码、**托盘常驻**、确认窗口、审计日志）
 - `src/RemoteAssist.Helper` — 协助端 CLI（支持整段 QR 载荷 / `--payload` / `--clipboard`）
 - `src/RemoteAssist.Mcp` — stdio MCP Server（支持整段载荷 / host+code；见 docs/MCP.md）
@@ -60,11 +60,13 @@ dotnet run --project src/RemoteAssist.Agent
 - 启动时弹出**会话信息窗**：大号会话码 + 二维码；**主机 IP 下拉**（过滤 127 / APIPA 169.254 / 198.18–19 虚拟网段，默认挑最合理局域网地址）；「复制载荷」。关闭窗口 = 隐藏到托盘。
 - **配对 / 写操作**：本机确认窗口（串行排队；超时拒绝）。
 
-二维码载荷格式：
+二维码载荷格式（默认 TLS，含证书指纹）：
 
 ```text
-remoteassist:pair?v=1&host=<所选IP>&port=17890&code=<SESSION>
+remoteassist:pair?v=1&host=<所选IP>&port=17890&code=<SESSION>&tls=1&fp=<SHA256>
 ```
+
+`--insecure` 时为 `tls=0`（无 `fp`，明文，仅调试）。
 
 常用参数：
 
@@ -74,19 +76,23 @@ remoteassist:pair?v=1&host=<所选IP>&port=17890&code=<SESSION>
 | `--confirm-timeout 60` | 配对/写操作确认超时（秒，5–600） |
 | `--headless` | 无 UI：不启托盘/会话窗；配对与写操作回退控制台 |
 | `--yes` | 自动同意配对与写操作（**仅本地冒烟**；亦不启托盘） |
+| `--insecure` | **明文 TCP**（关闭 TLS；Helper/MCP 也需 `--insecure`；仅调试） |
 
 ### 终端 B — Helper（协助端）
 
 手输码：
 
 ```powershell
-dotnet run --project src/RemoteAssist.Helper -- pair 192.168.1.10 <会话码>
+# 推荐：整段载荷（含 fp）
+dotnet run --project src/RemoteAssist.Helper -- pair --payload "<从会话窗复制>"
+# 或手输码 + 指纹
+dotnet run --project src/RemoteAssist.Helper -- pair 192.168.1.10 <会话码> --fp <指纹>
 ```
 
 整段 QR 载荷（从会话窗复制）：
 
 ```powershell
-dotnet run --project src/RemoteAssist.Helper -- pair "remoteassist:pair?v=1&host=192.168.1.10&port=17890&code=ABC123"
+dotnet run --project src/RemoteAssist.Helper -- pair "remoteassist:pair?v=1&host=192.168.1.10&port=17890&code=ABC123&tls=1&fp=..."
 # 或
 dotnet run --project src/RemoteAssist.Helper -- pair --payload "remoteassist:pair?v=1&host=..."
 # 或先复制载荷到剪贴板
@@ -112,16 +118,17 @@ helper> run echo hello-from-remote-assist
 先启动 Agent，再由宿主拉起。**推荐整段载荷**（与会话窗「复制载荷」一致）：
 
 ```powershell
-$env:REMOTE_ASSIST_PAYLOAD = "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=<会话码>"
+$env:REMOTE_ASSIST_PAYLOAD = "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=<会话码>&tls=1&fp=<指纹>"
 dotnet run --project src/RemoteAssist.Mcp --no-build
 
 # 或启动参数：
-dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=ABC123"
+dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=ABC123&tls=1&fp=..."
 
-# 仍支持 host+code：
+# 仍支持 host+code+指纹：
 $env:REMOTE_ASSIST_HOST = "127.0.0.1"
 $env:REMOTE_ASSIST_PORT = "17890"
 $env:REMOTE_ASSIST_CODE = "<会话码>"
+$env:REMOTE_ASSIST_FP = "<指纹>"
 $env:REMOTE_ASSIST_PERM = "Assist"
 dotnet run --project src/RemoteAssist.Mcp --no-build
 ```
@@ -147,9 +154,12 @@ dotnet run --project src/RemoteAssist.Mcp --no-build
 
 ```powershell
 dotnet run --project src/RemoteAssist.Agent -- --port 17890 --yes
-dotnet run --project src/RemoteAssist.Helper -- oneshot --payload "<从 Agent 横幅复制的载荷>"
-# 仍可用：
-dotnet run --project src/RemoteAssist.Helper -- oneshot 127.0.0.1 <会话码> --port 17890
+dotnet run --project src/RemoteAssist.Helper -- oneshot --payload "<从 Agent 横幅复制的载荷（含 fp）>"
+# 或 host+code+fp：
+dotnet run --project src/RemoteAssist.Helper -- oneshot 127.0.0.1 <会话码> --port 17890 --fp <指纹>
+# 明文调试（双方都加 --insecure）：
+dotnet run --project src/RemoteAssist.Agent -- --yes --insecure
+dotnet run --project src/RemoteAssist.Helper -- oneshot 127.0.0.1 <会话码> --insecure
 ```
 
 无桌面会话时可用：
@@ -206,7 +216,7 @@ Agent 托盘 **「复制 MCP 配置片段」** 会生成可粘贴的 Cursor `mcp
 
 ## 已知限制（v1）
 
-- 无 TLS / 无端到端加密（仅信任局域网）
+- TLS 为 **自签证书 + 指纹钉扎**（防局域网假冒 Agent）；非完整 PKI / 非端到端应用层加密
 - 无公网中继（仅 stub）
 - `run_command` 经 `cmd.exe /c`，超时约 15s
 - 部分敏感路径硬编码拦截，未做完整沙箱

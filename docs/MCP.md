@@ -13,11 +13,13 @@
 | host + code | `REMOTE_ASSIST_HOST` + `REMOTE_ASSIST_CODE` | `--host` + `--code` |
 | 端口 | `REMOTE_ASSIST_PORT`（默认 `17890`） | `--port` / `-p` |
 | 权限 | `REMOTE_ASSIST_PERM`（默认 `Assist`） | `--perm` |
+| 证书指纹 | `REMOTE_ASSIST_FP` | `--fp`（载荷已含 `fp=` 时可省略） |
+| 明文调试 | `REMOTE_ASSIST_INSECURE=1` | `--insecure`（Agent 也需 `--insecure`） |
 
-载荷格式（与 Agent 会话窗「复制载荷」一致）：
+载荷格式（与 Agent 会话窗「复制载荷」一致；默认 TLS）：
 
 ```text
-remoteassist:pair?v=1&host=192.168.1.10&port=17890&code=ABC123
+remoteassist:pair?v=1&host=192.168.1.10&port=17890&code=ABC123&tls=1&fp=<SHA256>
 ```
 
 `--port` / `--host` / `--code` 在已给载荷时也可覆盖（本机端口转发调试用）。
@@ -29,10 +31,10 @@ $env:PATH = "C:\Users\user\AppData\Local\Microsoft\dotnet;" + $env:PATH
 cd E:\IdeaProjects\remote-assist
 
 # 先启动 Agent（另一终端），复制会话载荷后：
-dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=ABC123"
+dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=ABC123&tls=1&fp=<SHA256>"
 
 # 或环境变量：
-$env:REMOTE_ASSIST_PAYLOAD = "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=ABC123"
+$env:REMOTE_ASSIST_PAYLOAD = "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=ABC123&tls=1&fp=<SHA256>"
 dotnet run --project src/RemoteAssist.Mcp
 
 # 或传统 host+code：
@@ -83,7 +85,7 @@ dotnet run --project src/RemoteAssist.Mcp
       "command": "E:/IdeaProjects/remote-assist/artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe",
       "args": [],
       "env": {
-        "REMOTE_ASSIST_PAYLOAD": "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=REPLACE"
+        "REMOTE_ASSIST_PAYLOAD": "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=REPLACE&tls=1&fp=<SHA256>"
       }
     }
   }
@@ -97,7 +99,7 @@ args 写法：
   "mcpServers": {
     "remote-assist": {
       "command": "E:/IdeaProjects/remote-assist/artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe",
-      "args": ["--payload", "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=REPLACE"]
+      "args": ["--payload", "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=REPLACE&tls=1&fp=<SHA256>"]
     }
   }
 }
@@ -117,7 +119,7 @@ args 写法：
         "--no-build"
       ],
       "env": {
-        "REMOTE_ASSIST_PAYLOAD": "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=REPLACE"
+        "REMOTE_ASSIST_PAYLOAD": "remoteassist:pair?v=1&host=127.0.0.1&port=17890&code=REPLACE&tls=1&fp=<SHA256>"
       }
     }
   }
