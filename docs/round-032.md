@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**delivered**
+> 状态：**done（产品已验收）**
 > 依据：R031 产品已验收。`docs/quality.md` 仍有效的统一规则：被协助端「关闭窗口后继续在托盘运行」如果提示框和底栏各写一次，只留一处。
 
 Windows 接受协助端现在会把同一件事说两遍：启动时托盘气泡说「关闭主窗口会留在托盘 / 关闭主窗口不会退出」；窗口底栏默认又写「就绪。关闭窗口后会继续在托盘运行。」亲友开屏先看到一句常驻提醒，过两秒气泡再重复一遍。
@@ -78,3 +78,19 @@ ui-shot / DrawToBitmap 无法截取系统托盘气泡。证明方式：
 ### 缺口 / 披露
 - 未实拍启动气泡本体；以常量+代码接线证明未改气泡口径。
 - 「已隐藏到托盘…」反馈图为关窗逻辑同款文案的 ui-shot 注入（窗未真正 Hide），便于同屏验收底栏。
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r032-*` 与源码独立验收通过（`b78fc1e`）。
+
+独立核对：
+
+- `TrayStayCopy.BalloonDefault` =「已在托盘运行。关闭主窗口不会退出，可随时双击托盘图标打开。」`BalloonWithReturnHome` =「被控模式已启动。可返回首页切换为控制端；关闭主窗口会留在托盘。」未新造第三种说法。`AgentTrayContext` 启动气泡只走 `BalloonFor(enableReturnHome)`。
+- `MainForm` 底栏默认 `Text = ""`，不再显示「就绪。关闭窗口后会继续在托盘运行。」（该句仅留在 `RemovedDefaultStatusBar` 供回归对照）。`OnFormClosing` 藏到托盘后 `SetStatus(HiddenToTrayFeedback)`，文案为「已隐藏到托盘。双击托盘图标可重新打开。」
+- `docs/screenshots/r032-accept-statusbar-empty.png`：接受协助就绪态，底栏空白，未见常驻托盘句；运行状态仍是「已连上网络，可以发给对方了」；「复制码+密码」是唯一实心主按钮。
+- `docs/screenshots/r032-accept-hidden-to-tray-feedback.png`：底栏一次性出现「已隐藏到托盘。双击托盘图标可重新打开。」默认空态图里没有这句。
+- Avalonia `CloseWarnWindow` 仍是「关闭窗口后，协助可能还在进行。要结束请点「结束这次协助」。」`StatusPeerConnected` / `InstallInstructions` / Skill 常量 / 「才问你」未改。未覆盖 `r022-*`～`r031-*`。
+
+缺口：未能实拍系统托盘气泡（ui-shot / DrawToBitmap 截不到 NotifyIcon；以锁定原句的常量 + `BalloonFor` 接线证明未改口径）；藏托盘反馈图为同款文案的 ui-shot 注入，窗未真正 Hide。
+
+已开 R033（Windows 接受协助端补一处「结束这次协助」；不改中继/官网/AI-SSH-Pro）。
