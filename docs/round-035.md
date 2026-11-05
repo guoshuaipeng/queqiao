@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**delivered**
+> 状态：**done（产品已验收）**
 > 依据：R034 产品已验收。R033 让被协助的人能在窗口里点「结束这次协助」；协助方已经连上时，对方一停，目前更容易看起来像「连接失败」，而不是这次协助正常收尾。
 
 R033 已经补上被协助端怎么停。接下来补另一半：协助方已经连上之后，这次协助结束了，主状态要说人话。
@@ -76,3 +76,27 @@ R033 已经补上被协助端怎么停。接下来补另一半：协助方已经
 
 ### 缺口 / 披露
 - 截图为 ui-shot 注入状态，非真连中继后对方点「结束这次协助」的实拍；运行时依赖 Socket Poll / 读失败探测对端关闭。
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r035-*` 与源码独立验收通过（`b707804`）。Protocol.Tests 189 通过。
+
+- `HelperSessionCopy.StatusPeerEndedAssist` =「对方已结束这次协助。」Windows `Helper.UI.MainForm` 与 Avalonia `HelperWindow` 都接到：已成功连上之后会话没了且不是自己点断开 → 这句，并按 R016 藏起五个常用操作，「连接」可再点。
+- 自己点断开 →「状态：未连接」，不是对方结束句。
+- 尚未连上失败 →「连接失败」+ R003 原文。Windows 截图为「对方还没打开「接受协助」。请对方在首页选择「接受协助」，再把码和密码发给你。」Avalonia 截图为「对方已刷新会话，旧码失效了。请对方重新复制并发给你。」
+- 未改 `EndAssistCopy`、R031 `StatusPeerConnected`、InstallInstructions / Skill、trust-levels「才问你」。
+
+| 截图 | MD5 | 产品看到的 |
+|------|-----|------------|
+| `docs/screenshots/r035-helper-connected.png` | 3764D392920978D65E141DCFD1371689 | Windows「已连接对方电脑」+ 五个常用操作 |
+| `docs/screenshots/r035-helper-peer-ended.png` | 4054F5B75E449DE032AF37C9CFB890E8 | Windows「对方已结束这次协助。」五键已收起，「连接」可再点 |
+| `docs/screenshots/r035-helper-self-disconnect.png` | 46D5815D703A7AA50796A529B6EF2EAA | Windows「状态：未连接」 |
+| `docs/screenshots/r035-helper-connect-failed.png` | 3DB1E3AE8ADD0FD321CB108ECE0376F6 | Windows「连接失败」+ R003 对方还没打开接受协助 |
+| `docs/screenshots/r035-avalonia-helper-connected.png` | F5EA9CDAA2EFA259955663900BB072C0 | Avalonia「已连接对方电脑」；「连接」已禁用 |
+| `docs/screenshots/r035-avalonia-helper-peer-ended.png` | A5D5B996AC38C3AD417A2D453E5E5518 | Avalonia「对方已结束这次协助。」无五键，「连接」可再点 |
+| `docs/screenshots/r035-avalonia-helper-self-disconnect.png` | 991BF347449A1D5A885A0578509B2916 | Avalonia「状态：未连接」 |
+| `docs/screenshots/r035-avalonia-helper-connect-failed.png` | 7C237EF27B4C282BAE0365996D437677 | Avalonia「连接失败」+ R003 对方已刷新会话 |
+
+缺口：八张均为 ui-shot，不是真机中继上对方点「结束这次协助」；运行时靠 Socket Poll + 读 EOF 触发 `ConnectionLost`，未新增中继协议字段（规格允许）。Avalonia 已连上图可视区域未收入五个常用操作（Windows 已连上图有五键可对照；对方结束后 Avalonia 无五键且主状态正确）。
+
+已开 R036（去协助端连上后「连接」改为不可点的「已连接」；交给鹊桥-客户端；不改中继/官网/AI-SSH-Pro）。
