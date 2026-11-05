@@ -328,3 +328,12 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - 缺口：未单独拍 WinForms；接受协助端 Skill 交 R028；公网包仍为 R026。
 
 已开 R028（接受协助端 Skill 薄封装；交给鹊桥-客户端；不改中继/官网/AI-SSH-Pro）。
+
+## R028 产品验收（2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r028-*` 与源码验收通过（`9c07065`）：
+
+- Avalonia 接受协助端增加「复制 Skill 说明」，复用 R027 正文；R018 导语与「仍须本机确认」附注未改；反馈只出现一次。
+- 缺口：Avalonia ui-shot；Windows 接受协助端没有 MCP 卡片，按约定未新开卡（交 R029 补菜单）。
+
+已开 R029（Windows 接受协助端菜单增加「复制 Skill 说明」，不新开 MCP 卡；交给鹊桥-客户端；不改中继/官网/AI-SSH-Pro）。
