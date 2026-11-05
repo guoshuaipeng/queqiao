@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（跨平台被控 CLI / MCP / 发布小包；不改 `relay/`，不把 Windows WinForms 迁到 Avalonia，不重做 R006–R008）
-> 状态：**done**（2026-11-05 Asia/Shanghai）
+> 状态：**done**（产品已验收，2026-11-05 Asia/Shanghai）
 > 依据：docs/PRODUCT.md「支持平台」第一步；docs/architecture.md §13（先 CLI/MCP + 确认，再补对等 GUI）；docs/roadmap.md 平台轨道
 > CLI 展示与终端确认原文见 `docs/first-run-mac-linux.md` 第 3、4 节（直接用字，不扩大本轮范围）。
 
@@ -110,3 +110,19 @@ Windows P0（配对、确认、信任等级、MCP 提议闭环、同一安装包
 ### 本轮不做（已遵守）
 
 - 未开 R010 / Avalonia 被控窗；未做 Mac/Linux 双模式 GUI；未把 Windows 迁到 Avalonia；未改中继；未改官网下载按钮；未重做 R006–R008。
+
+## 产品验收（2026-11-05 Asia/Shanghai）
+
+对照 `docs/screenshots/r009-*` 与 `docs/first-run-mac-linux.md` 第 3、4、5 节原文，**验收通过**。提交 `ef0948a`。
+
+核对要点：
+
+- Linux CLI 经默认公网中继 `121.196.45.81:17891` 打印「鹊桥远程协助已启动，正在等待对方连接。」「把下面两行发给要帮你的人：」以及两行「会话码：」「验证密码：」；剪贴板失败路径为「用鼠标选中上面两行，复制后发给对方。」品牌为「鹊桥」。
+- Windows 协助端经同一中继连上后 `PROCS ok=True`（Linux 进程如 bamfdaemon）、`LOGS ok=True`（`/tmp/r009-demo.log`）。
+- 写操作终端确认标题「对方想在这台电脑执行操作」、人话「运行一条命令」、命令详情、「请输入 允许 或 拒绝（也可以输入 y 或 n）。」、「若不操作，将在 60 秒后自动拒绝」；拒绝后「已拒绝，未做任何改动」；本机 `/tmp/r009-deny-marker` 不存在。
+- 默认 framework-dependent 小包实测：linux-x64 245.9 KB、osx-x64 255.2 KB、osx-arm64 278.3 KB；人话「这个程序比较小，但需要先安装「.NET 8 运行时」。装一次就可以，它不是开发工具。」未默认自包含大包。
+- osx-x64 / osx-arm64 **已出包、未上真机**，本轮不写成 Mac 已验收。
+- 联调截图使用了 `--insecure`（与协助端未粘贴指纹的路径对齐）；默认发布仍走 TLS。
+- `dotnet test` 166/167；`SpoofedOwnerLinkFlag_OnGuestChannel_StillRequiresConfirm` 整包偶发超时，单独重跑通过，非本轮引入，不阻断本轮。
+
+Mac 真机验收与 Avalonia 被控窗不在本轮，见 `docs/round-010.md`。
