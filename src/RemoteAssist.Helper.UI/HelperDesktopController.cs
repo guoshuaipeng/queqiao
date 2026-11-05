@@ -1,4 +1,5 @@
 using System.Windows.Forms;
+using RemoteAssist;
 
 namespace RemoteAssist.Helper.UI;
 
@@ -23,8 +24,10 @@ public sealed class HelperDesktopController : IDisposable
 
     public void Show()
     {
+        UiWindowPlacement.MainWindow = _form;
         _form.Show();
-        _form.WindowState = FormWindowState.Normal;
+        if (_form.WindowState == FormWindowState.Minimized)
+            _form.WindowState = FormWindowState.Normal;
         _form.Activate();
         _form.BringToFront();
     }
@@ -34,6 +37,9 @@ public sealed class HelperDesktopController : IDisposable
         if (_disposed) return;
         _disposed = true;
         if (!_form.IsDisposed)
+        {
+            try { UiWindowPlacement.Save(_form); } catch { /* ignore */ }
             _form.Dispose();
+        }
     }
 }

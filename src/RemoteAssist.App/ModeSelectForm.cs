@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using RemoteAssist;
 
 namespace RemoteAssist.App;
 
@@ -18,7 +19,7 @@ internal sealed class ModeSelectForm : Form
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         MinimizeBox = true;
-        StartPosition = FormStartPosition.CenterScreen;
+        StartPosition = FormStartPosition.Manual;
         ClientSize = new Size(560, 420);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
@@ -75,6 +76,8 @@ internal sealed class ModeSelectForm : Form
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
             Text = "默认公网中继 121.196.45.81:17891（code+密码；设置可改）；局域网仍可用于高级调试。可用 --accept / --control 直达模式。"
         });
+
+        UiWindowPlacement.Bind(this, restoreSize: false);
     }
 
     private static Button MakeModeButton(string title, string subtitle, Color accent, int x, int y)
@@ -151,4 +154,5 @@ internal sealed class ModeSelectForm : Form
         return (Icon)tmp.Clone();
     }
 }
+
 

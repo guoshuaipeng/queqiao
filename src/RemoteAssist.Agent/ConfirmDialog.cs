@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using RemoteAssist;
 
 namespace RemoteAssist.Agent;
 
@@ -20,10 +21,11 @@ internal sealed class ConfirmDialog : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        StartPosition = FormStartPosition.CenterScreen;
+        StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = true;
         TopMost = true;
         ClientSize = new Size(520, 280);
+        UiWindowPlacement.PlaceDialog(this);
         Font = new Font("Microsoft YaHei UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
 
         var title = new Label

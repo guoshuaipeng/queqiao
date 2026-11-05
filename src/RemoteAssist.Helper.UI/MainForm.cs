@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using RemoteAssist.Protocol;
+using RemoteAssist;
 using RemoteAssist.Protocol.Messages;
 using RemoteAssist.Relay.Stub;
 
@@ -48,11 +49,13 @@ internal sealed class MainForm : Form
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         MinimizeBox = true;
-        StartPosition = FormStartPosition.CenterScreen;
+        StartPosition = FormStartPosition.Manual;
         ClientSize = new Size(780, 860);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
+
+        UiWindowPlacement.Bind(this, restoreSize: false);
 
         var header = new Panel
         {

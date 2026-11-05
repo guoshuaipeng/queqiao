@@ -22,5 +22,10 @@
   <ItemGroup>
     <InternalsVisibleTo Include="UiShot" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\UiShared\UiWindowPlacement.cs" Link="UiWindowPlacement.cs" />
+  </ItemGroup>
 </Project>
+
 

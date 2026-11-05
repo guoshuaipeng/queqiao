@@ -3,6 +3,7 @@ using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using QRCoder;
+using RemoteAssist;
 
 namespace RemoteAssist.Agent;
 
@@ -43,12 +44,14 @@ internal sealed class MainForm : Form
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         MinimizeBox = true;
-        StartPosition = FormStartPosition.CenterScreen;
+        StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = true;
         ClientSize = new Size(760, 640);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
+
+        UiWindowPlacement.Bind(this, restoreSize: false);
 
         var header = new Panel
         {
@@ -439,8 +442,10 @@ internal sealed class MainForm : Form
 
     public void ShowAndActivate()
     {
+        UiWindowPlacement.MainWindow = this;
         Show();
-        WindowState = FormWindowState.Normal;
+        if (WindowState == FormWindowState.Minimized)
+            WindowState = FormWindowState.Normal;
         Activate();
         BringToFront();
     }

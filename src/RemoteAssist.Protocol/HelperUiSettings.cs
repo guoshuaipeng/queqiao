@@ -27,6 +27,9 @@ public sealed class HelperUiSettings
     /// <summary>协助方是否启用 MCP 辅助（被控模式永不自动启 MCP 服务）。</summary>
     public bool EnableMcpHelper { get; set; } = false;
 
+    /// <summary>统一 App 主窗口上次位置/大小（本机；不写中继）。</summary>
+    public WindowPlacementState? WindowPlacement { get; set; }
+
     public static string SettingsDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RemoteAssist");
 
@@ -82,3 +85,4 @@ public sealed class HelperUiSettings
         }
     }
 }
+

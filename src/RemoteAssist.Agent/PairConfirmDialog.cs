@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using RemoteAssist;
 using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
@@ -25,10 +26,11 @@ internal sealed class PairConfirmDialog : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        StartPosition = FormStartPosition.CenterScreen;
+        StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = true;
         TopMost = true;
         ClientSize = new Size(520, 260);
+        UiWindowPlacement.PlaceDialog(this);
         Font = new Font("Microsoft YaHei UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
 
         var title = new Label

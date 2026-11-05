@@ -23,5 +23,10 @@
     <InternalsVisibleTo Include="RemoteAssist" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <Compile Include="..\UiShared\UiWindowPlacement.cs" Link="UiWindowPlacement.cs" />
+  </ItemGroup>
 </Project>
+
 
