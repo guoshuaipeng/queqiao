@@ -183,7 +183,7 @@ internal sealed class MainForm : Form
             Size = new Size(250, 30),
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Consolas", 16F, FontStyle.Bold),
-            ForeColor = Color.FromArgb(0xC5, 0x22, 0x1F),
+            ForeColor = Color.FromArgb(0x20, 0x24, 0x27),
             Text = ""
         };
         sessionCard.Controls.Add(_pwdLabel);

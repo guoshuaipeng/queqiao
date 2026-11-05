@@ -6,12 +6,17 @@ using RemoteAssist;
 namespace RemoteAssist.App;
 
 /// <summary>
-/// 启动首页：接受协助（被控） / 去协助别人（控制）。
+/// 启动首页：接受协助 / 去协助别人。
 /// </summary>
 internal sealed class ModeSelectForm : Form
 {
     public event Action? AcceptClicked;
     public event Action? ControlClicked;
+
+    private readonly Label _footerHint;
+    private readonly Label _advancedDetail;
+    private readonly LinkLabel _advancedToggle;
+    private bool _advancedOpen;
 
     public ModeSelectForm()
     {
@@ -53,31 +58,63 @@ internal sealed class ModeSelectForm : Form
         Controls.Add(header);
 
         var btnAccept = MakeModeButton(
-            "接受协助（被控）",
-            "生成本机会话码 / 二维码，让亲友或同事连过来帮你排查。危险操作需你本机确认。",
+            "接受协助",
+            "生成本机会话码和验证密码，让亲友或同事连过来帮你排查。危险操作需你本机确认。",
             Color.FromArgb(0x1A, 0x73, 0xE8),
             24, 112);
         btnAccept.Click += (_, _) => AcceptClicked?.Invoke();
         Controls.Add(btnAccept);
 
         var btnControl = MakeModeButton(
-            "去协助别人（控制）",
-            "粘贴对方会话载荷或会话码，连接后查看进程 / 日志 / 文件，或提议执行命令。",
+            "去协助别人",
+            "粘贴对方发来的会话码和验证密码，连接后查看进程 / 日志 / 文件，或提议执行命令。",
             Color.FromArgb(0x0F, 0x9D, 0x58),
             24, 230);
         btnControl.Click += (_, _) => ControlClicked?.Invoke();
         Controls.Add(btnControl);
 
-        Controls.Add(new Label
+        _footerHint = new Label
         {
             AutoSize = false,
             Location = new Point(24, 360),
-            Size = new Size(512, 40),
+            Size = new Size(400, 24),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "默认公网中继 121.196.45.81:17891（code+密码；设置可改）；局域网仍可用于高级调试。可用 --accept / --control 直达模式。"
-        });
+            Text = "选上面一项即可。"
+        };
+        Controls.Add(_footerHint);
+
+        _advancedToggle = new LinkLabel
+        {
+            AutoSize = true,
+            Location = new Point(430, 360),
+            Text = "高级",
+            LinkColor = Color.FromArgb(0x1A, 0x73, 0xE8),
+            ActiveLinkColor = Color.FromArgb(0x0F, 0x5C, 0xBF),
+            LinkBehavior = LinkBehavior.HoverUnderline
+        };
+        _advancedToggle.LinkClicked += (_, _) => ToggleAdvanced();
+        Controls.Add(_advancedToggle);
+
+        _advancedDetail = new Label
+        {
+            AutoSize = false,
+            Location = new Point(24, 384),
+            Size = new Size(512, 48),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Visible = false,
+            Text = "默认公网中继 121.196.45.81:17891（code+密码；设置可改）；局域网仍可用于调试。可用 --accept / --control 直达模式。"
+        };
+        Controls.Add(_advancedDetail);
 
         UiWindowPlacement.Bind(this, restoreSize: false);
+    }
+
+    private void ToggleAdvanced()
+    {
+        _advancedOpen = !_advancedOpen;
+        _advancedDetail.Visible = _advancedOpen;
+        _advancedToggle.Text = _advancedOpen ? "收起" : "高级";
+        ClientSize = new Size(560, _advancedOpen ? 448 : 420);
     }
 
     private static Button MakeModeButton(string title, string subtitle, Color accent, int x, int y)
@@ -97,7 +134,6 @@ internal sealed class ModeSelectForm : Form
         btn.FlatAppearance.BorderSize = 1;
         btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(0xF0, 0xF4, 0xFF);
 
-        // Owner-draw-ish via Text + Tag; use two labels overlaid by painting
         btn.Text = "";
         var titleLabel = new Label
         {
@@ -126,7 +162,6 @@ internal sealed class ModeSelectForm : Form
         btn.Controls.Add(titleLabel);
         btn.Controls.Add(subLabel);
 
-        // left accent bar
         var bar = new Panel
         {
             Location = new Point(0, 0),
@@ -154,5 +189,3 @@ internal sealed class ModeSelectForm : Form
         return (Icon)tmp.Clone();
     }
 }
-
-

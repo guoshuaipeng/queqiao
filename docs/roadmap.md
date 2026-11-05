@@ -10,7 +10,7 @@
 | 轮次 | 项 | 负责 | 状态 | 文档 |
 |------|----|------|------|------|
 | R001 | 被控「一键复制码+密码」+ 品牌文案「鹊桥」 | 鹊桥-客户端 | **done** | `docs/round-001.md` |
-| R002 | 高频：ownerLink 专项验收；打磨：品牌扫尾 + 首页文案（体验 1/2/4） | 鹊桥-客户端 | **wip** | `docs/round-002.md` |
+| R002 | 高频：ownerLink 专项验收；打磨：品牌扫尾 + 首页文案（体验 1/2/4） | 鹊桥-客户端 | **done** | `docs/round-002.md` |
 | R003 | 高频：连不上引导 + 联网允许；打磨：首屏减负、一次粘贴填入 | 鹊桥-客户端 | **planned** | `docs/round-003.md` |
 
 ## P0 — 可演示闭环（不后挪）
@@ -55,7 +55,7 @@
 
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
-| 技术栈与部署（端口 80、安全组、是否独立 Go 进程） | 鹊桥-架构 | **todo** | 写入 architecture / 部署文档；不装重软件 |
+| 技术栈与部署（端口 80、安全组、独立 Go 进程） | 鹊桥-架构 | **done** | `architecture.md` §14 与 `docs/site-deploy.md`：`remote-assist-site`、:80、site.db、口令走 /etc/remote-assist-site.env、MemoryMax=64M |
 | 静态介绍页 + 接单表单（本地预览） | 鹊桥-服务端 | **done** | `site/index.html` `ask.html` `thanks.html`；表单校验后跳转成功页。API/后台/`/admin` 待架构部署约定后做 |
 ## 明确暂缓
 

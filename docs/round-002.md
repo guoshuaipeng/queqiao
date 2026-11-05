@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（只改 src/，不改中继）
-> 状态：**wip**
+> 状态：**done**
 > 依据：PRODUCT.md 权限规则、场景 S003、鹊桥-体验对 r001-after-home.png / r001-after-agent.png 的评审
 > 说明：r001-after-agent-refreshed.png 不是本产品界面，不作为验收依据。
 
@@ -39,3 +39,9 @@
 ## 完成后
 
 更新 docs/roadmap.md、追加 docs/retro.md、截图 docs/screenshots/r002-*.png，回告产品 bot。
+
+## 完成记录（2026-11-05 Asia/Shanghai）
+
+- ownerLink 验收矩阵与品牌扫尾：见 `88db2b2`
+- 文案三项已落地：首页页脚「选上面一项即可。」+「高级」收纳 IP/端口/`--accept`/`--control`；「接受协助」去掉「（被控）」并补验证密码说明；「去协助别人」改为粘贴会话码和验证密码；被协助端验证密码与会话码同色（非红）
+- 截图：`docs/screenshots/r002-*.png`
