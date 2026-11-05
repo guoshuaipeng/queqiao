@@ -2,10 +2,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R028：接受协助端高级内「复制 Skill 说明」+ 反馈（只一次）+ 剪贴板预览。</summary>
+/// <summary>R031：接受协助端对方连上 / 断开后人话主状态 + 协助方列表（ui-shot）。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -19,22 +20,22 @@ internal static class UiShotRunner
         accept.Show();
         await Task.Delay(350).ConfigureAwait(true);
 
-        accept.PrepareSkillEntryForShot();
-        await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r028-skill-entry.png")).ConfigureAwait(true);
-
-        accept.PrepareSkillCopiedForShot();
+        accept.PreparePeerIdleForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r028-skill-copied.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(accept, Path.Combine(outDir, "r031-avalonia-idle.png")).ConfigureAwait(true);
 
-        accept.PrepareSkillClipboardPreviewForShot();
-        await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r028-skill-clipboard-preview.png")).ConfigureAwait(true);
+        accept.PreparePeerConnectedForShot("小明");
+        await Task.Delay(250).ConfigureAwait(true);
+        await CaptureWindowAsync(accept, Path.Combine(outDir, "r031-avalonia-peer-connected.png")).ConfigureAwait(true);
+
+        accept.PreparePeerDisconnectedForShot();
+        await Task.Delay(250).ConfigureAwait(true);
+        await CaptureWindowAsync(accept, Path.Combine(outDir, "r031-avalonia-peer-disconnected.png")).ConfigureAwait(true);
 
         accept.AllowCloseWithoutPrompt();
         accept.Close();
 
-        Console.WriteLine("ui-shot written to " + outDir);
+        Console.WriteLine("ui-shot r031 written to " + outDir);
         await Task.CompletedTask;
         _ = home;
     }

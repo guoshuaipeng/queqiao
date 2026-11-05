@@ -1,3 +1,4 @@
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -17,6 +18,8 @@ internal sealed class MainWindow : Window
     private readonly TextBlock _pwdBlock;
     private readonly TextBlock _status;
     private readonly TextBlock _hint;
+    private readonly TextBlock _pairedHeading;
+    private readonly ListBox _pairedList;
     private readonly Border _trustTip;
     private readonly TextBlock _trustTipText;
     private readonly Button _trustTipAction;
@@ -47,7 +50,7 @@ internal sealed class MainWindow : Window
 
         Title = "鹊桥远程协助";
         Width = 520;
-        Height = 560;
+        Height = 620;
         MinWidth = 460;
         MinHeight = 420;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -139,6 +142,22 @@ internal sealed class MainWindow : Window
         };
         root.Children.Add(_status);
 
+        _pairedHeading = new TextBlock
+        {
+            Text = "已连接的协助方",
+            Foreground = Brush.Parse("#5F6368"),
+            Margin = new Thickness(0, 8, 0, 0)
+        };
+        root.Children.Add(_pairedHeading);
+        _pairedList = new ListBox
+        {
+            Name = "pairedClients",
+            Height = 56,
+            MinHeight = 48
+        };
+        _pairedList.ItemsSource = new[] { FriendConnectGuide.PairedClientsEmpty };
+        root.Children.Add(_pairedList);
+
         _btnAdvanced = new Button
         {
             Name = "btnAdvanced",
@@ -192,7 +211,8 @@ internal sealed class MainWindow : Window
         {
             _codeBlock.Text = "会话码：AB12CD";
             _pwdBlock.Text = "验证密码：3471";
-            _status.Text = "已连上网络，可以发给对方了";
+            _status.Text = FriendConnectGuide.StatusReadyToShare;
+            _pairedList.ItemsSource = new[] { FriendConnectGuide.PairedClientsEmpty };
             RefreshTrustUi();
         }
     }
@@ -868,6 +888,33 @@ internal sealed class MainWindow : Window
     }
 
 
+
+    /// <summary>UiShot：还没人连上。</summary>
+    internal void PreparePeerIdleForShot()
+    {
+        _hint.Text = "点「复制码+密码」发给对方。对方连上后本机弹出确认，你点允许才开始协助。";
+        _status.Text = FriendConnectGuide.StatusReadyToShare;
+        _pairedList.ItemsSource = new[] { FriendConnectGuide.PairedClientsEmpty };
+        _scroll.Offset = new Vector(0, 0);
+    }
+
+    /// <summary>UiShot：对方已连上。</summary>
+    internal void PreparePeerConnectedForShot(string? displayName = null)
+    {
+        _status.Text = FriendConnectGuide.StatusPeerConnected;
+        _pairedList.ItemsSource = new[] { FriendConnectGuide.FormatPairedClientLabel(displayName) };
+        _scroll.Offset = new Vector(0, 0);
+    }
+
+    /// <summary>UiShot：对方断开后——主状态回到可发给对方；列表（暂无）；附既有断开反馈区分构图。</summary>
+    internal void PreparePeerDisconnectedForShot()
+    {
+        PreparePeerIdleForShot();
+        _status.Text = FriendConnectGuide.StatusReadyToShare;
+        // 下方另用 hint 记一次断开反馈（与 Win 状态栏「已断开 n 个会话」同级既有口径），主状态仍是可发给对方
+        _hint.Text = "已断开 1 个会话。";
+    }
+
     /// <summary>UiShot：高级内 MCP +「复制 Skill 说明」轻按钮；R018 导语仍在。</summary>
     internal void PrepareSkillEntryForShot()
     {
@@ -1040,19 +1087,18 @@ internal sealed class MainWindow : Window
         _codeBlock.Text = "会话码：" + _host.SessionCode;
         _pwdBlock.Text = "验证密码：" + _host.SessionPassword;
         var phase = _host.RelayPhase;
-        var paired = _host.ListPairedClients().Count;
-        if (paired > 0 || phase == "paired")
+        var clients = _host.ListPairedClients();
+        RefreshPairedList(clients);
+        // R031：以真正配对进本机的协助方为准
+        if (clients.Count > 0)
         {
-            _hint.Text = "已有人连上。对方可以查看进程、日志和文件；要改动时会再问你。";
-            _status.Text = FriendConnectGuide.StatusWaitingPeer;
-            if (paired > 0)
-                _status.Text = $"已有 {paired} 位协助方连着。";
+            _status.Text = FriendConnectGuide.StatusPeerConnected;
         }
-        else if (phase is "ready" or "waiting")
+        else if (phase is "ready" or "waiting" or "paired")
         {
             _status.Text = FriendConnectGuide.StatusReadyToShare;
         }
-        else if (!string.IsNullOrWhiteSpace(_host.LastRelayError))
+        else if (!string.IsNullOrWhiteSpace(_host.LastRelayError) || phase == "error")
         {
             _status.Text = FriendConnectGuide.FailRelayUnreachable;
         }
@@ -1060,6 +1106,18 @@ internal sealed class MainWindow : Window
         {
             _status.Text = "正在连接网络…";
         }
+    }
+
+    private void RefreshPairedList(System.Collections.Generic.IReadOnlyList<PairedClientInfo> clients)
+    {
+        if (clients.Count == 0)
+        {
+            _pairedList.ItemsSource = new[] { FriendConnectGuide.PairedClientsEmpty };
+            return;
+        }
+        _pairedList.ItemsSource = clients
+            .Select(c => FriendConnectGuide.FormatPairedClientLabel(c.ClientName, c.OwnerLink))
+            .ToArray();
     }
 
     private async void OnClosing(object? sender, WindowClosingEventArgs e)

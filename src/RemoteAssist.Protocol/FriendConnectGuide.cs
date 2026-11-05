@@ -39,6 +39,15 @@ public static class FriendConnectGuide
     public const string StatusReadyToShare = "已连上网络，可以发给对方了";
     public const string StatusWaitingPeer = "等待对方连接";
 
+    /// <summary>协助方已真正连上本机（不是只连上中继还在等人）。</summary>
+    public const string StatusPeerConnected = "对方已连上。改动这台电脑前会先问你。";
+
+    /// <summary>已连接协助方列表：没有称呼时的人话回退。</summary>
+    public const string PairedClientFallbackName = "协助方";
+
+    /// <summary>已连接协助方列表空态。</summary>
+    public const string PairedClientsEmpty = "（暂无）";
+
     public const string FailWrongPassword =
         "验证密码不对。请对方再点一次「复制码+密码」发给你，不要只发会话码。";
 
@@ -130,6 +139,17 @@ public static class FriendConnectGuide
                text.Contains("121.196.45.81", StringComparison.Ordinal) ||
                text.Contains("relay_guest_", StringComparison.Ordinal) ||
                text.Contains("--insecure", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 已连接协助方列表显示名：有称呼用称呼；空/默认 helper 写「协助方」；账号免密前缀可读。
+    /// </summary>
+    public static string FormatPairedClientLabel(string? clientName, bool ownerLink = false)
+    {
+        var name = string.IsNullOrWhiteSpace(clientName) ? PairedClientFallbackName : clientName.Trim();
+        if (string.Equals(name, "helper", StringComparison.OrdinalIgnoreCase))
+            name = PairedClientFallbackName;
+        return ownerLink ? "账号免密 · " + name : name;
     }
 
     public static string FormatShareClipboard(string code, string password) =>

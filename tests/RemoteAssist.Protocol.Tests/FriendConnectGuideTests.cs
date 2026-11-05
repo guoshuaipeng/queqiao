@@ -80,6 +80,37 @@ public class FriendConnectGuideTests
         Assert.Equal(-1, FriendConnectGuide.OpenFirewallButtonText.IndexOf('\uFEFF'));
     }
 
+    [Fact]
+    public void StatusPeerConnected_ExactCopy_NoTechnicalLeak()
+    {
+        Assert.Equal("对方已连上。改动这台电脑前会先问你。", FriendConnectGuide.StatusPeerConnected);
+        Assert.Equal("已连上网络，可以发给对方了", FriendConnectGuide.StatusReadyToShare);
+        Assert.False(FriendConnectGuide.LooksTechnicalLeak(FriendConnectGuide.StatusPeerConnected));
+        Assert.DoesNotContain("17890", FriendConnectGuide.StatusPeerConnected);
+        Assert.DoesNotContain("token", FriendConnectGuide.StatusPeerConnected);
+    }
+
+    [Theory]
+    [InlineData(null, false, "协助方")]
+    [InlineData("", false, "协助方")]
+    [InlineData("   ", false, "协助方")]
+    [InlineData("helper", false, "协助方")]
+    [InlineData("Helper", false, "协助方")]
+    [InlineData("小明", false, "小明")]
+    [InlineData("小明", true, "账号免密 · 小明")]
+    [InlineData(null, true, "账号免密 · 协助方")]
+    public void FormatPairedClientLabel_HumanName(string? name, bool ownerLink, string expected)
+    {
+        Assert.Equal(expected, FriendConnectGuide.FormatPairedClientLabel(name, ownerLink));
+    }
+
+    [Fact]
+    public void PairedClientsEmpty_IsPlaceholder()
+    {
+        Assert.Equal("（暂无）", FriendConnectGuide.PairedClientsEmpty);
+        Assert.Equal("协助方", FriendConnectGuide.PairedClientFallbackName);
+    }
+
 
     [Fact]
     public void RefreshSession_ConfirmCopy_IsPlainAndActionable()

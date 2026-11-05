@@ -282,8 +282,8 @@ internal sealed class MainForm : Form
         _listenValue = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 40),
-            Size = new Size(320, 44),
+            Location = new Point(16, 36),
+            Size = new Size(320, 48),
             Text = FriendConnectGuide.StatusReadyToShare
         };
         statusCard.Controls.Add(_listenValue);
@@ -1006,12 +1006,9 @@ internal sealed class MainForm : Form
     {
         var phase = _host.RelayPhase;
         var clients = _host.ListPairedClients().Count;
-        if (clients > 0 || phase == "paired")
-            _listenValue.Text = "对方已连接";
-        else if (phase == "waiting")
-            _listenValue.Text = FriendConnectGuide.StatusWaitingPeer;
-        else if (phase is "ready")
-            _listenValue.Text = FriendConnectGuide.StatusReadyToShare;
+        // R031：以真正配对进本机的协助方为准，不是只连上中继的 phase=paired
+        if (clients > 0)
+            _listenValue.Text = FriendConnectGuide.StatusPeerConnected;
         else if (phase == "error")
         {
             var friendly = FriendConnectGuide.Classify(_host.LastRelayError);
@@ -1022,6 +1019,7 @@ internal sealed class MainForm : Form
         else if (phase is "dialing" or "starting")
             _listenValue.Text = "正在连网…";
         else
+            // ready / waiting / paired-but-no-client / 断开后：回到可发给对方
             _listenValue.Text = FriendConnectGuide.StatusReadyToShare;
 
         _listenRawValue.Text = _host.PreferRelay
@@ -1042,12 +1040,11 @@ internal sealed class MainForm : Form
             _clientsView.Items.Clear();
             foreach (var c in _host.ListPairedClients())
             {
-                var shortTok = c.Token.Length >= 8 ? c.Token[..8] : c.Token;
-                var ownerTag = c.OwnerLink ? "账号免密 · " : "";
-                _clientsView.Items.Add(new ListViewItem($"{ownerTag}{c.ClientName} · {shortTok}…") { Tag = c.Token });
+                var label = FriendConnectGuide.FormatPairedClientLabel(c.ClientName, c.OwnerLink);
+                _clientsView.Items.Add(new ListViewItem(label) { Tag = c.Token });
             }
             if (_clientsView.Items.Count == 0)
-                _clientsView.Items.Add(new ListViewItem("（暂无）") { ForeColor = Color.Gray });
+                _clientsView.Items.Add(new ListViewItem(FriendConnectGuide.PairedClientsEmpty) { ForeColor = Color.Gray });
         }
         finally { _clientsView.EndUpdate(); }
         UpdateFriendStatus();
@@ -1239,6 +1236,44 @@ internal sealed class MainForm : Form
         RefreshTrustUi();
     }
 
+
+
+    /// <summary>UiShot：还没人连上——主状态可发给对方；列表（暂无）。</summary>
+    internal void PreparePeerIdleForShot()
+    {
+        _listenValue.Text = FriendConnectGuide.StatusReadyToShare;
+        _clientsView.BeginUpdate();
+        try
+        {
+            _clientsView.Items.Clear();
+            _clientsView.Items.Add(new ListViewItem(FriendConnectGuide.PairedClientsEmpty) { ForeColor = Color.Gray });
+        }
+        finally { _clientsView.EndUpdate(); }
+        SetStatus("");
+    }
+
+    /// <summary>UiShot：对方已连上——主状态人话 + 列表称呼（无内部编号）。</summary>
+    internal void PreparePeerConnectedForShot(string? displayName = null)
+    {
+        _listenValue.Text = FriendConnectGuide.StatusPeerConnected;
+        var label = FriendConnectGuide.FormatPairedClientLabel(displayName);
+        _clientsView.BeginUpdate();
+        try
+        {
+            _clientsView.Items.Clear();
+            _clientsView.Items.Add(new ListViewItem(label) { Tag = "shot-token" });
+        }
+        finally { _clientsView.EndUpdate(); }
+        SetStatus("");
+    }
+
+    /// <summary>UiShot：对方断开后——主状态回到可发给对方；列表（暂无）；状态栏用已有断开反馈区分构图。</summary>
+    internal void PreparePeerDisconnectedForShot()
+    {
+        PreparePeerIdleForShot();
+        // 与「断开全部」成功后的既有反馈一致，避免 idle/断开两张 MD5 完全相同
+        SetStatus("已断开 1 个会话。");
+    }
 
     private void CopySkillInstructions()
     {

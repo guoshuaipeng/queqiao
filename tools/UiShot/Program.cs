@@ -25,6 +25,9 @@ internal static class Program
         if (args.Any(a => a is "--r029"))
             return R029Shots.Run(outDir);
 
+        if (args.Any(a => a is "--r031"))
+            return R031Shots.Run(outDir);
+
         var settings = HelperUiSettings.Load();
         settings.NetworkAllowBannerDismissed = true;
         settings.NetworkAllowMaybeDenied = false;

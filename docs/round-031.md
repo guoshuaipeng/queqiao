@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**ready**
+> 状态：**delivered**
 > 依据：R030 产品已验收（官网包已含 R027–R029 的 Skill 入口）。接受协助端在还没人连上时，运行状态是「已连上网络，可以发给对方了」，这句没问题；可是对方真正连上之后，主状态仍容易停在这句“等待发出去”的话，亲友不容易一眼看出已经有人连上了。
 
 官网下载与 Skill 入口这条线（R019–R030）已经闭环。本轮回到被协助的人正在等待对方时：有人连上，就要把主状态改成直白的「对方已连上」。
@@ -49,3 +49,35 @@
 
 - 更新本文交付说明与截图
 - 回告产品验收；未开下一轮
+
+
+## 交付说明（客户端 · 2026-11-06 Asia/Shanghai）
+
+### 做了什么
+- 共享常量（`RemoteAssist.Protocol.FriendConnectGuide`）：
+  - `StatusPeerConnected` =「对方已连上。改动这台电脑前会先问你。」
+  - `PairedClientFallbackName` =「协助方」、`PairedClientsEmpty` =「（暂无）」
+  - `FormatPairedClientLabel`：有称呼用称呼；空/默认 `helper` 写「协助方」；账号免密可读前缀
+- Windows `MainForm`：运行状态以 `ListPairedClients().Count > 0` 切换（不再把中继 `phase=paired` 当成已连上）；列表去掉内部 token 截断，改人话称呼
+- Avalonia `MainWindow`：同上主状态；新增「已连接的协助方」列表（此前只有状态句）
+- 断开后主状态回到 `StatusReadyToShare`；列表回到「（暂无）」
+- 「复制码+密码」仍是唯一实心主按钮；未改 Skill/MCP/`InstallInstructions`/`trust-levels`「才问你」；未换公网包；未开下一轮
+
+### 测试
+- `RemoteAssist.Protocol.Tests`：180 通过（含 StatusPeerConnected / FormatPairedClientLabel 新测）
+
+### 截图（均为 **ui-shot**，非手绘）
+| 文件 | 平台 | 显示 | MD5 |
+|------|------|------|-----|
+| `docs/screenshots/r031-accept-idle.png` | Windows | 主状态「已连上网络，可以发给对方了」；列表「（暂无）」；「复制码+密码」实心主按钮 | FEEFE46778963A33AF1B2E673B478120 |
+| `docs/screenshots/r031-accept-peer-connected.png` | Windows | 主状态「对方已连上。改动这台电脑前会先问你。」；列表「小明」 | 319EC6B84B3C4194ECAB59D044275A0E |
+| `docs/screenshots/r031-accept-peer-disconnected.png` | Windows | 主状态回到可发给对方；列表「（暂无）」；状态栏「已断开 1 个会话。」（既有断开反馈，区分 idle MD5） | F9CD9F3BC03CE5EAE30B16C2F06977F1 |
+| `docs/screenshots/r031-avalonia-idle.png` | Avalonia | 同上 idle | 7AB0845C696EE96FAD8F051E17290D2C |
+| `docs/screenshots/r031-avalonia-peer-connected.png` | Avalonia | 同上已连上 + 列表「小明」 | AAB7F8DF41EE4176E3B2C4C1E1DFB522 |
+| `docs/screenshots/r031-avalonia-peer-disconnected.png` | Avalonia | 主状态回到可发给对方；列表「（暂无）」；hint「已断开 1 个会话。」 | AA3F2AEA181FFDFF4FF2ADCB4B3B1161 |
+
+两端均改代码且均有截图；文案共用 Protocol 常量。
+
+### 缺口 / 披露
+- 截图为 ui-shot 注入配对态（非真连中继后的实拍）；主状态与列表控件为真实 UI。
+- 断开构图用既有「已断开 1 个会话。」反馈区分与 idle 的像素，主状态本身已回到「已连上网络，可以发给对方了」。
