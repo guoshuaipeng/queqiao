@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端（出包）+ 鹊桥-服务端（替换官网文件）
-> 状态：**done（待产品验收）**
+> 状态：**done（产品已验收）**
 > 依据：R023 产品已验收（安装说明与官网旁注已含 .NET 8 运行时短指引）；公网 Windows / Linux 包仍是 R022 产物（75,582,719 / 7,999,909），亲友从官网下到的客户端「复制安装说明」还没有运行时怎么装的两句。
 
 R023 已让去协助端复制的安装说明，以及官网 Linux 旁注，告诉对方怎么装 .NET 8 运行时。但公网仍挂着 R022 的包：对方按说明去官网下载后，自己再当协助方时，复制出来的说明又变回没有运行时指引的旧文案。本轮把官网包换到含 R023 的客户端。
@@ -131,3 +131,19 @@ Linux 旁注原文仍为：「解开后运行。需要先装好 .NET 8 桌面方
 
 - 未开下一轮；未重启 site / relay；未改 HTML；未改中继
 - 未读/打印 `/etc/remote-assist-site.env`；未把帮助脚本加进仓库 `tools/`
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照公网下载与 `docs/screenshots/r024-*` 独立验收通过（出包 HEAD `bf078ac` / 交付 `8cf2810`，上架 `1ee1e9c`）。
+
+独立核对：
+
+- 公网 Windows http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe：HEAD Content-Length **75,583,762**，Content-Disposition `RemoteAssist-Setup-0.1.0.exe`，Last-Modified Thu, 05 Nov 2026 17:04:16 GMT（**2026-11-06 01:04:16 Asia/Shanghai**）。相对 R022 旧包 75,582,719 已变化，与客户端交付字节一致。
+- 公网 Linux http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz：HEAD Content-Length **8,000,095**，Content-Disposition `queqiao-linux-x64.tar.gz`（无内部 `-fd`）；产品完整下载后 SHA256 `305F9E40057828C0354ED0C0057F6611A380541A962A15AACC8CAD2C414FE586`，与客户端交付一致。相对 R022 旧包 7,999,909 / `B90E3B28…CD0AB1CE` 已变化。
+- 首页导语仍是「Windows 和 Linux 都可下载使用」；Linux 旁注仍是「解开后运行。需要先装好 .NET 8 桌面方向运行时。打开 [微软 .NET 8 下载页](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)，选运行时、不要选 SDK。」；macOS 仍「即将提供」。未见端口 / 17891 / 放行入站 / 自包含 / TLS / stdio。`/`、`/ask`、`/admin` HTTP 200。
+- `docs/screenshots/r024-home-download.png`：地址栏可见 `121.196.45.81/#download`；下载区可见 Windows / Linux 按钮、Linux 运行时旁注与 macOS「即将提供」。
+- `docs/screenshots/r024-win-download.png` / `r024-linux-download.png`：同一页 + Edge 下载浮层，可见 `RemoteAssist-Setup-0.1.0.exe` 与 `queqiao-linux-x64.tar.gz`（无 `-fd`）。未覆盖 `r022-*` / `r023-*`。
+
+缺口：两张下载浮层图几乎相同（同一浮层里两个文件名都可见，与 R023 同类缺口，不挡验收，因产品已独立 HEAD / 下载核对公网文件）；浏览器对未签名安装包提示「通常不会下载…请在打开前确保信任」（交 R025）；本轮未把 macOS 写成已可下。
+
+已开 R025（安装说明与官网补「通常不会下载 / 不认识这个程序」时怎么选；客户端改复制说明，服务端改 Windows 旁注；本轮不换包）。
