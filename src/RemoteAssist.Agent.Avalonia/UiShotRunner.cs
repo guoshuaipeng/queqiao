@@ -5,7 +5,7 @@ using Avalonia.Threading;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R027：去协助端「复制 Skill 说明」轻按钮 + 反馈（只一次）+ 剪贴板预览。</summary>
+/// <summary>R028：接受协助端高级内「复制 Skill 说明」+ 反馈（只一次）+ 剪贴板预览。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -14,24 +14,25 @@ internal static class UiShotRunner
         await Dispatcher.UIThread.InvokeAsync(() => { });
         await Task.Delay(400).ConfigureAwait(true);
 
-        var helper = new HelperWindow(shotDir: outDir, enableReturnHome: true);
-        helper.Show();
+        var host = Program.SharedHost ?? Program.CreateHost();
+        var accept = new MainWindow(host, shotDir: outDir, enableReturnHome: true);
+        accept.Show();
         await Task.Delay(350).ConfigureAwait(true);
 
-        helper.PrepareSkillGuideEntryForShot();
+        accept.PrepareSkillEntryForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r027-skill-entry.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(accept, Path.Combine(outDir, "r028-skill-entry.png")).ConfigureAwait(true);
 
-        helper.PrepareSkillCopiedForShot();
+        accept.PrepareSkillCopiedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r027-skill-copied.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(accept, Path.Combine(outDir, "r028-skill-copied.png")).ConfigureAwait(true);
 
-        helper.PrepareSkillClipboardPreviewForShot();
+        accept.PrepareSkillClipboardPreviewForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r027-skill-clipboard-preview.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(accept, Path.Combine(outDir, "r028-skill-clipboard-preview.png")).ConfigureAwait(true);
 
-        helper.PrepareClose();
-        helper.Close();
+        accept.AllowCloseWithoutPrompt();
+        accept.Close();
 
         Console.WriteLine("ui-shot written to " + outDir);
         await Task.CompletedTask;
