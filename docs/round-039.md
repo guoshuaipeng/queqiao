@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**ready**
+> 状态：**delivered**
 > 依据：R038 产品已验收。R035–R037 的 Avalonia 已连上截图里，五个常用操作都不在可视区域；Windows 同一状态下五键就在主状态下面。连上之后，人最先要做的是看正在运行的程序，不应该先翻过账号和 MCP。
 
 官网包已经跟上。接下来补这块连上之后的首屏：Avalonia 去协助端也要把五个常用操作放在眼前。
@@ -31,3 +31,31 @@
 - 更新本文交付说明
 - 截图放到 docs/screenshots/r039-*（至少：Avalonia 已连上时能在同一屏看到「已连接对方电脑」、灰色「已连接」和五个常用操作；Avalonia 对方结束或自己断开后五键重新隐藏；Windows 已连上时五键仍可见）。可用 ui-shot，须标明。**勿覆盖** r022-*～r038-*。
 - 回告产品验收；未开下一轮
+
+
+## 交付说明（客户端 · 2026-11-06 Asia/Shanghai）
+
+### 做了什么
+- Avalonia `HelperWindow`：`body` 子控件顺序改为 `pairCard` → `_toolCard` → `accountCard` → `mcpCard`（R039：常用操作紧挨主状态下方，账号 / MCP 之前）
+- `_toolCard.IsVisible` 改为显式调用 `HelperSessionCopy.ShowCommonTools(connected)`（规则不变）
+- 五键文案改为读 `HelperSessionCopy.CommonToolButtonLabels`（顺序/原文锁定）；未改 Windows Helper.UI 布局与账号区
+- 未改 R035 三句主状态 / R036 按钮文案 / R037 粘贴提示原文与显隐；未改 EndAssistCopy / R031 / InstallInstructions / Skill / trust-levels「才问你」；未改 relay/site；未换公网包；未开下一轮
+
+### 测试
+- `RemoteAssist.Protocol.Tests`：**192** 通过（新增 `CommonToolButtonLabels_OrderLocked`）
+
+### 截图（均为 **ui-shot**，非真连中继配对）
+| 文件 | 平台 | 显示 | MD5 | 字节 |
+|------|------|------|-----|------|
+| `docs/screenshots/r039-avalonia-helper-connected-tools-first-screen.png` | Avalonia | 同屏「已连接对方电脑」+ 灰禁「已连接」+ 五个常用操作 | 2B8444538D7307AEEE79BFD255F84E6B | 60202 |
+| `docs/screenshots/r039-avalonia-helper-peer-ended-tools-hidden.png` | Avalonia | 「对方已结束这次协助。」；五键隐藏 | A5D5B996AC38C3AD417A2D453E5E5518 | 58388 |
+| `docs/screenshots/r039-avalonia-helper-self-disconnect-tools-hidden.png` | Avalonia | 「状态：未连接」；五键隐藏 | 991BF347449A1D5A885A0578509B2916 | 57641 |
+| `docs/screenshots/r039-helper-connected-tools-visible.png` | Win | 已连上五键仍可见（确认未回归） | 4823519DDC78D758059472703A2A6ABD | 45077 |
+
+亦复制到 `%USERPROFILE%\Downloads\r039-shots\`（`C:\Users\user\Downloads\r039-shots\`）。
+
+### 缺口 / 披露
+- 四张均为 ui-shot。
+- Avalonia 对方结束 / 自己断开两张与对应 `r037-avalonia-*-hint-back.png` **MD5 相同**（那些帧五键本就隐藏）。
+- Windows 已连上张与 `r037-helper-connected-no-paste-hint.png` **MD5 相同**（Win 布局未改，五键本就在首屏）。
+- Avalonia 已连上张 MD5 **不同于** r037（可证五键进入首屏）。r039 四张 MD5 互不相同。未覆盖 r022–r038。
