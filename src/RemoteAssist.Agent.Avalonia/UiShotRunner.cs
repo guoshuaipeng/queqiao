@@ -6,7 +6,7 @@ using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>把真实 Avalonia 控件渲成 PNG（R011 验收截图；非标注条伪造）。</summary>
+/// <summary>把真实 Avalonia 控件渲成 PNG（R012 信任等级验收截图；非标注条伪造）。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -15,81 +15,57 @@ internal static class UiShotRunner
         await Dispatcher.UIThread.InvokeAsync(() => { });
         await Task.Delay(400).ConfigureAwait(true);
 
-        // 1) 首页双卡片
-        await CaptureWindowAsync(home, Path.Combine(outDir, "r011-home.png")).ConfigureAwait(true);
+        var host = Program.SharedHost ?? Program.CreateHost();
+        host.SetTrustLevelPreference(TrustLevelKind.AskEveryTime);
 
-        // 2) 接受协助 → R010 被控窗（文案未改）
-        var accept = new MainWindow(
-            Program.SharedHost ?? Program.CreateHost(),
-            shotDir: outDir,
-            enableReturnHome: true);
-        accept.Show();
+        var win = new MainWindow(host, shotDir: outDir, enableReturnHome: true);
+        win.Show();
         await Task.Delay(350).ConfigureAwait(true);
-        await CaptureWindowAsync(accept, Path.Combine(outDir, "r011-accept-main.png")).ConfigureAwait(true);
 
-        // 关窗提示仍在被控路径
-        var closeWarn = new CloseWarnWindow();
-        closeWarn.Show(accept);
-        await Task.Delay(300).ConfigureAwait(true);
-        await CaptureWindowAsync(closeWarn, Path.Combine(outDir, "r011-close-warn.png")).ConfigureAwait(true);
-        closeWarn.Close();
-        accept.AllowCloseWithoutPrompt();
-        accept.Close();
-
-        // 3) 协助端空态（连上前无可点灰操作）
-        var helper = new HelperWindow(shotDir: outDir, enableReturnHome: true);
-        helper.Show();
-        helper.PrepareIdleForShot();
-        await Task.Delay(350).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r011-helper-idle.png")).ConfigureAwait(true);
-
-        // 4) 一次粘贴连接草稿
-        helper.PreparePasteForShot(FriendConnectGuide.FormatShareClipboard("K7MQ2P", "5821"));
+        win.OpenAdvancedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r011-helper-paste.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r012-linux-advanced-ask.png")).ConfigureAwait(true);
 
-        // 5) 连不上引导（非「点允许连网」）
-        helper.PrepareFailForShot(FriendConnectGuide.FailPeerNotAccepting);
-        await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r011-helper-fail-guide.png")).ConfigureAwait(true);
-
-        // 6) 只读成功
-        helper.PrepareConnectedReadonlyForShot(
-            "[ListProcesses] OK\n" +
-            "PID   NAME\n" +
-            "1     systemd\n" +
-            "882   bamfdaemon-dbus-runner\n" +
-            "[ReadLogTail] OK\n" +
-            "r011-demo log line 1\n" +
-            "r011-demo log line 2\n");
+        var confirm = win.ShowFullTrustConfirmForShot();
         await Task.Delay(300).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r011-helper-readonly.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(confirm, Path.Combine(outDir, "r012-linux-fulltrust-confirm.png")).ConfigureAwait(true);
+        confirm.Close(false);
+        await Task.Delay(150).ConfigureAwait(true);
 
-        // 7) 对方拒绝写操作
-        helper.PrepareDeniedForShot();
-        await Task.Delay(300).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r011-helper-denied.png")).ConfigureAwait(true);
-        helper.PrepareClose();
-        helper.Close();
+        win.ApplyTrustForShot(TrustLevelKind.AskEveryTime);
+        win.CloseAdvancedForShot();
+        await Task.Delay(200).ConfigureAwait(true);
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r012-linux-fulltrust-cancel-stays.png")).ConfigureAwait(true);
 
-        // 8) 写确认弹窗（被控侧，证明路径仍在）
-        var hostWin = new MainWindow(Program.SharedHost ?? Program.CreateHost(), shotDir: outDir, enableReturnHome: true);
-        hostWin.Show();
+        win.ApplyTrustForShot(TrustLevelKind.Relaxed);
+        await Task.Delay(200).ConfigureAwait(true);
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r012-linux-banner-relaxed.png")).ConfigureAwait(true);
+
+        win.ApplyTrustForShot(TrustLevelKind.FullTrust);
+        await Task.Delay(200).ConfigureAwait(true);
+        await CaptureWindowAsync(win, Path.Combine(outDir, "r012-linux-banner-fulltrust.png")).ConfigureAwait(true);
+
+        win.ApplyTrustForShot(TrustLevelKind.AskEveryTime);
         var writeInfo = new ConfirmRequestInfo(
             Source: "guest",
             Tool: "RunCommand",
             Summary: "运行一条命令",
             TimeoutSeconds: 60,
-            Detail: "命令：echo r011-should-not-run >/tmp/r011-deny-marker");
+            Detail: "命令：echo r012-ask");
         var write = new WriteConfirmWindow(writeInfo);
-        write.Show(hostWin);
-        await Task.Delay(350).ConfigureAwait(true);
-        await CaptureWindowAsync(write, Path.Combine(outDir, "r011-write-confirm.png")).ConfigureAwait(true);
+        write.Show(win);
+        await Task.Delay(300).ConfigureAwait(true);
+        await CaptureWindowAsync(write, Path.Combine(outDir, "r012-linux-write-confirm-ask.png")).ConfigureAwait(true);
         write.Close();
-        hostWin.AllowCloseWithoutPrompt();
-        hostWin.Close();
+
+        win.AllowCloseWithoutPrompt();
+        win.Close();
+
+        try { host.SetTrustLevelPreference(TrustLevelKind.AskEveryTime); } catch { /* ignore */ }
 
         Console.WriteLine("ui-shot written to " + outDir);
+        await Task.CompletedTask;
+        _ = home;
     }
 
     private static async Task CaptureWindowAsync(Window window, string path)

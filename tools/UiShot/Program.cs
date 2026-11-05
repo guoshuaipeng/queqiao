@@ -19,6 +19,9 @@ internal static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
+        if (args.Any(a => a is "--r012"))
+            return R012Shots.Run(outDir);
+
         var settings = HelperUiSettings.Load();
         settings.NetworkAllowBannerDismissed = true;
         settings.NetworkAllowMaybeDenied = false;

@@ -389,7 +389,7 @@ internal sealed class MainForm : Form
         {
             AutoSize = false,
             Location = new Point(16, 138),
-            Size = new Size(140, 22),
+            Size = new Size(90, 22),
             Text = TrustLevelCopy.FullTrustName,
             Name = "radioTrustFullTrust"
         };
@@ -414,6 +414,16 @@ internal sealed class MainForm : Form
             Name = "trustRelaxedBlurb"
         });
         _advancedPanel.Controls.Add(_radioFullTrust);
+        _advancedPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(110, 138),
+            Size = new Size(50, 22),
+            ForeColor = Color.FromArgb(0xB0, 0x60, 0x00),
+            Font = new Font(Font.FontFamily, 8.5F),
+            Text = TrustLevelCopy.FullTrustOnceHint,
+            Name = "trustFullTrustOnceHint"
+        });
         _advancedPanel.Controls.Add(new Label
         {
             AutoSize = false,
@@ -618,7 +628,11 @@ internal sealed class MainForm : Form
         };
         _trustTipRevert.LinkClicked += (_, _) =>
         {
-            _host.RevertTrustToAskEveryTime();
+            // 宽松：改回每次询问；完全信任：结束完全信任（不改平时偏好）
+            if (_host.TrustLevelIsFullTrust)
+                _host.EndFullTrustSession();
+            else
+                _host.RevertTrustToAskEveryTime();
             RefreshTrustUi();
         };
         _trustTip.Controls.Add(_trustTipText);
@@ -1105,12 +1119,14 @@ internal sealed class MainForm : Form
             _trustTip.BackColor = Color.FromArgb(0xE8, 0xF0, 0xFE);
             _trustTipText.ForeColor = Color.FromArgb(0x17, 0x4E, 0xA6);
             _trustTipText.Text = TrustLevelCopy.RelaxedBanner;
+            _trustTipRevert.Text = TrustLevelCopy.RevertToAskEveryTime;
         }
         else
         {
             _trustTip.BackColor = Color.FromArgb(0xFE, 0xF7, 0xE0);
             _trustTipText.ForeColor = Color.FromArgb(0xB0, 0x60, 0x00);
             _trustTipText.Text = TrustLevelCopy.FullTrustBanner;
+            _trustTipRevert.Text = TrustLevelCopy.EndFullTrust;
         }
         _trustTip.Visible = true;
     }

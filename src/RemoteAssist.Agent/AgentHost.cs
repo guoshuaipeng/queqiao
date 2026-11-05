@@ -207,6 +207,13 @@ internal sealed class AgentHost
         _audit.Write("trust_level", "preference=AskEveryTime; reverted=1");
     }
 
+    /// <summary>结束本次完全信任，回到已保存偏好（P2-7）。</summary>
+    public void EndFullTrustSession()
+    {
+        _trust.EndFullTrust();
+        _audit.Write("trust_level", "fulltrust=ended");
+    }
+
     public IReadOnlyList<PairedClientInfo> ListPairedClients()
     {
         var now = DateTimeOffset.UtcNow;

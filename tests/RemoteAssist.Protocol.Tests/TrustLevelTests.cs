@@ -14,7 +14,11 @@ public class TrustLevelCopyTests
         Assert.Equal("完全信任", TrustLevelCopy.FullTrustName);
         Assert.Equal("对方改动前都会问你（推荐）", TrustLevelCopy.AskEveryTimeBlurb);
         Assert.Equal("只有高风险改动才问你，其余会记下但不再打扰", TrustLevelCopy.RelaxedBlurb);
-        Assert.Equal("这次协助中不再询问，但会记下", TrustLevelCopy.FullTrustBlurb);
+        Assert.Equal("仅这次不再询问，但会记下", TrustLevelCopy.FullTrustBlurb);
+        Assert.Equal("仅这次", TrustLevelCopy.FullTrustOnceHint);
+        Assert.Equal("结束完全信任", TrustLevelCopy.EndFullTrust);
+        Assert.Equal("结束完全信任", TrustLevelCopy.TipActionOf(TrustLevelKind.FullTrust));
+        Assert.Equal("改回每次询问", TrustLevelCopy.TipActionOf(TrustLevelKind.Relaxed));
         Assert.Equal("高风险包括删除文件、关机、改权限等。", TrustLevelCopy.HighRiskSupplement);
         Assert.Equal("如果对方只能查看，不会因为这个设置就能改你的电脑。", TrustLevelCopy.GuestCeilingNote);
         Assert.Equal("本次协助已确认的改动", TrustLevelCopy.ConfirmedChangesTitle);
@@ -26,15 +30,17 @@ public class TrustLevelCopyTests
     {
         Assert.Equal("这次协助不再询问了吗？", TrustLevelCopy.FullTrustConfirmTitle);
         Assert.Equal(
-            "打开后，对方在这次协助里做的改动都不会再弹窗问你，但仍会记在这台电脑的记录里。你可以随时改回「每次询问」。这次结束后，或换一个人再连，不会继续完全信任。",
+            "打开后，只对现在这位协助者、这一次有效。对方做的改动都不会再弹窗问你，但仍会记在这台电脑的记录里。你可以随时改回。这次结束后，或换一个人再连，不会继续完全信任，会回到你平时的选择。",
             TrustLevelCopy.FullTrustConfirmBody);
         Assert.Equal("确定，这次不再询问", TrustLevelCopy.FullTrustConfirmOk);
         Assert.Equal("取消", TrustLevelCopy.FullTrustConfirmCancel);
-        // 验收语义：不再弹窗 / 会记下 / 可改回 / 换人不会沿用（原文为「不会再弹窗…」等）
+        // 验收语义（trust-levels.md 2026-11-05）
+        Assert.Contains("只对现在这位协助者、这一次有效", TrustLevelCopy.FullTrustConfirmBody);
         Assert.Contains("不会再弹窗", TrustLevelCopy.FullTrustConfirmBody);
         Assert.Contains("记在这台电脑的记录里", TrustLevelCopy.FullTrustConfirmBody);
-        Assert.Contains("改回「每次询问」", TrustLevelCopy.FullTrustConfirmBody);
+        Assert.Contains("你可以随时改回", TrustLevelCopy.FullTrustConfirmBody);
         Assert.Contains("换一个人再连，不会继续完全信任", TrustLevelCopy.FullTrustConfirmBody);
+        Assert.Contains("会回到你平时的选择", TrustLevelCopy.FullTrustConfirmBody);
     }
 
     [Fact]
@@ -62,7 +68,9 @@ public class TrustLevelCopyTests
             TrustLevelCopy.RelaxedBanner,
             TrustLevelCopy.FullTrustBanner,
             TrustLevelCopy.ConfirmedChangesTitle,
-            TrustLevelCopy.GuestCeilingNote
+            TrustLevelCopy.GuestCeilingNote,
+            TrustLevelCopy.EndFullTrust,
+            TrustLevelCopy.FullTrustOnceHint
         };
         foreach (var s in samples)
         {
@@ -239,6 +247,19 @@ public class TrustLevelSessionTests
         s.RevertToAskEveryTime();
         Assert.Equal(TrustLevelKind.AskEveryTime, s.Effective);
         Assert.False(s.IsFullTrustActive);
+    }
+
+    [Fact]
+    public void EndFullTrust_Restores_Saved_Preference_Not_Forced_Ask()
+    {
+        var s = new TrustLevelSession();
+        s.SetPreference(TrustLevelKind.Relaxed);
+        s.EnableFullTrust(new[] { "a" });
+        Assert.Equal(TrustLevelKind.FullTrust, s.Effective);
+        s.EndFullTrust();
+        Assert.False(s.IsFullTrustActive);
+        Assert.Equal(TrustLevelKind.Relaxed, s.Effective);
+        Assert.Equal(TrustLevelKind.Relaxed, s.Preference);
     }
 
     [Fact]

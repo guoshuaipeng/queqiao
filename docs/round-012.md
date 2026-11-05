@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（Avalonia 被控端信任档 + Windows 文案跟进；不改 `relay/`，不迁 Windows 到 Avalonia，不重做 R006–R011）
-> 状态：**wip**
+> 状态：**done（实现已推；待产品验收）**
 > 依据：docs/trust-levels.md（含 2026-11-05 修正）；docs/PRODUCT.md；R007 Windows 已验收旧文案；R011 Linux 双模式已产品验收。
 
 R011 已产品验收 Linux Avalonia 双模式。亲友/客户在 Linux 上的被控主路径已是 Avalonia 窗，但仍只有默认「每次询问」、没有三档入口。Windows 侧 P2-7（「结束完全信任」与二次确认正文）已定稿、R007 按旧文案验收过，本轮一并跟进。
@@ -47,3 +47,27 @@ R011 已产品验收 Linux Avalonia 双模式。亲友/客户在 Linux 上的被
 - 更新本文交付说明、`docs/roadmap.md`（本轮标 done；P2-7 标 done；平台项保持 R011 已验收表述）
 - 截图放到 `docs/screenshots/r012-*`
 - 回告产品验收；未开下一轮
+
+## 交付说明（鹊桥-客户端 · 2026-11-05 Asia/Shanghai）
+
+### 实现摘要
+- **Linux Avalonia 被控端**：`MainWindow`「高级」内三档（每次询问 / 宽松 / 完全信任），文案全部来自 `TrustLevelCopy`（对齐 `docs/trust-levels.md` 2026-11-05）。完全信任二次确认窗 `FullTrustConfirmWindow`；取消后档位不变；主界面横幅宽松→「改回每次询问」、完全信任→「结束完全信任」；写操作仍走 `TrustLevelPolicy` + `ConfirmPrompt`/`WriteConfirmWindow`。不做「本次协助已确认的改动」列表。osx 能出包；未上真机，不写成 Mac 已验收。
+- **Windows P2-7**：`TrustLevelCopy` 更新（完全信任 blurb「仅这次不再询问，但会记下」、二次确认正文补「只对现在这位协助者、这一次有效」「会回到你平时的选择」、`EndFullTrust`）；`TrustLevelSession.EndFullTrust` / `AgentHost.EndFullTrustSession`；主界面完全信任横幅操作改为「结束完全信任」（不把平时偏好改成每次询问）；宽松仍用「改回每次询问」。
+
+### 截图（`docs/screenshots/r012-*`，已复制 `%USERPROFILE%\Downloads\r012-shots\`）
+| 文件 | 屏幕可见要点 |
+|------|-------------|
+| r012-linux-advanced-ask.png | 高级展开；三档+说明；默认每次询问；完全信任旁「仅这次」 |
+| r012-linux-fulltrust-confirm.png | 二次确认标题/正文/按钮原文（含「只对现在这位协助者、这一次有效」「会回到你平时的选择」） |
+| r012-linux-fulltrust-cancel-stays.png | 取消后主界面无完全信任横幅（仍为每次询问） |
+| r012-linux-banner-relaxed.png | 宽松横幅 +「改回每次询问」 |
+| r012-linux-banner-fulltrust.png | 完全信任横幅 +「结束完全信任」 |
+| r012-linux-write-confirm-ask.png | 每次询问写下的写操作确认窗 |
+| r012-win-fulltrust-confirm.png | Windows 二次确认正文补句可见 |
+| r012-win-fulltrust-banner.png | Windows「结束完全信任」 |
+| r012-win-relaxed-banner.png | Windows 宽松仍「改回每次询问」（对照） |
+
+### 测试
+`dotnet test`：168 通过 / 0 失败。
+
+### 未开下一轮；未改 relay / AI-SSH-Pro / 官网；未把 Windows 迁 Avalonia。

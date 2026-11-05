@@ -71,6 +71,16 @@ internal sealed class TrustLevelSession
         RaiseChanged();
     }
 
+    /// <summary>结束本次完全信任，回到已保存偏好（不把平时选择改成每次询问）。</summary>
+    public void EndFullTrust()
+    {
+        lock (_gate)
+        {
+            _fullTrustActive = false;
+            _fullTrustTokens.Clear();
+        }
+        RaiseChanged();
+    }
     public void RevertToAskEveryTime()
     {
         lock (_gate)
