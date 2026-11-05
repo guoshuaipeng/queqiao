@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（Avalonia 被控窗 / 发布小包；不改 `relay/`，不把 Windows WinForms 迁到 Avalonia，不重做 R006–R009）
-> 状态：**done**（2026-11-05 Asia/Shanghai）
+> 状态：**done**（产品已验收，2026-11-05 Asia/Shanghai）
 > 依据：docs/PRODUCT.md「支持平台」第一步的 GUI；docs/architecture.md §13（先 CLI/MCP + 确认，再补对等 GUI）；docs/mac-linux-scenes.md；被控窗文案见 `docs/first-run-mac-linux.md` 第 1、2 节（直接用字，不扩大本轮范围）。
 
 R009 已产品验收 Linux 被控 CLI + MCP + 终端确认 + 框架依赖小包（`ef0948a`）。本轮只补亲友/客户的主路径：Avalonia 被控状态窗。同事运维仍可用 R009 的 CLI，不要把「打开终端复制码」写给亲友和客户。
@@ -112,3 +112,21 @@ R009 已产品验收 Linux 被控 CLI + MCP + 终端确认 + 框架依赖小包�
 ### 本轮不做（已遵守）
 
 - 未开双模式 GUI / R011；未迁 Windows；未改中继/官网/AI-SSH-Pro；未做三档信任或 P2-7；未把「打开终端复制码」写给亲友。
+
+## 产品验收（2026-11-05 Asia/Shanghai）
+
+对照 `docs/screenshots/r010-*` 与 `docs/first-run-mac-linux.md` 第 1、2、5 节原文，**验收通过**。提交 `30dd4fd`。
+
+核对要点：
+
+- Linux Avalonia 被控窗标题「鹊桥远程协助」；主按钮「复制码+密码」；窗上有「结束这次协助」；状态「已连上网络，可以发给对方了」。亲友可见界面未出现 Assist、Admin、ownerLink、TLS、端口号，也没有「打开终端复制码」。主界面截图用了文档示例码 AB12CD / 3471；真实联调会话码见协助端截图 `V75JCR`。
+- 访客配对弹窗：「有人想协助这台电脑」；「允许协助 / 拒绝」；「若不操作，将在 30 秒后自动拒绝」。
+- 写操作弹窗：标题「对方想在这台电脑执行操作」、人话「运行一条命令」、「命令：」详情、「允许 / 拒绝」、「若不操作，将在 60 秒后自动拒绝」；拒绝后「已拒绝，未做任何改动」。
+- 关窗提示为第 2 节原文：「关闭窗口后，协助可能还在进行。要结束请点「结束这次协助」。」
+- Windows 协助端经默认公网中继 `121.196.45.81:17891` 连上后 `PROCS ok=True`（Linux 进程如 bamfdaemon-dbus-runner）、`LOGS ok=True`（`/tmp/r010-demo.log`）；写操作 `RUN` 为 denied，「已拒绝，未做任何改动」。
+- 默认 framework-dependent 小包实测：linux-x64 18.88 MB、osx-x64 26.37 MB、osx-arm64 26.38 MB；人话「这个程序比较小，但需要先安装「.NET 8 运行时」。装一次就可以，它不是开发工具。」未默认自包含大包。「争取个位数 MB」未达到（Skia 原生库占大半），但仍低于自包含约 72 MB 上限，不阻断本轮。
+- osx-x64 / osx-arm64 **已出包、未上真机**，本轮不写成 Mac 已验收。
+- 联调截图使用了 `--insecure` 与测试钩子；弹窗原文由真实 Avalonia 控件渲出；默认发布仍走 TLS。
+- `dotnet test` 167/167 通过。
+
+双模式「去协助别人」不在本轮，见 `docs/round-011.md`。

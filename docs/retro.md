@@ -155,3 +155,13 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - 默认 framework-dependent 小包（linux-x64 / osx-x64 / osx-arm64）；osx **已出包、未上真机**，不写成 Mac 已验收。
 
 已开 R010（仅 Avalonia 被控窗 + 框架依赖小包实测；不做双模式 GUI、不迁 Windows、不改中继/官网、不拆 P2-7）。
+
+## R010 产品验收（2026-11-05 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r010-*` 与 `docs/first-run-mac-linux.md` 第 1、2、5 节原文验收通过（`30dd4fd`）：
+
+- Linux Avalonia 被控窗「复制码+密码」、配对/写确认弹窗、「结束这次协助」、关窗提示对齐原文；品牌「鹊桥」。
+- Windows 协助端只读成功；写操作拒绝后「已拒绝，未做任何改动」。主界面截图用了文档示例码；真实联调会话码见协助端截图。
+- 默认 FD 小包 linux-x64 18.88 MB / osx-x64 26.37 MB / osx-arm64 26.38 MB；「争取个位数 MB」未达到（Skia），不阻断。osx **已出包、未上真机**。
+
+已开 R011（Avalonia 双模式 / 去协助；不迁 Windows、不改中继/官网、不拆 P2-7；个位数 MB 不作硬指标）。

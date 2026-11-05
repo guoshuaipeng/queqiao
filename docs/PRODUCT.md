@@ -50,7 +50,7 @@
 
 ## 支持平台（2026-11-05）
 
-- 三类用户在 Mac/Linux 上的闭环见 `docs/mac-linux-scenes.md`。R009 Linux CLI + MCP + 终端确认已于 2026-11-05 产品对照截图验收通过（`docs/round-009.md`）；同事运维可继续用 CLI；亲友/客户主路径走 Avalonia 被控窗（R010），不要把打开终端复制码当主路径。
+- 三类用户在 Mac/Linux 上的闭环见 `docs/mac-linux-scenes.md`。R009 Linux CLI + MCP + 终端确认已于 2026-11-05 产品对照截图验收通过（`docs/round-009.md`）；R010 Linux Avalonia 被控窗已于 2026-11-05 产品对照截图验收通过（`docs/round-010.md`）；osx 已出包未上真机；同事运维可继续用 CLI；亲友/客户主路径走 Avalonia 被控窗，不要把打开终端复制码当主路径。下一步 R011 是与 Windows 对等的双模式 GUI（接受协助 / 去协助别人）。
 
 - **Windows / macOS / Linux** 均为正式产品范围，不是「以后再说」。
 - **不阻塞** Windows 的 P0 演示闭环：Windows 仍先可演示。
