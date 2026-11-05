@@ -10,7 +10,7 @@
 | 公网中继访客配对（code+密码）+ 透明转发 | 远端协助-并行 | **done** | 两机经中继可配对；协议与 `relay-protocol.md` 一致；`go test ./internal/relay` PASS |
 | 同一 App 双模式 UI + 安装包 | 远端协助 | wip | 安装后可选接受/去协助；被控展示 code+密码 |
 | 业务 TLS+指纹；写操作本机确认 | 远端协助 | wip | Assist 写命令弹确认；拒绝则不执行 |
-| 客户端/MCP 对接 JSONL 中继（访客 code+密码） | 远端协助 | **wip（主路径）** | MCP/UI 经中继 guest 配对成功 |
+| 客户端/MCP 对接 JSONL 中继（访客 code+密码） | 远端协助 | **done** | RelayJsonlIntegrationTests + 本机 relay smoke；MCP --relay/--code/--pwd |
 | MCP stdio 连会话并调只读/提议命令 | 远端协助 | wip | Agent 能连上并完成至少：列进程、读日志、提议命令走确认 |
 
 ## P1 — 账号与免密
@@ -18,7 +18,7 @@
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
 | 中继：注册/登录/token、设备上线、列表、免密连接 | 远端协助-并行 | **done** | signup/login/device_online/list_devices/connect_device + 测试覆盖 |
-| 客户端：注册/登录、设备上线、列表、免密连接 | 远端协助 | todo | 同账号两台：登录后列表可见、一键连上无需 code |
+| 客户端：注册/登录、设备上线、列表、免密连接 | 远端协助 | **done（最小闭环）** | UI 登录/列表/免密 + MCP --token/--device-id；集成测 Account_Login_List_Connect |
 | 自有设备跳过配对确认窗；写操作仍确认 | 两端 | todo（规则已定） | 见 PRODUCT.md |
 | 设置项：默认/自定义中继地址 | 远端协助 | todo | 可填 `IP:17891`；**正式默认公网地址待运维填入** |
 
