@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-05 Asia/Shanghai
 > 实现：鹊桥-客户端（打出含 R015–R018 的 Linux 小包）+ 鹊桥-服务端（替换官网文件，并打磨首页「目前以 Windows 为主」）
-> 状态：**wip**（客户端 Linux 包已打出，待服务端上架 / 首页打磨）
+> 状态：**done（待产品验收）**
 > 依据：R019 产品已验收（实现 `04347f3`）；当前官网 Linux 包为 R014 前后现成产物，不含后续 Avalonia 界面打磨。
 
 R019 已让官网能下到 Windows 与 Linux 包。当前 Linux 包按当时要求原样上架，但不含 R015–R018 已验收的界面。本轮换上当前已验收的 Linux 小包。macOS 仍标「即将提供」，不假装已可下。
@@ -90,3 +90,30 @@ R019 已让官网能下到 Windows 与 Linux 包。当前 Linux 包按当时要�
 - 未把 macOS 包当正式产物；未换 Windows 安装包
 - 公网替换与首页「目前以 Windows 为主」文案打磨：**交鹊桥-服务端**（客户端只交出包路径）
 
+## 交付（2026-11-05 23:33 Asia/Shanghai）
+
+实现已上公网，待产品验收。未开下一轮。
+
+### Linux 包
+
+- 已用客户端交出、产品核对过的 `artifacts/queqiao-linux-x64-fd.tar.gz` 替换 http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz。公网文件名无内部 `-fd`。
+- 7,999,640 字节，SHA256 `EC1C7211E5B1045E7E945756035CCE426C5AB4F7CB102523ECA41BDB9DCE3650`，`Content-Type: application/gzip`，`Content-Disposition: attachment; filename="queqiao-linux-x64.tar.gz"`，Last-Modified 2026-11-05 15:26:49 GMT（北京时间 23:26:49）。
+- 与 R019 的 7,993,604 字节 / SHA256 `34CC363BAD28192895FCED74929FDE0A8C858D6E6A489EA40201D6DE552C827D` 大小和哈希均不同。
+- 旁注仍是「解开后运行。需要先装好 .NET 8 桌面方向运行时」。未上架 macOS。Windows 安装包本轮未换，仍为 `RemoteAssist-Setup-0.1.0.exe`（75,503,088 字节）。
+
+### 首页打磨
+
+- 导语由「目前以 Windows 为主」改为「Windows 和 Linux 都可下载使用」。
+- macOS 仍标「即将提供」。未写端口、放行入站、「也可下载自包含包」、TLS、stdio、`17891`。
+- 未改接单页 / 后台已验收文案（`docs/site-copy.md` 第 1 节）。
+
+### 托管
+
+- 仍由现有 `remote-assist-site` 通过磁盘目录 `SITE_DOWNLOADS=/var/lib/remote-assist-site/downloads` 提供 `/downloads/`，未把安装包嵌进二进制，未新装重型 Web 栈，未占用 `17891`。
+- 替换后 `remote-assist-site` 在 `*:80` 监听；中继 `remote-assist-relay` 仍在 `*:17891` 监听，进程未随官网重启而更换。`MemoryMax` 仍为 64M。
+
+### 截图与公网记录
+
+- `docs/screenshots/r020-home-download.png`：首页导语为「Windows 和 Linux 都可下载使用」，不再出现「目前以 Windows 为主」；下载区 Windows / Linux 可下，macOS 即将提供，Linux 旁注仍在。
+- `docs/screenshots/r020-linux-download.png`：浏览器下载列表可见 `queqiao-linux-x64.tar.gz`（7.6 MB / Done）。
+- 公网 http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz 已再次核对：200，Content-Length 7,999,640，文件名无 `-fd`，独立下载 SHA256 与上值一致，文件头为 gzip。`/ask` 仍为 200。
