@@ -5,7 +5,7 @@ using Avalonia.Threading;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R025：安装说明补下载/打开不受信任怎么选。</summary>
+/// <summary>R027：去协助端「复制 Skill 说明」轻按钮 + 反馈（只一次）+ 剪贴板预览。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -18,17 +18,17 @@ internal static class UiShotRunner
         helper.Show();
         await Task.Delay(350).ConfigureAwait(true);
 
-        helper.PrepareInstallGuideEntryForShot();
+        helper.PrepareSkillGuideEntryForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r025-install-entry.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r027-skill-entry.png")).ConfigureAwait(true);
 
-        helper.PrepareInstallCopiedForShot();
+        helper.PrepareSkillCopiedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r025-install-copied.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r027-skill-copied.png")).ConfigureAwait(true);
 
-        helper.PrepareInstallClipboardPreviewForShot();
+        helper.PrepareSkillClipboardPreviewForShot();
         await Task.Delay(280).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r025-clipboard-preview.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r027-skill-clipboard-preview.png")).ConfigureAwait(true);
 
         helper.PrepareClose();
         helper.Close();

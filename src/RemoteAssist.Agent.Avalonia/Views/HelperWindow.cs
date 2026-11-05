@@ -38,6 +38,7 @@ internal sealed class HelperWindow : Window
     private readonly TextBlock _accountStatus;
     private readonly Button _btnInstallGuide;
     private readonly Button _btnCopyMcp;
+    private readonly Button _btnCopySkill;
     private readonly TextBlock _mcpHint;
 
     private AssistClient? _client;
@@ -372,14 +373,27 @@ internal sealed class HelperWindow : Window
         };
         _btnCopyMcp.Click += async (_, _) => await CopyMcpConfigFromUiAsync();
         mcpRow.Children.Add(_btnCopyMcp);
-        mcpRow.Children.Add(new TextBlock
+        _btnCopySkill = new Button
+        {
+            Name = "copySkillGuideBtn",
+            Content = McpInstallGuide.CopySkillButton,
+            Width = 140,
+            Height = 32,
+            Background = Brushes.White,
+            Foreground = Brush.Parse("#1A73E8"),
+            BorderBrush = Brush.Parse("#DADEE3"),
+            BorderThickness = new Thickness(1),
+            FontWeight = FontWeight.Normal
+        };
+        _btnCopySkill.Click += async (_, _) => await CopySkillInstructionsAsync();
+        mcpRow.Children.Add(_btnCopySkill);
+        mcpStack.Children.Add(mcpRow);
+        mcpStack.Children.Add(new TextBlock
         {
             Text = "详细参数见产品文档；写操作仍须对方本机确认",
             Foreground = Brush.Parse("#5F6368"),
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             TextWrapping = TextWrapping.Wrap
         });
-        mcpStack.Children.Add(mcpRow);
         _mcpHint = new TextBlock
         {
             Text = "",
@@ -604,6 +618,29 @@ internal sealed class HelperWindow : Window
         catch (Exception ex)
         {
             _failHint.Text = "复制 MCP 配置失败：" + ex.Message;
+        }
+    }
+
+
+    private async Task CopySkillInstructionsAsync()
+    {
+        try
+        {
+            var clip = Clipboard;
+            if (clip is null)
+            {
+                _failHint.Text = "复制失败：剪贴板不可用";
+                return;
+            }
+            await clip.SetTextAsync(McpInstallGuide.SkillInstructionsClipboard).ConfigureAwait(true);
+            // 反馈只写 MCP 卡内提示一次，不写预览行/状态行（对齐 R017 不叠字）
+            _mcpHint.Text = McpInstallGuide.SkillCopiedHint;
+            _mcpHint.Foreground = Brush.Parse("#0F9D58");
+            _failHint.Text = "";
+        }
+        catch (Exception ex)
+        {
+            _failHint.Text = "复制 Skill 说明失败：" + ex.Message;
         }
     }
 
@@ -1251,6 +1288,37 @@ internal sealed class HelperWindow : Window
         _status.Text = "状态：未连接";
         _accountStatus.Text = "已登录（截图）";
         _output.Text = "";
+    }
+
+
+    /// <summary>UiShot：MCP 卡可见「复制 Skill 说明」轻按钮（与「复制 MCP 配置」并列）。</summary>
+    internal void PrepareSkillGuideEntryForShot()
+    {
+        PrepareInstallGuideEntryForShot();
+        _mcpHint.Text = "";
+        _failHint.Text = "";
+        Height = Math.Max(Height, 980);
+    }
+
+    /// <summary>UiShot：已点「复制 Skill 说明」后人话反馈（只出现一次）。</summary>
+    internal void PrepareSkillCopiedForShot()
+    {
+        PrepareSkillGuideEntryForShot();
+        _mcpHint.Text = McpInstallGuide.SkillCopiedHint;
+        _mcpHint.Foreground = Brush.Parse("#0F9D58");
+        _failHint.Text = "";
+        // 预览/状态不写同一句，避免叠字
+    }
+
+    /// <summary>UiShot：预览区展示 Skill 说明剪贴板正文（与常量同一份）。</summary>
+    internal void PrepareSkillClipboardPreviewForShot()
+    {
+        PrepareSkillGuideEntryForShot();
+        _preview.Text = McpInstallGuide.SkillInstructionsClipboard;
+        _preview.Foreground = Brush.Parse("#202124");
+        _mcpHint.Text = "";
+        _failHint.Text = "";
+        Height = Math.Max(Height, 1020);
     }
 
     /// <summary>UiShot：MCP / 复制安装说明入口可见（轻按钮，非实心绿）。</summary>
