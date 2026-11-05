@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**ready-for-product**
+> 状态：**done（产品已验收）**
 > 依据：R026 产品已验收（官网包已含 R025「通常不会下载」指引）；P2-5「Skill 薄封装（仅安装 MCP 指引，非控制面）」界面三步已在 R005/R017 落地，技能说明本身仍 backlog。亲友或协助方把配置交给智能体时，还缺少一段可直接保存为技能的白话说明。
 
 官网下载与安装说明这条线（R019–R026）已经闭环。本轮补上产品文档里写明的 Skill 薄封装：只告诉智能体怎么安装鹊桥的 MCP、怎么填参数，不把 Skill 做成控制面，也不能绕过对方本机确认。
@@ -117,3 +117,20 @@
 - 未改接受协助端；未因展示/复制 Skill 而自动监听 MCP
 - 未把 Skill 做成控制面或远程控制
 
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r027-*` 与源码常量独立验收通过（实现 `65f2e2d`）。本轮未换包。
+
+独立核对：
+
+- `src/RemoteAssist.Protocol/McpInstallGuide.cs` 中 `SkillInstructions` / `SkillInstructionsClipboard` 与 round-027.md 剪贴板正文逐字一致；`SkillCopiedHint` 为「已复制 Skill 说明。请交给智能体保存为技能，它只会用来安装 MCP。」；`CopySkillButton` 为「复制 Skill 说明」。
+- 「如何安装 MCP」三步、`CopyConfigButton` / `CopiedOkHint` 未改；`WriteConfirmCopy.InstallInstructions` 与 `docs/trust-levels.md` 相对本轮提交无改动。
+- Windows `Helper.UI` 与 Linux Avalonia `HelperWindow` 都接上同一组常量；按钮白底蓝字，与「复制 MCP 配置」并列。Avalonia 反馈只写 `_mcpHint` 一次，不叠到状态行。
+- `docs/screenshots/r027-skill-entry.png`（MD5 `DE73CF0744C043EC96C1C353717A2FA4`）：去协助端可见轻按钮「复制 Skill 说明」与「复制 MCP 配置」并列；「连接」仍是唯一实心绿；三步原文仍在；状态「未连接」。
+- `docs/screenshots/r027-skill-copied.png`（MD5 `1D4BF356D9CB4C319167C8618FBD4B61`）：反馈「已复制 Skill 说明。请交给智能体保存为技能，它只会用来安装 MCP。」只出现一次；状态仍「未连接」。
+- `docs/screenshots/r027-skill-clipboard-preview.png`（MD5 `A4471DB93526EC54F51EC7E933AD7708`）：预览为上述逐字正文（含「不能代替对方本机确认」「不要用这段说明去远程控制电脑」）。未覆盖 `r022-*`～`r026-*`。
+
+缺口：三张均为 Avalonia ui-shot（剪贴板预览写入界面预览区，不是记事本实贴）；Windows 同源常量，无独立 WinForms 截图。不挡验收。
+
+已开 R028（接受协助端复用同一段 Skill 说明；不改中继/官网/AI-SSH-Pro）。
