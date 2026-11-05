@@ -1,0 +1,26 @@
+[AUDIT] 2026-11-05 19:58:16.909 +08:00	tls_off	insecure plaintext
+[AUDIT] 2026-11-05 19:58:16.930 +08:00	agent_start	relay=True; relayEp=121.196.45.81:17891; port=17890; code=SG44EK; host=172.30.0.2; tls=false; confirm=ui-tray; timeout=60s; account=False
+[AUDIT] 2026-11-05 19:58:16.932 +08:00	lan_listen	skipped (relay-only)
+鹊桥远程协助已启动（Avalonia 被控窗）。
+会话码：SG44EK
+验证密码：UKNV
+[AUDIT] 2026-11-05 19:58:16.957 +08:00	relay_guest_dial	ep=121.196.45.81:17891
+会话码：V7SJCR
+验证密码：UKNV
+[AUDIT] 2026-11-05 19:58:18.205 +08:00	relay_guest_code	code=V7SJCR
+会话码：V7SJCR
+验证密码：UKNV
+[AUDIT] 2026-11-05 19:58:47.179 +08:00	relay_guest_paired	code=V7SJCR
+[AUDIT] 2026-11-05 19:58:47.182 +08:00	client_connect	relay-guest/121.196.45.81:17891
+[联调] 自动允许协助
+[AUDIT] 2026-11-05 19:58:47.225 +08:00	pair_ok	client=r009-win-helper; remote=relay-guest/121.196.45.81:17891; requested=Assist; granted=Assist; via=ui; result=approved; at=2026-11-05T11:58:47.2236926+00:00
+[已配对] r009-win-helper @ relay-guest/121.196.45.81:17891 权限=Assist token=49C89B3B…
+[AUDIT] 2026-11-05 19:58:47.756 +08:00	tool_ok	tool=ListProcesses; bytes=1930
+[AUDIT] 2026-11-05 19:58:48.238 +08:00	tool_ok	tool=ReadLogTail; bytes=27
+已拒绝，未做任何改动
+[AUDIT] 2026-11-05 19:58:48.770 +08:00	tool_denied_user	tool=RunCommand; source=r009-win-helper; via=ui; result=denied; at=2026-11-05T11:58:48.7699248+00:00; 运行一条命令 · 命令：echo r010-should-not-run >/tmp/r010-deny-marker
+[AUDIT] 2026-11-05 19:58:49.797 +08:00	client_disconnect	relay-guest/121.196.45.81:17891
+[AUDIT] 2026-11-05 19:58:49.800 +08:00	relay_guest_dial	ep=121.196.45.81:17891
+会话码：HZE57T
+验证密码：UKNV
+[AUDIT] 2026-11-05 19:58:50.341 +08:00	relay_guest_code	code=HZE57T
