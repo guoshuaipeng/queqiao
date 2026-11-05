@@ -81,16 +81,16 @@ ui-shot / DrawToBitmap 无法截取系统托盘气泡。证明方式：
 
 ## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
 
-产品对照 `docs/screenshots/r032-*` 与源码独立验收通过（`b78fc1e`）。
+产品对照 `docs/screenshots/r032-*`、`r032-balloon-copy-proof.txt` 与源码独立验收通过（`b78fc1e`）。
 
 独立核对：
 
-- `TrayStayCopy.BalloonDefault` =「已在托盘运行。关闭主窗口不会退出，可随时双击托盘图标打开。」`BalloonWithReturnHome` =「被控模式已启动。可返回首页切换为控制端；关闭主窗口会留在托盘。」未新造第三种说法。`AgentTrayContext` 启动气泡只走 `BalloonFor(enableReturnHome)`。
-- `MainForm` 底栏默认 `Text = ""`，不再显示「就绪。关闭窗口后会继续在托盘运行。」（该句仅留在 `RemovedDefaultStatusBar` 供回归对照）。`OnFormClosing` 藏到托盘后 `SetStatus(HiddenToTrayFeedback)`，文案为「已隐藏到托盘。双击托盘图标可重新打开。」
-- `docs/screenshots/r032-accept-statusbar-empty.png`：接受协助就绪态，底栏空白，未见常驻托盘句；运行状态仍是「已连上网络，可以发给对方了」；「复制码+密码」是唯一实心主按钮。
-- `docs/screenshots/r032-accept-hidden-to-tray-feedback.png`：底栏一次性出现「已隐藏到托盘。双击托盘图标可重新打开。」默认空态图里没有这句。
-- Avalonia `CloseWarnWindow` 仍是「关闭窗口后，协助可能还在进行。要结束请点「结束这次协助」。」`StatusPeerConnected` / `InstallInstructions` / Skill 常量 / 「才问你」未改。未覆盖 `r022-*`～`r031-*`。
+- `TrayStayCopy.BalloonDefault` / `BalloonWithReturnHome` 沿用原有两句，无第三种说法；`HiddenToTrayFeedback` =「已隐藏到托盘。双击托盘图标可重新打开。」
+- Windows 接受协助端底栏默认空白：`docs/screenshots/r032-accept-statusbar-empty.png` 底栏无「就绪。关闭窗口后会继续在托盘运行。」；「复制码+密码」仍是唯一实心主按钮；R031 主状态「已连上网络，可以发给对方了」仍在。
+- `docs/screenshots/r032-accept-hidden-to-tray-feedback.png`：底栏一次性「已隐藏到托盘。双击托盘图标可重新打开。」（ui-shot 注入同款文案，窗仍可见，规格允许）。
+- 启动气泡未能真拍 NotifyIcon；以 `TrayStayCopy` 常量 + `AgentTrayContext` 接线 + `r032-balloon-copy-proof.txt` 证明未改气泡口径、未另造第三种说法。
+- 未改 Avalonia 关窗提示、`InstallInstructions`、Skill/MCP、`docs/trust-levels.md`「才问你」。未覆盖 `r022-*`～`r031-*`。
 
-缺口：未能实拍系统托盘气泡（ui-shot / DrawToBitmap 截不到 NotifyIcon；以锁定原句的常量 + `BalloonFor` 接线证明未改口径）；藏托盘反馈图为同款文案的 ui-shot 注入，窗未真正 Hide。
+缺口：未实拍启动气泡本体；关窗反馈图为 ui-shot 注入。公网安装包仍为 R030（交 R033）。
 
-已开 R033（Windows 接受协助端补一处「结束这次协助」；不改中继/官网/AI-SSH-Pro）。
+已开 R033（官网 Windows / Linux 安装包跟上含 R031–R032 的客户端；替换后首页旁注与导语不回退；不改中继/AI-SSH-Pro）。
