@@ -113,9 +113,9 @@ public class RelayEndpointTests
     }
 
     [Fact]
-    public void UpcomingHint_MentionsIp()
+    public void UpcomingHint_MentionsDefaultPublicRelay()
     {
-        Assert.Contains("IP", RelayPlaceholder.UpcomingHint);
+        Assert.Contains(RelayEndpoint.DefaultPublic, RelayPlaceholder.UpcomingHint);
         Assert.Equal("Implemented_relay_mvp", RelayPlaceholder.Status);
     }
 }

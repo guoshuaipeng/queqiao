@@ -9,7 +9,7 @@ public static class RelayPlaceholder
     public const string Status = "Implemented_relay_mvp";
 
     public const string UpcomingHint =
-        "默认经公网中继：填写中继 IP:端口；被控出示 code+密码，控制端输入后连接。也可登录账号免密控自己的机器。";
+        "默认公网中继 121.196.45.81:17891（可改）；被控出示 code+密码，控制端输入后连接。也可登录账号免密控自己的机器。";
 
     public static bool TryParseEndpoint(string? text, out string host, out int port, out string error)
     {
@@ -44,7 +44,7 @@ public static class RelayPlaceholder
         var idx = s.LastIndexOf(':');
         if (idx <= 0 || idx == s.Length - 1)
         {
-            error = "中继格式应为 IP:端口（例如 1.2.3.4:17891）";
+            error = "中继格式应为 IP:端口（例如 121.196.45.81:17891）";
             return false;
         }
 

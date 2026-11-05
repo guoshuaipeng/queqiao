@@ -73,7 +73,7 @@ internal sealed class ModeSelectForm : Form
             Location = new Point(24, 360),
             Size = new Size(512, 40),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "默认经公网中继（code+密码）；局域网仍可用于高级调试。可用 --accept / --control 直达模式。"
+            Text = "默认公网中继 121.196.45.81:17891（code+密码；设置可改）；局域网仍可用于高级调试。可用 --accept / --control 直达模式。"
         });
     }
 

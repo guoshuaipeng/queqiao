@@ -248,10 +248,7 @@ public sealed class AssistConnectOptions
         if (ownerLink)
         {
             if (string.IsNullOrWhiteSpace(relayEp))
-            {
-                error = "账号连机需要 --relay / REMOTE_ASSIST_RELAY（host:port）";
-                return false;
-            }
+                relayEp = Protocol.RelayEndpoint.DefaultEndpoint;
             if (!Protocol.RelayEndpoint.TryParse(relayEp, out var rh, out var rp, out var rerr))
             {
                 error = "中继地址无效: " + rerr;
@@ -297,12 +294,15 @@ public sealed class AssistConnectOptions
             return true;
         }
 
-        // guest relay short-circuit: --relay + --code + --pwd 无需再走 host 解析
+        // guest relay short-circuit: --code + --pwd（--relay 可省略，默认公网中继）
         var codeArg = NullIfEmpty(argCode) ?? envCode;
-        if (!string.IsNullOrWhiteSpace(relayEp) && !string.IsNullOrWhiteSpace(codeArg) &&
+        if (!string.IsNullOrWhiteSpace(codeArg) &&
             !string.IsNullOrWhiteSpace(NullIfEmpty(guestPassword)) &&
-            string.IsNullOrWhiteSpace(explicitPayload) && positional.Count == 0)
+            string.IsNullOrWhiteSpace(explicitPayload) && positional.Count == 0 &&
+            string.IsNullOrWhiteSpace(NullIfEmpty(argHost) ?? envHost))
         {
+            if (string.IsNullOrWhiteSpace(relayEp))
+                relayEp = Protocol.RelayEndpoint.DefaultEndpoint;
             if (!Protocol.RelayEndpoint.TryParse(relayEp, out var rhG, out var rpG, out var rerrG))
             {
                 error = "中继地址无效: " + rerrG;
@@ -478,13 +478,13 @@ public sealed class AssistConnectOptions
         连接参数（环境变量或启动参数；同名字段命令行优先）:
 
         【临时远程 ID + 密码 · 经中继】
-          --payload <remoteassist:pair?v=2&via=relay&relay=IP:17891&code=...&pwd=...&tls=1&fp=...>
-          或 --relay IP:17891 --code <远程ID> --pwd <密码> --fp <指纹>
-          env: REMOTE_ASSIST_RELAY / REMOTE_ASSIST_CODE / REMOTE_ASSIST_PWD / REMOTE_ASSIST_FP
+          --payload <remoteassist:pair?v=2&via=relay&relay=121.196.45.81:17891&code=...&pwd=...&tls=1&fp=...>
+          或 --code <远程ID> --pwd <密码> --fp <指纹>  [--relay host:port，默认 121.196.45.81:17891]
+          env: REMOTE_ASSIST_RELAY（可省略） / REMOTE_ASSIST_CODE / REMOTE_ASSIST_PWD / REMOTE_ASSIST_FP
 
         【登录后连自己的机器 · 免密】
-          --relay IP:17891 --token <令牌> --device-id <设备ID> --fp <指纹>
-          或 --relay IP:17891 --user <名> --account-password <密> --device-id <ID> --fp <指纹>
+          --token <令牌> --device-id <设备ID> --fp <指纹>  [--relay，默认同上]
+          或 --user <名> --account-password <密> --device-id <ID> --fp <指纹>
           env: REMOTE_ASSIST_TOKEN / REMOTE_ASSIST_USER / REMOTE_ASSIST_ACCOUNT_PASSWORD / REMOTE_ASSIST_DEVICE_ID
 
         【局域网高级/调试】

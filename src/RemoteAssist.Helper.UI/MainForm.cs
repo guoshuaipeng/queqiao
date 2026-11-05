@@ -356,19 +356,10 @@ internal sealed class MainForm : Form
         {
             AutoSize = false,
             Location = new Point(490, 40),
-            Size = new Size(240, 24),
+            Size = new Size(250, 24),
             TextAlign = ContentAlignment.MiddleLeft,
-            ForeColor = Color.FromArgb(0xB0, 0x60, 0x00),
-            Text = "即将支持（可用纯 IP）"
-        });
-
-        settingsCard.Controls.Add(new Label
-        {
-            AutoSize = false,
-            Location = new Point(16, 72),
-            Size = new Size(710, 28),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = RelayPlaceholder.UpcomingHint
+            Text = "默认 " + RelayEndpoint.DefaultEndpoint
         });
 
         Controls.Add(settingsCard);

@@ -20,7 +20,7 @@
 | 中继：注册/登录/token、设备上线、列表、免密连接 | 远端协助-并行 | **done** | signup/login/device_online/list_devices/connect_device + 测试覆盖 |
 | 客户端：注册/登录、设备上线、列表、免密连接 | 远端协助 | **done（最小闭环）** | UI 登录/列表/免密 + MCP --token/--device-id；集成测 Account_Login_List_Connect |
 | 自有设备跳过配对确认窗；写操作仍确认 | 两端 | todo（规则已定） | 见 PRODUCT.md |
-| 设置项：默认/自定义中继地址 | 远端协助 | todo | 可填 `IP:17891`；**正式默认公网地址待运维填入** |
+| 设置项：默认/自定义中继地址 | 远端协助 | **done** | 默认 `121.196.45.81:17891`（`RelayEndpoint.DefaultEndpoint`）；UI/设置/MCP/`--relay` 可覆盖 |
 
 ## P2 — 体验
 
@@ -32,3 +32,4 @@
 ## 明确暂缓
 
 完整远程桌面、计费/组织、改 AI-SSH-Pro。
+

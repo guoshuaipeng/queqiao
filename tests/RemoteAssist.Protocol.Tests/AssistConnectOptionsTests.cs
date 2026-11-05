@@ -222,6 +222,38 @@ public class AssistConnectOptionsTests
     }
 
     [Fact]
+    public void Parse_RelayGuest_DefaultsPublicEndpoint()
+    {
+        Assert.True(AssistConnectOptions.TryParse(
+            new[] { "--code", "ab12cd", "--pwd", "secret1", "--insecure" },
+            Env(new()),
+            out var opts, out var err), err);
+        Assert.True(opts.ViaRelay);
+        Assert.Equal(RelayEndpoint.DefaultEndpoint, opts.RelayEndpoint);
+        Assert.Equal(RelayEndpoint.DefaultPublic, opts.RelayEndpoint);
+        Assert.Equal("AB12CD", opts.Code);
+    }
+
+    [Fact]
+    public void Parse_OwnerToken_DefaultsPublicEndpoint()
+    {
+        Assert.True(AssistConnectOptions.TryParse(
+            new[] { "--token", "deadbeef", "--device-id", "dev1", "--insecure" },
+            Env(new()),
+            out var opts, out var err), err);
+        Assert.True(opts.OwnerLink);
+        Assert.Equal(RelayEndpoint.DefaultPublic, opts.RelayEndpoint);
+    }
+
+    [Fact]
+    public void RelayEndpoint_DefaultIsPublicNotLocal()
+    {
+        Assert.Equal("121.196.45.81:17891", RelayEndpoint.DefaultEndpoint);
+        Assert.Equal("127.0.0.1:17891", RelayEndpoint.DefaultLocal);
+        Assert.NotEqual(RelayEndpoint.DefaultLocal, RelayEndpoint.DefaultEndpoint);
+    }
+
+    [Fact]
     public void Parse_RelayPayload_SetsViaRelay()
     {
         var payload = PairQrPayload.BuildRelay("10.0.0.5:17891", "XY99ZZ", "pass99", useTls: false);

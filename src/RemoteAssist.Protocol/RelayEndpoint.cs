@@ -5,8 +5,13 @@ namespace RemoteAssist.Protocol;
 /// </summary>
 public static class RelayEndpoint
 {
+    /// <summary>本机开发 / smoke 用。</summary>
     public const string DefaultLocal = "127.0.0.1:17891";
-    public const string DefaultEndpoint = DefaultLocal;
+
+    /// <summary>正式默认公网中继（见 docs/relay-deploy.md）；用户设置与 CLI 可覆盖。</summary>
+    public const string DefaultPublic = "121.196.45.81:17891";
+
+    public const string DefaultEndpoint = DefaultPublic;
 
     public static bool TryParse(string? endpoint, out string host, out int port, out string? error)
     {
@@ -61,4 +66,3 @@ public static class RelayEndpoint
 
     public static string Format(string host, int port) => $"{host}:{port}";
 }
-

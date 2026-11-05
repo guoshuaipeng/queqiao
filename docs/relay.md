@@ -27,3 +27,8 @@ go run .\cmd\smoketest -addr 127.0.0.1:17891
 - 控制：`guest_join` 或 `connect_device`。
 
 详见 `docs/relay-protocol.md`、`docs/PRODUCT.md`、`docs/dev-rules.md`。
+
+## 生产部署
+
+正式环境约定见 **`docs/relay-deploy.md`**（单机单实例、`:17891`、systemd、SQLite `/var/lib/remote-assist-relay`、防火墙仅 TCP 17891；默认公网 `121.196.45.81:17891`）。
+

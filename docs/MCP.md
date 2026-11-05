@@ -5,19 +5,21 @@
 
 中继控制协议见 `docs/relay-protocol.md`（JSON Lines）。
 
+默认中继：`121.196.45.81:17891`（`REMOTE_ASSIST_RELAY` / `--relay` 可覆盖；访客 code+密码 或账号连机未指定时用此默认）。详见 `docs/relay-deploy.md`。
+
 ## 两种推荐连法
 
 ### 1）临时远程 ID + 密码（访客 · 经中继）
 
 ```powershell
 dotnet run --project src/RemoteAssist.Mcp -- `
-  --relay 1.2.3.4:17891 --code AB12CD --pwd secret1 --fp <SHA256>
+  --relay 121.196.45.81:17891 --code AB12CD --pwd secret1 --fp <SHA256>
 ```
 
 或整段载荷：
 
 ```powershell
-dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=2&via=relay&relay=1.2.3.4:17891&code=AB12CD&pwd=secret1&tls=1&fp=<SHA256>"
+dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=2&via=relay&relay=121.196.45.81:17891&code=AB12CD&pwd=secret1&tls=1&fp=<SHA256>"
 ```
 
 环境变量：`REMOTE_ASSIST_RELAY` / `REMOTE_ASSIST_CODE` / `REMOTE_ASSIST_PWD` / `REMOTE_ASSIST_FP`。
@@ -26,11 +28,11 @@ dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=2&vi
 
 ```powershell
 dotnet run --project src/RemoteAssist.Mcp -- `
-  --relay 1.2.3.4:17891 --token <hex> --device-id <uuid> --fp <SHA256>
+  --relay 121.196.45.81:17891 --token <hex> --device-id <uuid> --fp <SHA256>
 
 # 或启动时登录
 dotnet run --project src/RemoteAssist.Mcp -- `
-  --relay 1.2.3.4:17891 --user alice --account-password secret1 --device-id <uuid> --fp <SHA256>
+  --relay 121.196.45.81:17891 --user alice --account-password secret1 --device-id <uuid> --fp <SHA256>
 ```
 
 环境变量：`REMOTE_ASSIST_TOKEN` 或 `REMOTE_ASSIST_USER` + `REMOTE_ASSIST_ACCOUNT_PASSWORD`，以及 `REMOTE_ASSIST_DEVICE_ID` / `REMOTE_ASSIST_RELAY` / `REMOTE_ASSIST_FP`。
@@ -60,7 +62,7 @@ dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=1&vi
   "mcpServers": {
     "remote-assist": {
       "command": "E:/IdeaProjects/remote-assist/artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe",
-      "args": ["--relay", "1.2.3.4:17891", "--code", "AB12CD", "--pwd", "secret1", "--fp", "<SHA256>"]
+      "args": ["--relay", "121.196.45.81:17891", "--code", "AB12CD", "--pwd", "secret1", "--fp", "<SHA256>"]
     }
   }
 }
@@ -74,7 +76,7 @@ dotnet run --project src/RemoteAssist.Mcp -- --payload "remoteassist:pair?v=1&vi
     "remote-assist": {
       "command": "E:/IdeaProjects/remote-assist/artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe",
       "env": {
-        "REMOTE_ASSIST_RELAY": "1.2.3.4:17891",
+        "REMOTE_ASSIST_RELAY": "121.196.45.81:17891",
         "REMOTE_ASSIST_TOKEN": "<hex>",
         "REMOTE_ASSIST_DEVICE_ID": "<uuid>",
         "REMOTE_ASSIST_FP": "<SHA256>"
