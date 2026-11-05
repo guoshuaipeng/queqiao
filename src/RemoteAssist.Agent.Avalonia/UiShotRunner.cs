@@ -6,7 +6,7 @@ using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R037：已连上隐藏「粘贴后点「连接」」；结束后再显示原文（ui-shot）。</summary>
+/// <summary>R039：Avalonia 连上后五键紧挨主状态首屏可见；结束后再隐藏（ui-shot）。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -20,20 +20,20 @@ internal static class UiShotRunner
         await Task.Delay(350).ConfigureAwait(true);
 
         helper.PreparePeerConnectedSessionForShot();
-        await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r037-avalonia-helper-connected-no-paste-hint.png")).ConfigureAwait(true);
+        await Task.Delay(300).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r039-avalonia-helper-connected-tools-first-screen.png")).ConfigureAwait(true);
 
         helper.PreparePeerEndedAssistForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r037-avalonia-helper-peer-ended-hint-back.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r039-avalonia-helper-peer-ended-tools-hidden.png")).ConfigureAwait(true);
 
         helper.PrepareSelfDisconnectedForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r037-avalonia-helper-self-disconnect-hint-back.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r039-avalonia-helper-self-disconnect-tools-hidden.png")).ConfigureAwait(true);
 
         try { helper.Close(); } catch { /* ignore */ }
 
-        Console.WriteLine("ui-shot r037 written to " + outDir);
+        Console.WriteLine("ui-shot r039 written to " + outDir);
         await Task.CompletedTask;
         _ = home;
     }

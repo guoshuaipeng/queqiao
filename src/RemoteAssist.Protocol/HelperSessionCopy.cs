@@ -3,7 +3,7 @@ using System;
 namespace RemoteAssist.Protocol;
 
 /// <summary>
-/// 去协助端会话主状态与会话码主按钮文案（R035/R036/R037）。
+/// 去协助端会话主状态与会话码主按钮文案（R035/R036/R037）；R039 锁定五键文案顺序。
 /// </summary>
 public static class HelperSessionCopy
 {
@@ -43,4 +43,14 @@ public static class HelperSessionCopy
 
     /// <summary>R016：仅已连接时展示五个常用操作。</summary>
     public static bool ShowCommonTools(bool connected) => connected;
+
+    /// <summary>R016/R039：五个常用操作按钮文案与顺序（锁定）。</summary>
+    public static readonly string[] CommonToolButtonLabels =
+    {
+        "查看正在运行的程序",
+        "查看文件夹",
+        "查看日志",
+        "查看文件",
+        "提议一项改动",
+    };
 }

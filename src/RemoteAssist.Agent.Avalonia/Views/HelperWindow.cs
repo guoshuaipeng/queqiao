@@ -227,6 +227,102 @@ internal sealed class HelperWindow : Window
         pairCard.Child = pairStack;
         body.Children.Add(pairCard);
 
+        // ---- R039：常用操作紧挨主状态下方（账号 / MCP 之前），连上后首屏可见 ----
+        _toolCard = new Border
+        {
+            Background = Brushes.White,
+            BorderBrush = Brush.Parse("#DADEE3"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(16),
+            IsVisible = false
+        };
+        var toolStack = new StackPanel { Spacing = 10 };
+        toolStack.Children.Add(new TextBlock
+        {
+            Text = "常用操作",
+            FontSize = 14,
+            FontWeight = FontWeight.SemiBold
+        });
+        toolStack.Children.Add(new TextBlock
+        {
+            Text = "建议先看正在运行的程序，再决定要不要改",
+            FontSize = 12,
+            Foreground = Brush.Parse("#5F6368"),
+            TextWrapping = TextWrapping.Wrap
+        });
+        var tools = new WrapPanel { MaxWidth = 680 };
+        _btnProcs = MakeToolButton(HelperSessionCopy.CommonToolButtonLabels[0], 180);
+        _btnProcs.Click += async (_, _) => await RunToolAsync(ToolKind.ListProcesses, new Dictionary<string, string?>());
+        _btnLs = MakeToolButton(HelperSessionCopy.CommonToolButtonLabels[1], 110);
+        _btnLs.Click += async (_, _) =>
+        {
+            var p = RequireArg("path");
+            if (p is null) return;
+            await RunToolAsync(ToolKind.ListDir, new Dictionary<string, string?> { ["path"] = p });
+        };
+        _btnLogs = MakeToolButton(HelperSessionCopy.CommonToolButtonLabels[2], 100);
+        _btnLogs.Click += async (_, _) =>
+        {
+            var p = RequireArg("path");
+            if (p is null) return;
+            await RunToolAsync(ToolKind.ReadLogTail, new Dictionary<string, string?>
+            {
+                ["path"] = p,
+                ["lines"] = "80"
+            });
+        };
+        _btnCat = MakeToolButton(HelperSessionCopy.CommonToolButtonLabels[3], 100);
+        _btnCat.Click += async (_, _) =>
+        {
+            var p = RequireArg("path");
+            if (p is null) return;
+            await RunToolAsync(ToolKind.ReadFile, new Dictionary<string, string?> { ["path"] = p });
+        };
+        _btnRun = MakeToolButton(HelperSessionCopy.CommonToolButtonLabels[4], 120);
+        _btnRun.Click += async (_, _) =>
+        {
+            var c = RequireArg("command");
+            if (c is null) return;
+            await RunToolAsync(ToolKind.RunCommand, new Dictionary<string, string?> { ["command"] = c });
+        };
+        foreach (var b in new[] { _btnProcs, _btnLs, _btnLogs, _btnCat, _btnRun })
+        {
+            b.Margin = new Thickness(0, 0, 10, 8);
+            tools.Children.Add(b);
+        }
+        toolStack.Children.Add(tools);
+
+        toolStack.Children.Add(new TextBlock
+        {
+            Text = "路径 / 命令参数",
+            FontSize = 12,
+            Foreground = Brush.Parse("#5F6368")
+        });
+        _argBox = new TextBox
+        {
+            Watermark = OperatingSystem.IsWindows()
+                ? @"例如 C:\Users\你的文件夹"
+                : "例如 /home/你的文件夹",
+            MinHeight = 32,
+            FontSize = 13
+        };
+        toolStack.Children.Add(_argBox);
+
+        _output = new TextBox
+        {
+            AcceptsReturn = true,
+            IsReadOnly = true,
+            MinHeight = 120,
+            TextWrapping = TextWrapping.Wrap,
+            FontFamily = new FontFamily("Consolas,Menlo,monospace"),
+            FontSize = 12
+        };
+        toolStack.Children.Add(_output);
+        _toolCard.Child = toolStack;
+        body.Children.Add(_toolCard);
+
+
         // ---- R014 账号（可选）：权重低于粘贴区 ----
         var accountCard = new Border
         {
@@ -407,100 +503,6 @@ internal sealed class HelperWindow : Window
         mcpCard.Child = mcpStack;
         body.Children.Add(mcpCard);
 
-
-        _toolCard = new Border
-        {
-            Background = Brushes.White,
-            BorderBrush = Brush.Parse("#DADEE3"),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(16),
-            IsVisible = false
-        };
-        var toolStack = new StackPanel { Spacing = 10 };
-        toolStack.Children.Add(new TextBlock
-        {
-            Text = "常用操作",
-            FontSize = 14,
-            FontWeight = FontWeight.SemiBold
-        });
-        toolStack.Children.Add(new TextBlock
-        {
-            Text = "建议先看正在运行的程序，再决定要不要改",
-            FontSize = 12,
-            Foreground = Brush.Parse("#5F6368"),
-            TextWrapping = TextWrapping.Wrap
-        });
-        var tools = new WrapPanel { MaxWidth = 680 };
-        _btnProcs = MakeToolButton("查看正在运行的程序", 180);
-        _btnProcs.Click += async (_, _) => await RunToolAsync(ToolKind.ListProcesses, new Dictionary<string, string?>());
-        _btnLs = MakeToolButton("查看文件夹", 110);
-        _btnLs.Click += async (_, _) =>
-        {
-            var p = RequireArg("path");
-            if (p is null) return;
-            await RunToolAsync(ToolKind.ListDir, new Dictionary<string, string?> { ["path"] = p });
-        };
-        _btnLogs = MakeToolButton("查看日志", 100);
-        _btnLogs.Click += async (_, _) =>
-        {
-            var p = RequireArg("path");
-            if (p is null) return;
-            await RunToolAsync(ToolKind.ReadLogTail, new Dictionary<string, string?>
-            {
-                ["path"] = p,
-                ["lines"] = "80"
-            });
-        };
-        _btnCat = MakeToolButton("查看文件", 100);
-        _btnCat.Click += async (_, _) =>
-        {
-            var p = RequireArg("path");
-            if (p is null) return;
-            await RunToolAsync(ToolKind.ReadFile, new Dictionary<string, string?> { ["path"] = p });
-        };
-        _btnRun = MakeToolButton("提议一项改动", 120);
-        _btnRun.Click += async (_, _) =>
-        {
-            var c = RequireArg("command");
-            if (c is null) return;
-            await RunToolAsync(ToolKind.RunCommand, new Dictionary<string, string?> { ["command"] = c });
-        };
-        foreach (var b in new[] { _btnProcs, _btnLs, _btnLogs, _btnCat, _btnRun })
-        {
-            b.Margin = new Thickness(0, 0, 10, 8);
-            tools.Children.Add(b);
-        }
-        toolStack.Children.Add(tools);
-
-        toolStack.Children.Add(new TextBlock
-        {
-            Text = "路径 / 命令参数",
-            FontSize = 12,
-            Foreground = Brush.Parse("#5F6368")
-        });
-        _argBox = new TextBox
-        {
-            Watermark = OperatingSystem.IsWindows()
-                ? @"例如 C:\Users\你的文件夹"
-                : "例如 /home/你的文件夹",
-            MinHeight = 32,
-            FontSize = 13
-        };
-        toolStack.Children.Add(_argBox);
-
-        _output = new TextBox
-        {
-            AcceptsReturn = true,
-            IsReadOnly = true,
-            MinHeight = 120,
-            TextWrapping = TextWrapping.Wrap,
-            FontFamily = new FontFamily("Consolas,Menlo,monospace"),
-            FontSize = 12
-        };
-        toolStack.Children.Add(_output);
-        _toolCard.Child = toolStack;
-        body.Children.Add(_toolCard);
 
         root.Children.Add(new ScrollViewer { Content = body });
         Content = root;
@@ -841,7 +843,7 @@ internal sealed class HelperWindow : Window
             _btnConnect.Foreground = Brushes.White;
         }
 
-        _toolCard.IsVisible = connected;
+        _toolCard.IsVisible = HelperSessionCopy.ShowCommonTools(connected);
         foreach (var b in new[] { _btnProcs, _btnLs, _btnLogs, _btnCat, _btnRun })
         {
             b.IsEnabled = connected;

@@ -75,4 +75,24 @@ public class HelperSessionCopyTests
         Assert.Equal("状态：未连接", HelperSessionCopy.StatusDisconnectedSelf);
         Assert.Equal("连接失败", HelperSessionCopy.StatusConnectFailed);
     }
+
+    [Fact]
+    public void CommonToolButtonLabels_OrderLocked()
+    {
+        Assert.Equal(
+            new[]
+            {
+                "查看正在运行的程序",
+                "查看文件夹",
+                "查看日志",
+                "查看文件",
+                "提议一项改动",
+            },
+            HelperSessionCopy.CommonToolButtonLabels);
+        Assert.True(HelperSessionCopy.ShowCommonTools(connected: true));
+        Assert.False(HelperSessionCopy.ShowCommonTools(connected: false));
+        Assert.Equal("已连接对方电脑", HelperSessionCopy.StatusConnected);
+        Assert.Equal("已连接", HelperSessionCopy.ConnectedButtonText);
+        Assert.Equal("粘贴后点「连接」", HelperSessionCopy.PasteThenConnectHint);
+    }
 }
