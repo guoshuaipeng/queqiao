@@ -54,7 +54,7 @@
 
 ## 平台 — macOS / Linux（2026-11-05 起，不抢 P0）
 
-场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 已产品验收 Avalonia 信任等级 + Windows P2-7；R013 已产品验收 Avalonia 已确认改动回看 + 刷新确认；R014 已产品验收 Avalonia 账号登录免密 + 审计人话（edddc11，2026-11-05）；R015 已产品验收 Avalonia 设备列表人话与免密连接可点击态（e11a8a7，2026-11-05）；R016 已产品验收 Avalonia 协助端连上后五键白话对齐（f083f51，2026-11-05）；R017 已产品验收 Avalonia 去协助端 MCP / 复制安装说明（5bcab34，2026-11-05）；R018 已产品验收接受协助端可选 MCP 说明（`b8c215c`，2026-11-05）；R019 已产品验收官网 Windows / Linux 安装包下载（`04347f3`，2026-11-05；macOS 仍「即将提供」）；已开 R020 官网 Linux 包跟上 R015–R018 已验收界面（见 `docs/round-020.md`）。
+场景闭环见 `docs/mac-linux-scenes.md`。R010 Linux Avalonia 被控窗已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R011 Linux Avalonia 双模式已产品验收；osx 已出包未上真机，不写成 Mac 已验收；R012 已产品验收 Avalonia 信任等级 + Windows P2-7；R013 已产品验收 Avalonia 已确认改动回看 + 刷新确认；R014 已产品验收 Avalonia 账号登录免密 + 审计人话（edddc11，2026-11-05）；R015 已产品验收 Avalonia 设备列表人话与免密连接可点击态（e11a8a7，2026-11-05）；R016 已产品验收 Avalonia 协助端连上后五键白话对齐（f083f51，2026-11-05）；R017 已产品验收 Avalonia 去协助端 MCP / 复制安装说明（5bcab34，2026-11-05）；R018 已产品验收接受协助端可选 MCP 说明（`b8c215c`，2026-11-05）；R019 已产品验收官网 Windows / Linux 安装包下载（`04347f3`，2026-11-05；macOS 仍「即将提供」）；R020：客户端已打出含 R015–R018 的 Linux FD 包（见 `docs/round-020.md` 交付说明），待服务端替换上架与首页表述；未开下一轮。
 
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
