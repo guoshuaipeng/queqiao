@@ -270,9 +270,11 @@ internal sealed class HelperWindow : Window
         {
             Name = "ownConnectBtn",
             Content = "连接这台电脑",
-            Width = 160,
+            Width = 180,
             Height = 36,
-            IsEnabled = false
+            IsEnabled = false,
+            Background = Brush.Parse("#E8EAED"),
+            Foreground = Brush.Parse("#9AA0A6")
         };
         _btnOwnConnect.Click += async (_, _) => await ConnectOwnedDeviceAsync();
         ownRow.Children.Add(_btnOwnConnect);
@@ -569,8 +571,26 @@ internal sealed class HelperWindow : Window
         _btnConnect.IsEnabled = !connected;
         _pasteBox.IsEnabled = !connected;
         _toolCard.IsVisible = connected;
+        _btnProcs.IsEnabled = connected;
+        _btnLogs.IsEnabled = connected;
+        _btnRun.IsEnabled = connected;
+        if (connected)
+        {
+            StyleToolButtonEnabled(_btnProcs);
+            StyleToolButtonEnabled(_btnLogs);
+            StyleToolButtonEnabled(_btnRun);
+        }
         UpdateOwnConnectUi();
     }
+
+    private static void StyleToolButtonEnabled(Button b)
+    {
+        b.IsEnabled = true;
+        b.Background = Brush.Parse("#E8F0FE");
+        b.Foreground = Brush.Parse("#1A73E8");
+        b.FontWeight = FontWeight.SemiBold;
+    }
+
 
     private void Disconnect()
     {
@@ -584,20 +604,52 @@ internal sealed class HelperWindow : Window
     {
         if (_deviceList.SelectedItem is null)
         {
-            _btnOwnConnect.IsEnabled = false;
+            ApplyOwnConnectStyle(enabled: false);
             _btnOwnConnect.Content = "连接这台电脑";
             _ownSelectHint.Text = "请先点选一台自己的电脑";
             return;
         }
 
-        var row = _deviceList.SelectedItem.ToString() ?? "";
-        var parts = row.Split('\t');
-        var name = parts.Length > 1 ? parts[1] : parts[0];
-        if (string.IsNullOrWhiteSpace(name)) name = "这台电脑";
-        _btnOwnConnect.IsEnabled = _client is null;
+        if (_deviceList.SelectedItem is not DeviceListItem device)
+        {
+            ApplyOwnConnectStyle(enabled: false);
+            _btnOwnConnect.Content = "连接这台电脑";
+            _ownSelectHint.Text = "请先点选一台自己的电脑";
+            return;
+        }
+
+        var name = string.IsNullOrWhiteSpace(device.Name) ? "这台电脑" : device.Name.Trim();
+        if (!device.Online)
+        {
+            ApplyOwnConnectStyle(enabled: false);
+            _btnOwnConnect.Content = "连接：" + name;
+            _ownSelectHint.Text = "这台电脑现在不在线";
+            return;
+        }
+
+        var canClick = _client is null;
+        ApplyOwnConnectStyle(enabled: canClick);
         _btnOwnConnect.Content = "连接：" + name;
         _ownSelectHint.Text = "将免密连接「" + name + "」";
     }
+
+    private void ApplyOwnConnectStyle(bool enabled)
+    {
+        _btnOwnConnect.IsEnabled = enabled;
+        if (enabled)
+        {
+            _btnOwnConnect.Background = Brush.Parse("#0F9D58");
+            _btnOwnConnect.Foreground = Brushes.White;
+            _btnOwnConnect.FontWeight = FontWeight.Bold;
+        }
+        else
+        {
+            _btnOwnConnect.Background = Brush.Parse("#E8EAED");
+            _btnOwnConnect.Foreground = Brush.Parse("#9AA0A6");
+            _btnOwnConnect.FontWeight = FontWeight.Normal;
+        }
+    }
+
 
     private string RelayEndpointText =>
         string.IsNullOrWhiteSpace(_settings.RelayEndpoint)
@@ -625,7 +677,7 @@ internal sealed class HelperWindow : Window
             _settings.AccountToken = "shot-token";
             _settings.Save();
             _accountStatus.Text = (register ? "注册" : "登录") + "成功（截图）";
-            PrepareDevicesForShot(selected: false);
+            PrepareDevicesForShot(selectedOnline: false);
             return;
         }
 
@@ -662,7 +714,7 @@ internal sealed class HelperWindow : Window
 
         if (_shotMode)
         {
-            PrepareDevicesForShot(selected: false);
+            PrepareDevicesForShot(selectedOnline: false);
             return;
         }
 
@@ -671,7 +723,14 @@ internal sealed class HelperWindow : Window
             var list = await RelayClient.ListDevicesAsync(host, port, _settings.AccountToken!).ConfigureAwait(true);
             _deviceList.Items.Clear();
             foreach (var d in list)
-                _deviceList.Items.Add($"{d.Id}\t{d.Name}\t{(d.Online ? "在线" : "离线")}");
+            {
+                _deviceList.Items.Add(new DeviceListItem
+                {
+                    Id = d.Id,
+                    Name = string.IsNullOrWhiteSpace(d.Name) ? "这台电脑" : d.Name,
+                    Online = d.Online
+                });
+            }
             UpdateOwnConnectUi();
             _accountStatus.Text = $"设备 {list.Count} 台";
         }
@@ -693,14 +752,18 @@ internal sealed class HelperWindow : Window
             _accountStatus.Text = "请先登录账号";
             return;
         }
-        if (_deviceList.SelectedItem is null)
+        if (_deviceList.SelectedItem is not DeviceListItem device)
         {
             _accountStatus.Text = "请先点选一台自己的电脑";
             return;
         }
+        if (!device.Online)
+        {
+            _accountStatus.Text = "这台电脑现在不在线";
+            return;
+        }
 
-        var row = _deviceList.SelectedItem.ToString() ?? "";
-        var deviceId = row.Split('\t')[0];
+        var deviceId = device.Id;
         if (!RelayEndpoint.TryParse(RelayEndpointText, out var host, out var port, out var err))
         {
             _accountStatus.Text = err;
@@ -857,25 +920,45 @@ internal sealed class HelperWindow : Window
         UpdateOwnConnectUi();
     }
 
-    /// <summary>UiShot：账号标签 + 设备列表；selected 控制是否点选。</summary>
+    /// <summary>UiShot：列表仅人话名称+在线/离线（与未选中截图文案区分）。</summary>
+    internal void PrepareDeviceListHumanForShot()
+    {
+        _accountUserBox.Text = "demo";
+        _accountPassBox.Text = "••••••";
+        _accountStatus.Text = "设备 2 台";
+        PrepareDevicesForShot(selectedOnline: false, selectedOffline: false);
+    }
+
+    /// <summary>UiShot：账号标签 + 设备列表；selected 控制是否点选在线设备。</summary>
     internal void PrepareAccountForShot(bool selected)
     {
         _accountUserBox.Text = "demo";
         _accountPassBox.Text = "••••••";
         _accountStatus.Text = "已登录（截图）";
-        PrepareDevicesForShot(selected);
+        PrepareDevicesForShot(selectedOnline: selected, selectedOffline: false);
     }
 
-    internal void PrepareDevicesForShot(bool selected)
+    internal void PrepareDevicesForShot(bool selectedOnline, bool selectedOffline = false)
     {
         _deviceList.Items.Clear();
-        _deviceList.Items.Add("dev-living\t客厅电脑\t在线");
-        _deviceList.Items.Add("dev-office\t书房电脑\t离线");
-        if (selected)
+        _deviceList.Items.Add(new DeviceListItem { Id = "dev-living", Name = "客厅电脑", Online = true });
+        _deviceList.Items.Add(new DeviceListItem { Id = "dev-office", Name = "书房电脑", Online = false });
+        if (selectedOffline)
+            _deviceList.SelectedIndex = 1;
+        else if (selectedOnline)
             _deviceList.SelectedIndex = 0;
         else
             _deviceList.SelectedIndex = -1;
         UpdateOwnConnectUi();
+    }
+
+    /// <summary>UiShot：选中离线设备。</summary>
+    internal void PrepareOfflineSelectedForShot()
+    {
+        _accountUserBox.Text = "demo";
+        _accountPassBox.Text = "••••••";
+        _accountStatus.Text = "已登录（截图）";
+        PrepareDevicesForShot(selectedOnline: false, selectedOffline: true);
     }
 
     internal void PrepareOwnerConnectedForShot()
@@ -885,6 +968,24 @@ internal sealed class HelperWindow : Window
         _status.Text = "已用你的账号连接，无需再确认配对（写操作仍须对方本机确认）";
         _accountStatus.Text = "免密已连接（截图）";
         _output.Text = "";
+        Height = Math.Max(Height, 860);
+        Width = Math.Max(Width, 720);
     }
+
+
+    /// <summary>列表展示用人话名称+在线/离线；内部 Id 不出现在 ToString。</summary>
+    private sealed class DeviceListItem
+    {
+        public required string Id { get; init; }
+        public required string Name { get; init; }
+        public required bool Online { get; init; }
+
+        public override string ToString()
+        {
+            var name = string.IsNullOrWhiteSpace(Name) ? "这台电脑" : Name.Trim();
+            return name + "\t" + (Online ? "在线" : "离线");
+        }
+    }
+
 }
 
