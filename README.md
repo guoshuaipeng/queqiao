@@ -17,9 +17,9 @@
 
 ## 解决方案结构
 
-- `src/RemoteAssist.Protocol` — 共享消息 / 权限 / 会话契约 / TCP 帧 / 客户端 / 二维码载荷
+- `src/RemoteAssist.Protocol` — 共享消息 / 权限 / 会话契约 / TCP 帧 / 客户端 / 二维码载荷 / 局域网地址筛选
 - `src/RemoteAssist.Agent` — 被协助端（会话码、**托盘常驻**、确认窗口、审计日志）
-- `src/RemoteAssist.Helper` — 协助端 CLI
+- `src/RemoteAssist.Helper` — 协助端 CLI（支持整段 QR 载荷 / `--payload` / `--clipboard`）
 - `src/RemoteAssist.Mcp` — stdio MCP Server
 - `src/RemoteAssist.Relay.Stub` — 公网中继 TODO
 - `tests/RemoteAssist.Protocol.Tests` — 基础单元测试
@@ -56,16 +56,14 @@ dotnet run --project src/RemoteAssist.Agent
 
 默认行为：
 
-- **系统托盘常驻**（蓝点图标）。右键菜单：显示会话信息、刷新会话码、退出。
-- 启动时弹出**会话信息窗**：大号会话码 + 二维码（载荷含 host/port/code）。关闭窗口 = 隐藏到托盘，不退出。
+- **系统托盘常驻**（蓝点图标）。右键：显示会话信息、刷新会话码、**已配对客户端（断开）**、退出。
+- 启动时弹出**会话信息窗**：大号会话码 + 二维码；**主机 IP 下拉**（过滤 127 / APIPA 169.254 / 198.18–19 虚拟网段，默认挑最合理局域网地址）；「复制载荷」。关闭窗口 = 隐藏到托盘。
 - **配对 / 写操作**：本机确认窗口（串行排队；超时拒绝）。
-
-记下会话窗或控制台里的 **会话码** 与 **本机 IP**。v1 Helper **仍用手输码**（二维码先方便展示/以后扫码）。
 
 二维码载荷格式：
 
 ```text
-remoteassist:pair?v=1&host=<LAN-IP>&port=17890&code=<SESSION>
+remoteassist:pair?v=1&host=<所选IP>&port=17890&code=<SESSION>
 ```
 
 常用参数：
@@ -79,9 +77,20 @@ remoteassist:pair?v=1&host=<LAN-IP>&port=17890&code=<SESSION>
 
 ### 终端 B — Helper（协助端）
 
+手输码：
+
 ```powershell
-cd E:\IdeaProjects\remote-assist
-dotnet run --project src/RemoteAssist.Helper -- pair 127.0.0.1 <会话码>
+dotnet run --project src/RemoteAssist.Helper -- pair 192.168.1.10 <会话码>
+```
+
+整段 QR 载荷（从会话窗复制）：
+
+```powershell
+dotnet run --project src/RemoteAssist.Helper -- pair "remoteassist:pair?v=1&host=192.168.1.10&port=17890&code=ABC123"
+# 或
+dotnet run --project src/RemoteAssist.Helper -- pair --payload "remoteassist:pair?v=1&host=..."
+# 或先复制载荷到剪贴板
+dotnet run --project src/RemoteAssist.Helper -- pair --clipboard
 ```
 
 Agent 本机窗口确认配对后，在 Helper：
@@ -93,6 +102,8 @@ helper> run echo hello-from-remote-assist
 ```
 
 `run` 在 Assist 模式下会阻塞，直到 Agent 本机窗口确认（或 `--headless` 下控制台确认）；拒绝/超时则返回失败且不可绕过。
+
+托盘 **已配对客户端** 可一键断开（撤销令牌并踢掉 TCP），审计记 `session_kick`。
 
 ### MCP（stdio）
 
@@ -112,19 +123,23 @@ dotnet run --project src/RemoteAssist.Mcp --no-build
 
 默认写入：`%LOCALAPPDATA%\RemoteAssist\audit.log`
 
-**配对**确认/拒绝会记录：`pair_ok` / `pair_reject` / `pair_timeout`，含 `requested` / `granted` / `via` / `result` / `remote`。
+**配对**确认/拒绝：`pair_ok` / `pair_reject` / `pair_timeout`。
 
-**写操作**确认/拒绝会记录：`via` / `result` / `at` / `source`。
+**写操作**确认/拒绝：含 `via` / `result` / `at` / `source`。
 
-**刷新会话码**会记录 `session_refresh`，并清空已有令牌（需重新配对）。
+**刷新会话码**：`session_refresh`，并踢掉全部已配对会话。
+
+**切换 QR 主机 IP**：`host_selected`。
+
+**断开客户端**：`session_kick`（托盘一键断开 / 断开全部）。
 
 ### 一键联调（可选）
 
-Agent 加 `--yes` 会自动同意配对与写操作（**仅本地冒烟**，正式协助不要开）：
-
 ```powershell
 dotnet run --project src/RemoteAssist.Agent -- --port 17890 --yes
-dotnet run --project src/RemoteAssist.Helper -- oneshot 127.0.0.1 <会话码>
+dotnet run --project src/RemoteAssist.Helper -- oneshot --payload "<从 Agent 横幅复制的载荷>"
+# 仍可用：
+dotnet run --project src/RemoteAssist.Helper -- oneshot 127.0.0.1 <会话码> --port 17890
 ```
 
 无桌面会话时可用：
@@ -136,10 +151,10 @@ dotnet run --project src/RemoteAssist.Agent -- --headless --confirm-timeout 30
 ## 已知限制（v1）
 
 - 无 TLS / 无端到端加密（仅信任局域网）
-- Helper 尚未实现扫码解析（二维码已展示，手动输码仍可用）
 - 无公网中继（仅 stub）
 - `run_command` 经 `cmd.exe /c`，超时约 15s
 - 部分敏感路径硬编码拦截，未做完整沙箱
+- `--clipboard` 依赖 Windows PowerShell `Get-Clipboard`
 
 ## 仓库
 

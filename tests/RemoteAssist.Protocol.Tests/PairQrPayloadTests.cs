@@ -31,4 +31,14 @@ public class PairQrPayloadTests
         Assert.False(PairQrPayload.TryParse("https://example.com", out _, out _, out _));
         Assert.False(PairQrPayload.TryParse("remoteassist:pair?", out _, out _, out _));
     }
+
+    [Fact]
+    public void TryParse_TrimsWhitespace()
+    {
+        var payload = "  " + PairQrPayload.Build("192.168.0.1", 17890, "HELLO1") + "\r\n";
+        Assert.True(PairQrPayload.TryParse(payload, out var host, out var port, out var code));
+        Assert.Equal("192.168.0.1", host);
+        Assert.Equal(17890, port);
+        Assert.Equal("HELLO1", code);
+    }
 }

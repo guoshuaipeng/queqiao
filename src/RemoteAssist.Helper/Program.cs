@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using RemoteAssist.Protocol;
 using RemoteAssist.Protocol.Messages;
 
@@ -39,6 +40,11 @@ internal static class Program
 
             用法:
               pair <host> <sessionCode> [--port 17890] [--perm Assist|Guest|Admin]
+              pair <remoteassist:pair?v=1&host=...&port=...&code=...> [--perm Assist]
+              pair --payload <载荷> [--perm Assist]
+              pair --clipboard [--perm Assist]
+
+              oneshot 同上（冒烟：配对 → procs → run）
 
             配对成功后进入交互:
               procs                     列出进程
@@ -53,21 +59,8 @@ internal static class Program
 
     private static async Task<int> CmdPairAsync(string[] args)
     {
-        if (args.Length < 2)
-            return Fail("用法: pair <host> <sessionCode> [--port N] [--perm Assist]");
-
-        var host = args[0];
-        var code = args[1];
-        var port = DefaultPort;
-        var perm = PermissionLevel.Assist;
-
-        for (var i = 2; i < args.Length; i++)
-        {
-            if (args[i] is "--port" or "-p" && i + 1 < args.Length && int.TryParse(args[++i], out var p))
-                port = p;
-            else if (args[i] is "--perm" && i + 1 < args.Length && Enum.TryParse(args[++i], true, out PermissionLevel pl))
-                perm = pl;
-        }
+        if (!TryParseConnectArgs(args, out var host, out var port, out var code, out var perm, out var err))
+            return Fail(err);
 
         Console.WriteLine($"正在配对 {host}:{port} 会话码={code} 权限={perm} ...");
         using var client = await AssistClient.PairAsync(host, port, code, perm, "helper-cli").ConfigureAwait(false);
@@ -137,6 +130,146 @@ internal static class Program
         return 0;
     }
 
+    private static async Task<int> CmdOneshotAsync(string[] args)
+    {
+        if (!TryParseConnectArgs(args, out var host, out var port, out var code, out _, out var err))
+            return Fail(err);
+
+        using var client = await AssistClient.PairAsync(host, port, code, PermissionLevel.Assist, "helper-oneshot").ConfigureAwait(false);
+        Console.WriteLine($"PAIR_OK perm={client.Permission} host={host}:{port}");
+
+        var procs = await client.InvokeToolAsync(ToolKind.ListProcesses).ConfigureAwait(false);
+        if (!procs.Ok) return Fail("procs failed: " + procs.Error);
+        var procLines = (procs.Result ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        Console.WriteLine($"PROCS_OK count={procLines.Length}");
+
+        var run = await client.InvokeToolAsync(ToolKind.RunCommand, new Dictionary<string, string?>
+        {
+            ["command"] = "echo remote-assist-smoke-ok"
+        }).ConfigureAwait(false);
+        if (!run.Ok) return Fail("run failed: " + run.Error);
+        Console.WriteLine("RUN_OK");
+        Console.WriteLine(run.Result);
+        Console.WriteLine("SMOKE_PASS");
+        return 0;
+    }
+
+    /// <summary>
+    /// 解析 pair/oneshot 连接参数。支持 host+code、整段载荷、--payload、--clipboard。
+    /// </summary>
+    internal static bool TryParseConnectArgs(
+        string[] args,
+        out string host,
+        out int port,
+        out string code,
+        out PermissionLevel perm,
+        out string error)
+    {
+        host = "";
+        port = DefaultPort;
+        code = "";
+        perm = PermissionLevel.Assist;
+        error = "";
+
+        var positional = new List<string>();
+        string? explicitPayload = null;
+        var fromClipboard = false;
+        var portOverride = false;
+        var portValue = DefaultPort;
+
+        for (var i = 0; i < args.Length; i++)
+        {
+            var a = args[i];
+            if (a is "--payload" or "-P")
+            {
+                if (i + 1 >= args.Length)
+                {
+                    error = "--payload 需要参数";
+                    return false;
+                }
+                explicitPayload = args[++i];
+            }
+            else if (a is "--clipboard" or "-c")
+            {
+                fromClipboard = true;
+            }
+            else if (a is "--port" or "-p")
+            {
+                if (i + 1 >= args.Length || !int.TryParse(args[++i], out portValue) || portValue is < 1 or > 65535)
+                {
+                    error = "--port 需要 1–65535";
+                    return false;
+                }
+                portOverride = true;
+            }
+            else if (a is "--perm")
+            {
+                if (i + 1 >= args.Length || !Enum.TryParse(args[++i], true, out perm))
+                {
+                    error = "--perm 需要 Assist|Guest|Admin";
+                    return false;
+                }
+            }
+            else if (a.StartsWith('-'))
+            {
+                error = $"未知选项: {a}";
+                return false;
+            }
+            else
+            {
+                positional.Add(a);
+            }
+        }
+
+        if (fromClipboard)
+        {
+            var clip = TryReadClipboardText();
+            if (string.IsNullOrWhiteSpace(clip))
+            {
+                error = "剪贴板为空或无法读取（--clipboard 仅支持 Windows）";
+                return false;
+            }
+            explicitPayload = clip.Trim();
+        }
+
+        if (!PairTargetResolver.TryResolve(positional, explicitPayload, portOverride ? portValue : DefaultPort, out var target, out error))
+            return false;
+
+        host = target.Host;
+        code = target.Code;
+        // 载荷自带 port；若用户同时给了 --port，以 --port 覆盖（便于本机 127.0.0.1 转发调试）
+        port = portOverride ? portValue : target.Port;
+        return true;
+    }
+
+    private static string? TryReadClipboardText()
+    {
+        if (!OperatingSystem.IsWindows())
+            return null;
+
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powershell",
+                Arguments = "-NoProfile -Command Get-Clipboard -Raw",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var p = Process.Start(psi);
+            if (p is null) return null;
+            var text = p.StandardOutput.ReadToEnd();
+            p.WaitForExit(5000);
+            return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static void PrintToolResponse(ToolResponse resp)
     {
         if (!resp.Ok)
@@ -177,43 +310,9 @@ internal static class Program
         return list;
     }
 
-    
-    private static async Task<int> CmdOneshotAsync(string[] args)
-    {
-        if (args.Length < 2)
-            return Fail("用法: oneshot <host> <sessionCode> [--port N]");
-
-        var host = args[0];
-        var code = args[1];
-        var port = DefaultPort;
-        for (var i = 2; i < args.Length; i++)
-        {
-            if (args[i] is "--port" or "-p" && i + 1 < args.Length && int.TryParse(args[++i], out var p))
-                port = p;
-        }
-
-        using var client = await AssistClient.PairAsync(host, port, code, PermissionLevel.Assist, "helper-oneshot").ConfigureAwait(false);
-        Console.WriteLine($"PAIR_OK perm={client.Permission}");
-
-        var procs = await client.InvokeToolAsync(ToolKind.ListProcesses).ConfigureAwait(false);
-        if (!procs.Ok) return Fail("procs failed: " + procs.Error);
-        var procLines = (procs.Result ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        Console.WriteLine($"PROCS_OK count={procLines.Length}");
-
-        var run = await client.InvokeToolAsync(ToolKind.RunCommand, new Dictionary<string, string?>
-        {
-            ["command"] = "echo remote-assist-smoke-ok"
-        }).ConfigureAwait(false);
-        if (!run.Ok) return Fail("run failed: " + run.Error);
-        Console.WriteLine("RUN_OK");
-        Console.WriteLine(run.Result);
-        Console.WriteLine("SMOKE_PASS");
-        return 0;
-    }
     private static int Fail(string msg)
     {
         Console.Error.WriteLine(msg);
         return 1;
     }
 }
-

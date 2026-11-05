@@ -4,7 +4,7 @@ using System.Windows.Forms;
 namespace RemoteAssist.Agent;
 
 /// <summary>
-/// 系统托盘常驻：显示会话信息 / 刷新会话码 / 退出。
+/// 系统托盘常驻：会话信息 / 已配对客户端断开 / 刷新会话码 / 退出。
 /// </summary>
 internal sealed class AgentTrayContext : ApplicationContext
 {
@@ -12,6 +12,7 @@ internal sealed class AgentTrayContext : ApplicationContext
     private readonly NotifyIcon _tray;
     private readonly SessionInfoForm _sessionForm;
     private readonly Icon _icon;
+    private readonly ToolStripMenuItem _clientsMenu;
 
     public AgentTrayContext(AgentHost host)
     {
@@ -21,6 +22,8 @@ internal sealed class AgentTrayContext : ApplicationContext
         _icon = CreateTrayIcon();
         _sessionForm = new SessionInfoForm(host);
 
+        _clientsMenu = new ToolStripMenuItem("已配对客户端");
+
         var menu = new ContextMenuStrip();
         menu.Items.Add("显示会话信息", null, (_, _) => ShowSessionInfo());
         menu.Items.Add("刷新会话码", null, (_, _) =>
@@ -29,7 +32,10 @@ internal sealed class AgentTrayContext : ApplicationContext
             ShowSessionInfo();
         });
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(_clientsMenu);
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("退出", null, (_, _) => ExitApp());
+        menu.Opening += (_, _) => RebuildClientsMenu();
 
         _tray = new NotifyIcon
         {
@@ -40,15 +46,67 @@ internal sealed class AgentTrayContext : ApplicationContext
         };
         _tray.DoubleClick += (_, _) => ShowSessionInfo();
 
-        // 启动时展示一次会话窗，用户可关到托盘
+        _host.PairedClientsChanged += OnPairedClientsChanged;
+
         ShowSessionInfo();
-        _tray.ShowBalloonTip(2500, "远端协助", "Agent 已在托盘运行。右键可查看会话码或退出。", ToolTipIcon.Info);
+        _tray.ShowBalloonTip(2500, "远端协助", "Agent 已在托盘运行。右键可查看会话码、断开客户端或退出。", ToolTipIcon.Info);
+    }
+
+    private void OnPairedClientsChanged()
+    {
+        // 菜单下次 Opening 时重建即可；此处更新托盘提示
+        try
+        {
+            var n = _host.ListPairedClients().Count;
+            _tray.Text = n == 0 ? "远端协助 Agent" : $"远端协助 Agent（{n} 个已配对）";
+        }
+        catch
+        {
+            /* ignore */
+        }
+    }
+
+    private void RebuildClientsMenu()
+    {
+        _clientsMenu.DropDownItems.Clear();
+        var clients = _host.ListPairedClients();
+        if (clients.Count == 0)
+        {
+            _clientsMenu.DropDownItems.Add(new ToolStripMenuItem("（无）") { Enabled = false });
+            return;
+        }
+
+        foreach (var c in clients)
+        {
+            var shortTok = c.Token.Length >= 8 ? c.Token[..8] : c.Token;
+            var label = $"{c.ClientName} · {c.Permission} · {c.RemoteEndpoint}";
+            var item = new ToolStripMenuItem(label);
+            var token = c.Token;
+            item.DropDownItems.Add(new ToolStripMenuItem($"断开（{shortTok}…）", null, (_, _) =>
+            {
+                if (_host.DisconnectSession(token))
+                {
+                    _tray.ShowBalloonTip(2000, "远端协助", $"已断开 {c.ClientName}", ToolTipIcon.Info);
+                    RebuildClientsMenu();
+                }
+            }));
+            _clientsMenu.DropDownItems.Add(item);
+        }
+
+        _clientsMenu.DropDownItems.Add(new ToolStripSeparator());
+        _clientsMenu.DropDownItems.Add(new ToolStripMenuItem("断开全部", null, (_, _) =>
+        {
+            var n = _host.DisconnectAllSessions();
+            _tray.ShowBalloonTip(2000, "远端协助", $"已断开 {n} 个会话", ToolTipIcon.Info);
+            RebuildClientsMenu();
+        }));
     }
 
     private void ShowSessionInfo() => _sessionForm.ShowAndActivate();
 
     private void ExitApp()
     {
+        _host.PairedClientsChanged -= OnPairedClientsChanged;
         _tray.Visible = false;
         _sessionForm.RequestExit();
         _host.Stop();
@@ -59,6 +117,7 @@ internal sealed class AgentTrayContext : ApplicationContext
     {
         if (disposing)
         {
+            _host.PairedClientsChanged -= OnPairedClientsChanged;
             _tray.Visible = false;
             _tray.Dispose();
             if (!_sessionForm.IsDisposed)
@@ -86,4 +145,3 @@ internal sealed class AgentTrayContext : ApplicationContext
         return (Icon)tmp.Clone();
     }
 }
-

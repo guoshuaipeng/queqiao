@@ -15,8 +15,20 @@ internal sealed class SessionState
     public required PermissionLevel Permission { get; init; }
     public required DateTimeOffset ExpiresAtUtc { get; init; }
     public required string ClientName { get; init; }
+    public required string RemoteEndpoint { get; init; }
+    public DateTimeOffset PairedAtUtc { get; init; } = DateTimeOffset.UtcNow;
+    public CancellationTokenSource? ConnectionCts { get; set; }
     public bool IsExpired => DateTimeOffset.UtcNow >= ExpiresAtUtc;
 }
+
+/// <summary>托盘/UI 展示用的已配对客户端摘要。</summary>
+internal sealed record PairedClientInfo(
+    string Token,
+    string ClientName,
+    string RemoteEndpoint,
+    PermissionLevel Permission,
+    DateTimeOffset PairedAtUtc,
+    DateTimeOffset ExpiresAtUtc);
 
 internal sealed class PendingConfirmation
 {
@@ -161,3 +173,4 @@ internal static class ToolExecutor
         }
     }
 }
+

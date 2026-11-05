@@ -18,6 +18,7 @@ internal sealed class AgentHost
 
     private readonly object _codeLock = new();
     private string _sessionCode;
+    private string? _selectedHost;
     private readonly ConcurrentDictionary<string, SessionState> _sessions = new();
     private readonly AuditLog _audit;
     private readonly bool _autoYes;
@@ -31,6 +32,7 @@ internal sealed class AgentHost
     public IReadOnlyList<string> LanIps { get; }
 
     public event Action? SessionChanged;
+    public event Action? PairedClientsChanged;
 
     public AgentHost(
         int port,
@@ -46,8 +48,9 @@ internal sealed class AgentHost
         _confirmTimeoutSeconds = Math.Clamp(confirmTimeoutSeconds, 5, 600);
         _audit = audit;
         AuditPath = auditPath;
-        LanIps = GetLanIPv4();
+        LanIps = LanAddressSelector.EnumerateLocalIPv4();
         _sessionCode = SessionCodeGenerator.Generate(6);
+        _selectedHost = LanIps.FirstOrDefault() ?? "127.0.0.1";
     }
 
     public string SessionCode
@@ -55,15 +58,89 @@ internal sealed class AgentHost
         get { lock (_codeLock) return _sessionCode; }
     }
 
-    public string PrimaryHost => LanIps.FirstOrDefault() ?? "127.0.0.1";
+    /// <summary>写入 QR 载荷的主机 IP（可在会话窗下拉切换；可显式设为 127.0.0.1 等）。</summary>
+    public string SelectedHost
+    {
+        get
+        {
+            lock (_codeLock)
+            {
+                if (!string.IsNullOrWhiteSpace(_selectedHost))
+                    return _selectedHost!;
+                return LanIps.FirstOrDefault() ?? "127.0.0.1";
+            }
+        }
+    }
+
+    public string PrimaryHost => SelectedHost;
 
     public string QrPayload
     {
         get
         {
             lock (_codeLock)
-                return PairQrPayload.Build(PrimaryHost, Port, _sessionCode);
+                return PairQrPayload.Build(SelectedHost, Port, _sessionCode);
         }
+    }
+
+    public void SetSelectedHost(string host)
+    {
+        if (string.IsNullOrWhiteSpace(host))
+            return;
+        host = host.Trim();
+        lock (_codeLock)
+        {
+            if (string.Equals(_selectedHost, host, StringComparison.Ordinal))
+                return;
+            _selectedHost = host;
+        }
+        _audit.Write("host_selected", $"host={host}");
+        SessionChanged?.Invoke();
+    }
+
+    public IReadOnlyList<PairedClientInfo> ListPairedClients()
+    {
+        var now = DateTimeOffset.UtcNow;
+        return _sessions.Values
+            .Where(s => s.ExpiresAtUtc > now)
+            .OrderBy(s => s.PairedAtUtc)
+            .Select(s => new PairedClientInfo(
+                s.Token,
+                s.ClientName,
+                s.RemoteEndpoint,
+                s.Permission,
+                s.PairedAtUtc,
+                s.ExpiresAtUtc))
+            .ToList();
+    }
+
+    /// <summary>撤销令牌并踢掉对应 TCP 连接。</summary>
+    public bool DisconnectSession(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return false;
+        if (!_sessions.TryRemove(token, out var session))
+            return false;
+
+        try { session.ConnectionCts?.Cancel(); } catch { /* ignore */ }
+
+        _audit.Write("session_kick",
+            $"client={session.ClientName}; remote={session.RemoteEndpoint}; perm={session.Permission}; token={token[..Math.Min(8, token.Length)]}…");
+        Console.WriteLine($"[已断开] {session.ClientName} @ {session.RemoteEndpoint}");
+        PairedClientsChanged?.Invoke();
+        return true;
+    }
+
+    public int DisconnectAllSessions()
+    {
+        var tokens = _sessions.Keys.ToList();
+        var n = 0;
+        foreach (var t in tokens)
+        {
+            if (DisconnectSession(t))
+                n++;
+        }
+        return n;
     }
 
     public string RefreshSessionCode()
@@ -75,12 +152,18 @@ internal sealed class AgentHost
             code = _sessionCode;
         }
 
-        foreach (var key in _sessions.Keys)
-            _sessions.TryRemove(key, out _);
+        foreach (var key in _sessions.Keys.ToList())
+        {
+            if (_sessions.TryRemove(key, out var s))
+            {
+                try { s.ConnectionCts?.Cancel(); } catch { /* ignore */ }
+            }
+        }
 
-        _audit.Write("session_refresh", $"code={code}");
+        _audit.Write("session_refresh", $"code={code}; kicked_all=true");
         Console.WriteLine($"[会话码已刷新] {code}");
         SessionChanged?.Invoke();
+        PairedClientsChanged?.Invoke();
         return code;
     }
 
@@ -91,21 +174,23 @@ internal sealed class AgentHost
         Console.WriteLine("========================================");
         Console.WriteLine($"监听端口 : {Port}");
         Console.WriteLine($"本机地址 : {string.Join(", ", LanIps)}");
+        Console.WriteLine($"QR 主机  : {SelectedHost}");
         Console.WriteLine($"会话码   : {SessionCode}");
         Console.WriteLine($"二维码载荷: {QrPayload}");
         Console.WriteLine($"审计日志 : {AuditPath}");
         Console.WriteLine($"确认方式 : {(_autoYes ? "自动(--yes)" : _headless ? "控制台(--headless)" : "本机窗口+托盘(默认)")}");
         Console.WriteLine($"确认超时 : {_confirmTimeoutSeconds}s");
         Console.WriteLine();
-        Console.WriteLine("协助端示例（手动输入会话码）:");
-        Console.WriteLine($"  dotnet run --project src/RemoteAssist.Helper -- pair {PrimaryHost} {SessionCode}");
+        Console.WriteLine("协助端示例:");
+        Console.WriteLine($"  dotnet run --project src/RemoteAssist.Helper -- pair {SelectedHost} {SessionCode}");
+        Console.WriteLine($"  dotnet run --project src/RemoteAssist.Helper -- pair \"{QrPayload}\"");
         Console.WriteLine();
         if (_autoYes)
             Console.WriteLine("自动确认已开启 (--yes)，仅用于本地联调。");
         else if (_headless)
             Console.WriteLine("无 UI 模式：不启托盘/窗体；配对与写操作在本控制台确认。");
         else
-            Console.WriteLine("默认托盘常驻：会话信息窗可关到托盘；配对/写操作弹确认窗。可用 --headless 回退。");
+            Console.WriteLine("默认托盘常驻：会话窗可选主机 IP；托盘可断开已配对客户端。");
         Console.WriteLine(_headless || _autoYes ? "按 Ctrl+C 退出。" : "托盘菜单「退出」或 Ctrl+C 结束。");
         Console.WriteLine("----------------------------------------");
     }
@@ -119,7 +204,7 @@ internal sealed class AgentHost
         _listener = new TcpListener(IPAddress.Any, Port);
         _listener.Start();
         _audit.Write("agent_start",
-            $"port={Port}; code={SessionCode}; confirm={(_autoYes ? "auto" : _headless ? "console" : "ui-tray")}; timeout={_confirmTimeoutSeconds}s");
+            $"port={Port}; code={SessionCode}; host={SelectedHost}; confirm={(_autoYes ? "auto" : _headless ? "console" : "ui-tray")}; timeout={_confirmTimeoutSeconds}s");
         _ = Task.Run(() => AcceptLoopAsync(_cts.Token));
     }
 
@@ -128,7 +213,15 @@ internal sealed class AgentHost
         try { _cts?.Cancel(); } catch { /* ignore */ }
         try { _listener?.Stop(); } catch { /* ignore */ }
         _listener = null;
+        foreach (var key in _sessions.Keys.ToList())
+        {
+            if (_sessions.TryRemove(key, out var s))
+            {
+                try { s.ConnectionCts?.Cancel(); } catch { /* ignore */ }
+            }
+        }
         _audit.Write("agent_stop", "listener stopped");
+        PairedClientsChanged?.Invoke();
     }
 
     private async Task AcceptLoopAsync(CancellationToken ct)
@@ -165,22 +258,32 @@ internal sealed class AgentHost
         var remote = client.Client.RemoteEndPoint?.ToString() ?? "?";
         _audit.Write("client_connect", remote);
         SessionState? session = null;
+        using var connCts = new CancellationTokenSource();
 
         try
         {
             using (client)
             {
                 var stream = client.GetStream();
-                while (true)
+                while (!connCts.IsCancellationRequested)
                 {
-                    var envelope = await FrameIo.ReadAsync(stream).ConfigureAwait(false);
+                    WireEnvelope? envelope;
+                    try
+                    {
+                        envelope = await FrameIo.ReadAsync(stream, connCts.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+
                     if (envelope is null)
                         break;
 
                     switch (envelope.Type.ToLowerInvariant())
                     {
                         case "pair":
-                            session = await HandlePairAsync(stream, envelope, remote).ConfigureAwait(false);
+                            session = await HandlePairAsync(stream, envelope, remote, connCts).ConfigureAwait(false);
                             break;
                         case "tool":
                             await HandleToolAsync(stream, envelope, session).ConfigureAwait(false);
@@ -204,11 +307,22 @@ internal sealed class AgentHost
         }
         finally
         {
+            if (session is not null &&
+                _sessions.TryGetValue(session.Token, out var cur) &&
+                ReferenceEquals(cur, session))
+            {
+                _sessions.TryRemove(session.Token, out _);
+                PairedClientsChanged?.Invoke();
+            }
             _audit.Write("client_disconnect", remote);
         }
     }
 
-    private async Task<SessionState?> HandlePairAsync(NetworkStream stream, WireEnvelope envelope, string remote)
+    private async Task<SessionState?> HandlePairAsync(
+        NetworkStream stream,
+        WireEnvelope envelope,
+        string remote,
+        CancellationTokenSource connCts)
     {
         var req = FrameIo.DeserializePayload<PairRequest>(envelope);
         if (req is null)
@@ -260,10 +374,14 @@ internal sealed class AgentHost
             Token = token,
             Permission = granted,
             ExpiresAtUtc = expires,
-            ClientName = req.ClientName
+            ClientName = req.ClientName,
+            RemoteEndpoint = remote,
+            PairedAtUtc = DateTimeOffset.UtcNow,
+            ConnectionCts = connCts
         };
         _sessions[token] = session;
         _audit.Write("pair_ok", pairOutcome.AuditDetail(remote, req.ClientName, requested));
+        PairedClientsChanged?.Invoke();
 
         await FrameIo.WriteAsync(stream, "pair_result", new PairResponse
         {
@@ -354,11 +472,12 @@ internal sealed class AgentHost
             if (s.IsExpired)
             {
                 _sessions.TryRemove(token, out _);
+                PairedClientsChanged?.Invoke();
                 return null;
             }
             return s;
         }
-        if (hint is not null && !hint.IsExpired)
+        if (hint is not null && !hint.IsExpired && _sessions.ContainsKey(hint.Token))
             return hint;
         return null;
     }
@@ -391,20 +510,5 @@ internal sealed class AgentHost
 
     private static string GetArgOr(Dictionary<string, string?> args, string key, string fallback) =>
         args.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v! : fallback;
-
-    internal static List<string> GetLanIPv4()
-    {
-        try
-        {
-            return Dns.GetHostEntry(Dns.GetHostName()).AddressList
-                .Where(a => a.AddressFamily == AddressFamily.InterNetwork)
-                .Select(a => a.ToString())
-                .Where(a => !a.StartsWith("127."))
-                .ToList();
-        }
-        catch
-        {
-            return new List<string>();
-        }
-    }
 }
+
