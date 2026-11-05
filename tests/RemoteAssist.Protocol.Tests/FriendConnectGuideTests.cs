@@ -79,4 +79,14 @@ public class FriendConnectGuideTests
         Assert.Equal(-1, FriendConnectGuide.OpenFirewallButtonText.IndexOf('\u2060'));
         Assert.Equal(-1, FriendConnectGuide.OpenFirewallButtonText.IndexOf('\uFEFF'));
     }
+
+
+    [Fact]
+    public void RefreshSession_ConfirmCopy_IsPlainAndActionable()
+    {
+        Assert.Contains("旧码会失效", FriendConnectGuide.RefreshSessionConfirm);
+        Assert.Contains("连不上", FriendConnectGuide.RefreshSessionConfirm);
+        Assert.Equal("刷新会话码", FriendConnectGuide.RefreshSessionConfirmOk);
+        Assert.Equal("取消", FriendConnectGuide.RefreshSessionConfirmCancel);
+    }
 }

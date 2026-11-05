@@ -1,7 +1,9 @@
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Reflection;
 using System.Windows.Forms;
 using RemoteAssist.Agent;
+using RemoteAssist.App;
 using RemoteAssist.Helper.UI;
 using RemoteAssist.Protocol;
 
@@ -17,28 +19,25 @@ internal static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        // Helper: MCP install guide visible
-        using (var helper = new HelperDesktopController(enableReturnHome: true))
+        using (var home = new ModeSelectForm())
         {
-            helper.Show();
+            home.Show();
             Application.DoEvents();
-            Thread.Sleep(250);
+            Thread.Sleep(200);
             Application.DoEvents();
-            // scroll/size already shows MCP card near bottom — capture full form
-            SaveForm(helper.Form, Path.Combine(outDir, "r005-helper-mcp-guide.png"));
-            helper.Form.Hide();
+            SaveForm(home, Path.Combine(outDir, "r006-home.png"));
+            home.Hide();
         }
 
-        // Agent: network ready => banner hidden; friend path no MCP
         var settings = HelperUiSettings.Load();
-        settings.NetworkAllowBannerDismissed = false;
+        settings.NetworkAllowBannerDismissed = true;
         settings.NetworkAllowMaybeDenied = false;
         settings.Save();
 
-        var auditPath = Path.Combine(Path.GetTempPath(), "remote-assist-uishot-r005-audit.log");
+        var auditPath = Path.Combine(Path.GetTempPath(), "remote-assist-uishot-r006-audit.log");
         var audit = new AuditLog(auditPath);
         var host = new AgentHost(
-            port: 17995,
+            port: 17996,
             autoYes: true,
             headless: false,
             confirmTimeoutSeconds: 30,
@@ -50,7 +49,6 @@ internal static class Program
         try
         {
             host.Start();
-            // wait until relay phase ready if possible
             for (var i = 0; i < 40; i++)
             {
                 if (host.RelayPhase is "ready" or "waiting" or "paired") break;
@@ -60,28 +58,28 @@ internal static class Program
             using var form = new RemoteAssist.Agent.MainForm(host, enableReturnHome: true);
             form.Show();
             Application.DoEvents();
-            Thread.Sleep(600);
+            Thread.Sleep(700);
             Application.DoEvents();
-            SaveForm(form, Path.Combine(outDir, "r005-agent-ready-no-banner.png"));
+            SaveForm(form, Path.Combine(outDir, "r006-agent.png"));
 
-            // Force denied recovery banner
-            typeof(RemoteAssist.Agent.MainForm)
-                .GetMethod("ShowDeniedBanner", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-                .Invoke(form, null);
+            using var confirm = BuildRefreshConfirmDialog(form.Font);
+            using var bmp = new Bitmap(Math.Max(1, form.Width), Math.Max(1, form.Height));
+            form.DrawToBitmap(bmp, new Rectangle(0, 0, form.Width, form.Height));
+            using var dlgBmp = new Bitmap(Math.Max(1, confirm.Width), Math.Max(1, confirm.Height));
+            confirm.Show();
             Application.DoEvents();
-            Thread.Sleep(200);
-            Application.DoEvents();
-            SaveForm(form, Path.Combine(outDir, "r005-agent-denied-banner.png"));
-            // OpenFirewallButtonText check
-            foreach (Control c in form.Controls)
+            confirm.DrawToBitmap(dlgBmp, new Rectangle(0, 0, confirm.Width, confirm.Height));
+            using (var g = Graphics.FromImage(bmp))
             {
-                if (c.Name != "banner") continue;
-                foreach (Control b in c.Controls)
-                {
-                    if (b is Button btn && btn.Text.Contains("防火墙", StringComparison.Ordinal))
-                        Console.WriteLine("firewall-btn=[" + btn.Text + "]");
-                }
+                var x = Math.Max(40, (form.Width - confirm.Width) / 2);
+                var y = Math.Max(80, (form.Height - confirm.Height) / 2);
+                g.FillRectangle(new SolidBrush(Color.FromArgb(90, 0, 0, 0)), 0, 0, bmp.Width, bmp.Height);
+                g.DrawImage(dlgBmp, x, y);
             }
+            var confirmPath = Path.Combine(outDir, "r006-agent-refresh-confirm.png");
+            bmp.Save(confirmPath, ImageFormat.Png);
+            Console.WriteLine("saved " + confirmPath + " composite");
+            confirm.Hide();
             form.Hide();
         }
         finally
@@ -89,8 +87,101 @@ internal static class Program
             host.Stop();
         }
 
-        Console.WriteLine("OK wrote r005 shots to " + outDir);
+        using (var helper = new HelperDesktopController(enableReturnHome: true))
+        {
+            helper.Show();
+            Application.DoEvents();
+            Thread.Sleep(300);
+            Application.DoEvents();
+            SaveForm(helper.Form, Path.Combine(outDir, "r006-helper-disconnected.png"));
+
+            var main = helper.Form;
+            var deviceList = FindControl(main, c => c is ListBox) as ListBox;
+            if (deviceList is not null)
+            {
+                deviceList.Items.Clear();
+                deviceList.Items.Add("dev-living\t客厅电脑\t在线");
+                deviceList.Items.Add("dev-study\t书房电脑\t离线");
+                Application.DoEvents();
+                SaveForm(main, Path.Combine(outDir, "r006-helper-account-unselected.png"));
+
+                deviceList.SelectedIndex = 0;
+                Application.DoEvents();
+                Thread.Sleep(120);
+                Application.DoEvents();
+                SaveForm(main, Path.Combine(outDir, "r006-helper-account-selected.png"));
+                var own = FindControl(main, c => c is Button b && (b.Text.Contains("连接：", StringComparison.Ordinal) || b.Text.Contains("连接这台", StringComparison.Ordinal))) as Button;
+                Console.WriteLine("own-btn=[" + (own?.Text ?? "") + "]");
+            }
+
+            var setUi = main.GetType().GetMethod("SetConnectedUi", BindingFlags.Instance | BindingFlags.NonPublic);
+            setUi?.Invoke(main, new object[] { true });
+            Application.DoEvents();
+            Thread.Sleep(200);
+            Application.DoEvents();
+            SaveForm(main, Path.Combine(outDir, "r006-helper-connected.png"));
+            helper.Form.Hide();
+        }
+
+        Console.WriteLine("OK wrote r006 shots to " + outDir);
         return 0;
+    }
+
+    private static Form BuildRefreshConfirmDialog(Font font)
+    {
+        var dlg = new Form
+        {
+            Text = "刷新会话码",
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            StartPosition = FormStartPosition.Manual,
+            ClientSize = new Size(420, 160),
+            MaximizeBox = false,
+            MinimizeBox = false,
+            ShowInTaskbar = false,
+            Font = font
+        };
+        dlg.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(20, 20),
+            Size = new Size(380, 60),
+            Text = FriendConnectGuide.RefreshSessionConfirm
+        });
+        var ok = new Button
+        {
+            Text = FriendConnectGuide.RefreshSessionConfirmOk,
+            Location = new Point(120, 100),
+            Size = new Size(120, 32),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(0x1A, 0x73, 0xE8),
+            ForeColor = Color.White
+        };
+        ok.FlatAppearance.BorderSize = 0;
+        var cancel = new Button
+        {
+            Text = FriendConnectGuide.RefreshSessionConfirmCancel,
+            Location = new Point(250, 100),
+            Size = new Size(90, 32),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.White,
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
+        };
+        cancel.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        cancel.FlatAppearance.BorderSize = 1;
+        dlg.Controls.Add(ok);
+        dlg.Controls.Add(cancel);
+        return dlg;
+    }
+
+    private static Control? FindControl(Control root, Func<Control, bool> pred)
+    {
+        if (pred(root)) return root;
+        foreach (Control c in root.Controls)
+        {
+            var f = FindControl(c, pred);
+            if (f is not null) return f;
+        }
+        return null;
     }
 
     private static void SaveForm(Form form, string path)

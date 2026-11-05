@@ -33,6 +33,10 @@ internal sealed class MainForm : Form
     private readonly Button[] _toolButtons;
     private readonly Panel _advancedPanel;
     private readonly Button _btnAdvanced;
+    private readonly Button _btnOwnConnect;
+    private readonly Label _ownSelectHint;
+    private readonly Panel _toolCard;
+    private readonly Panel _settingsCard;
     private bool _advancedOpen;
 
     private AssistClient? _client;
@@ -110,7 +114,7 @@ internal sealed class MainForm : Form
         }
 
         var pairCard = MakeCard(16, 80, 748, 250);
-        pairCard.Controls.Add(SectionTitle("1. 配对", 12, 10));
+        pairCard.Controls.Add(SectionTitle("连接对方", 12, 10));
         pairCard.Controls.Add(new Label
         {
             AutoSize = false,
@@ -120,13 +124,14 @@ internal sealed class MainForm : Form
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
 
-        var btnInstallGuide = MakeButton("复制安装说明", 450, 34, 140);
-        btnInstallGuide.Height = 34;
-        btnInstallGuide.Font = new Font(Font.FontFamily, 10F, FontStyle.Bold);
-        btnInstallGuide.BackColor = Color.FromArgb(0x1A, 0x73, 0xE8);
-        btnInstallGuide.ForeColor = Color.White;
+        var btnInstallGuide = MakeButton("复制安装说明", 450, 36, 140);
+        btnInstallGuide.Height = 28;
         btnInstallGuide.FlatStyle = FlatStyle.Flat;
-        btnInstallGuide.FlatAppearance.BorderSize = 0;
+        btnInstallGuide.BackColor = Color.White;
+        btnInstallGuide.ForeColor = Color.FromArgb(0x1A, 0x73, 0xE8);
+        btnInstallGuide.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        btnInstallGuide.FlatAppearance.BorderSize = 1;
+        btnInstallGuide.Cursor = Cursors.Hand;
         btnInstallGuide.Click += (_, _) => CopyInstallInstructions();
         pairCard.Controls.Add(btnInstallGuide);
 
@@ -178,16 +183,24 @@ internal sealed class MainForm : Form
         };
         pairCard.Controls.Add(_previewLabel);
 
-        _btnConnect = MakeButton("连接", 470, 162, 100);
-        _btnConnect.Height = 32;
+        _btnConnect = MakeButton("连接", 450, 160, 120);
+        _btnConnect.Height = 36;
+        _btnConnect.Font = new Font(Font.FontFamily, 11F, FontStyle.Bold);
         _btnConnect.BackColor = Color.FromArgb(0x0F, 0x9D, 0x58);
         _btnConnect.ForeColor = Color.White;
         _btnConnect.FlatStyle = FlatStyle.Flat;
+        _btnConnect.FlatAppearance.BorderSize = 0;
+        _btnConnect.Cursor = Cursors.Hand;
         _btnConnect.Click += async (_, _) => await ConnectAsync().ConfigureAwait(true);
         pairCard.Controls.Add(_btnConnect);
 
         _btnDisconnect = MakeButton("断开", 580, 162, 70);
         _btnDisconnect.Height = 32;
+        _btnDisconnect.FlatStyle = FlatStyle.Flat;
+        _btnDisconnect.BackColor = Color.White;
+        _btnDisconnect.ForeColor = Color.FromArgb(0x5F, 0x63, 0x68);
+        _btnDisconnect.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        _btnDisconnect.FlatAppearance.BorderSize = 1;
         _btnDisconnect.Enabled = false;
         _btnDisconnect.Click += (_, _) => Disconnect();
         pairCard.Controls.Add(_btnDisconnect);
@@ -203,11 +216,11 @@ internal sealed class MainForm : Form
         pairCard.Controls.Add(_failHintLabel);
         Controls.Add(pairCard);
 
-        _btnAdvanced = MakeButton("高级 ▸", 16, 340, 100);
+        _btnAdvanced = MakeButton("高级 ▸", 16, 336, 100);
         _btnAdvanced.Click += (_, _) => ToggleAdvanced();
         Controls.Add(_btnAdvanced);
 
-        _advancedPanel = MakeCard(16, 376, 748, 150);
+        _advancedPanel = MakeCard(16, 372, 748, 150);
         _advancedPanel.Visible = false;
         _advancedPanel.Controls.Add(new Label
         {
@@ -314,51 +327,57 @@ internal sealed class MainForm : Form
         _advancedPanel.Controls.Add(btnSaveRelay);
         Controls.Add(_advancedPanel);
 
-        var toolTop = 342;
-        var toolCard = MakeCard(16, toolTop, 748, 250);
-        toolCard.Name = "tool";
-        toolCard.Controls.Add(SectionTitle("2. 常用操作（连接后）", 12, 10));
+        // 状态放在配对卡下方，未连接时不占「常用操作」行
         _statusLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 40),
-            Size = new Size(710, 22),
+            Location = new Point(130, 338),
+            Size = new Size(748, 22),
             Text = "状态：未连接",
-            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Name = "statusLine"
         };
-        toolCard.Controls.Add(_statusLabel);
+        Controls.Add(_statusLabel);
 
-        var btnProcs = MakeButton("列进程", 16, 70, 90);
-        var btnLs = MakeButton("列目录", 114, 70, 90);
-        var btnLogs = MakeButton("读日志尾", 212, 70, 90);
-        var btnCat = MakeButton("读文件", 310, 70, 90);
-        var btnRun = MakeButton("执行命令", 408, 70, 100);
+        var toolTop = 366;
+        var toolCard = MakeCard(16, toolTop, 748, 250);
+        toolCard.Name = "tool";
+        toolCard.Visible = false; // 连上后再展开
+        toolCard.Controls.Add(SectionTitle("常用操作", 12, 10));
+
+        var btnProcs = MakeButton("查看正在运行的程序", 16, 48, 160);
+        var btnLs = MakeButton("查看文件夹", 184, 48, 110);
+        var btnLogs = MakeButton("查看日志", 302, 48, 100);
+        var btnCat = MakeButton("查看文件", 410, 48, 100);
+        var btnRun = MakeButton("提议一项改动", 518, 48, 120);
+        btnRun.FlatStyle = FlatStyle.Flat;
         btnRun.BackColor = Color.FromArgb(0xFB, 0xBC, 0x04);
+        btnRun.FlatAppearance.BorderSize = 0;
         _toolButtons = new[] { btnProcs, btnLs, btnLogs, btnCat, btnRun };
         foreach (var b in _toolButtons)
         {
-            b.Enabled = false;
             toolCard.Controls.Add(b);
         }
+        _toolCard = toolCard;
         toolCard.Controls.Add(new Label
         {
             AutoSize = false,
-            Location = new Point(16, 108),
+            Location = new Point(16, 96),
             Size = new Size(200, 20),
             Text = "路径 / 命令参数",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
         _argBox = new TextBox
         {
-            Location = new Point(16, 130),
+            Location = new Point(16, 118),
             Size = new Size(710, 26),
             Font = new Font("Consolas", 9.5F)
         };
         toolCard.Controls.Add(_argBox);
         _outputBox = new TextBox
         {
-            Location = new Point(16, 164),
-            Size = new Size(710, 70),
+            Location = new Point(16, 152),
+            Size = new Size(710, 80),
             Multiline = true,
             ScrollBars = ScrollBars.Vertical,
             ReadOnly = true,
@@ -393,9 +412,9 @@ internal sealed class MainForm : Form
         };
         Controls.Add(toolCard);
 
-        var settingsCard = MakeCard(16, 608, 748, 220);
+        var settingsCard = MakeCard(16, 608, 748, 250);
         settingsCard.Name = "settings";
-        settingsCard.Controls.Add(SectionTitle("3. 账号（可选）", 12, 10));
+        settingsCard.Controls.Add(SectionTitle("账号（可选）", 12, 10));
         settingsCard.Controls.Add(new Label
         {
             AutoSize = false,
@@ -404,27 +423,61 @@ internal sealed class MainForm : Form
             Text = "登录后免密连自己的机器（无需再确认配对；写操作仍须对方本机确认）",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
-        _accountUserBox = new TextBox { Location = new Point(16, 68), Size = new Size(140, 26), Text = _settings.AccountUser ?? "" };
-        _accountPassBox = new TextBox { Location = new Point(164, 68), Size = new Size(140, 26), UseSystemPasswordChar = true };
+        settingsCard.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 68),
+            Size = new Size(48, 26),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Text = "账号"
+        });
+        _accountUserBox = new TextBox { Location = new Point(64, 68), Size = new Size(140, 26), Text = _settings.AccountUser ?? "" };
+        settingsCard.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(214, 68),
+            Size = new Size(48, 26),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Text = "密码"
+        });
+        _accountPassBox = new TextBox { Location = new Point(262, 68), Size = new Size(140, 26), UseSystemPasswordChar = true };
         settingsCard.Controls.Add(_accountUserBox);
         settingsCard.Controls.Add(_accountPassBox);
-        var btnReg = MakeButton("注册", 314, 66, 60);
+        var btnReg = MakeButton("注册", 416, 66, 60);
         btnReg.Click += async (_, _) => await AccountAuthAsync(register: true).ConfigureAwait(true);
-        var btnLogin = MakeButton("登录", 380, 66, 60);
+        var btnLogin = MakeButton("登录", 482, 66, 60);
         btnLogin.Click += async (_, _) => await AccountAuthAsync(register: false).ConfigureAwait(true);
-        var btnList = MakeButton("刷新设备", 446, 66, 80);
+        var btnList = MakeButton("刷新设备", 548, 66, 80);
         btnList.Click += async (_, _) => await RefreshDevicesAsync().ConfigureAwait(true);
-        var btnOwn = MakeButton("免密连接选中", 532, 66, 120);
-        btnOwn.Click += async (_, _) => await ConnectOwnedDeviceAsync().ConfigureAwait(true);
         settingsCard.Controls.Add(btnReg);
         settingsCard.Controls.Add(btnLogin);
         settingsCard.Controls.Add(btnList);
-        settingsCard.Controls.Add(btnOwn);
-        _deviceList = new ListBox { Location = new Point(16, 104), Size = new Size(700, 90) };
+        _deviceList = new ListBox
+        {
+            Location = new Point(16, 104),
+            Size = new Size(700, 72),
+            IntegralHeight = false
+        };
+        _deviceList.SelectedIndexChanged += (_, _) => UpdateOwnConnectUi();
         settingsCard.Controls.Add(_deviceList);
+        _btnOwnConnect = MakeButton("连接这台电脑", 16, 186, 160);
+        _btnOwnConnect.Enabled = false;
+        _btnOwnConnect.Click += async (_, _) => await ConnectOwnedDeviceAsync().ConfigureAwait(true);
+        settingsCard.Controls.Add(_btnOwnConnect);
+        _ownSelectHint = new Label
+        {
+            AutoSize = false,
+            Location = new Point(186, 188),
+            Size = new Size(360, 26),
+            TextAlign = ContentAlignment.MiddleLeft,
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = "请先点选一台自己的电脑"
+        };
+        settingsCard.Controls.Add(_ownSelectHint);
+        _settingsCard = settingsCard;
         Controls.Add(settingsCard);
 
-        var mcpCard = MakeCard(16, 838, 748, 180);
+        var mcpCard = MakeCard(16, 874, 748, 180);
         mcpCard.Name = "mcp";
         mcpCard.Controls.Add(SectionTitle(McpInstallGuide.SectionTitle, 12, 10));
         mcpCard.Controls.Add(new Label
@@ -436,12 +489,12 @@ internal sealed class MainForm : Form
             Text = McpInstallGuide.StepsBlock
         });
         var btnCopyMcp = MakeButton(McpInstallGuide.CopyConfigButton, 16, 122, 140);
-        btnCopyMcp.Height = 34;
-        btnCopyMcp.Font = new Font(Font.FontFamily, 10F, FontStyle.Bold);
-        btnCopyMcp.BackColor = Color.FromArgb(0x1A, 0x73, 0xE8);
-        btnCopyMcp.ForeColor = Color.White;
+        btnCopyMcp.Height = 32;
         btnCopyMcp.FlatStyle = FlatStyle.Flat;
-        btnCopyMcp.FlatAppearance.BorderSize = 0;
+        btnCopyMcp.BackColor = Color.White;
+        btnCopyMcp.ForeColor = Color.FromArgb(0x1A, 0x73, 0xE8);
+        btnCopyMcp.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        btnCopyMcp.FlatAppearance.BorderSize = 1;
         btnCopyMcp.Click += (_, _) => CopyMcpConfigFromUi();
         mcpCard.Controls.Add(btnCopyMcp);
         mcpCard.Controls.Add(new Label
@@ -457,6 +510,7 @@ internal sealed class MainForm : Form
         FormClosing += OnFormClosing;
         RefreshPreview();
         SetConnectedUi(false);
+        UpdateOwnConnectUi();
         LayoutForAdvanced();
     }
 
@@ -471,20 +525,30 @@ internal sealed class MainForm : Form
     private void LayoutForAdvanced()
     {
         var shift = _advancedOpen ? _advancedPanel.Height + 8 : 0;
-        foreach (Control c in Controls)
-        {
-            if (c.Name is "tool" or "settings")
-            {
-                // base positions: tool=342, settings=608 when advanced closed under btn at 340
-            }
-        }
+        var status = Controls.Find("statusLine", false).FirstOrDefault();
+        if (status is not null) status.Top = 338 + shift; // beside 高级
+
         var tool = Controls.Find("tool", false).FirstOrDefault();
         var settings = Controls.Find("settings", false).FirstOrDefault();
         var mcp = Controls.Find("mcp", false).FirstOrDefault();
-        if (tool is not null) tool.Top = 342 + shift;
-        if (settings is not null) settings.Top = 608 + shift;
-        if (mcp is not null) mcp.Top = 838 + shift;
-        ClientSize = new Size(780, 1040 + shift);
+        var toolVisible = tool is { Visible: true };
+        var y = 366 + shift;
+        if (tool is not null)
+        {
+            tool.Top = y;
+            if (toolVisible) y += tool.Height + 16;
+        }
+        if (settings is not null)
+        {
+            settings.Top = y;
+            y += settings.Height + 16;
+        }
+        if (mcp is not null)
+        {
+            mcp.Top = y;
+            y += mcp.Height + 16;
+        }
+        ClientSize = new Size(780, Math.Max(720, y + 24));
     }
 
     private static Panel MakeCard(int x, int y, int w, int h) => new()
@@ -818,6 +882,33 @@ internal sealed class MainForm : Form
         _btnDisconnect.Enabled = connected;
         foreach (var b in _toolButtons) b.Enabled = connected;
         _inputBox.Enabled = !connected;
+        if (_toolCard is not null)
+        {
+            _toolCard.Visible = connected;
+            LayoutForAdvanced();
+        }
+        UpdateOwnConnectUi();
+    }
+
+    private void UpdateOwnConnectUi()
+    {
+        if (_btnOwnConnect is null || _ownSelectHint is null) return;
+        if (_deviceList.SelectedItem is null)
+        {
+            _btnOwnConnect.Enabled = false;
+            _btnOwnConnect.Text = "连接这台电脑";
+            _ownSelectHint.Text = "请先点选一台自己的电脑";
+            _ownSelectHint.Visible = true;
+            return;
+        }
+        var row = _deviceList.SelectedItem.ToString() ?? "";
+        var parts = row.Split('\t');
+        var name = parts.Length > 1 ? parts[1] : parts[0];
+        if (string.IsNullOrWhiteSpace(name)) name = "这台电脑";
+        _btnOwnConnect.Enabled = _client is null;
+        _btnOwnConnect.Text = "连接：" + name;
+        _ownSelectHint.Text = "将免密连接「" + name + "」";
+        _ownSelectHint.Visible = true;
     }
 
     private string? RequireArg(string key)
@@ -946,6 +1037,7 @@ internal sealed class MainForm : Form
             _deviceList.Items.Clear();
             foreach (var d in list)
                 _deviceList.Items.Add($"{d.Id}\t{d.Name}\t{(d.Online ? "在线" : "离线")}");
+            UpdateOwnConnectUi();
             SetStatus($"设备 {list.Count} 台");
         }
         catch (Exception ex)
@@ -957,9 +1049,14 @@ internal sealed class MainForm : Form
     private async Task ConnectOwnedDeviceAsync()
     {
         if (_client is not null) { SetStatus("已连接，请先断开"); return; }
-        if (_deviceList.SelectedItem is null || string.IsNullOrWhiteSpace(_settings.AccountToken))
+        if (string.IsNullOrWhiteSpace(_settings.AccountToken))
         {
-            MessageBox.Show(this, "请先登录并选中一台设备", "免密连接", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, "请先登录账号", "免密连接", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        if (_deviceList.SelectedItem is null)
+        {
+            MessageBox.Show(this, "请先点选一台自己的电脑", "免密连接", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         var row = _deviceList.SelectedItem.ToString() ?? "";

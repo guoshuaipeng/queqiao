@@ -207,9 +207,14 @@ internal sealed class MainForm : Form
         };
         sessionCard.Controls.Add(_pwdLabel);
 
-        var btnCopyCodePwd = MakeButton("复制码+密码", 16, 160, 200);
-        btnCopyCodePwd.Font = new Font(Font.FontFamily, 10F, FontStyle.Bold);
-        btnCopyCodePwd.Height = 36;
+        var btnCopyCodePwd = MakeButton("复制码+密码", 16, 160, 220);
+        btnCopyCodePwd.Font = new Font(Font.FontFamily, 11F, FontStyle.Bold);
+        btnCopyCodePwd.Height = 40;
+        btnCopyCodePwd.FlatStyle = FlatStyle.Flat;
+        btnCopyCodePwd.BackColor = Color.FromArgb(0x1A, 0x73, 0xE8);
+        btnCopyCodePwd.ForeColor = Color.White;
+        btnCopyCodePwd.FlatAppearance.BorderSize = 0;
+        btnCopyCodePwd.Cursor = Cursors.Hand;
         btnCopyCodePwd.Click += (_, _) =>
         {
             try
@@ -221,7 +226,13 @@ internal sealed class MainForm : Form
         };
         sessionCard.Controls.Add(btnCopyCodePwd);
 
-        var btnMore = MakeButton("更多", 228, 164, 100);
+        var btnMore = MakeButton("更多", 248, 168, 80);
+        btnMore.Height = 28;
+        btnMore.FlatStyle = FlatStyle.Flat;
+        btnMore.BackColor = Color.White;
+        btnMore.ForeColor = Color.FromArgb(0x5F, 0x63, 0x68);
+        btnMore.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        btnMore.FlatAppearance.BorderSize = 1;
         _moreMenu = new ContextMenuStrip();
         _moreMenu.Items.Add("复制载荷", null, (_, _) => CopyPayload());
         _moreMenu.Items.Add("复制 MCP 配置", null, (_, _) =>
@@ -285,13 +296,18 @@ internal sealed class MainForm : Form
         _clientsView.Columns.Add("client", 300);
         statusCard.Controls.Add(_clientsView);
         var btnRefresh = MakeButton("刷新会话码", 16, 164, 100);
-        btnRefresh.Click += (_, _) =>
-        {
-            _host.RefreshSessionCode();
-            SetStatus("已刷新会话码（旧配对已全部断开）。");
-            RefreshClients();
-        };
+        btnRefresh.FlatStyle = FlatStyle.Flat;
+        btnRefresh.BackColor = Color.White;
+        btnRefresh.ForeColor = Color.FromArgb(0x5F, 0x63, 0x68);
+        btnRefresh.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        btnRefresh.FlatAppearance.BorderSize = 1;
+        btnRefresh.Click += (_, _) => ConfirmAndRefreshSession();
         var btnDisconnect = MakeButton("断开全部", 124, 164, 90);
+        btnDisconnect.FlatStyle = FlatStyle.Flat;
+        btnDisconnect.BackColor = Color.White;
+        btnDisconnect.ForeColor = Color.FromArgb(0x5F, 0x63, 0x68);
+        btnDisconnect.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        btnDisconnect.FlatAppearance.BorderSize = 1;
         btnDisconnect.Click += (_, _) =>
         {
             var n = _host.DisconnectAllSessions();
@@ -299,6 +315,11 @@ internal sealed class MainForm : Form
             RefreshClients();
         };
         var btnKick = MakeButton("断开选中", 222, 164, 90);
+        btnKick.FlatStyle = FlatStyle.Flat;
+        btnKick.BackColor = Color.White;
+        btnKick.ForeColor = Color.FromArgb(0x5F, 0x63, 0x68);
+        btnKick.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        btnKick.FlatAppearance.BorderSize = 1;
         btnKick.Click += (_, _) => DisconnectSelected();
         statusCard.Controls.Add(btnRefresh);
         statusCard.Controls.Add(btnDisconnect);
@@ -311,7 +332,7 @@ internal sealed class MainForm : Form
             Location = new Point(16, 12),
             Size = new Size(320, 64),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "点「复制码+密码」发给对方。对方连上后本机弹出确认，你点允许才开始协助。关闭窗口不退出，程序继续在托盘运行。"
+            Text = "点「复制码+密码」发给对方。对方连上后本机弹出确认，你点允许才开始协助。"
         });
 
         _btnAdvanced = MakeButton("高级 ▸", 16, y0 + 376, 100);
@@ -577,6 +598,59 @@ internal sealed class MainForm : Form
         Location = new Point(x, y), Size = new Size(w, h), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle
     };
 
+
+    private void ConfirmAndRefreshSession()
+    {
+        using var dlg = new Form
+        {
+            Text = "刷新会话码",
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            StartPosition = FormStartPosition.CenterParent,
+            ClientSize = new Size(420, 160),
+            MaximizeBox = false,
+            MinimizeBox = false,
+            ShowInTaskbar = false,
+            Font = Font
+        };
+        dlg.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(20, 20),
+            Size = new Size(380, 60),
+            Text = FriendConnectGuide.RefreshSessionConfirm
+        });
+        var ok = new Button
+        {
+            Text = FriendConnectGuide.RefreshSessionConfirmOk,
+            DialogResult = DialogResult.OK,
+            Location = new Point(120, 100),
+            Size = new Size(120, 32),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.FromArgb(0x1A, 0x73, 0xE8),
+            ForeColor = Color.White
+        };
+        ok.FlatAppearance.BorderSize = 0;
+        var cancel = new Button
+        {
+            Text = FriendConnectGuide.RefreshSessionConfirmCancel,
+            DialogResult = DialogResult.Cancel,
+            Location = new Point(250, 100),
+            Size = new Size(90, 32),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.White,
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
+        };
+        cancel.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        cancel.FlatAppearance.BorderSize = 1;
+        dlg.Controls.Add(ok);
+        dlg.Controls.Add(cancel);
+        dlg.AcceptButton = ok;
+        dlg.CancelButton = cancel;
+        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+        _host.RefreshSessionCode();
+        SetStatus("已刷新会话码（旧配对已全部断开）。");
+        RefreshClients();
+    }
     private static Button MakeButton(string text, int x, int y, int w) => new()
     {
         Text = text, Location = new Point(x, y), Size = new Size(w, 28), FlatStyle = FlatStyle.System

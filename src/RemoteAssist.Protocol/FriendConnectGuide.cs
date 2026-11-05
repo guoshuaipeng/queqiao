@@ -30,6 +30,12 @@ public static class FriendConnectGuide
 
     public const string OpenFirewallButtonText = "打开防火墙设置";
 
+    public const string RefreshSessionConfirm =
+        "刷新后旧码会失效，已经发出去的码对方将连不上。";
+
+    public const string RefreshSessionConfirmOk = "刷新会话码";
+    public const string RefreshSessionConfirmCancel = "取消";
+
     public const string StatusReadyToShare = "已连上网络，可以发给对方了";
     public const string StatusWaitingPeer = "等待对方连接";
 
