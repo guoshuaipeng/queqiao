@@ -55,7 +55,6 @@ internal sealed class AgentTrayContext : ApplicationContext
 
     private void OnPairedClientsChanged()
     {
-        // 菜单下次 Opening 时重建即可；此处更新托盘提示
         try
         {
             var n = _host.ListPairedClients().Count;
@@ -105,23 +104,25 @@ internal sealed class AgentTrayContext : ApplicationContext
 
     private void CopyMcpConfigSnippet()
     {
-        try
+        // 调用瞬间读取 QrPayload，与会话窗共用同一生成逻辑
+        IWin32Window? owner = _sessionForm.Visible && !_sessionForm.IsDisposed ? _sessionForm : null;
+        var outcome = McpConfigCopyHelper.Copy(_host.QrPayload, owner);
+
+        var tipIcon = outcome.Kind switch
         {
-            var exe = McpExeLocator.Resolve();
-            var payload = _host.QrPayload;
-            var text = RemoteAssist.Protocol.McpConfigSnippet.BuildClipboardBundle(exe, payload);
-            Clipboard.SetText(text);
-            var exists = File.Exists(exe);
-            var tip = exists
-                ? "已复制 Cursor mcp.json 片段（含当前会话载荷）。粘贴到 MCP 配置即可。"
-                : "已复制片段。请先运行 scripts\\publish-mcp.ps1，或把 command 改成实际 MCP exe 路径。"
-                  + Environment.NewLine + "当前猜测：" + exe;
-            _tray.ShowBalloonTip(4500, "远端协助", tip, exists ? ToolTipIcon.Info : ToolTipIcon.Warning);
-        }
-        catch (Exception ex)
-        {
-            _tray.ShowBalloonTip(4000, "远端协助", "复制失败：" + ex.Message, ToolTipIcon.Error);
-        }
+            McpConfigCopyHelper.OutcomeKind.Failed => ToolTipIcon.Error,
+            McpConfigCopyHelper.OutcomeKind.Cancelled => ToolTipIcon.Info,
+            McpConfigCopyHelper.OutcomeKind.CopiedSnippet when outcome.ExeExists => ToolTipIcon.Info,
+            McpConfigCopyHelper.OutcomeKind.CopiedSnippet => ToolTipIcon.Warning,
+            McpConfigCopyHelper.OutcomeKind.StartedPublish => ToolTipIcon.Info,
+            McpConfigCopyHelper.OutcomeKind.CopiedPublishCommand => ToolTipIcon.Info,
+            _ => ToolTipIcon.Info
+        };
+
+        var tip = outcome.Message;
+        if (tip.Length > 220)
+            tip = tip[..217] + "…";
+        _tray.ShowBalloonTip(5000, "远端协助", tip, tipIcon);
     }
 
     private void ShowSessionInfo() => _sessionForm.ShowAndActivate();
@@ -167,4 +168,3 @@ internal sealed class AgentTrayContext : ApplicationContext
         return (Icon)tmp.Clone();
     }
 }
-

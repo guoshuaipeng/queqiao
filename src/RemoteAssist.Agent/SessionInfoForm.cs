@@ -14,6 +14,7 @@ internal sealed class SessionInfoForm : Form
     private readonly ComboBox _hostCombo;
     private readonly Label _portLabel;
     private readonly Label _payloadLabel;
+    private readonly Label _statusLabel;
     private readonly PictureBox _qrBox;
     private Image? _qrImage;
     private bool _exitApp;
@@ -29,7 +30,7 @@ internal sealed class SessionInfoForm : Form
         MinimizeBox = true;
         StartPosition = FormStartPosition.CenterScreen;
         ShowInTaskbar = true;
-        ClientSize = new Size(420, 560);
+        ClientSize = new Size(420, 600);
         Font = new Font("Microsoft YaHei UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
 
         var title = new Label
@@ -104,16 +105,38 @@ internal sealed class SessionInfoForm : Form
         {
             AutoSize = false,
             Location = new Point(16, 430),
-            Size = new Size(388, 56),
+            Size = new Size(388, 40),
             ForeColor = Color.DimGray,
             Font = new Font(Font.FontFamily, 8F),
             Text = ""
         };
 
+        _statusLabel = new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 470),
+            Size = new Size(388, 22),
+            ForeColor = Color.DarkSlateGray,
+            Font = new Font(Font.FontFamily, 8.5F),
+            Text = ""
+        };
+
+        var refreshBtn = new Button
+        {
+            Text = "刷新会话码",
+            Location = new Point(16, 500),
+            Size = new Size(120, 28)
+        };
+        refreshBtn.Click += (_, _) =>
+        {
+            _host.RefreshSessionCode();
+            SetStatus("已刷新会话码。再复制 MCP 配置将使用新载荷。");
+        };
+
         var copyBtn = new Button
         {
             Text = "复制载荷",
-            Location = new Point(148, 494),
+            Location = new Point(148, 500),
             Size = new Size(100, 28)
         };
         copyBtn.Click += (_, _) =>
@@ -121,28 +144,29 @@ internal sealed class SessionInfoForm : Form
             try
             {
                 Clipboard.SetText(_host.QrPayload);
+                SetStatus("已复制会话载荷。");
             }
             catch
             {
-                /* ignore */
+                SetStatus("复制载荷失败。");
             }
         };
-
-        var refreshBtn = new Button
-        {
-            Text = "刷新会话码",
-            Location = new Point(16, 494),
-            Size = new Size(120, 28)
-        };
-        refreshBtn.Click += (_, _) => _host.RefreshSessionCode();
 
         var hideBtn = new Button
         {
             Text = "隐藏到托盘",
-            Location = new Point(284, 494),
+            Location = new Point(284, 500),
             Size = new Size(120, 28)
         };
         hideBtn.Click += (_, _) => HideToTray();
+
+        var mcpBtn = new Button
+        {
+            Text = "复制 MCP 配置",
+            Location = new Point(16, 538),
+            Size = new Size(388, 32)
+        };
+        mcpBtn.Click += (_, _) => CopyMcpConfig();
 
         Controls.Add(title);
         Controls.Add(hostCaption);
@@ -152,9 +176,11 @@ internal sealed class SessionInfoForm : Form
         Controls.Add(_codeLabel);
         Controls.Add(_qrBox);
         Controls.Add(_payloadLabel);
+        Controls.Add(_statusLabel);
         Controls.Add(refreshBtn);
         Controls.Add(copyBtn);
         Controls.Add(hideBtn);
+        Controls.Add(mcpBtn);
 
         RefreshFromHost();
         _host.SessionChanged += OnSessionChanged;
@@ -191,6 +217,15 @@ internal sealed class SessionInfoForm : Form
 
     private void HideToTray() => Hide();
 
+    private void CopyMcpConfig()
+    {
+        // 调用瞬间读取 QrPayload，保证刷新会话码后复制的是新载荷
+        var outcome = McpConfigCopyHelper.Copy(_host.QrPayload, this);
+        SetStatus(outcome.Message);
+    }
+
+    private void SetStatus(string text) => _statusLabel.Text = text;
+
     private void OnHostSelected(object? sender, EventArgs e)
     {
         if (_suppressHostChange) return;
@@ -218,7 +253,6 @@ internal sealed class SessionInfoForm : Form
             var idx = _hostCombo.Items.IndexOf(want);
             if (idx < 0 && _hostCombo.Items.Count > 0)
             {
-                // 若当前选项不在列表（少见），追加
                 _hostCombo.Items.Add(want);
                 idx = _hostCombo.Items.Count - 1;
             }
@@ -253,4 +287,3 @@ internal sealed class SessionInfoForm : Form
         }
     }
 }
-
