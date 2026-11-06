@@ -36,6 +36,11 @@ internal sealed class MainForm : Form
     /// <summary>统一 App 中请求返回模式选择页。</summary>
     public event Action? HomeRequested;
     private bool _embeddedInShell;
+    private readonly Button _btnEndAssist;
+    private readonly Button _btnReviewChanges;
+    private readonly Panel _reviewPanel;
+    private readonly ListView _confirmedView;
+    private bool _reviewOpen;
 
     public MainForm(AgentHost host, bool enableReturnHome = false)
     {
@@ -48,7 +53,7 @@ internal sealed class MainForm : Form
         MinimizeBox = true;
         StartPosition = FormStartPosition.CenterScreen;
         ShowInTaskbar = true;
-        ClientSize = new Size(760, 640);
+        ClientSize = new Size(760, 700);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
@@ -389,6 +394,89 @@ internal sealed class MainForm : Form
             Text = "就绪。关闭窗口后会继续在托盘运行。"
         };
 
+        // ③ 底栏：结束这次协助（只断开）+ 本机改动回看（同窗、本地）
+        var footer = new Panel
+        {
+            Location = new Point(16, 640),
+            Size = new Size(728, 48),
+            BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA)
+        };
+        _btnEndAssist = new Button
+        {
+            Text = EndAssistCopy.ButtonText,
+            Name = "btnEndAssist",
+            Location = new Point(0, 8),
+            Size = new Size(140, 34),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.White,
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
+        };
+        _btnEndAssist.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        _btnEndAssist.FlatAppearance.BorderSize = 1;
+        _btnEndAssist.Click += (_, _) => ConfirmAndEndAssist();
+        _btnReviewChanges = new Button
+        {
+            Text = EndAssistCopy.ReviewButtonText,
+            Name = "btnReviewChanges",
+            Location = new Point(152, 8),
+            Size = new Size(140, 34),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.White,
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
+        };
+        _btnReviewChanges.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        _btnReviewChanges.FlatAppearance.BorderSize = 1;
+        _btnReviewChanges.Click += (_, _) => ToggleConfirmedReview();
+        footer.Controls.Add(_btnEndAssist);
+        footer.Controls.Add(_btnReviewChanges);
+
+        _reviewPanel = new Panel
+        {
+            Location = new Point(16, 296),
+            Size = new Size(728, 308),
+            BackColor = Color.White,
+            BorderStyle = BorderStyle.FixedSingle,
+            Visible = false,
+            Name = "confirmedReviewPanel"
+        };
+        _reviewPanel.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(12, 10),
+            Size = new Size(500, 22),
+            Font = new Font(Font.FontFamily, 10.5F, FontStyle.Bold),
+            Text = EndAssistCopy.ReviewTitle,
+            Name = "confirmedChangesTitle"
+        });
+        var btnCloseReview = new Button
+        {
+            Text = EndAssistCopy.ReviewCloseText,
+            Location = new Point(600, 8),
+            Size = new Size(110, 28),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.White,
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Name = "btnCloseReview"
+        };
+        btnCloseReview.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
+        btnCloseReview.FlatAppearance.BorderSize = 1;
+        btnCloseReview.Click += (_, _) => { if (_reviewOpen) ToggleConfirmedReview(); };
+        _reviewPanel.Controls.Add(btnCloseReview);
+        _confirmedView = new ListView
+        {
+            Location = new Point(12, 44),
+            Size = new Size(700, 248),
+            View = View.Details,
+            FullRowSelect = true,
+            HeaderStyle = ColumnHeaderStyle.None,
+            MultiSelect = false,
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = Color.White,
+            Name = "confirmedChangesList"
+        };
+        _confirmedView.Columns.Add("line", 676);
+        _reviewPanel.Controls.Add(_confirmedView);
+
         Controls.Add(header);
         Controls.Add(sessionCard);
         Controls.Add(statusCard);
@@ -396,6 +484,9 @@ internal sealed class MainForm : Form
         Controls.Add(tipCard);
         Controls.Add(auditFull);
         Controls.Add(_statusLabel);
+        Controls.Add(footer);
+        Controls.Add(_reviewPanel);
+        _reviewPanel.BringToFront();
 
         FormClosing += OnFormClosing;
         _host.RelayStatusChanged += OnSessionChanged;
@@ -504,8 +595,15 @@ internal sealed class MainForm : Form
     private void OnAuditWritten()
     {
         if (IsDisposed) return;
-        if (InvokeRequired) { BeginInvoke(RefreshAudit); return; }
-        RefreshAudit();
+        try
+        {
+            BeginInvoke(() =>
+            {
+                RefreshAudit();
+                if (_reviewOpen) RefreshConfirmedChanges();
+            });
+        }
+        catch { /* closing */ }
     }
 
     private void RefreshFromHost()
@@ -723,6 +821,68 @@ internal sealed class MainForm : Form
                     _auditView.Items.Add(new ListViewItem("（暂无审计记录）") { ForeColor = Color.Gray });
             }
             finally { _auditView.EndUpdate(); }
+        }
+        catch { /* ignore */ }
+    }
+
+
+    /// <summary>③：确认后只断开已配对会话，不作废码、不 Stop、不离开本页。</summary>
+    private void ConfirmAndEndAssist()
+    {
+        using var dlg = new EndAssistConfirmDialog();
+        if (dlg.ShowDialog(this) != DialogResult.OK)
+            return; // 取消零副作用
+
+        try
+        {
+            var n = _host.DisconnectAllSessions();
+            RefreshClients();
+            SetStatus(EndAssistCopy.StatusEndedKeepCode + (n == 0 ? "" : $"（已断开 {n} 个会话）"));
+        }
+        catch (Exception ex)
+        {
+            SetStatus("结束失败：" + FriendConnectGuide.FriendlyOrRaw(ex));
+        }
+    }
+
+    private void ToggleConfirmedReview()
+    {
+        _reviewOpen = !_reviewOpen;
+        _reviewPanel.Visible = _reviewOpen;
+        if (_reviewOpen)
+        {
+            RefreshConfirmedChanges();
+            _reviewPanel.BringToFront();
+            _btnReviewChanges.Text = EndAssistCopy.ReviewCloseText;
+        }
+        else
+        {
+            _btnReviewChanges.Text = EndAssistCopy.ReviewButtonText;
+        }
+    }
+
+    private void RefreshConfirmedChanges()
+    {
+        try
+        {
+            var entries = _host.Audit.ReadRecent(80);
+            var filtered = ConfirmedChangeList.Filter(entries.Select(e => (e.EventType, e.Detail)));
+            _confirmedView.BeginUpdate();
+            try
+            {
+                _confirmedView.Items.Clear();
+                foreach (var (eventType, detail) in filtered.Reverse())
+                {
+                    var matching = entries.LastOrDefault(e => e.EventType == eventType && e.Detail == detail);
+                    var ts = matching?.Timestamp;
+                    var line = ConfirmedChangeList.DisplayLine(
+                        eventType, detail, ts is { Length: >= 19 } ? ts.Substring(0, 19) : ts);
+                    _confirmedView.Items.Add(new ListViewItem(line));
+                }
+                if (_confirmedView.Items.Count == 0)
+                    _confirmedView.Items.Add(new ListViewItem(EndAssistCopy.ReviewEmpty) { ForeColor = Color.Gray });
+            }
+            finally { _confirmedView.EndUpdate(); }
         }
         catch { /* ignore */ }
     }
