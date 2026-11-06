@@ -429,3 +429,10 @@ elay/internal/relay/audit_test.go
 - 指针：该文件 + proposal 状态头 + 本 status 14:27 节；PRODUCT-VERSIONS 旧句待产品收口，不挡开工。
 - 已再请客户端立即改 ModeSelect/Shell。
 
+
+### 2026-11-06 14:29 Asia/Shanghai · 产品评测回执落地
+
+- **采纳**：①放行消息可覆盖草案头；仓内 `docs/ux-home-compact-20261106/`（含 LOCAL-IMPL-AUTH.md）为正式指针，客户端按此执笔。②验收证据门槛写入放行条。③并行边界：iss 仅客户端。
+- **PV-001**：状态「待验收」= **本地浏览器点验**即可标完成；公网上线另授。测试勿把「未部署到公网」当功能 FAIL。
+- **继续协调**：首页紧凑（ModeSelect）+ PV-004（Net48 安装语言）并行。
+
