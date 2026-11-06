@@ -466,29 +466,39 @@ function fitSpan() {
     scroller.style.paddingBottom = "0px";
     extra = scroller.scrollHeight - scroller.clientHeight;
   }
+  const fitRows = (box, rows) => {
+    box.style.maxHeight = (rows * 20 + 2) + "px";
+    const wide = box.scrollWidth > box.clientWidth + 1;
+    box.style.maxHeight = (rows * 20 + 2 + (wide ? 12 : 0)) + "px";
+  };
   if (tight) {
     scroller.style.paddingTop = "0px";
     scroller.style.paddingBottom = "0px";
     scroller.style.gap = "0px";
     if (propose && !propose.hidden) propose.style.gap = "0px";
-    const fitRows = (box, rows) => {
-      box.style.maxHeight = (rows * 20 + 2) + "px";
-      const wide = box.scrollWidth > box.clientWidth + 1;
-      box.style.maxHeight = (rows * 20 + 2 + (wide ? 12 : 0)) + "px";
-    };
-    fitRows(result, resultRows);
-    if (past) fitRows(past, pastRows);
-    if ((window.__resultStick || "end") === "end") snapEnd(result);
-    else snapNearest(result);
-    if (past) snapNearest(past);
-    placeRail(result);
-    pinShortRows(result);
-    if (past) {
-      placeRail(past);
-      pinShortRows(past);
-    }
-    extra = scroller.scrollHeight - scroller.clientHeight;
   }
+  fitRows(result, resultRows);
+  if (past) fitRows(past, pastRows);
+  const settle = (box, stickEnd) => {
+    if (!box) return;
+    const maxX = Math.max(0, box.scrollWidth - box.clientWidth);
+    const tail = box.__rowTail || 0;
+    if (tail > 1 && maxX - tail <= 48 && maxX - tail >= -1) {
+      box.scrollLeft = maxX;
+      box.__rowTail = box.scrollLeft;
+    } else if (tail > 1) {
+      box.scrollLeft = Math.min(tail, maxX);
+    }
+    if (stickEnd) snapEnd(box);
+    else snapNearest(box);
+    pinShortRows(box);
+  };
+  settle(result, (window.__resultStick || "end") === "end");
+  if (past) settle(past, false);
+  placeRail(result);
+  if (past) placeRail(past);
+  extra = scroller.scrollHeight - scroller.clientHeight;
+  if (extra <= 4) scroller.scrollTop = 0;
   scroller.style.overflowY = extra <= 4 ? "hidden" : "auto";
 }
 
