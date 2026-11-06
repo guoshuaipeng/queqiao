@@ -75,7 +75,7 @@ internal sealed class MainForm : Form
             Size = new Size(_enableReturnHome ? 600 : 700, 22),
             ForeColor = Color.FromArgb(0xE3, 0xF0, 0xFF),
             Font = new Font(Font.FontFamily, 9F),
-            Text = "接受协助 · 点「复制连接凭证」发完整安全载荷 · 危险操作需本机确认",
+            Text = "接受协助 · " + FriendConnectGuide.AcceptGuideHint + "危险操作需本机确认",
             BackColor = Color.Transparent
         };
         header.Controls.Add(_headerSubtitle);
@@ -105,7 +105,7 @@ internal sealed class MainForm : Form
             AutoSize = false,
             Location = new Point(16, 12),
             Size = new Size(328, 22),
-            Text = "点「复制连接凭证」把完整安全载荷发给对方（含业务指纹）；上方短码仅供口述",
+            Text = FriendConnectGuide.AcceptGuideHint,
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
         sessionCard.Controls.Add(new Label
@@ -149,7 +149,7 @@ internal sealed class MainForm : Form
             AutoSize = false,
             Location = new Point(16, 78),
             Size = new Size(328, 20),
-            Text = "口述短码（不可单独加密连接）",
+            Text = FriendConnectGuide.OralShortCodeHint,
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
 
@@ -190,7 +190,7 @@ internal sealed class MainForm : Form
         };
         sessionCard.Controls.Add(_relayStatusLabel);
 
-        var btnCopyCredential = MakeButton("复制连接凭证", 16, 168, 160);
+        var btnCopyCredential = MakeButton(FriendConnectGuide.CopyCredentialButtonText, 16, 168, 160);
         btnCopyCredential.BackColor = Color.FromArgb(0x1A, 0x73, 0xE8);
         btnCopyCredential.ForeColor = Color.White;
         btnCopyCredential.FlatStyle = FlatStyle.Flat;
@@ -213,7 +213,7 @@ internal sealed class MainForm : Form
             Location = new Point(16, 392),
             Size = new Size(70, 22),
             TextAlign = ContentAlignment.MiddleLeft,
-            Text = "TLS 指纹"
+            Text = "安全验证信息"
         });
         _tlsValue = new Label
         {
@@ -301,9 +301,12 @@ internal sealed class MainForm : Form
             try
             {
                 Clipboard.SetText(_host.QrPayload);
-                SetStatus("已复制会话载荷（含 IP / 端口 / 会话码 / TLS 指纹）。");
+                SetStatus(FriendConnectGuide.CopyCredentialSucceededHint);
             }
-            catch (Exception ex) { SetStatus("复制失败：" + FriendConnectGuide.RedactSecureMaterial(ex.Message)); }
+            catch (Exception ex)
+            {
+                ShowCopyCredentialFailed(_host.QrPayload, ex);
+            }
         };
         var btnCopyMcp = MakeButton("复制 MCP 配置", 124, 48, 120);
         btnCopyMcp.Click += (_, _) =>
@@ -311,7 +314,7 @@ internal sealed class MainForm : Form
             var outcome = McpConfigCopyHelper.Copy(_host.QrPayload, this);
             SetStatus(FriendConnectGuide.RedactSecureMaterial(outcome.Message));
         };
-        var btnCopyCode = MakeButton("复制连接凭证", 252, 48, 100);
+        var btnCopyCode = MakeButton(FriendConnectGuide.CopyCredentialButtonText, 252, 48, 100);
         btnCopyCode.Click += (_, _) => CopySecureCredential();
         actionCard.Controls.Add(btnCopyPayload);
         actionCard.Controls.Add(btnCopyMcp);
@@ -530,9 +533,9 @@ internal sealed class MainForm : Form
         if (_host.PreferRelay && _host.UseTls && _host.CertificateFingerprint is { } fpRelay)
         {
             var shortFp = fpRelay.Length > 23 ? fpRelay[..10] + "…" + fpRelay[^8..] : fpRelay;
-            _tlsValue.Text = "中继 TLS · " + shortFp;
+            _tlsValue.Text = "已加密 · " + shortFp;
             _tlsValue.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
-            Tip().SetToolTip(_tlsValue, "业务 TLS 指纹（完整载荷含 fp=）：" + fpRelay + " · 中继 " + _host.RelayEndpointAddress);
+            Tip().SetToolTip(_tlsValue, "安全验证信息已就绪 · 中继 " + _host.RelayEndpointAddress);
         }
         else if (_host.PreferRelay && !_host.UseTls)
         {
@@ -545,7 +548,7 @@ internal sealed class MainForm : Form
             var shortFp = fp.Length > 23 ? fp[..10] + "…" + fp[^8..] : fp;
             _tlsValue.Text = shortFp;
             _tlsValue.ForeColor = Color.FromArgb(0x3C, 0x40, 0x43);
-            Tip().SetToolTip(_tlsValue, fp);
+            Tip().SetToolTip(_tlsValue, "安全验证信息已就绪");
         }
         else
         {
@@ -577,32 +580,69 @@ internal sealed class MainForm : Form
 
     private void CopySecureCredential()
     {
+        string payload;
         try
         {
             if (_host.PreferRelay)
             {
                 if (!_host.UseTls || string.IsNullOrWhiteSpace(_host.CertificateFingerprint))
                 {
-                    SetStatus("当前无法生成加密载荷（明文调试或证书未就绪）。");
+                    SetStatus("当前无法生成完整连接凭证（调试模式或安全验证信息未就绪）。");
                     return;
                 }
                 if (!TlsCertUtil.IsWellFormedFingerprint(_host.CertificateFingerprint))
                 {
-                    SetStatus("证书指纹异常，请刷新会话后重试。");
+                    SetStatus("安全验证信息异常，请刷新会话后重试。");
                     return;
                 }
-                // 与 QrPayload / PairQrPayload.BuildRelay 同一形态（含 fp、pwd、relay）
-                Clipboard.SetText(_host.QrPayload);
-                SetStatus("已复制完整安全连接载荷（请发给协助方一次粘贴）。短码不能单独加密连接。");
-                return;
             }
 
-            Clipboard.SetText(_host.QrPayload);
-            SetStatus("已复制完整安全连接载荷。");
+            payload = _host.QrPayload;
+            Clipboard.SetText(payload);
+            SetStatus(FriendConnectGuide.CopyCredentialSucceededHint);
         }
         catch (Exception ex)
         {
-            SetStatus("复制失败：" + FriendConnectGuide.RedactSecureMaterial(ex.Message));
+            try { payload = _host.QrPayload; }
+            catch { payload = ""; }
+            ShowCopyCredentialFailed(payload, ex);
+        }
+    }
+
+    /// <summary>剪贴板失败：逐字失败提示，并展示完整连接凭证供手动选取（不写日志）。</summary>
+    private void ShowCopyCredentialFailed(string? payload, Exception? ex = null)
+    {
+        SetStatus(FriendConnectGuide.CopyCredentialFailedHint);
+        if (string.IsNullOrWhiteSpace(payload))
+            return;
+        try
+        {
+            using var dlg = new Form
+            {
+                Text = "手动复制连接凭证",
+                Width = 640,
+                Height = 220,
+                StartPosition = FormStartPosition.CenterParent,
+                MinimizeBox = false,
+                MaximizeBox = false,
+                ShowInTaskbar = false
+            };
+            var tb = new TextBox
+            {
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                Dock = DockStyle.Fill,
+                Font = new Font("Consolas", 9F),
+                Text = payload
+            };
+            dlg.Controls.Add(tb);
+            dlg.Shown += (_, _) => { tb.SelectAll(); tb.Focus(); };
+            dlg.ShowDialog(this);
+        }
+        catch
+        {
+            /* 展示失败不影响主流程；状态栏已是失败逐字句 */
         }
     }
 
@@ -623,11 +663,11 @@ internal sealed class MainForm : Form
         }
         else
         {
-            var tls = _host.UseTls ? "TLS 开" : "明文";
+            var tls = _host.UseTls ? "已加密" : "明文";
             _listenValue.Text = $"监听 {_host.Port} · {tls} · 已配对 {n} 个";
         }
         _headerSubtitle.Text = n == 0
-            ? "接受协助 · 点「复制连接凭证」发完整安全载荷 · 危险操作需本机确认"
+            ? "接受协助 · " + FriendConnectGuide.AcceptGuideHint + "危险操作需本机确认"
             : $"被协助端 · 已有 {n} 个协助方连接 · 可随时断开";
     }
 

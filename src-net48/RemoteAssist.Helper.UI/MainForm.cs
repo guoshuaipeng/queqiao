@@ -80,7 +80,7 @@ internal sealed class MainForm : Form
             Size = new Size(_enableReturnHome ? 620 : 720, 22),
             ForeColor = Color.FromArgb(0xE8, 0xF5, 0xE9),
             Font = new Font(Font.FontFamily, 9F),
-            Text = "粘贴对方「复制连接凭证」的完整安全载荷，点「连接」",
+            Text = FriendConnectGuide.PasteCredentialHint,
             BackColor = Color.Transparent
         });
         Controls.Add(header);
@@ -114,7 +114,7 @@ internal sealed class MainForm : Form
             AutoSize = false,
             Location = new Point(16, 40),
             Size = new Size(520, 20),
-            Text = "完整安全载荷（remoteassist:pair…，含指纹；不要只贴口述短码）",
+            Text = FriendConnectGuide.PasteCredentialLabel,
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
 
@@ -138,11 +138,11 @@ internal sealed class MainForm : Form
             Size = new Size(540, 28),
             Font = new Font("Consolas", 9F),
             ForeColor = Color.FromArgb(0x20, 0x24, 0x27),
-            Text = "请粘贴完整安全载荷后连接"
+            Text = FriendConnectGuide.PasteCredentialHint
         };
         pairCard.Controls.Add(_previewLabel);
 
-        _btnConnect = MakeButton("连接", 566, 98, 80);
+        _btnConnect = MakeButton(FriendConnectGuide.ConnectButtonText, 566, 98, 80);
         _btnConnect.BackColor = Color.FromArgb(0x0F, 0x9D, 0x58);
         _btnConnect.ForeColor = Color.White;
         _btnConnect.FlatStyle = FlatStyle.Flat;
@@ -435,7 +435,7 @@ internal sealed class MainForm : Form
     {
         if (!TryBuildOptions(out _, out var preview, out var err))
         {
-            _previewLabel.Text = string.IsNullOrEmpty(err) ? "请粘贴完整安全载荷后连接" : err;
+            _previewLabel.Text = string.IsNullOrEmpty(err) ? FriendConnectGuide.PasteCredentialHint : err;
             _previewLabel.ForeColor = string.IsNullOrEmpty(err)
                 ? Color.FromArgb(0x5F, 0x63, 0x68)
                 : Color.FromArgb(0xC5, 0x22, 0x1F);
@@ -490,9 +490,9 @@ internal sealed class MainForm : Form
             // 显式勾选「明文调试」才走 --insecure。短凭证 {码}-{验证码} 不含指纹 → 安全阻断并人话引导。
             if (opts.ViaRelay && !opts.Insecure && !TlsCertUtil.IsWellFormedFingerprint(opts.Fingerprint))
             {
-                SetStatus("无法安全连接");
+                SetStatus("无法连接");
                 SetFailHint(
-                    FriendConnectGuide.NeedFingerprintHint
+                    FriendConnectGuide.MissingSecurityInfoHint
                     + Environment.NewLine
                     + "（仅本机调试可勾选「明文调试」，公网请勿使用。）");
                 return;
@@ -514,7 +514,7 @@ internal sealed class MainForm : Form
         {
             var friendly = FriendConnectGuide.FriendlyOrRaw(ex);
             SetStatus("连接失败");
-            SetFailHint(FriendConnectGuide.RedactSecureMaterial(friendly) + "\r\n下一步：请对方重新「复制连接凭证」发完整安全载荷后重试。");
+            SetFailHint(FriendConnectGuide.RedactSecureMaterial(friendly) + "\r\n" + FriendConnectGuide.MissingSecurityInfoHint);
             SetConnectedUi(false);
         }
         finally

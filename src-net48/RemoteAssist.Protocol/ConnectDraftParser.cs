@@ -75,7 +75,7 @@ public static class ConnectDraftParser
             // 显式 tls=0 且未勾选明文调试 → 仍按安全默认要求指纹或阻断
             if (!insecure && !useTls)
             {
-                error = "载荷标明非加密通道。公网请让对方重新「复制连接凭证」（加密载荷）；本机调试请勾选「明文调试」。";
+                error = "该连接凭证未按加密方式发送。请让对方重新「复制连接凭证」；本机调试请勾选「明文调试」。";
                 return false;
             }
 

@@ -52,9 +52,9 @@
 | R041 | 高频：S004「提议一项改动」等待/结果四态人话；打磨：连上后结果区去掉 PAIR_OK | 鹊桥-客户端 | **done（产品已验收）** | `docs/round-041.md` |
 | R042 | 高频：官网安装包跟上含 R041 的客户端；打磨：首页旁注不改、补公网下载截图 | 鹊桥-客户端出包 / 鹊桥-服务端上架 | **done（产品已验收）** | `docs/round-042.md` |
 | R043 | 高频：Windows net48 主路径对齐（会话码+公网中继、去局域网主表单、品牌鹊桥、被控首启人话、**连接凭证一次粘贴/8位验证码**）；打磨：Avalonia/CLI 凭证同步或 S005，产能紧则 R044 | 鹊桥-客户端 | **PASS_WITH_NOTES**（编译/文档；真连 blocked） | `docs/round-043.md`、`docs/quality-connection-credential.md` |
-| R044 | 高频：完整连接凭证**逐字文案**扫尾（亲友 UI 无指纹/TLS 技术词）+ Avalonia/CLI 凭证 UI；有条件时本机外运行验收；备忘 net8 Insecure 债 | 鹊桥-体验（规格已定）/ 鹊桥-客户端（实现） | **todo** | `docs/round-044.md`、`docs/quality-connection-credential.md` |
+| R044 | 高频：完整连接凭证**逐字文案**扫尾（亲友 UI 无指纹/TLS 技术词）+ Avalonia/CLI 凭证 UI；有条件时本机外运行验收；备忘 net8 Insecure 债 | 鹊桥-体验（规格已定）/ 鹊桥-客户端（实现） | **compiled**（net48 文案+编译；运行未验收；Avalonia/CLI 未改） | `docs/round-044.md`、`docs/quality-connection-credential.md` |
 
-> **当前**：R044 **todo**——完整连接凭证逐字文案 + Avalonia/CLI UI 扫尾；有条件时本机外运行验收；net8 Insecure 债备忘。R043 编译/文档 **PASS_WITH_NOTES**（`0122127`），真连仍 blocked；完整连接凭证载荷已接线；实际连接、安全校验与界面运行验收另计。见 `docs/round-044.md`、`docs/round-043.md`。R042 已产品验收（出包 `8d61398`，上架 `f90bd8f`，2026-11-06）。
+> **当前**：R044 **compiled**（net48 逐字文案+编译；运行未验收；Avalonia/CLI 未改）——运行与跨端仍 open；有条件时本机外运行验收；net8 Insecure 债备忘。R043 编译/文档 **PASS_WITH_NOTES**（`0122127`），真连仍 blocked；完整连接凭证载荷已接线；实际连接、安全校验与界面运行验收另计。见 `docs/round-044.md`、`docs/round-043.md`。R042 已产品验收（出包 `8d61398`，上架 `f90bd8f`，2026-11-06）。
 
 > R041 已产品验收（`aeafeeb`，2026-11-06）；R042 已产品验收（公网 Win 75,587,213 / Linux 8,005,849）。
 

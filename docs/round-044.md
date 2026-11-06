@@ -3,7 +3,7 @@
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai  
 > 体验规格：鹊桥-体验（已定，权威字符串见下 / `quality-connection-credential.md`）  
 > 实现：鹊桥-客户端  
-> 状态：**todo**（规格已定；待实现与验收）  
+> 状态：**compiled（net48 亲友逐字文案已接线；编译通过；运行未验收；Avalonia/CLI 本轮未改）**（规格已定；待实现与验收）  
 > 依据：R043 编译/文档 **PASS_WITH_NOTES**（`0122127`）；真连仍 blocked。NOTES：文案未逐字、亲友 UI 仍可能出现技术词；Avalonia/CLI 待对齐。  
 > **本轮不改**凭证格式、信任模型、中继协议字段；**不**把编译通过写成真连验收通过。
 
@@ -47,6 +47,45 @@
 
 - 客户端：改动文件列表；对照上表逐字核对说明；Avalonia/CLI 覆盖范围；net8 债是否动刀。
 - 产品：文案逐字 + 亲友 UI 无技术词；运行验收另计或按条件执行。
+
+
+
+## 交付（net48 文案 · 编译）
+
+> 时间：2026-11-06 Asia/Shanghai · 范围仅 `src-net48` 亲友可见文案；**不改**凭证格式 / 信任模型 / 阻断条件。
+
+### 改动文件
+
+- `RemoteAssist.Protocol/FriendConnectGuide.cs` — R044 逐字常量；Need*Hint 对齐 MissingSecurityInfoHint
+- `RemoteAssist.Protocol/ConnectDraftParser.cs` — 非加密通道人话；阻断条件未改
+- `RemoteAssist.Protocol/AssistClient.cs` — 缺安全验证信息抛错用逐字句
+- `RemoteAssist.Helper.UI/MainForm.cs` — 标签/旁注/预览/连接/失败提示
+- `RemoteAssist.Agent/MainForm.cs` — 引导/短码旁注/复制成功失败；失败时展示完整串供手选
+- `RemoteAssist.App/ModeSelectForm.cs` — 模式副文去技术词
+
+### 逐字落点
+
+| 规格句 | 源码 |
+|--------|------|
+| 粘贴完整连接凭证 | PasteCredentialLabel → Helper 输入区标签 |
+| 旁注整段粘贴 | PasteCredentialHint → Helper 头/预览；ModeSelect 协助侧 |
+| 连接 | ConnectButtonText → Helper 连接按钮 |
+| 复制连接凭证 | CopyCredentialButtonText → Agent |
+| 连接凭证已复制… | CopyCredentialSucceededHint |
+| 未能复制… | CopyCredentialFailedHint + 手动选取对话框 |
+| 缺少安全验证信息… | MissingSecurityInfoHint（Need*Hint）→ Parser/Helper/AssistClient |
+| 引导 / 短码旁注 | AcceptGuideHint / OralShortCodeHint → Agent |
+
+### 明确未做
+
+- Avalonia / CLI / net8
+- 用户本机运行 / 联调 / 截图 / 真连验收（R043 真连 blocked 不变）
+- 包装部署；历史改写
+
+### 编译
+
+- `scripts/build-net48.ps1` publish-only（不自动启动）
+
 
 ## 参考
 
