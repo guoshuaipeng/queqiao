@@ -248,3 +248,11 @@ elay/internal/relay/audit_test.go
 
 - **commit**：`63cf098`（本地；未 push）。
 
+
+### 2026-11-06 13:45 Asia/Shanghai · 服务端只读核验回传 + 文档欠账
+
+- **鹊桥-服务端**只读：HEAD `11d7e43` 时核验（其后已有 `63cf098`/`2f07af6`）；`GOPROXY=off` 下 `go test` relay+site PASS；未写文件/未 commit/push。
+- **文档欠账**：`docs/agents/服务端.md`（或交接文 §4）仍写「R046 尚未实现」，与 `round-046` implemented-local 及 `b964b8a` 不符 → 下轮由迭代统一改文档，不改用户需求原文。
+- **PV-003**：已待验收（`63cf098`）；产物 `artifacts\installer\RemoteAssist-Net48-Setup-0.1.0.exe`。
+- **PV-002**：仍进行中（工作区已有 ModeSelectForm/MainForm 改动与 docs/shots）。
+
