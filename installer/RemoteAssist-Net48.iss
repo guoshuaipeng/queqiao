@@ -1,6 +1,7 @@
 ; RemoteAssist net48 — Inno Setup 6（亲友主路径：FW4.8 依赖小包）
 ; 构建：.\scripts\build-installer-net48.ps1
 ; 兼容备用：installer\RemoteAssist.iss（net8 自包含）勿作主推
+; PV-004：简体中文 + English；uilanguage；不弹选语言框；english 第一条作未支持语种保底
 
 #define MyAppName "鹊桥远程协助"
 #define MyAppNameEn "RemoteAssist"
@@ -13,13 +14,13 @@
 
 [Setup]
 AppId={{B7E4D3C2-8A51-4F7B-9C32-REMOTEASSIST48}
-AppName={#MyAppName}
+AppName={cm:AppDisplayName}
 AppVersion={#MyAppVersion}
-AppVerName={#MyAppName} {#MyAppVersion} (net48)
+AppVerName={cm:AppDisplayName} {#MyAppVersion} (net48)
 AppPublisher={#MyAppPublisher}
-AppComments=需要本机已安装 .NET Framework 4.8（非自包含包）
+AppComments={cm:AppComments}
 DefaultDirName={localappdata}\Programs\{#MyAppNameEn}
-DefaultGroupName={#MyAppName}
+DefaultGroupName={cm:AppDisplayName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
@@ -35,29 +36,53 @@ ArchitecturesInstallIn64BitMode=x64compatible
 CloseApplications=yes
 RestartApplications=no
 ShowLanguageDialog=no
-InfoBeforeFile=net48-runtime-note.txt
+LanguageDetectionMethod=uilanguage
+UsePreviousLanguage=no
+; 全局 InfoBefore 由各 [Languages] 条目覆盖；勿再设单一中文文件以免英中混搭
 
 [Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
+; english 必须第一条：未匹配系统显示语言时保底英文（ShowLanguageDialog=no）
+Name: "english"; MessagesFile: "compiler:Default.isl"; InfoBeforeFile: "net48-runtime-note.en.txt"
+Name: "chinesesimplified"; MessagesFile: "languages\ChineseSimplified.isl"; InfoBeforeFile: "net48-runtime-note.zh-CN.txt"
+
+[CustomMessages]
+; --- English ---
+english.AppDisplayName=QueQiao Remote Assist
+english.AppComments=Requires .NET Framework 4.8 already installed (not self-contained)
+english.TaskDesktopIcon=Create a desktop shortcut
+english.TaskAdditionalIcons=Additional options:
+english.TaskAutoStart=Start when I sign in (then choose Accept assist / Assist others)
+english.IconUninstall=Uninstall QueQiao Remote Assist
+english.LaunchAfterInstall=Open QueQiao Remote Assist now
+; --- Simplified Chinese ---
+chinesesimplified.AppDisplayName=鹊桥远程协助
+chinesesimplified.AppComments=需要本机已安装 .NET Framework 4.8（非自包含包）
+chinesesimplified.TaskDesktopIcon=创建桌面快捷方式
+chinesesimplified.TaskAdditionalIcons=附加选项:
+chinesesimplified.TaskAutoStart=登录时启动（进入后可选被控/控制）
+chinesesimplified.IconUninstall=卸载鹊桥远程协助
+chinesesimplified.LaunchAfterInstall=立即打开鹊桥远程协助
 
 [Tasks]
-Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加选项:"; Flags: unchecked
-Name: "autostart"; Description: "登录时启动（进入后可选被控/控制）"; GroupDescription: "附加选项:"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:TaskDesktopIcon}"; GroupDescription: "{cm:TaskAdditionalIcons}"; Flags: unchecked
+Name: "autostart"; Description: "{cm:TaskAutoStart}"; GroupDescription: "{cm:TaskAdditionalIcons}"; Flags: unchecked
 
 [Files]
 Source: "{#AppSource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "net48-runtime-note.txt"; DestDir: "{app}"; Flags: ignoreversion
+; 安装目录旁注：随所选语言写入对应说明（同名目标文件）
+Source: "net48-runtime-note.en.txt"; DestDir: "{app}"; DestName: "net48-runtime-note.txt"; Languages: english; Flags: ignoreversion
+Source: "net48-runtime-note.zh-CN.txt"; DestDir: "{app}"; DestName: "net48-runtime-note.txt"; Languages: chinesesimplified; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0
-Name: "{group}\卸载 {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; Tasks: desktopicon
+Name: "{group}\{cm:AppDisplayName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0
+Name: "{group}\{cm:IconUninstall}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\{cm:AppDisplayName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; IconIndex: 0; Tasks: desktopicon
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RemoteAssist"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "立即打开 {#MyAppName}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchAfterInstall}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{localappdata}\RemoteAssist\audit.log"
