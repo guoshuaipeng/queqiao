@@ -10,6 +10,10 @@
 > 独立软件 + 可 MCP 嵌入其他智能体。不做进 AI-SSH-Pro。  
 > 约定与决策写进本仓库 `docs/`，**不要只放在 bot 记忆里**。
 
+## Bot 职责记忆（换 bot 接续）
+
+各角色站立决策与协作约定见 **`docs/agents/`**（[索引 README](agents/README.md)）：产品 / 客户端 / 服务端 / 架构 / 体验 / 场景。**Windows：主维护 net48（FW 4.8 小包）；冻结 net8 WinForms 功能迭代；既有 net8 能力迁 net48（账号免密除外，已废止）。** 细则以 `docs/agents/产品.md` 与下文为准。
+
 ## 定位
 
 对标向日葵 / TeamViewer 的「远程协助」场景，但**控制面不是远程桌面画面**，而是 **命令 + MCP 智能体**：对方装轻量被控端，协助方（人或 AI/MCP）连上后查进程/日志/文件；**危险操作必须在被协助本机确认**后才执行。不做完整远程桌面 / 键鼠注入。
@@ -154,7 +158,8 @@ Skill 仅作「如何安装 MCP / 如何填参数」的薄封装；**控制面�
 ## 技术选型
 
 - 客户端：**Windows 主维护路径 = .NET Framework 4.8（`src-net48/` + `scripts/build-net48.ps1`）**，WinForms；官网/亲友下载与演示验收均优先 **net48 框架依赖小包**（约 1.4 MB 档，非几十兆自包含）。
-- **冻结 `src/` net8 WinForms 功能迭代**：不再为功能对等向 net8 WinForms 补齐；仅接受安全/协议关键回补。功能缺口（如信任三档等）**迁入 net48**，不为对等去回填 net8。
+- **冻结 `src/` net8 WinForms 功能迭代**：不再向 net8 WinForms 加新功能；仅接受安全/协议关键回补。**凡此前在 net8（含 Avalonia/WinForms）已迭代、且仍属产品意图的能力，须迁到 net48 直至能力对等**——不为「两边都做一遍」去回填 net8。
+- **net48 迁移 backlog（已知缺口，非穷尽）**：信任三档；「结束这次协助」；本次协助已确认改动回看；写确认/安装说明等 `WriteConfirmCopy` 亲友文案与 Windows 安装前提（Framework 4.8）。**不迁**：账号免密 / `connect_device` / `ownerLink` / 设备密钥快捷连（产品意图已废止）。
 - **Avalonia** = **Mac/Linux** 轨道，**不是** Windows 亲友主路径。
 - **.NET 8 自包含 Windows 安装包**仅历史/兼容备用（约 72 MB），不作为主维护与官网主推。macOS / Linux 仍用 .NET 8 + Avalonia（见 architecture.md 第 13 节）；src-net48 不上 Mac/Linux。
 - 公网中继：**Go** + SQLite（`relay/`）

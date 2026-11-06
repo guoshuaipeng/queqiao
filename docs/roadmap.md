@@ -62,7 +62,7 @@
 
 > **当前**：并行——**R046** open（规格已拍板）；**R047** open（规格已开；主维护小包）；**R048** compiled（运行未验收）。**R049** draft / **待用户确认**（交互见 `quality-single-window-codes-draft.md`；确认前不开 UI）。**R050** **blocked**（**严格唯一凭证已拍板** 2026-11-06 10:35；取消免密/设备密钥旁路；仍等架构 PAKE 正式评估收口后授权实现；**不得**宣称现网已安全满足；见 `round-050.md`）。R045/R044 运行仍 blocked；R042 已产品验收。
 >
-> **Windows 主维护锁定（2026-11-06）**：亲友主路径 = **net48 Framework 4.8 依赖小包**；**冻结 `src/` net8 WinForms 功能**（仅安全/协议关键回补）；缺口迁 net48，**不为对等回填 net8**；**Avalonia = Mac/Linux**，非 Windows 亲友主路径。
+> **Windows 主维护锁定（2026-11-06）**：亲友主路径 = **net48 Framework 4.8 依赖小包**；**冻结 `src/` net8 WinForms 功能**（仅安全/协议关键回补）。**net8 上已迭代且仍属产品意图的能力须全量迁 net48（能力对等）**；已知 backlog：信任三档、「结束这次协助」、已确认改动回看、`WriteConfirmCopy` 文案/安装前提；**不迁账号免密**（已废止）。**不为对等回填 net8**；**Avalonia = Mac/Linux**，非 Windows 亲友主路径。
 
 > R041 已产品验收（`aeafeeb`，2026-11-06）；R042 已产品验收（公网 Win 75,587,213 / Linux 8,005,849）。
 
@@ -94,7 +94,7 @@
 
 | 项 | 负责 | 状态 | 验收 |
 |----|------|------|------|
-| 技术栈与体积方案 | 鹊桥-架构 | **done（2026-11-06 主维护锁定）** | Windows **主维护=net48 WinForms + Framework 4.8 小包**；**冻结 net8 WinForms 功能**；Avalonia=Mac/Linux；自包含 ~72 MB 仅兼容备用；见 PRODUCT |
+| 技术栈与体积方案 | 鹊桥-架构 | **done（2026-11-06 主维护锁定）** | Windows **主维护=net48 + Framework 4.8 小包**；冻结 net8 WinForms；**net8 已迭代能力迁 net48 对等**（信任三档/结束协助/已确认改动/WriteConfirmCopy；不迁免密）；Avalonia=Mac/Linux；见 PRODUCT |
 | Mac/Linux 被控端 + MCP（先） | 鹊桥-客户端 | **done（Linux：R009+R010 产品已验收；osx 已出包未上真机，不写成 Mac 已验收）** | 经默认中继配对；只读查询；写操作本机确认；命令行（CLI/MCP）与 Avalonia 界面都要，不是二选一。R009 CLI + R010 Avalonia 被控窗已产品验收（Linux）。osx 已出包未上真机。默认发依赖 .NET 8 运行时的小包（附安装说明）；自包含为备选。双模式 GUI 见下一平台项 |
 | Mac/Linux 双模式 GUI（后） | 鹊桥-客户端 | **done（Linux：R011 产品已验收；osx 已出包未上真机，不写成 Mac 已验收）** | 与 Windows 对等：接受协助 / 去协助；见 `round-011.md` |
 
