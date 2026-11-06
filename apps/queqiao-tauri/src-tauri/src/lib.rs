@@ -351,6 +351,10 @@ impl Hooks for AppHooks {
                 model.op_busy = false;
                 model.op_status.clear();
                 model.audit.clear();
+                model.manual_copy.clear();
+                model.copy_hint.clear();
+                model.result.clear();
+                model.past.clear();
                 if helper {
                     model.helper_error = text::PEER_ENDED.into();
                     model.helper_status.clear();

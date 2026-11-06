@@ -157,6 +157,8 @@
 | 本轮完成 | 长命令确认框打开时滚到末尾 | 不用再滑才能看见路径 | 框里露出 `queqiao-reopen-end.txt` | `acceptance/desktop-cmd-end.png` |
 | 本轮完成 | 上次记录保留「已允许这次协助」 | 连上之后这条不要消失 | 进行中能看见；结束后展开记录仍是这句 | 本机 `127.0.0.1:17991`；`acceptance/desktop-kept-live.png`、`desktop-kept-open.png` |
 | 本轮完成 | 记录展开后按钮改成「收起」，再点合上 | 看完能收回去 | 展开是「收起」且能看见记录；再点回到「查看上次协助记录」，记录不再显示 | `acceptance/desktop-kept-open.png`、`desktop-kept-shut.png` |
+| 本轮完成 | 协助端结束后，上次记录仍有「已允许这次协助」 | 对方先离开，这条也不丢 | 协助端结束；被协助端看到对方已结束；展开记录有「已允许这次协助」 | 本机 `127.0.0.1:17991`；`acceptance/desktop-both-before.png`、`desktop-both-open.png` |
+| 本轮完成 | 先拒绝再允许，两条都留在记录里 | 拒绝过的那次不会被后来的允许盖掉 | 进行中和结束后都能看见「已拒绝这次协助」和「已允许这次协助」 | `acceptance/desktop-both-live.png`、`desktop-both-open.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
