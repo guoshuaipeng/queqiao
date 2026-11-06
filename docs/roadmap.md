@@ -201,6 +201,8 @@
 | 本轮完成 | 当前结果滑到行尾后，上下翻再回来，行尾还在，exit=0 仍留在左边 | 翻页不丢掉横滑位置 | 滚回最底后横向是 715，`exit=0` 在 52–92，`QUEEND` 在 727–767 | `acceptance/desktop-rtail-before.png`、`desktop-rtail.png` |
 | 本轮完成 | 当前结果只有几行、框自己滚不动时，滚轮不要带动整页 | 滚轮停在结果框里 | 竖向可滚距离是 0；向上、向下各滚一下，整页仍是 80，结果仍是 0 | 本机 `127.0.0.1:17991`；`acceptance/desktop-short-before.png`、`desktop-short-after.png` |
 | 本轮完成 | 短输出里的长行滑到行尾后，exit=0 仍留在左边 | 行尾和有没有跑完一起看见 | 横向 718，`exit=0` 在 37–77，`QUEEND` 在 724–764 | `acceptance/desktop-short-tail.png` |
+| 本轮完成 | 之前的结果只有几行、自己滚不动时，滚轮不要带动整页 | 滚轮停在旧结果里 | 2 行，竖向可滚距离是 0；向上、向下各滚一下，整页仍是 80 | 本机 `127.0.0.1:17991`；`acceptance/desktop-pastshort-before.png`、`desktop-pastshort-after.png` |
+| 本轮完成 | 短的旧结果里的长行滑到行尾后，exit=0 仍留在左边 | 行尾和有没有跑完一起看见 | 横向 718，`exit=0` 在 37–77，`QUEEND` 在 724–764 | `acceptance/desktop-pastshort-tail.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
