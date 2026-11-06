@@ -137,17 +137,20 @@ test("an open record button says collapse", () => {
 });
 
 test("a long record opens at the newest line", () => {
-  assert.match(js, /historyOpen/);
-  assert.match(js, /snapEnd\(history\)/);
+  assert.match(js, /__historyStick/);
+  assert.match(js, /applyScroll\(history, "__historyStick"\)/);
   assert.match(css, /#history, #audit\s*\{[^}]*overflow-y:\s*auto/);
 });
 
 test("the live audit can scroll and lines stay whole", () => {
-  assert.match(js, /snapEnd\(audit\)/);
-  assert.match(js, /pinnedToEnd\(audit\)/);
-  assert.match(js, /else audit\.scrollTop = auditTop/);
+  assert.match(js, /applyScroll\(audit, "__auditStick"\)/);
+  assert.match(js, /if \(box\.__applying\) return/);
   assert.match(css, /scroll-snap-align:\s*start/);
   assert.match(css, /#history > div, #audit > div\s*\{[^}]*height:\s*24px/);
+});
+
+test("steps come back when the record is closed", () => {
+  assert.match(css, /#zone-left:has\(#history:not\(\[hidden\]\)\) #left-idle \.steps/);
 });
 
 test("the home record keeps five rows", () => {

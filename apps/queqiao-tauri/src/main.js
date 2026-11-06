@@ -79,23 +79,14 @@ function render(s) {
   $("btn-history").textContent = s.showHistory ? "收起" : "查看上次协助记录";
   const history = $("history");
   const historyOpen = !!s.showHistory && !history.hidden;
+  watchScroll(history, "__historyStick");
   if (s.showHistory && !historyOpen) window.__historyStick = "end";
   if (!s.showHistory) window.__historyStick = "";
-  const historyFollow = historyOpen && pinnedToEnd(history);
-  const historyTop = history.scrollTop;
+  history.__applying = true;
   history.innerHTML = (s.history || []).map(rowHtml).join("") || "";
   show(history, !!s.showHistory);
-  if (s.showHistory) {
-    const token = (window.__historyToken || 0) + 1;
-    window.__historyToken = token;
-    requestAnimationFrame(() => {
-      if (window.__historyToken !== token) return;
-      if (window.__historyStick === "end" || historyFollow) {
-        snapEnd(history);
-        window.__historyStick = "";
-      } else history.scrollTop = historyTop;
-    });
-  }
+  if (s.showHistory) requestAnimationFrame(() => applyScroll(history, "__historyStick"));
+  else history.__applying = false;
 
   const cred = $("cred").value.trim();
   show($("btn-connect"), !rightBusy);
@@ -120,21 +111,17 @@ function render(s) {
   show($("trust-full"), host && s.trustEffective === "full" && !ended);
   show($("trust-loose"), host && s.trustEffective === "relaxed" && !ended);
   const audit = $("audit");
-  const auditFollow = pinnedToEnd(audit);
-  const auditTop = audit.scrollTop;
+  watchScroll(audit, "__auditStick");
+  if (!host) window.__auditStick = "";
   const nextAudit = (s.audit || []).length;
-  const grew = host && nextAudit > (window.__auditSeen || 0);
+  if (host && nextAudit > (window.__auditSeen || 0)) window.__auditSeen = nextAudit;
+  if (!host) window.__auditSeen = 0;
+  audit.__applying = true;
   audit.innerHTML = nextAudit
     ? s.audit.map(rowHtml).join("")
     : '<div><span class="t"></span>对方还没有做任何操作</div>';
-  if (!host) window.__auditSeen = 0;
-  else {
-    if (grew) window.__auditSeen = nextAudit;
-    requestAnimationFrame(() => {
-      if (auditFollow) snapEnd(audit);
-      else audit.scrollTop = auditTop;
-    });
-  }
+  if (host) requestAnimationFrame(() => applyScroll(audit, "__auditStick"));
+  else audit.__applying = false;
   show($("helper-tools"), !ended);
   document.querySelectorAll(".ops .btn").forEach((b) => {
     b.disabled = !!s.opBusy || ended;
@@ -164,6 +151,24 @@ function render(s) {
 function pinnedToEnd(box) {
   const max = box.scrollHeight - box.clientHeight;
   return max <= 1 || max - box.scrollTop < 8;
+}
+
+function watchScroll(box, key) {
+  if (box.__scrollWatch) return;
+  box.__scrollWatch = true;
+  if (window[key] == null) window[key] = "end";
+  box.addEventListener("scroll", () => {
+    if (box.__applying) return;
+    window[key] = pinnedToEnd(box) ? "end" : "place";
+    window[key + "Top"] = box.scrollTop;
+  });
+}
+
+function applyScroll(box, key) {
+  box.__applying = true;
+  if ((window[key] || "end") === "end") snapEnd(box);
+  else box.scrollTop = window[key + "Top"] || 0;
+  box.__applying = false;
 }
 
 function snapEnd(box) {
