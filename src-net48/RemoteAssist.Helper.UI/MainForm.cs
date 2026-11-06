@@ -27,6 +27,7 @@ internal sealed class MainForm : Form
     private readonly Button _btnDisconnect;
     private readonly Button _btnAdvanced;
     private readonly Panel _advancedPanel;
+    private readonly Panel _mcpCard;
     private readonly Panel _toolCard;
     private readonly Button[] _toolButtons;
     private bool _advancedOpen;
@@ -52,7 +53,7 @@ internal sealed class MainForm : Form
         MaximizeBox = false;
         MinimizeBox = true;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(780, 640);
+        ClientSize = new Size(780, 780);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
@@ -130,6 +131,15 @@ internal sealed class MainForm : Form
         var btnClip = MakeButton("从剪贴板", 626, 60, 100);
         btnClip.Click += (_, _) => PasteClipboard();
         pairCard.Controls.Add(btnClip);
+
+        // R048：亲友向「复制安装说明」轻按钮（不抢「连接」主按钮）
+        var btnInstallGuide = MakeButton("复制安装说明", 450, 36, 140);
+        btnInstallGuide.FlatStyle = FlatStyle.Flat;
+        btnInstallGuide.BackColor = Color.White;
+        btnInstallGuide.ForeColor = Color.FromArgb(0x3C, 0x40, 0x43);
+        btnInstallGuide.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDC, 0xE0);
+        btnInstallGuide.Click += (_, _) => CopyInstallInstructions();
+        pairCard.Controls.Add(btnInstallGuide);
 
         _previewLabel = new Label
         {
@@ -273,7 +283,34 @@ internal sealed class MainForm : Form
         });
         Controls.Add(_advancedPanel);
 
-        _toolCard = MakeCard(16, 310, 748, 300);
+        // R048：MCP 安装卡主屏常显（不必等连上）；不自动对外监听 MCP
+        _mcpCard = MakeCard(16, 310, 748, 168);
+        _mcpCard.Controls.Add(SectionTitle(McpInstallGuide.SectionTitle, 12, 10));
+        _mcpCard.Controls.Add(new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 40),
+            Size = new Size(710, 64),
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = McpInstallGuide.StepsBlock
+        });
+        var btnCopyMcp = MakeButton(McpInstallGuide.CopyConfigButton, 16, 116, 140);
+        btnCopyMcp.FlatStyle = FlatStyle.Flat;
+        btnCopyMcp.BackColor = Color.White;
+        btnCopyMcp.ForeColor = Color.FromArgb(0x3C, 0x40, 0x43);
+        btnCopyMcp.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDC, 0xE0);
+        btnCopyMcp.Click += (_, _) => CopyMcpConfigFromUi();
+        _mcpCard.Controls.Add(btnCopyMcp);
+        var btnCopySkill = MakeButton(McpInstallGuide.CopySkillButton, 166, 116, 140);
+        btnCopySkill.FlatStyle = FlatStyle.Flat;
+        btnCopySkill.BackColor = Color.White;
+        btnCopySkill.ForeColor = Color.FromArgb(0x3C, 0x40, 0x43);
+        btnCopySkill.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDC, 0xE0);
+        btnCopySkill.Click += (_, _) => CopySkillInstructions();
+        _mcpCard.Controls.Add(btnCopySkill);
+        Controls.Add(_mcpCard);
+
+        _toolCard = MakeCard(16, 490, 748, 300);
         _toolCard.Controls.Add(SectionTitle("2. 排障操作（连上后可用）", 12, 10));
 
         var btnProcs = MakeButton("进程列表", 16, 48, 100);
@@ -360,16 +397,18 @@ internal sealed class MainForm : Form
     private void LayoutPanels()
     {
         _advancedPanel.Visible = _advancedOpen;
-        var top = 310;
+        // pairCard ends ~300; MCP 卡常显在 310
+        _mcpCard.Top = 310;
+        var top = 310 + _mcpCard.Height + 10;
         if (_advancedOpen)
         {
-            _advancedPanel.Top = 310;
-            top = 310 + _advancedPanel.Height + 10;
+            _advancedPanel.Top = top;
+            top = top + _advancedPanel.Height + 10;
         }
         _toolCard.Top = top;
         var need = top + _toolCard.Height + 24;
         if (ClientSize.Height < need)
-            ClientSize = new Size(ClientSize.Width, Math.Min(need, 900));
+            ClientSize = new Size(ClientSize.Width, Math.Min(need, 980));
     }
 
     private static Panel MakeCard(int x, int y, int w, int h) => new()
@@ -405,6 +444,106 @@ internal sealed class MainForm : Form
         Size = new Size(w, 28),
         FlatStyle = FlatStyle.System
     };
+
+
+    private void CopyInstallInstructions()
+    {
+        try
+        {
+            Clipboard.SetText(WriteConfirmCopy.InstallInstructionsClipboard);
+            _previewLabel.Text = WriteConfirmCopy.InstallCopiedHint;
+            _previewLabel.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+            ClearFailHint();
+            SetStatus(WriteConfirmCopy.InstallCopiedHint);
+        }
+        catch (Exception ex)
+        {
+            SetFailHint("复制失败：" + FriendConnectGuide.RedactSecureMaterial(ex.Message));
+            SetStatus("复制失败");
+        }
+    }
+
+    /// <summary>
+    /// R048：复制可粘贴的 MCP JSON。必须完整安全载荷（含业务 fp）；禁止缺指纹降明文。
+    /// 不启动 MCP、不对外监听。
+    /// </summary>
+    private void CopyMcpConfigFromUi()
+    {
+        try
+        {
+            if (!TryBuildOptions(out var opts, out _, out var err))
+            {
+                SetFailHint(string.IsNullOrEmpty(err)
+                    ? McpInstallGuide.NeedCredentialHint
+                    : err);
+                _previewLabel.ForeColor = Color.FromArgb(0xC5, 0x22, 0x1F);
+                return;
+            }
+
+            // 禁止 Insecure / 缺 fp 生成「可连」明文 MCP 配置
+            if (opts.Insecure || !TlsCertUtil.IsWellFormedFingerprint(opts.Fingerprint))
+            {
+                SetFailHint(FriendConnectGuide.MissingSecurityInfoHint);
+                _previewLabel.ForeColor = Color.FromArgb(0xC5, 0x22, 0x1F);
+                SetStatus("无法复制 MCP 配置");
+                return;
+            }
+
+            string payload;
+            if (opts.ViaRelay)
+            {
+                var relay = string.IsNullOrWhiteSpace(opts.RelayEndpoint)
+                    ? RelayEndpoint.DefaultEndpoint
+                    : opts.RelayEndpoint!;
+                var pwd = opts.Password ?? "";
+                if (string.IsNullOrWhiteSpace(pwd))
+                {
+                    SetFailHint(McpInstallGuide.NeedCredentialHint);
+                    return;
+                }
+                payload = PairQrPayload.BuildRelay(
+                    relay, opts.Code, pwd, opts.Fingerprint, useTls: true);
+            }
+            else
+            {
+                payload = PairQrPayload.BuildLan(
+                    opts.Host, opts.Port, opts.Code, opts.Fingerprint, useTls: true);
+            }
+
+            var exists = McpExeLocator.TryResolveExisting(out var exe);
+            if (!exists)
+                exe = McpExeLocator.Resolve();
+
+            Clipboard.SetText(McpConfigSnippet.BuildClipboardBundle(exe, payload));
+            // 反馈不回显完整载荷
+            _previewLabel.Text = exists ? McpInstallGuide.CopiedOkHint : McpInstallGuide.CopiedPlaceholderHint;
+            _previewLabel.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+            ClearFailHint();
+            SetStatus(exists ? McpInstallGuide.CopiedOkHint : McpInstallGuide.CopiedPlaceholderHint);
+        }
+        catch (Exception ex)
+        {
+            SetFailHint("复制 MCP 配置失败：" + FriendConnectGuide.RedactSecureMaterial(ex.Message));
+            SetStatus("复制失败");
+        }
+    }
+
+    private void CopySkillInstructions()
+    {
+        try
+        {
+            Clipboard.SetText(McpInstallGuide.SkillInstructionsClipboard);
+            _previewLabel.Text = McpInstallGuide.SkillCopiedHint;
+            _previewLabel.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+            ClearFailHint();
+            SetStatus(McpInstallGuide.SkillCopiedHint);
+        }
+        catch (Exception ex)
+        {
+            SetFailHint("复制 Skill 说明失败：" + FriendConnectGuide.RedactSecureMaterial(ex.Message));
+            SetStatus("复制失败");
+        }
+    }
 
     private void PasteClipboard()
     {

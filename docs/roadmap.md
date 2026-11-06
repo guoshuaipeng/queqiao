@@ -56,9 +56,9 @@
 | R045 | 高频：亲友失败文案残留（码+密码→完整连接凭证）+ Helper 缺安全验证提示收窄（仅缺 fp/短凭证）+ 文档状态行清理；稳定性/UX，不扩功能 | 鹊桥-客户端 | **PASS_WITH_NOTES**（编译/文档 `39d6dc1`；运行 blocked） | `docs/round-045.md` |
 | R046 | 高频：中继 SQLite 会话码审计表（生成/join 成败/结束）+ 鉴权只读管理列表；禁记禁展 pwd/hash/fp/完整凭证；不改 guest_*；与 site 接单分离 | 鹊桥-服务端（主） | **open（规格已拍板）** | `docs/round-046.md`、`docs/relay-audit.md` |
 | R047 | 高频：Windows **net48 安装包**（Inno 或 MSI 单文件 Setup，依赖 .NET Framework 4.8）；打磨：安装说明写清运行时前提；官网上传可选另轮 | 鹊桥-客户端（主） | **open（规格已开）** | `docs/round-047.md` |
-| R048 | 高频：net48 **去协助 / Helper** 补「复制安装说明」+ MCP「复制 MCP 配置」JSON（对齐 net8/Avalonia）；打磨：缺完整凭证阻断、禁明文降级 | 鹊桥-客户端（主） | **open（规格已开）** | `docs/round-048.md` |
+| R048 | 高频：net48 **去协助 / Helper** 补「复制安装说明」+ MCP「复制 MCP 配置」JSON（对齐 net8/Avalonia）；打磨：缺完整凭证阻断、禁明文降级 | 鹊桥-客户端（主） | **compiled**（运行未验收） | `docs/round-048.md` |
 
-> **当前**：并行三轮——**R046** **open（规格已拍板）**（服务端：会话码审计 + 管理台只读；见 `docs/round-046.md`、`docs/relay-audit.md`）；**R047** **open（规格已开）**（客户端：net48 单文件安装包；见 `docs/round-047.md`）；**R048** **open（规格已开）**（客户端：net48 协助端补 MCP 复制安装说明/JSON；见 `docs/round-048.md`）。R045 编译/文档 **PASS_WITH_NOTES**（`39d6dc1`），运行仍 blocked。R044 编译/文档 **PASS_WITH_NOTES**（`7cad0ab`），运行仍 blocked；Avalonia/CLI 完整载荷另轮。R042 已产品验收（出包 `8d61398`，上架 `f90bd8f`，2026-11-06）。
+> **当前**：并行三轮——**R046** **open（规格已拍板）**（服务端：会话码审计 + 管理台只读；见 `docs/round-046.md`、`docs/relay-audit.md`）；**R047** **open（规格已开）**（客户端：net48 单文件安装包；见 `docs/round-047.md`）；**R048** **compiled**（net48 Helper MCP/安装说明；运行未验收；见 `docs/round-048.md`）。R045 编译/文档 **PASS_WITH_NOTES**（`39d6dc1`），运行仍 blocked。R044 编译/文档 **PASS_WITH_NOTES**（`7cad0ab`），运行仍 blocked；Avalonia/CLI 完整载荷另轮。R042 已产品验收（出包 `8d61398`，上架 `f90bd8f`，2026-11-06）。
 
 > R041 已产品验收（`aeafeeb`，2026-11-06）；R042 已产品验收（公网 Win 75,587,213 / Linux 8,005,849）。
 
