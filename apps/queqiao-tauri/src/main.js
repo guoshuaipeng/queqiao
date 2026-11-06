@@ -45,7 +45,7 @@ function render(s) {
   $("zone-right").classList.toggle("active", rightBusy);
   $("zone-right").classList.toggle("dim", waiting || opening || s.phase === "host_session");
 
-  show($("left-idle"), !waiting && s.phase !== "opening" && s.phase !== "stopping" && s.phase !== "open_fail" && s.phase !== "stop_fail");
+  show($("left-idle"), s.phase !== "waiting" && s.phase !== "opening" && s.phase !== "stopping");
   show($("left-wait"), waiting);
   $("session-code").textContent = s.code || "";
   if (!revealed) {
@@ -64,6 +64,13 @@ function render(s) {
   $("copy-hint").textContent = s.copyHint || "";
   show($("manual-copy"), !!s.manualCopy);
   $("manual-copy").value = s.manualCopy || "";
+  if (s.manualCopy && s.copyHint === "没能复制，请再点一次。" && window.__manualFocused !== s.manualCopy) {
+    window.__manualFocused = s.manualCopy;
+    const box = $("manual-copy");
+    box.focus();
+    box.select();
+  }
+  if (!s.manualCopy) window.__manualFocused = "";
   show($("btn-history"), (s.history || []).length > 0 && !waiting);
   show($("history"), !!s.showHistory);
   $("history").innerHTML = (s.history || []).map(rowHtml).join("") || "";
@@ -180,7 +187,22 @@ function bindUi() {
   $("btn-back").onclick = () => invoke("show_settings", { open: false }).then(render);
   $("btn-start").onclick = () => invoke("start_accept").then(render).catch(showErr);
   $("btn-stop").onclick = () => invoke("stop_accept").then((s) => { revealed = ""; render(s); }).catch(showErr);
-  $("btn-copy").onclick = () => invoke("copy_credential").then(render).catch(showErr);
+  $("btn-copy").onclick = async () => {
+    try {
+      const snap = await invoke("copy_credential");
+      render(snap);
+      if (snap && snap.manualCopy && navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(snap.manualCopy);
+          const checked = await invoke("confirm_copy");
+          render(checked);
+        } catch (err) {
+          const box = $("manual-copy");
+          if (box) { box.focus(); box.select(); }
+        }
+      }
+    } catch (err) { showErr(err); }
+  };
   $("btn-reveal").onclick = () => {
     if (revealed) {
       revealed = "";

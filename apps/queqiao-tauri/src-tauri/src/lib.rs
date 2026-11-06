@@ -1,4 +1,5 @@
 mod copy;
+mod clipboard;
 mod credential;
 mod link;
 mod policy;
@@ -296,9 +297,14 @@ impl Hooks for AppHooks {
             Ev::Fail(s) => {
                 if model.phase == "opening" || model.phase == "waiting" {
                     model.phase = "open_fail".into();
+                    model.view = "home".into();
                     model.left_note = s;
+                    model.dialog = None;
+                    model.code.clear();
+                    model.password_len = 0;
                 } else {
                     model.phase = "helper_fail".into();
+                    model.view = "home".into();
                     model.helper_error = s;
                     model.helper_status.clear();
                 }
@@ -588,29 +594,32 @@ fn load_history(path: &std::path::Path) -> Vec<Row> {
 
 fn copy_text(app: &AppHandle, value: &str) -> Result<(), String> {
     let value = value.to_string();
+    let owner = window_hwnd(app);
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
-        let res = (|| {
-            let mut clip = arboard::Clipboard::new().map_err(|_| text::COPY_FAIL.to_string())?;
-            clip.set_text(value).map_err(|_| text::COPY_FAIL.to_string())
-        })();
-        let _ = tx.send(res);
+        let _ = tx.send(clipboard::set(owner, &value));
     })
     .map_err(|_| text::COPY_FAIL.to_string())?;
-    rx.recv().unwrap_or(Err(text::COPY_FAIL.into()))
+    rx.recv_timeout(Duration::from_secs(2))
+        .unwrap_or(Err(text::COPY_FAIL.into()))
 }
 
 fn paste_text(app: &AppHandle) -> Result<String, String> {
+    let owner = window_hwnd(app);
     let (tx, rx) = std::sync::mpsc::channel();
     app.run_on_main_thread(move || {
-        let res = (|| {
-            let mut clip = arboard::Clipboard::new().map_err(|_| "没能读取剪贴板。".to_string())?;
-            clip.get_text().map_err(|_| "剪贴板里没有文本。".to_string())
-        })();
-        let _ = tx.send(res);
+        let _ = tx.send(clipboard::get(owner));
     })
     .map_err(|_| "没能读取剪贴板。".to_string())?;
-    rx.recv().unwrap_or(Err("没能读取剪贴板。".into()))
+    rx.recv_timeout(Duration::from_secs(2))
+        .unwrap_or(Err("没能读取剪贴板。".into()))
+}
+
+fn window_hwnd(app: &AppHandle) -> isize {
+    app.get_webview_window("main")
+        .and_then(|window| window.hwnd().ok())
+        .map(|handle| handle.0 as isize)
+        .unwrap_or(0)
 }
 
 fn spawn_host(shared: std::sync::Arc<Shared>, my: u64) {
@@ -808,6 +817,31 @@ fn copy_credential(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>) -> 
             model.manual_copy.clear();
         }
         Err(_) => {
+            model.copy_hint = text::COPY_FAIL.into();
+            model.manual_copy = payload;
+        }
+    }
+    drop(model);
+    state.publish();
+    Ok(state.snapshot())
+}
+
+#[tauri::command]
+fn confirm_copy(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
+    let payload = state.secrets.lock().expect("secrets").payload.clone();
+    let mut model = state.model.lock().expect("model");
+    if payload.is_empty() || model.phase != "waiting" {
+        model.copy_hint = text::COPY_FAIL.into();
+        drop(model);
+        state.publish();
+        return Ok(state.snapshot());
+    }
+    match paste_text(&app) {
+        Ok(got) if got == payload => {
+            model.copy_hint = text::COPY_OK.into();
+            model.manual_copy.clear();
+        }
+        _ => {
             model.copy_hint = text::COPY_FAIL.into();
             model.manual_copy = payload;
         }
@@ -1323,6 +1357,7 @@ pub fn run() {
             start_accept,
             stop_accept,
             copy_credential,
+            confirm_copy,
             reveal_password,
             paste_clipboard,
             connect,
