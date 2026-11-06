@@ -127,9 +127,7 @@ function render(s) {
     b.disabled = !!s.opBusy || ended;
   });
   $("op-status").textContent = s.opBusy ? "正在执行…" : (s.opStatus || "");
-  const result = $("result");
-  result.textContent = s.result || "点上面的操作，结果会显示在这里";
-  result.scrollTop = result.scrollHeight;
+  paintResult(s.result || "点上面的操作，结果会显示在这里");
   if (typeof s.formEpoch === "number" && s.formEpoch > (window.__formEpoch || 0)) {
     window.__formEpoch = s.formEpoch;
     $("summary").value = "";
@@ -175,8 +173,32 @@ function snapEnd(box) {
   const row = box.querySelector(":scope > div");
   const max = Math.max(0, box.scrollHeight - box.clientHeight);
   if (!row) { box.scrollTop = max; return; }
-  const step = row.getBoundingClientRect().height + 6;
-  box.scrollTop = step > 1 ? Math.round(max / step) * step : max;
+  const raw = getComputedStyle(box).rowGap;
+  const gap = raw && raw.endsWith("px") ? parseFloat(raw) : 0;
+  const step = row.getBoundingClientRect().height + gap;
+  box.scrollTop = step > 1 ? Math.min(max, Math.round(max / step) * step) : max;
+}
+
+function paintResult(text) {
+  const result = $("result");
+  const lines = String(text).replace(/\n$/, "").split("\n");
+  result.__applying = true;
+  result.replaceChildren();
+  for (const line of lines) {
+    const row = document.createElement("div");
+    row.textContent = line.length ? line : " ";
+    result.appendChild(row);
+  }
+  requestAnimationFrame(() => {
+    snapEnd(result);
+    const scroller = $("helper-scroll");
+    if (scroller) {
+      const bottom = result.offsetTop + result.offsetHeight;
+      const view = scroller.scrollTop + scroller.clientHeight;
+      if (bottom > view) scroller.scrollTop = bottom - scroller.clientHeight;
+    }
+    result.__applying = false;
+  });
 }
 
 function rowHtml(r) {

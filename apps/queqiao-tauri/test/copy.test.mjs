@@ -108,9 +108,9 @@ test("write confirm shows the remaining seconds", () => {
 });
 
 test("log result scrolls to the newest line", () => {
-  assert.match(js, /result\.scrollTop = result\.scrollHeight/);
-  assert.match(css, /\.result\s*\{[^}]*max-height:\s*168px/);
-  assert.match(css, /\.result\s*\{[^}]*overflow:\s*auto/);
+  assert.match(js, /paintResult\(/);
+  assert.match(js, /snapEnd\(result\)/);
+  assert.match(css, /#result\s*\{[^}]*overflow-y:\s*auto/);
 });
 
 test("path view button stays on one line", () => {
@@ -151,6 +151,18 @@ test("the live audit can scroll and lines stay whole", () => {
 
 test("steps come back when the record is closed", () => {
   assert.match(css, /#zone-left:has\(#history:not\(\[hidden\]\)\) #left-idle \.steps/);
+});
+
+test("a long result stays on the newest whole line", () => {
+  assert.match(js, /function paintResult/);
+  assert.match(js, /snapEnd\(result\)/);
+  assert.match(css, /#result > div\s*\{[^}]*height:\s*20px/);
+  assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px/);
+  assert.match(css, /#result\s*\{[^}]*flex:\s*0 0 auto/);
+});
+
+test("a narrow window keeps the start button in view", () => {
+  assert.match(css, /max-width:\s*759px[\s\S]*#left-actions\s*\{[^}]*position:\s*sticky/);
 });
 
 test("the home record keeps five rows", () => {
