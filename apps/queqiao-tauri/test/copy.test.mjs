@@ -170,6 +170,18 @@ test("reading earlier result lines is not pulled to the end", () => {
   assert.match(js, /window\.__resultStick = follow \? "end" : "place"/);
 });
 
+test("scrolling back to the end follows the next result", () => {
+  assert.match(js, /window\.__resultStick = pinnedToEnd\(result\) \? "end" : "place"/);
+  assert.match(js, /if \(\(window\[key\] \|\| "end"\) === "end"\) snapEnd\(box\)/);
+});
+
+test("an early result box is not cut by the window", () => {
+  assert.match(js, /function revealResult/);
+  assert.match(js, /if \(place && outside\) return/);
+  assert.match(js, /revealResult\(true\)/);
+  assert.match(js, /revealResult\(false\)/);
+});
+
 test("a narrow window keeps the start button in view", () => {
   assert.match(css, /max-width:\s*759px[\s\S]*#left-actions\s*\{[^}]*position:\s*sticky/);
 });

@@ -179,9 +179,35 @@ function snapEnd(box) {
   box.scrollTop = step > 1 ? Math.min(max, Math.round(max / step) * step) : max;
 }
 
+function revealResult(sync) {
+  const run = () => {
+    const scroller = $("helper-scroll");
+    const box = $("result");
+    const section = box && box.closest("section");
+    if (!scroller || !box || !section || section.hidden) return;
+    const view = scroller.getBoundingClientRect();
+    const rect = box.getBoundingClientRect();
+    if (rect.height < 8 || view.height < 8) return;
+    const place = (window.__resultStick || "end") !== "end";
+    const clipped = rect.top < view.top - 1 || rect.bottom > view.bottom + 1;
+    if (!clipped) return;
+    const outside = rect.bottom <= view.top + 8 || rect.top >= view.bottom - 8;
+    if (place && outside) return;
+    const fits = rect.height <= view.height + 1;
+    const delta = !fits && place ? rect.top - view.top : (rect.bottom > view.bottom + 1 ? rect.bottom - view.bottom : rect.top - view.top);
+    scroller.scrollTop += delta;
+  };
+  if (sync) run();
+  else requestAnimationFrame(run);
+}
+
 function paintResult(text) {
   const result = $("result");
   watchScroll(result, "__resultStick");
+  if (!result.__applying) {
+    window.__resultStick = pinnedToEnd(result) ? "end" : "place";
+    window.__resultStickTop = result.scrollTop;
+  }
   const follow = (window.__resultStick || "end") === "end";
   const keptTop = window.__resultStickTop || 0;
   result.__applying = true;
@@ -196,12 +222,7 @@ function paintResult(text) {
     window.__resultStick = follow ? "end" : "place";
     window.__resultStickTop = keptTop;
     applyScroll(result, "__resultStick");
-    const scroller = $("helper-scroll");
-    if (follow && scroller) {
-      const bottom = result.offsetTop + result.offsetHeight;
-      const view = scroller.scrollTop + scroller.clientHeight;
-      if (bottom > view) scroller.scrollTop = bottom - scroller.clientHeight;
-    }
+    revealResult(true);
   });
 }
 
@@ -322,6 +343,7 @@ function bindUi() {
       const pathTool = selectedTool === "ListDir" || selectedTool === "ReadLogTail" || selectedTool === "ReadFile";
       show($("path-row"), pathTool);
       show($("propose"), selectedTool === "RunCommand");
+      revealResult(false);
       if (selectedTool === "ListProcesses") {
         invoke("run_tool", { name: "ListProcesses", path: "", summary: "", command: "" }).then(render).catch(showErr);
       }
