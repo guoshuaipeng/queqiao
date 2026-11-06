@@ -270,7 +270,7 @@ function fitSpan() {
     if (bar) bar.style.paddingBottom = "";
     if (propose) propose.style.gap = "";
   }
-  const rowHeight = (n) => n * 20 + 2;
+  const rowHeight = (n) => n * 20 + 2 + 16;
   let resultRows = 8;
   let pastRows = 4;
   const apply = () => {
@@ -311,12 +311,25 @@ function fitSpan() {
     scroller.style.paddingTop = "0px";
     extra = scroller.scrollHeight - scroller.clientHeight;
   }
-  if (extra > 1 && extra <= 12) {
-    const pad = parseFloat(scroller.style.paddingBottom) || 0;
-    scroller.style.paddingBottom = Math.max(12, pad - extra) + "px";
+  if (extra > 1 && extra <= 28) {
+    scroller.style.paddingTop = "0px";
+    if (!past) scroller.style.paddingBottom = "0px";
     extra = scroller.scrollHeight - scroller.clientHeight;
   }
-  scroller.style.overflowY = extra <= 1 ? "hidden" : "auto";
+  if (extra > 1 && extra <= 12) {
+    const pad = parseFloat(scroller.style.paddingBottom) || 0;
+    scroller.style.paddingBottom = Math.max(0, pad - extra) + "px";
+    extra = scroller.scrollHeight - scroller.clientHeight;
+  }
+  if (extra > 1 && extra <= 40) {
+    scroller.style.gap = "4px";
+    extra = scroller.scrollHeight - scroller.clientHeight;
+  }
+  if (extra > 1 && extra <= 24) {
+    scroller.style.paddingBottom = "0px";
+    extra = scroller.scrollHeight - scroller.clientHeight;
+  }
+  scroller.style.overflowY = extra <= 4 ? "hidden" : "auto";
 }
 
 function revealResult(sync) {

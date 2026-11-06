@@ -222,6 +222,11 @@ test("a long result line stays clear of its scrollbar", () => {
   assert.match(css, /#result\s*\{[^}]*padding:\s*0 20px 0 12px/);
 });
 
+test("a wide result does not bring back the page scrollbar", () => {
+  assert.match(js, /if \(!past\) scroller\.style\.paddingBottom = "0px"/);
+  assert.match(js, /scroller\.style\.overflowY = extra <= 4 \? "hidden" : "auto"/);
+});
+
 test("a long line can slide sideways without sliding the page", () => {
   assert.match(css, /#result\s*\{[^}]*overflow-x:\s*auto/);
   assert.match(css, /#result > div\s*\{[^}]*width:\s*max-content/);
@@ -233,7 +238,7 @@ test("a long line can slide sideways without sliding the page", () => {
 test("previous lines can scroll and the page scrollbar stays away", () => {
   assert.match(js, /function snapNearest/);
   assert.match(js, /past\.addEventListener\("scrollend", \(\) => snapNearest\(past\)\)/);
-  assert.match(js, /scroller\.style\.overflowY = extra <= 1 \? "hidden" : "auto"/);
+  assert.match(js, /scroller\.style\.overflowY = extra <= 4 \? "hidden" : "auto"/);
 });
 
 test("a narrow window keeps the start button in view", () => {
