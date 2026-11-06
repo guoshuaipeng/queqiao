@@ -211,6 +211,8 @@
 | 本轮完成 | 滑完后位置和可滑尽头一致，exit=0 仍留在左边 | 行尾和有没有跑完一起看见 | 横向 730，和尽头一致；`QUEEND` 在 672–712，`exit=0` 在框里 | `acceptance/desktop-bottom-after.png` |
 | 本轮完成 | 之前的结果已经在最底下时，横向滚轮滑到行尾，竖向仍停在最底下 | 横滑不把视线从末行带走 | 先停在 96，横向滚完仍是 96 | 本机 `127.0.0.1:17991`；`acceptance/desktop-pbottom-old.png`、`desktop-pbottom-after.png` |
 | 本轮完成 | 之前的结果滑完后位置和可滑尽头一致，exit=0 仍留在左边 | 行尾和有没有跑完一起看见 | 横向 730，和尽头一致；`QUEEND` 在 672–712，`exit=0` 在框里 | `acceptance/desktop-pbottom-after.png` |
+| 本轮完成 | 之前的结果横滑到行尾后再往上翻到第一行，横向仍停在行尾 | 翻上去不丢掉行尾 | 松手后竖向是 0，横向 715，和尽头一致；`exit=0` 从框左 24 起落在 37 | 本机 `127.0.0.1:17991`；`acceptance/desktop-up-old.png`、`desktop-up-after.png` |
+| 本轮完成 | 松手后第一行是整行 | 翻到头不被切成半行 | 滚动放在 7 后松手回到 0，`queqiao-line-1` 是整行 | `acceptance/desktop-up-before.png`、`desktop-up-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

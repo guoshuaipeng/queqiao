@@ -291,6 +291,7 @@ test("a long line can slide sideways without sliding the page", () => {
 
 test("previous lines can scroll and the page scrollbar stays away", () => {
   assert.match(js, /function snapNearest/);
+  assert.match(js, /const x = box\.__rowTail \|\| box\.scrollLeft/);
   assert.match(js, /past\.__keepY != null/);
   assert.match(js, /snapNearest\(past\)/);
   assert.match(js, /scroller\.style\.overflowY = extra <= 4 \? "hidden" : "auto"/);
