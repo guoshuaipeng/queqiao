@@ -22,6 +22,7 @@ internal sealed class AgentHost
     private string? _selectedHost;
     private readonly ConcurrentDictionary<string, SessionState> _sessions = new();
     private readonly AuditLog _audit;
+    private readonly TrustLevelSession _trust = new();
     private readonly bool _autoYes;
     private readonly bool _headless;
     private readonly int _confirmTimeoutSeconds;
@@ -44,6 +45,7 @@ internal sealed class AgentHost
 
     public event Action? SessionChanged;
     public event Action? PairedClientsChanged;
+    public event Action? TrustLevelChanged;
     public event Action? RelayStatusChanged;
 
     public AgentHost(
@@ -79,6 +81,8 @@ internal sealed class AgentHost
             _serverCert = TlsCertUtil.CreateEphemeralServerCert();
             _certFingerprint = TlsCertUtil.Sha256Fingerprint(_serverCert);
         }
+
+        _trust.Changed += () => { try { TrustLevelChanged?.Invoke(); } catch { /* UI */ } };
     }
 
     public string SessionCode
@@ -90,6 +94,14 @@ internal sealed class AgentHost
     {
         get { lock (_codeLock) return _sessionPassword; }
     }
+
+    /// <summary>② 生效档；无三档 UI 前恒为每次询问。</summary>
+    public TrustLevelKind TrustLevelEffective => _trust.Effective;
+    public TrustLevelKind TrustLevelPreference => _trust.Preference;
+    public bool TrustLevelIsFullTrust => _trust.IsFullTrustActive;
+
+    /// <summary>仅供后续本机 UI；② ElevatedTrustUiEnabled=false 时调用将抛错。</summary>
+    public void SetTrustLevelPreference(TrustLevelKind level) => _trust.SetPreference(level);
 
     public bool PreferRelay => _preferRelay;
     public bool EnableLanListen => _enableLanListen;
@@ -192,6 +204,7 @@ internal sealed class AgentHost
             return false;
 
         try { session.ConnectionCts?.Cancel(); } catch { /* ignore */ }
+        _trust.OnClientDisconnected(token);
 
         _audit.Write("session_kick",
             $"client={session.ClientName}; remote={session.RemoteEndpoint}; perm={session.Permission}; token={token[..Math.Min(8, token.Length)]}…");
@@ -230,7 +243,8 @@ internal sealed class AgentHost
             }
         }
 
-        _audit.Write("session_refresh", "kicked_all=true");
+        _trust.OnSessionRefreshed();
+        _audit.Write("session_refresh", "kicked_all=true; trust_reset=ask");
         Console.WriteLine("[会话码已刷新]（新凭证仅经界面「复制连接凭证」，日志不输出码/密码/载荷）");
         SessionChanged?.Invoke();
         PairedClientsChanged?.Invoke();
@@ -309,9 +323,11 @@ internal sealed class AgentHost
             if (_sessions.TryRemove(key, out var s))
             {
                 try { s.ConnectionCts?.Cancel(); } catch { /* ignore */ }
+                _trust.OnClientDisconnected(key);
             }
         }
-        _audit.Write("agent_stop", "listener stopped");
+        _trust.OnSessionRefreshed();
+        _audit.Write("agent_stop", "listener stopped; trust_reset=ask");
         try { _serverCert?.Dispose(); } catch { /* ignore */ }
         _serverCert = null;
         lock (_codeLock) _certFingerprint = null;
@@ -490,6 +506,7 @@ internal sealed class AgentHost
                 ReferenceEquals(cur, session))
             {
                 _sessions.TryRemove(session.Token, out _);
+                _trust.OnClientDisconnected(session.Token);
                 PairedClientsChanged?.Invoke();
             }
             _audit.Write("client_disconnect", remote);
@@ -573,6 +590,7 @@ internal sealed class AgentHost
                 ReferenceEquals(cur, session))
             {
                 _sessions.TryRemove(session.Token, out _);
+                _trust.OnClientDisconnected(session.Token);
                 PairedClientsChanged?.Invoke();
             }
             _audit.Write("client_disconnect", remote);
@@ -641,6 +659,7 @@ internal sealed class AgentHost
             ConnectionCts = connCts
         };
         _sessions[token] = session;
+        _trust.OnClientPaired(token);
         _audit.Write("pair_ok", pairOutcome.AuditDetail(remote, req.ClientName, requested));
         PairedClientsChanged?.Invoke();
 
@@ -688,28 +707,41 @@ internal sealed class AgentHost
         var args = req.Arguments ?? new Dictionary<string, string?>();
         var source = $"{session.ClientName}";
 
-        if (ToolCapabilities.RequiresConfirmation(tool, session.Permission))
+        // ② 信任策略内核：NeedLocalConfirm(EffectiveForClient)；无三档 UI 前恒 AskEveryTime → 写操作均本机确认
+        if (!ToolCapabilities.IsReadOnly(tool))
         {
-            // ① 写确认人话：PRODUCT / WriteConfirmCopy；确认门槛仍为 Assist 写操作（信任三档内核另项）
             var desc = WriteConfirmCopy.Describe(tool, args);
-            var info = new ConfirmRequestInfo(source, tool.ToString(), desc.Headline, _confirmTimeoutSeconds, desc.Detail);
-            var outcome = await ConfirmPrompt.AskAsync(info, _autoYes, _headless).ConfigureAwait(false);
-            if (!outcome.Approved)
+            var trust = _trust.EffectiveForClient(session.Token);
+            var needConfirm = TrustLevelPolicy.NeedsLocalConfirm(trust, tool, args);
+            if (needConfirm)
             {
-                _audit.Write("tool_denied_user", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
-                var err = outcome.Decision == ConfirmDecision.TimedOut
-                    ? WriteConfirmCopy.TimedOutMessage
-                    : WriteConfirmCopy.DeniedMessage;
-                await FrameIo.WriteAsync(stream, "tool_result",
-                    new ToolResponse { Ok = false, Error = err, DeniedByUser = true },
-                    id: envelope.Id).ConfigureAwait(false);
-                return;
+                var info = new ConfirmRequestInfo(source, tool.ToString(), desc.Headline, _confirmTimeoutSeconds, desc.Detail);
+                var outcome = await ConfirmPrompt.AskAsync(info, _autoYes, _headless).ConfigureAwait(false);
+                if (!outcome.Approved)
+                {
+                    _audit.Write("tool_denied_user", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
+                    var err = outcome.Decision == ConfirmDecision.TimedOut
+                        ? WriteConfirmCopy.TimedOutMessage
+                        : WriteConfirmCopy.DeniedMessage;
+                    await FrameIo.WriteAsync(stream, "tool_result",
+                        new ToolResponse { Ok = false, Error = err, DeniedByUser = true },
+                        id: envelope.Id).ConfigureAwait(false);
+                    return;
+                }
+                _audit.Write("tool_confirmed", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
             }
-            _audit.Write("tool_confirmed", outcome.AuditDetail(tool.ToString(), desc.ForAudit, source));
-        }
-        else if (!ToolCapabilities.IsReadOnly(tool) && session.Permission == PermissionLevel.Admin)
-        {
-            _audit.Write("tool_admin_auto", $"tool={tool}; source={source}; {WriteConfirmCopy.Describe(tool, args).ForAudit}");
+            else if (trust == TrustLevelKind.FullTrust)
+            {
+                _audit.Write("tool_auto_fulltrust", $"{desc.ForAudit}; source={source}");
+            }
+            else if (trust == TrustLevelKind.Relaxed)
+            {
+                _audit.Write("tool_auto_relaxed", $"{desc.ForAudit}; source={source}");
+            }
+            else if (session.Permission == PermissionLevel.Admin)
+            {
+                _audit.Write("tool_admin_auto", $"tool={tool}; source={source}; {desc.ForAudit}");
+            }
         }
 
         try

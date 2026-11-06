@@ -13,6 +13,9 @@ public sealed class HelperUiSettings
 
     public bool PreferRelay { get; set; } = true;
 
+    /// <summary>本机信任偏好（仅 AskEveryTime/Relaxed；完全信任不入盘）。② 无 UI 前读写亦强制每次询问。</summary>
+    public string TrustLevelPreference { get; set; } = nameof(TrustLevelKind.AskEveryTime);
+
     /// <summary>最近一次成功连接的主机（局域网高级回填）。</summary>
     public string? LastHost { get; set; }
 
