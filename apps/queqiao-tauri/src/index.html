@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>鹊桥</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <header class="page-header">
+        <div class="brand">
+          <h1>鹊桥</h1>
+          <p class="tagline">亲友之间，发凭证或粘贴连接。</p>
+        </div>
+        <p class="dev-badge" role="status">开发阶段 · D0 空壳 · 未接真实会话</p>
+      </header>
+
+      <section class="dual-zones" aria-label="入口双区">
+        <article class="zone zone-left" aria-labelledby="zone-left-title">
+          <h2 id="zone-left-title">请人帮我</h2>
+          <p class="zone-status" id="left-status">未开启接受协助</p>
+          <p class="zone-help">开启后，把完整连接凭证发给对方，再等待对方连接。</p>
+          <div class="zone-actions">
+            <button type="button" id="btn-start-accept" disabled title="D1 及以后实现">
+              开启接受协助
+            </button>
+            <button type="button" id="btn-stop-accept" disabled hidden title="D1 及以后实现">
+              停止接受
+            </button>
+            <button type="button" id="btn-copy-cred" disabled hidden title="D1 及以后实现">
+              复制连接凭证
+            </button>
+          </div>
+          <p class="zone-note" id="left-note">冷启动未监听。真实开启与凭证尚未实现，按钮已禁用。</p>
+        </article>
+
+        <article class="zone zone-right" aria-labelledby="zone-right-title">
+          <h2 id="zone-right-title">我帮别人</h2>
+          <p class="zone-status" id="right-status">未连接</p>
+          <label class="field-label" for="cred-input">粘贴连接凭证</label>
+          <textarea
+            id="cred-input"
+            rows="3"
+            placeholder="粘贴完整连接凭证（勿自动联网）"
+            autocomplete="off"
+            spellcheck="false"
+          ></textarea>
+          <div class="zone-actions">
+            <button type="button" id="btn-connect" disabled title="D1 及以后实现">
+              连接
+            </button>
+            <button type="button" id="btn-cancel-connect" disabled hidden title="D1 及以后实现">
+              取消
+            </button>
+          </div>
+          <p class="zone-note" id="right-note">不会自动读取剪贴板或发起连接。真实连接尚未实现，按钮已禁用。</p>
+        </article>
+      </section>
+
+      <footer class="page-footer">
+        <p class="flow">请人帮我：开启 → 发凭证 → 等对方连接</p>
+        <p class="flow">我帮别人：粘贴完整凭证 → 点连接</p>
+        <p class="safety">只把连接凭证私下发给你信任、愿意请其帮忙的人。</p>
+        <p class="stage-disclaimer">
+          本窗口为 Tauri 迁移 D0 布局方向示意（A-480-delta-v1.1）。截屏、键鼠、系统命令、relay/pair 均未接入；禁止当作已上线能力。
+        </p>
+      </footer>
+    </div>
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

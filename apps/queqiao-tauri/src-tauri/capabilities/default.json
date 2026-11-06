@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "D0 空壳：仅核心窗口能力，不含 shell/截屏/剪贴板/注入",
+  "windows": ["main"],
+  "permissions": [
+    "core:default"
+  ]
+}

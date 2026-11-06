@@ -46,3 +46,9 @@ artifacts/
 # relay local account store
 relay/data/
 
+
+# Tauri / Node (apps/queqiao-tauri)
+**/node_modules/
+apps/**/src-tauri/target/
+apps/**/dist/
+*.local

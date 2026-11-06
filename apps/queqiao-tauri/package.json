@@ -1,0 +1,15 @@
+{
+  "name": "queqiao-tauri",
+  "private": true,
+  "version": "0.1.0",
+  "description": "鹊桥 Tauri v2 客户端壳（D0 空壳 · 开发阶段）",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
