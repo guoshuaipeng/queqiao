@@ -6890,7 +6890,7 @@ if (-not ($zy3 -and $zx3 -and $zd3 -and $zpt3 -and $zpl3 -and $zrt3 -and $zrows3
 Clear-Secret $groot
 Clear-Secret $hroot
 Start-Sleep -Milliseconds 150
-if (Has-Secret $groot) { Write-Output "before-not-saved" } else { Save $helpp.MainWindowHandle (Join-Path $shot "desktop-rightmoreagain-before.png") }
+Write-Output "right-secret"
 $armB4 = Send-Eval "9335" @'
 (() => {
   const page = document.getElementById("helper-scroll");
@@ -7085,8 +7085,1768 @@ $keptPageB4 = $keptB4 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -
 Clear-Secret $groot
 Clear-Secret $hroot
 Start-Sleep -Milliseconds 150
-if (Has-Secret $groot) { Write-Output "after-not-saved" } else { Save $helpp.MainWindowHandle (Join-Path $shot "desktop-rightmoreagain-after.png") }
+Write-Output "right-after-secret"
 if (-not ($by4 -and $bx4 -and $bd4 -and $bpt4 -and $bgap4 -and $brt4 -and $brows4 -and $keptPastB4 -and $keptGapB4 -and $keptLeftB4 -and $keptResultB4 -and $keptRowsB4 -and $keptPageB4)) { Fail 510 "right-more-again-lost" }
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "left-secret"
+$armC5 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const keptPastTop = past.scrollTop;
+  const keptPastLeft = past.scrollLeft;
+  const keptTop = box.scrollTop;
+  page.style.overflowX = "auto";
+  page.style.overflowY = "auto";
+  page.style.paddingBottom = "800px";
+  let spacer = document.getElementById("uitest-wide");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "uitest-wide";
+    spacer.style.cssText = "width:1800px;height:1px;flex:none";
+    page.appendChild(spacer);
+  }
+  if (Math.abs(past.scrollTop - keptPastTop) > 1) past.scrollTop = keptPastTop;
+  if (Math.abs(past.scrollLeft - keptPastLeft) > 1) past.scrollLeft = keptPastLeft;
+  if (Math.abs(box.scrollTop - keptTop) > 1) box.scrollTop = keptTop;
+  page.scrollTop = 40;
+  page.scrollLeft = 40;
+  const r = past.getBoundingClientRect();
+  const rb = box.getBoundingClientRect();
+  const x = Math.round(r.left + 80);
+  const y = Math.round(r.top + 8);
+  const hit = document.elementFromPoint(x, y);
+  const hitPast = !!(hit && hit.closest && hit.closest("#past"));
+  const formula = past.scrollWidth - past.clientWidth;
+  return JSON.stringify({ x, y, hitPast, resultBottom: Math.round(rb.bottom), pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, roomX: page.scrollWidth - page.clientWidth, roomY: page.scrollHeight - page.clientHeight, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, formula, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight });
+})()
+'@
+Write-Output "armC5=$armC5"
+if ($armC5 -notmatch '\\"roomY\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 511 "page-cannot-scroll" }
+if ($armC5 -notmatch '\\"roomX\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 512 "page-cannot-slide" }
+if ($armC5 -notmatch '\\"hitPast\\":true') { Fail 513 "wheel-missed-past" }
+if ($armC5 -notmatch '\\"x\\":(\d+)') { Fail 514 "no-xc" }
+$xc5 = [int]$Matches[1]
+if ($armC5 -notmatch '\\"y\\":(\d+)') { Fail 514 "no-yc" }
+$yc5 = [int]$Matches[1]
+if ($armC5 -notmatch '\\"resultBottom\\":(-?\d+)') { Fail 515 "no-result-bottom" }
+if ($yc5 -le [int]$Matches[1]) { Fail 516 "aim-still-on-result" }
+if ($armC5 -notmatch '\\"pageY\\":(-?\d+)') { Fail 517 "no-page-yc" }
+$pageYc5 = [int]$Matches[1]
+if ($armC5 -notmatch '\\"pageX\\":(-?\d+)') { Fail 518 "no-page-xc" }
+$pageXc5 = [int]$Matches[1]
+if ($armC5 -notmatch '\\"pastTop\\":(-?\d+)') { Fail 519 "no-past-topc" }
+$pastTopC5 = [int]$Matches[1]
+if ($armC5 -notmatch '\\"pastMax\\":(-?\d+)') { Fail 520 "no-past-maxc" }
+$pastMaxC5 = [int]$Matches[1]
+if ([Math]::Abs($pastTopC5 - $pastMaxC5) -gt 1) { Fail 521 "past-not-at-end" }
+if ($armC5 -notmatch '\\"pastLeft\\":(\d+)') { Fail 522 "no-past-leftc" }
+$pastLeftC5 = [int]$Matches[1]
+if ([Math]::Abs($pastLeftC5 - $endLeft) -gt 1) { Fail 523 "past-not-at-tail" }
+if ($armC5 -notmatch '\\"formula\\":(\d+)') { Fail 524 "no-formula-c" }
+$formulaC5 = [int]$Matches[1]
+if (($formulaC5 - $pastLeftC5) -lt 10) { Fail 525 "box-not-narrowed" }
+if ($armC5 -notmatch '\\"resultTop\\":(-?\d+)') { Fail 526 "no-result-topc" }
+$resultTopC5 = [int]$Matches[1]
+if ($armC5 -notmatch '\\"resultMax\\":(-?\d+)') { Fail 527 "no-result-maxc" }
+$resultMaxC5 = [int]$Matches[1]
+if ([Math]::Abs($resultTopC5 - $resultMaxC5) -gt 1) { Fail 528 "result-not-at-end" }
+Send-WheelX "9335" $xc5 $yc5 (-200) | Out-Null
+Start-Sleep -Milliseconds 450
+$slideC5 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  return JSON.stringify({ pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), wideWhole: !!(wide && wide.whole && wide.seen), end, pastExitSeen: !!(exit && exit.seen), pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barUnder: !!(exitLowest && barY >= 10), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole })) });
+})()
+'@
+Write-Output "slideC5=$slideC5"
+$cy5 = $slideC5 -match '\\"pageY\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageYc5) -le 1
+$cx5 = $slideC5 -match '\\"pageX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageXc5) -le 1
+$cd5 = $slideC5 -match '\\"docX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$cpt5 = $false
+if ($slideC5 -match '\\"pastTop\\":(-?\d+)') { $cpt5N = [int]$Matches[1] } else { $cpt5N = -999 }
+if ($slideC5 -match '\\"pastMax\\":(-?\d+)') { $cpt5 = [Math]::Abs($cpt5N - [int]$Matches[1]) -le 1 -and [Math]::Abs($cpt5N - $pastTopC5) -le 1 }
+$cleft5 = $false
+if ($slideC5 -match '\\"pastLeft\\":(\d+)') { $cleft5N = [int]$Matches[1] } else { $cleft5N = 99999 }
+$cgap5 = $false
+if ($slideC5 -match '\\"gap\\":(-?\d+)') { $cgap5 = [int]$Matches[1] -ge 40 -and $cleft5N -le ($pastLeftC5 - 40) }
+$crt5 = $false
+if ($slideC5 -match '\\"resultTop\\":(-?\d+)') { $crt5N = [int]$Matches[1] } else { $crt5N = -999 }
+if ($slideC5 -match '\\"resultMax\\":(-?\d+)') { $crt5 = [Math]::Abs($crt5N - [int]$Matches[1]) -le 1 -and [Math]::Abs($crt5N - $resultTopC5) -le 1 }
+$crows5 = $slideC5 -match '\\"resultWhole\\":true' -and $slideC5 -match '\\"resultNow8\\":true' -and $slideC5 -match '\\"resultNow7\\":false' -and $slideC5 -match '\\"resultExitSeen\\":true' -and $slideC5 -match '\\"wideWhole\\":true' -and $slideC5 -match '\\"inside\\":false' -and $slideC5 -match '\\"pastExitSeen\\":true' -and $slideC5 -match '\\"pastExitStuck\\":true' -and $slideC5 -match '\\"pastExitWhole\\":true' -and $slideC5 -match '\\"pastExitLowest\\":true' -and $slideC5 -match '\\"allWhole\\":true' -and $slideC5 -match '\\"barUnder\\":true'
+Send-Eval "9335" "(() => { const page = document.getElementById('helper-scroll'); const spacer = document.getElementById('uitest-wide'); if (spacer) spacer.remove(); page.style.paddingBottom = '0px'; page.style.overflowX = 'hidden'; const extra = page.scrollHeight - page.clientHeight; page.style.overflowY = extra <= 4 ? 'hidden' : 'auto'; page.scrollTop = 0; page.scrollLeft = 0; return String(extra); })()" | Out-Null
+Start-Sleep -Milliseconds 200
+$keptC5 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), h: Math.round(rect.height), top: Math.round(rect.top), bottom: Math.round(rect.bottom), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  return JSON.stringify({ pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), wideWhole: !!(wide && wide.whole && wide.seen), end, exit, pastExitSeen: !!(exit && exit.seen), pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barY: Math.round(barY), barUnder: !!(exitLowest && barY >= 10), visible: visible.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), extra: page.scrollHeight - page.clientHeight, overflow: getComputedStyle(page).overflowY, pageTop: page.scrollTop });
+})()
+'@
+Write-Output "keptC5=$keptC5"
+$keptPastC5 = $false
+if ($keptC5 -match '\\"pastTop\\":(-?\d+)') { $keptPastC5N = [int]$Matches[1] } else { $keptPastC5N = -999 }
+if ($keptC5 -match '\\"pastMax\\":(-?\d+)') { $keptPastC5 = [Math]::Abs($keptPastC5N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptPastC5N - $pastTopC5) -le 1 }
+$keptLeftC5 = $false
+if ($keptC5 -match '\\"pastLeft\\":(\d+)') { $keptLeftC5N = [int]$Matches[1] } else { $keptLeftC5N = 99999 }
+$keptGapC5 = $false
+if ($keptC5 -match '\\"gap\\":(-?\d+)') { $keptGapC5 = [int]$Matches[1] -ge 40 -and $keptLeftC5N -le ($endLeft - 40) }
+$keptResultC5 = $false
+if ($keptC5 -match '\\"resultTop\\":(-?\d+)') { $keptResultC5N = [int]$Matches[1] } else { $keptResultC5N = -999 }
+if ($keptC5 -match '\\"resultMax\\":(-?\d+)') { $keptResultC5 = [Math]::Abs($keptResultC5N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptResultC5N - $resultTopC5) -le 1 }
+$keptRowsC5 = $keptC5 -match '\\"resultWhole\\":true' -and $keptC5 -match '\\"resultNow8\\":true' -and $keptC5 -match '\\"resultNow7\\":false' -and $keptC5 -match '\\"resultExitSeen\\":true' -and $keptC5 -match '\\"wideWhole\\":true' -and $keptC5 -match '\\"inside\\":false' -and $keptC5 -match '\\"pastExitSeen\\":true' -and $keptC5 -match '\\"pastExitStuck\\":true' -and $keptC5 -match '\\"pastExitWhole\\":true' -and $keptC5 -match '\\"pastExitLowest\\":true' -and $keptC5 -match '\\"allWhole\\":true' -and $keptC5 -match '\\"barUnder\\":true' -and $keptC5 -match '\\"barY\\":(\d+)' -and [int]$Matches[1] -ge 10
+$keptPageC5 = $keptC5 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -and $keptC5 -match '\\"overflow\\":\\"hidden\\"' -and $keptC5 -match '\\"pageTop\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "left-after-secret"
+if (-not ($cy5 -and $cx5 -and $cd5 -and $cpt5 -and $cgap5 -and $crt5 -and $crows5 -and $keptPastC5 -and $keptGapC5 -and $keptResultC5 -and $keptRowsC5 -and $keptPageC5)) { Fail 529 "left-more-again-lost" }
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "back-secret"
+$armD6 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const keptPastTop = past.scrollTop;
+  const keptPastLeft = past.scrollLeft;
+  const keptTop = box.scrollTop;
+  page.style.overflowX = "auto";
+  page.style.overflowY = "auto";
+  page.style.paddingBottom = "800px";
+  let spacer = document.getElementById("uitest-wide");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "uitest-wide";
+    spacer.style.cssText = "width:1800px;height:1px;flex:none";
+    page.appendChild(spacer);
+  }
+  if (Math.abs(past.scrollTop - keptPastTop) > 1) past.scrollTop = keptPastTop;
+  if (Math.abs(past.scrollLeft - keptPastLeft) > 1) past.scrollLeft = keptPastLeft;
+  if (Math.abs(box.scrollTop - keptTop) > 1) box.scrollTop = keptTop;
+  page.scrollTop = 40;
+  page.scrollLeft = 40;
+  const r = past.getBoundingClientRect();
+  const rb = box.getBoundingClientRect();
+  const x = Math.round(r.left + 80);
+  const y = Math.round(r.top + 8);
+  const hit = document.elementFromPoint(x, y);
+  const hitPast = !!(hit && hit.closest && hit.closest("#past"));
+  const formula = past.scrollWidth - past.clientWidth;
+  return JSON.stringify({ x, y, hitPast, resultBottom: Math.round(rb.bottom), pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, roomX: page.scrollWidth - page.clientWidth, roomY: page.scrollHeight - page.clientHeight, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, formula, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight });
+})()
+'@
+Write-Output "armD6=$armD6"
+if ($armD6 -notmatch '\\"roomY\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 530 "page-cannot-scroll" }
+if ($armD6 -notmatch '\\"roomX\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 531 "page-cannot-slide" }
+if ($armD6 -notmatch '\\"hitPast\\":true') { Fail 532 "wheel-missed-past" }
+if ($armD6 -notmatch '\\"x\\":(\d+)') { Fail 533 "no-xd" }
+$xd6 = [int]$Matches[1]
+if ($armD6 -notmatch '\\"y\\":(\d+)') { Fail 533 "no-yd" }
+$yd6 = [int]$Matches[1]
+if ($armD6 -notmatch '\\"resultBottom\\":(-?\d+)') { Fail 534 "no-result-bottom" }
+if ($yd6 -le [int]$Matches[1]) { Fail 535 "aim-still-on-result" }
+if ($armD6 -notmatch '\\"pageY\\":(-?\d+)') { Fail 536 "no-page-yd" }
+$pageYd6 = [int]$Matches[1]
+if ($armD6 -notmatch '\\"pageX\\":(-?\d+)') { Fail 537 "no-page-xd" }
+$pageXd6 = [int]$Matches[1]
+if ($armD6 -notmatch '\\"pastTop\\":(-?\d+)') { Fail 538 "no-past-topd" }
+$pastTopD6 = [int]$Matches[1]
+if ($armD6 -notmatch '\\"pastMax\\":(-?\d+)') { Fail 539 "no-past-maxd" }
+$pastMaxD6 = [int]$Matches[1]
+if ([Math]::Abs($pastTopD6 - $pastMaxD6) -gt 1) { Fail 540 "past-not-at-end" }
+if ($armD6 -notmatch '\\"pastLeft\\":(\d+)') { Fail 541 "no-past-leftd" }
+$pastLeftD6 = [int]$Matches[1]
+if ($armD6 -notmatch '\\"formula\\":(\d+)') { Fail 542 "no-formula-d" }
+$formulaD6 = [int]$Matches[1]
+if (($formulaD6 - $pastLeftD6) -lt 40) { Fail 543 "already-at-tail" }
+if ($armD6 -notmatch '\\"resultTop\\":(-?\d+)') { Fail 544 "no-result-topd" }
+$resultTopD6 = [int]$Matches[1]
+if ($armD6 -notmatch '\\"resultMax\\":(-?\d+)') { Fail 545 "no-result-maxd" }
+$resultMaxD6 = [int]$Matches[1]
+if ([Math]::Abs($resultTopD6 - $resultMaxD6) -gt 1) { Fail 546 "result-not-at-end" }
+Send-WheelX "9335" $xd6 $yd6 400 | Out-Null
+Start-Sleep -Milliseconds 450
+$slideD6 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  return JSON.stringify({ pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), wideWhole: !!(wide && wide.whole && wide.seen), end, pastExitSeen: !!(exit && exit.seen), pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barUnder: !!(exitLowest && barY >= 10), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole })) });
+})()
+'@
+Write-Output "slideD6=$slideD6"
+$dy6 = $slideD6 -match '\\"pageY\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageYd6) -le 1
+$dx6 = $slideD6 -match '\\"pageX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageXd6) -le 1
+$dd6 = $slideD6 -match '\\"docX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$dpt6 = $false
+if ($slideD6 -match '\\"pastTop\\":(-?\d+)') { $dpt6N = [int]$Matches[1] } else { $dpt6N = -999 }
+if ($slideD6 -match '\\"pastMax\\":(-?\d+)') { $dpt6 = [Math]::Abs($dpt6N - [int]$Matches[1]) -le 1 -and [Math]::Abs($dpt6N - $pastTopD6) -le 1 }
+$dleft6 = $false
+if ($slideD6 -match '\\"pastLeft\\":(\d+)') { $dleft6N = [int]$Matches[1] } else { $dleft6N = -999 }
+$dgap6 = $false
+if ($slideD6 -match '\\"gap\\":(-?\d+)') { $dgap6 = [Math]::Abs([int]$Matches[1]) -le 1 -and ($dleft6N - $pastLeftD6) -ge 40 }
+$drt6 = $false
+if ($slideD6 -match '\\"resultTop\\":(-?\d+)') { $drt6N = [int]$Matches[1] } else { $drt6N = -999 }
+if ($slideD6 -match '\\"resultMax\\":(-?\d+)') { $drt6 = [Math]::Abs($drt6N - [int]$Matches[1]) -le 1 -and [Math]::Abs($drt6N - $resultTopD6) -le 1 }
+$drows6 = $slideD6 -match '\\"resultWhole\\":true' -and $slideD6 -match '\\"resultNow8\\":true' -and $slideD6 -match '\\"resultNow7\\":false' -and $slideD6 -match '\\"resultExitSeen\\":true' -and $slideD6 -match '\\"wideWhole\\":true' -and $slideD6 -match '\\"inside\\":true' -and $slideD6 -match '\\"pastExitSeen\\":true' -and $slideD6 -match '\\"pastExitStuck\\":true' -and $slideD6 -match '\\"pastExitWhole\\":true' -and $slideD6 -match '\\"pastExitLowest\\":true' -and $slideD6 -match '\\"allWhole\\":true' -and $slideD6 -match '\\"barUnder\\":true'
+Send-Eval "9335" "(() => { const page = document.getElementById('helper-scroll'); const spacer = document.getElementById('uitest-wide'); if (spacer) spacer.remove(); page.style.paddingBottom = '0px'; page.style.overflowX = 'hidden'; const extra = page.scrollHeight - page.clientHeight; page.style.overflowY = extra <= 4 ? 'hidden' : 'auto'; page.scrollTop = 0; page.scrollLeft = 0; return String(extra); })()" | Out-Null
+Start-Sleep -Milliseconds 200
+$keptD6 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), h: Math.round(rect.height), top: Math.round(rect.top), bottom: Math.round(rect.bottom), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  return JSON.stringify({ pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), wideWhole: !!(wide && wide.whole && wide.seen), end, exit, pastExitSeen: !!(exit && exit.seen), pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barY: Math.round(barY), barUnder: !!(exitLowest && barY >= 10), visible: visible.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), extra: page.scrollHeight - page.clientHeight, overflow: getComputedStyle(page).overflowY, pageTop: page.scrollTop });
+})()
+'@
+Write-Output "keptD6=$keptD6"
+$keptPastD6 = $false
+if ($keptD6 -match '\\"pastTop\\":(-?\d+)') { $keptPastD6N = [int]$Matches[1] } else { $keptPastD6N = -999 }
+if ($keptD6 -match '\\"pastMax\\":(-?\d+)') { $keptPastD6 = [Math]::Abs($keptPastD6N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptPastD6N - $pastTopD6) -le 1 }
+$keptGapD6 = $keptD6 -match '\\"gap\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$keptLeftD6 = $keptD6 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $endLeft) -le 1
+$keptResultD6 = $false
+if ($keptD6 -match '\\"resultTop\\":(-?\d+)') { $keptResultD6N = [int]$Matches[1] } else { $keptResultD6N = -999 }
+if ($keptD6 -match '\\"resultMax\\":(-?\d+)') { $keptResultD6 = [Math]::Abs($keptResultD6N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptResultD6N - $resultTopD6) -le 1 }
+$keptRowsD6 = $keptD6 -match '\\"resultWhole\\":true' -and $keptD6 -match '\\"resultNow8\\":true' -and $keptD6 -match '\\"resultNow7\\":false' -and $keptD6 -match '\\"resultExitSeen\\":true' -and $keptD6 -match '\\"wideWhole\\":true' -and $keptD6 -match '\\"inside\\":true' -and $keptD6 -match '\\"pastExitSeen\\":true' -and $keptD6 -match '\\"pastExitStuck\\":true' -and $keptD6 -match '\\"pastExitWhole\\":true' -and $keptD6 -match '\\"pastExitLowest\\":true' -and $keptD6 -match '\\"allWhole\\":true' -and $keptD6 -match '\\"barUnder\\":true' -and $keptD6 -match '\\"barY\\":(\d+)' -and [int]$Matches[1] -ge 10
+$keptPageD6 = $keptD6 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -and $keptD6 -match '\\"overflow\\":\\"hidden\\"' -and $keptD6 -match '\\"pageTop\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "back-after-secret"
+if (-not ($dy6 -and $dx6 -and $dd6 -and $dpt6 -and $dgap6 -and $drt6 -and $drows6 -and $keptPastD6 -and $keptGapD6 -and $keptLeftD6 -and $keptResultD6 -and $keptRowsD6 -and $keptPageD6)) { Fail 547 "right-back-again-lost" }
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "up-secret"
+$armE7 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const keptPastTop = past.scrollTop;
+  const keptPastLeft = past.scrollLeft;
+  const keptTop = box.scrollTop;
+  page.style.overflowX = "auto";
+  page.style.overflowY = "auto";
+  page.style.paddingBottom = "800px";
+  let spacer = document.getElementById("uitest-wide");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "uitest-wide";
+    spacer.style.cssText = "width:1800px;height:1px;flex:none";
+    page.appendChild(spacer);
+  }
+  if (Math.abs(past.scrollTop - keptPastTop) > 1) past.scrollTop = keptPastTop;
+  if (Math.abs(past.scrollLeft - keptPastLeft) > 1) past.scrollLeft = keptPastLeft;
+  if (Math.abs(box.scrollTop - keptTop) > 1) box.scrollTop = keptTop;
+  page.scrollTop = 40;
+  page.scrollLeft = 40;
+  const r = past.getBoundingClientRect();
+  const rb = box.getBoundingClientRect();
+  const x = Math.round(r.left + 80);
+  const y = Math.round(r.top + 8);
+  const hit = document.elementFromPoint(x, y);
+  const hitPast = !!(hit && hit.closest && hit.closest("#past"));
+  return JSON.stringify({ x, y, hitPast, resultBottom: Math.round(rb.bottom), pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, roomX: page.scrollWidth - page.clientWidth, roomY: page.scrollHeight - page.clientHeight, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight });
+})()
+'@
+Write-Output "armE7=$armE7"
+if ($armE7 -notmatch '\\"roomY\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 548 "page-cannot-scroll" }
+if ($armE7 -notmatch '\\"roomX\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 549 "page-cannot-slide" }
+if ($armE7 -notmatch '\\"hitPast\\":true') { Fail 550 "wheel-missed-past" }
+if ($armE7 -notmatch '\\"x\\":(\d+)') { Fail 551 "no-xe" }
+$xe7 = [int]$Matches[1]
+if ($armE7 -notmatch '\\"y\\":(\d+)') { Fail 551 "no-ye" }
+$ye7 = [int]$Matches[1]
+if ($armE7 -notmatch '\\"resultBottom\\":(-?\d+)') { Fail 552 "no-result-bottom" }
+if ($ye7 -le [int]$Matches[1]) { Fail 553 "aim-still-on-result" }
+if ($armE7 -notmatch '\\"pageY\\":(-?\d+)') { Fail 554 "no-page-ye" }
+$pageYe7 = [int]$Matches[1]
+if ($armE7 -notmatch '\\"pageX\\":(-?\d+)') { Fail 555 "no-page-xe" }
+$pageXe7 = [int]$Matches[1]
+if ($armE7 -notmatch '\\"pastTop\\":(-?\d+)') { Fail 556 "no-past-tope" }
+$pastTopE7 = [int]$Matches[1]
+if ($armE7 -notmatch '\\"pastMax\\":(-?\d+)') { Fail 557 "no-past-maxe" }
+$pastMaxE7 = [int]$Matches[1]
+if ([Math]::Abs($pastTopE7 - $pastMaxE7) -gt 1 -or $pastMaxE7 -lt 20) { Fail 558 "past-not-at-end" }
+if ($armE7 -notmatch '\\"pastLeft\\":(\d+)') { Fail 559 "no-past-lefte" }
+$pastLeftE7 = [int]$Matches[1]
+if ([Math]::Abs($pastLeftE7 - $endLeft) -gt 1) { Fail 560 "past-not-at-tail" }
+if ($armE7 -notmatch '\\"resultTop\\":(-?\d+)') { Fail 561 "no-result-tope" }
+$resultTopE7 = [int]$Matches[1]
+if ($armE7 -notmatch '\\"resultMax\\":(-?\d+)') { Fail 562 "no-result-maxe" }
+$resultMaxE7 = [int]$Matches[1]
+if ([Math]::Abs($resultTopE7 - $resultMaxE7) -gt 1) { Fail 563 "result-not-at-end" }
+Send-Wheel "9335" $xe7 $ye7 -20 | Out-Null
+Start-Sleep -Milliseconds 450
+$upE7 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, old6: el.textContent.indexOf("queqiao-old-6") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const old6Row = rows.find((row) => row.old6);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let old6 = null;
+  if (old6Row && old6Row.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(old6Row.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    old6 = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!old6Row.whole, seen: !!old6Row.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const wideLowest = !!(wide && wide.seen && visible.every((row) => row.bottom <= wide.bottom + 1));
+  const pastExitSeen = rows.some((row) => row.seen && row.exit);
+  return JSON.stringify({ pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), pastExitSeen, wideWhole: !!(wide && wide.whole && wide.seen), wideLowest, end, old6Seen: !!(old6 && old6.seen), old6Stuck: !!(old6 && old6.stuck), old6Whole: !!(old6 && old6.whole), allWhole: visible.length > 0 && visible.every((row) => row.whole), barUnder: !!(wideLowest && barY >= 10), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole })) });
+})()
+'@
+Write-Output "upE7=$upE7"
+$ey7 = $upE7 -match '\\"pageY\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageYe7) -le 1
+$ex7 = $upE7 -match '\\"pageX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageXe7) -le 1
+$ed7 = $upE7 -match '\\"docX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$ept7 = $false
+if ($upE7 -match '\\"pastTop\\":(-?\d+)') { $ept7N = [int]$Matches[1] } else { $ept7N = -999 }
+if ($upE7 -match '\\"pastMax\\":(-?\d+)') { $ept7 = [Math]::Abs($ept7N - ($pastTopE7 - 20)) -le 1 -and $ept7N -lt [int]$Matches[1] - 10 }
+$epl7 = $upE7 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $pastLeftE7) -le 1
+$ert7 = $false
+if ($upE7 -match '\\"resultTop\\":(-?\d+)') { $ert7N = [int]$Matches[1] } else { $ert7N = -999 }
+if ($upE7 -match '\\"resultMax\\":(-?\d+)') { $ert7 = [Math]::Abs($ert7N - [int]$Matches[1]) -le 1 -and [Math]::Abs($ert7N - $resultTopE7) -le 1 }
+$erows7 = $upE7 -match '\\"resultWhole\\":true' -and $upE7 -match '\\"resultNow8\\":true' -and $upE7 -match '\\"resultNow7\\":false' -and $upE7 -match '\\"resultExitSeen\\":true' -and $upE7 -match '\\"pastExitSeen\\":false' -and $upE7 -match '\\"wideWhole\\":true' -and $upE7 -match '\\"wideLowest\\":true' -and $upE7 -match '\\"inside\\":true' -and $upE7 -match '\\"old6Seen\\":true' -and $upE7 -match '\\"old6Stuck\\":true' -and $upE7 -match '\\"old6Whole\\":true' -and $upE7 -match '\\"allWhole\\":true' -and $upE7 -match '\\"barUnder\\":true'
+Send-Eval "9335" "(() => { const page = document.getElementById('helper-scroll'); const spacer = document.getElementById('uitest-wide'); if (spacer) spacer.remove(); page.style.paddingBottom = '0px'; page.style.overflowX = 'hidden'; const extra = page.scrollHeight - page.clientHeight; page.style.overflowY = extra <= 4 ? 'hidden' : 'auto'; page.scrollTop = 0; page.scrollLeft = 0; return String(extra); })()" | Out-Null
+Start-Sleep -Milliseconds 200
+$keptE7 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, old6: el.textContent.indexOf("queqiao-old-6") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const old6Row = rows.find((row) => row.old6);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let old6 = null;
+  if (old6Row && old6Row.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(old6Row.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    old6 = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), h: Math.round(rect.height), top: Math.round(rect.top), bottom: Math.round(rect.bottom), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!old6Row.whole, seen: !!old6Row.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const wideLowest = !!(wide && wide.seen && visible.every((row) => row.bottom <= wide.bottom + 1));
+  const pastExitSeen = rows.some((row) => row.seen && row.exit);
+  return JSON.stringify({ pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), pastExitSeen, wideWhole: !!(wide && wide.whole && wide.seen), wideLowest, end, old6, old6Seen: !!(old6 && old6.seen), old6Stuck: !!(old6 && old6.stuck), old6Whole: !!(old6 && old6.whole), allWhole: visible.length > 0 && visible.every((row) => row.whole), barY: Math.round(barY), barUnder: !!(wideLowest && barY >= 10), visible: visible.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), extra: page.scrollHeight - page.clientHeight, overflow: getComputedStyle(page).overflowY, pageTop: page.scrollTop });
+})()
+'@
+Write-Output "keptE7=$keptE7"
+$keptPastE7 = $false
+if ($keptE7 -match '\\"pastTop\\":(-?\d+)') { $keptPastE7N = [int]$Matches[1] } else { $keptPastE7N = -999 }
+if ($keptE7 -match '\\"pastMax\\":(-?\d+)') { $keptPastE7 = [Math]::Abs($keptPastE7N - ($pastTopE7 - 20)) -le 1 -and $keptPastE7N -lt [int]$Matches[1] - 10 }
+$keptGapE7 = $keptE7 -match '\\"gap\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$keptLeftE7 = $keptE7 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $endLeft) -le 1
+$keptResultE7 = $false
+if ($keptE7 -match '\\"resultTop\\":(-?\d+)') { $keptResultE7N = [int]$Matches[1] } else { $keptResultE7N = -999 }
+if ($keptE7 -match '\\"resultMax\\":(-?\d+)') { $keptResultE7 = [Math]::Abs($keptResultE7N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptResultE7N - $resultTopE7) -le 1 }
+$keptRowsE7 = $keptE7 -match '\\"resultWhole\\":true' -and $keptE7 -match '\\"resultNow8\\":true' -and $keptE7 -match '\\"resultNow7\\":false' -and $keptE7 -match '\\"resultExitSeen\\":true' -and $keptE7 -match '\\"pastExitSeen\\":false' -and $keptE7 -match '\\"wideWhole\\":true' -and $keptE7 -match '\\"wideLowest\\":true' -and $keptE7 -match '\\"inside\\":true' -and $keptE7 -match '\\"old6Seen\\":true' -and $keptE7 -match '\\"old6Stuck\\":true' -and $keptE7 -match '\\"old6Whole\\":true' -and $keptE7 -match '\\"allWhole\\":true' -and $keptE7 -match '\\"barUnder\\":true' -and $keptE7 -match '\\"barY\\":(\d+)' -and [int]$Matches[1] -ge 10
+$keptPageE7 = $keptE7 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -and $keptE7 -match '\\"overflow\\":\\"hidden\\"' -and $keptE7 -match '\\"pageTop\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "up-after-secret"
+if (-not ($ey7 -and $ex7 -and $ed7 -and $ept7 -and $epl7 -and $ert7 -and $erows7 -and $keptPastE7 -and $keptGapE7 -and $keptLeftE7 -and $keptResultE7 -and $keptRowsE7 -and $keptPageE7)) { Fail 564 "past-up-again-lost" }
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "down-secret"
+$armF8 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const keptPastTop = past.scrollTop;
+  const keptPastLeft = past.scrollLeft;
+  const keptTop = box.scrollTop;
+  page.style.overflowX = "auto";
+  page.style.overflowY = "auto";
+  page.style.paddingBottom = "800px";
+  let spacer = document.getElementById("uitest-wide");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "uitest-wide";
+    spacer.style.cssText = "width:1800px;height:1px;flex:none";
+    page.appendChild(spacer);
+  }
+  if (Math.abs(past.scrollTop - keptPastTop) > 1) past.scrollTop = keptPastTop;
+  if (Math.abs(past.scrollLeft - keptPastLeft) > 1) past.scrollLeft = keptPastLeft;
+  if (Math.abs(box.scrollTop - keptTop) > 1) box.scrollTop = keptTop;
+  page.scrollTop = 40;
+  page.scrollLeft = 40;
+  const r = past.getBoundingClientRect();
+  const rb = box.getBoundingClientRect();
+  const x = Math.round(r.left + 80);
+  const y = Math.round(r.top + 8);
+  const hit = document.elementFromPoint(x, y);
+  const hitPast = !!(hit && hit.closest && hit.closest("#past"));
+  return JSON.stringify({ x, y, hitPast, resultBottom: Math.round(rb.bottom), pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, roomX: page.scrollWidth - page.clientWidth, roomY: page.scrollHeight - page.clientHeight, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight });
+})()
+'@
+Write-Output "armF8=$armF8"
+if ($armF8 -notmatch '\\"roomY\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 565 "page-cannot-scroll" }
+if ($armF8 -notmatch '\\"roomX\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 566 "page-cannot-slide" }
+if ($armF8 -notmatch '\\"hitPast\\":true') { Fail 567 "wheel-missed-past" }
+if ($armF8 -notmatch '\\"x\\":(\d+)') { Fail 568 "no-xf" }
+$xf8 = [int]$Matches[1]
+if ($armF8 -notmatch '\\"y\\":(\d+)') { Fail 568 "no-yf" }
+$yf8 = [int]$Matches[1]
+if ($armF8 -notmatch '\\"resultBottom\\":(-?\d+)') { Fail 569 "no-result-bottom" }
+if ($yf8 -le [int]$Matches[1]) { Fail 570 "aim-still-on-result" }
+if ($armF8 -notmatch '\\"pageY\\":(-?\d+)') { Fail 571 "no-page-yf" }
+$pageYf8 = [int]$Matches[1]
+if ($armF8 -notmatch '\\"pageX\\":(-?\d+)') { Fail 572 "no-page-xf" }
+$pageXf8 = [int]$Matches[1]
+if ($armF8 -notmatch '\\"pastTop\\":(-?\d+)') { Fail 573 "no-past-topf" }
+$pastTopF8 = [int]$Matches[1]
+if ($armF8 -notmatch '\\"pastMax\\":(-?\d+)') { Fail 574 "no-past-maxf" }
+$pastMaxF8 = [int]$Matches[1]
+if (($pastMaxF8 - $pastTopF8) -lt 10) { Fail 575 "past-already-bottom" }
+if ($armF8 -notmatch '\\"pastLeft\\":(\d+)') { Fail 576 "no-past-leftf" }
+$pastLeftF8 = [int]$Matches[1]
+if ([Math]::Abs($pastLeftF8 - $endLeft) -gt 1) { Fail 577 "past-not-at-tail" }
+if ($armF8 -notmatch '\\"resultTop\\":(-?\d+)') { Fail 578 "no-result-topf" }
+$resultTopF8 = [int]$Matches[1]
+if ($armF8 -notmatch '\\"resultMax\\":(-?\d+)') { Fail 579 "no-result-maxf" }
+$resultMaxF8 = [int]$Matches[1]
+if ([Math]::Abs($resultTopF8 - $resultMaxF8) -gt 1) { Fail 580 "result-not-at-end" }
+Send-Wheel "9335" $xf8 $yf8 20 | Out-Null
+Start-Sleep -Milliseconds 450
+$downF8 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, old6: el.textContent.indexOf("queqiao-old-6") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const old6Seen = rows.some((row) => row.seen && row.old6);
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), wideWhole: !!(wide && wide.whole && wide.seen), end, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, old6Seen, allWhole: visible.length > 0 && visible.every((row) => row.whole), barUnder: !!(exitLowest && barY >= 10), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole })) });
+})()
+'@
+Write-Output "downF8=$downF8"
+$fy8 = $downF8 -match '\\"pageY\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageYf8) -le 1
+$fx8 = $downF8 -match '\\"pageX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageXf8) -le 1
+$fd8 = $downF8 -match '\\"docX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$fpt8 = $false
+if ($downF8 -match '\\"pastTop\\":(-?\d+)') { $fpt8N = [int]$Matches[1] } else { $fpt8N = -999 }
+if ($downF8 -match '\\"pastMax\\":(-?\d+)') { $fpt8 = [Math]::Abs($fpt8N - [int]$Matches[1]) -le 1 -and [Math]::Abs($fpt8N - ($pastTopF8 + 20)) -le 1 }
+$fpl8 = $downF8 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $pastLeftF8) -le 1
+$frt8 = $false
+if ($downF8 -match '\\"resultTop\\":(-?\d+)') { $frt8N = [int]$Matches[1] } else { $frt8N = -999 }
+if ($downF8 -match '\\"resultMax\\":(-?\d+)') { $frt8 = [Math]::Abs($frt8N - [int]$Matches[1]) -le 1 -and [Math]::Abs($frt8N - $resultTopF8) -le 1 }
+$frows8 = $downF8 -match '\\"resultWhole\\":true' -and $downF8 -match '\\"resultNow8\\":true' -and $downF8 -match '\\"resultNow7\\":false' -and $downF8 -match '\\"resultExitSeen\\":true' -and $downF8 -match '\\"wideWhole\\":true' -and $downF8 -match '\\"inside\\":true' -and $downF8 -match '\\"pastExitSeen\\":true' -and $downF8 -match '\\"pastExitStuck\\":true' -and $downF8 -match '\\"pastExitWhole\\":true' -and $downF8 -match '\\"pastExitLowest\\":true' -and $downF8 -match '\\"old6Seen\\":false' -and $downF8 -match '\\"allWhole\\":true' -and $downF8 -match '\\"barUnder\\":true'
+Send-Eval "9335" "(() => { const page = document.getElementById('helper-scroll'); const spacer = document.getElementById('uitest-wide'); if (spacer) spacer.remove(); page.style.paddingBottom = '0px'; page.style.overflowX = 'hidden'; const extra = page.scrollHeight - page.clientHeight; page.style.overflowY = extra <= 4 ? 'hidden' : 'auto'; page.scrollTop = 0; page.scrollLeft = 0; return String(extra); })()" | Out-Null
+Start-Sleep -Milliseconds 200
+$keptF8 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, old6: el.textContent.indexOf("queqiao-old-6") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), h: Math.round(rect.height), top: Math.round(rect.top), bottom: Math.round(rect.bottom), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const old6Seen = rows.some((row) => row.seen && row.old6);
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), wideWhole: !!(wide && wide.whole && wide.seen), end, exit, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, old6Seen, allWhole: visible.length > 0 && visible.every((row) => row.whole), barY: Math.round(barY), barUnder: !!(exitLowest && barY >= 10), visible: visible.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), extra: page.scrollHeight - page.clientHeight, overflow: getComputedStyle(page).overflowY, pageTop: page.scrollTop });
+})()
+'@
+Write-Output "keptF8=$keptF8"
+$keptPastF8 = $false
+if ($keptF8 -match '\\"pastTop\\":(-?\d+)') { $keptPastF8N = [int]$Matches[1] } else { $keptPastF8N = -999 }
+if ($keptF8 -match '\\"pastMax\\":(-?\d+)') { $keptPastF8 = [Math]::Abs($keptPastF8N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptPastF8N - ($pastTopF8 + 20)) -le 1 }
+$keptGapF8 = $keptF8 -match '\\"gap\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$keptLeftF8 = $keptF8 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $endLeft) -le 1
+$keptResultF8 = $false
+if ($keptF8 -match '\\"resultTop\\":(-?\d+)') { $keptResultF8N = [int]$Matches[1] } else { $keptResultF8N = -999 }
+if ($keptF8 -match '\\"resultMax\\":(-?\d+)') { $keptResultF8 = [Math]::Abs($keptResultF8N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptResultF8N - $resultTopF8) -le 1 }
+$keptRowsF8 = $keptF8 -match '\\"resultWhole\\":true' -and $keptF8 -match '\\"resultNow8\\":true' -and $keptF8 -match '\\"resultNow7\\":false' -and $keptF8 -match '\\"resultExitSeen\\":true' -and $keptF8 -match '\\"wideWhole\\":true' -and $keptF8 -match '\\"inside\\":true' -and $keptF8 -match '\\"pastExitSeen\\":true' -and $keptF8 -match '\\"pastExitStuck\\":true' -and $keptF8 -match '\\"pastExitWhole\\":true' -and $keptF8 -match '\\"pastExitLowest\\":true' -and $keptF8 -match '\\"old6Seen\\":false' -and $keptF8 -match '\\"allWhole\\":true' -and $keptF8 -match '\\"barUnder\\":true' -and $keptF8 -match '\\"barY\\":(\d+)' -and [int]$Matches[1] -ge 10
+$keptPageF8 = $keptF8 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -and $keptF8 -match '\\"overflow\\":\\"hidden\\"' -and $keptF8 -match '\\"pageTop\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "down-after-secret"
+if (-not ($fy8 -and $fx8 -and $fd8 -and $fpt8 -and $fpl8 -and $frt8 -and $frows8 -and $keptPastF8 -and $keptGapF8 -and $keptLeftF8 -and $keptResultF8 -and $keptRowsF8 -and $keptPageF8)) { Fail 581 "past-down-again-lost" }
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "up-secret"
+$armG9 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const keptPastTop = past.scrollTop;
+  const keptPastLeft = past.scrollLeft;
+  const keptTop = box.scrollTop;
+  page.style.overflowX = "auto";
+  page.style.overflowY = "auto";
+  page.style.paddingBottom = "800px";
+  let spacer = document.getElementById("uitest-wide");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "uitest-wide";
+    spacer.style.cssText = "width:1800px;height:1px;flex:none";
+    page.appendChild(spacer);
+  }
+  if (Math.abs(past.scrollTop - keptPastTop) > 1) past.scrollTop = keptPastTop;
+  if (Math.abs(past.scrollLeft - keptPastLeft) > 1) past.scrollLeft = keptPastLeft;
+  if (Math.abs(box.scrollTop - keptTop) > 1) box.scrollTop = keptTop;
+  page.scrollTop = 40;
+  page.scrollLeft = 40;
+  const r = box.getBoundingClientRect();
+  const rp = past.getBoundingClientRect();
+  const x = Math.round(r.left + 80);
+  const y = Math.round(r.top + 8);
+  const hit = document.elementFromPoint(x, y);
+  const hitResult = !!(hit && hit.closest && hit.closest("#result"));
+  return JSON.stringify({ x, y, hitResult, pastTopEdge: Math.round(rp.top), pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, roomX: page.scrollWidth - page.clientWidth, roomY: page.scrollHeight - page.clientHeight, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight });
+})()
+'@
+Write-Output "armG9=$armG9"
+if ($armG9 -notmatch '\\"roomY\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 582 "page-cannot-scroll" }
+if ($armG9 -notmatch '\\"roomX\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 583 "page-cannot-slide" }
+if ($armG9 -notmatch '\\"hitResult\\":true') { Fail 584 "wheel-missed-result" }
+if ($armG9 -notmatch '\\"x\\":(\d+)') { Fail 585 "no-xg" }
+$xg9 = [int]$Matches[1]
+if ($armG9 -notmatch '\\"y\\":(\d+)') { Fail 585 "no-yg" }
+$yg9 = [int]$Matches[1]
+if ($armG9 -notmatch '\\"pastTopEdge\\":(-?\d+)') { Fail 586 "no-past-edge" }
+if ($yg9 -ge [int]$Matches[1]) { Fail 587 "aim-still-on-past" }
+if ($armG9 -notmatch '\\"pageY\\":(-?\d+)') { Fail 588 "no-page-yg" }
+$pageYg9 = [int]$Matches[1]
+if ($armG9 -notmatch '\\"pageX\\":(-?\d+)') { Fail 589 "no-page-xg" }
+$pageXg9 = [int]$Matches[1]
+if ($armG9 -notmatch '\\"pastTop\\":(-?\d+)') { Fail 590 "no-past-topg" }
+$pastTopG9 = [int]$Matches[1]
+if ($armG9 -notmatch '\\"pastMax\\":(-?\d+)') { Fail 591 "no-past-maxg" }
+$pastMaxG9 = [int]$Matches[1]
+if ([Math]::Abs($pastTopG9 - $pastMaxG9) -gt 1) { Fail 592 "past-not-at-end" }
+if ($armG9 -notmatch '\\"pastLeft\\":(\d+)') { Fail 593 "no-past-leftg" }
+$pastLeftG9 = [int]$Matches[1]
+if ([Math]::Abs($pastLeftG9 - $endLeft) -gt 1) { Fail 594 "past-not-at-tail" }
+if ($armG9 -notmatch '\\"resultTop\\":(-?\d+)') { Fail 595 "no-result-topg" }
+$resultTopG9 = [int]$Matches[1]
+if ($armG9 -notmatch '\\"resultMax\\":(-?\d+)') { Fail 596 "no-result-maxg" }
+$resultMaxG9 = [int]$Matches[1]
+if ([Math]::Abs($resultTopG9 - $resultMaxG9) -gt 1) { Fail 597 "result-not-at-end" }
+Send-Wheel "9335" $xg9 $yg9 -20 | Out-Null
+Start-Sleep -Milliseconds 450
+$upG9 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), wideWhole: !!(wide && wide.whole && wide.seen), end, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barUnder: !!(exitLowest && barY >= 10), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole })) });
+})()
+'@
+Write-Output "upG9=$upG9"
+$gy9 = $upG9 -match '\\"pageY\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageYg9) -le 1
+$gx9 = $upG9 -match '\\"pageX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageXg9) -le 1
+$gd9 = $upG9 -match '\\"docX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$gpt9 = $false
+if ($upG9 -match '\\"pastTop\\":(-?\d+)') { $gpt9N = [int]$Matches[1] } else { $gpt9N = -999 }
+if ($upG9 -match '\\"pastMax\\":(-?\d+)') { $gpt9 = [Math]::Abs($gpt9N - [int]$Matches[1]) -le 1 -and [Math]::Abs($gpt9N - $pastTopG9) -le 1 }
+$gpl9 = $upG9 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $pastLeftG9) -le 1
+$grt9 = $false
+if ($upG9 -match '\\"resultTop\\":(-?\d+)') { $grt9N = [int]$Matches[1] } else { $grt9N = -999 }
+if ($upG9 -match '\\"resultMax\\":(-?\d+)') { $grt9 = [Math]::Abs($grt9N - ($resultTopG9 - 20)) -le 1 -and $grt9N -lt [int]$Matches[1] - 10 }
+$grows9 = $upG9 -match '\\"resultWhole\\":true' -and $upG9 -match '\\"resultNow8\\":true' -and $upG9 -match '\\"resultNow7\\":true' -and $upG9 -match '\\"resultExitSeen\\":false' -and $upG9 -match '\\"wideWhole\\":true' -and $upG9 -match '\\"inside\\":true' -and $upG9 -match '\\"pastExitSeen\\":true' -and $upG9 -match '\\"pastExitStuck\\":true' -and $upG9 -match '\\"pastExitWhole\\":true' -and $upG9 -match '\\"pastExitLowest\\":true' -and $upG9 -match '\\"allWhole\\":true' -and $upG9 -match '\\"barUnder\\":true'
+Send-Eval "9335" "(() => { const page = document.getElementById('helper-scroll'); const spacer = document.getElementById('uitest-wide'); if (spacer) spacer.remove(); page.style.paddingBottom = '0px'; page.style.overflowX = 'hidden'; const extra = page.scrollHeight - page.clientHeight; page.style.overflowY = extra <= 4 ? 'hidden' : 'auto'; page.scrollTop = 0; page.scrollLeft = 0; return String(extra); })()" | Out-Null
+Start-Sleep -Milliseconds 200
+$keptG9 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), h: Math.round(rect.height), top: Math.round(rect.top), bottom: Math.round(rect.bottom), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), wideWhole: !!(wide && wide.whole && wide.seen), end, exit, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barY: Math.round(barY), barUnder: !!(exitLowest && barY >= 10), visible: visible.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), extra: page.scrollHeight - page.clientHeight, overflow: getComputedStyle(page).overflowY, pageTop: page.scrollTop });
+})()
+'@
+Write-Output "keptG9=$keptG9"
+$keptPastG9 = $false
+if ($keptG9 -match '\\"pastTop\\":(-?\d+)') { $keptPastG9N = [int]$Matches[1] } else { $keptPastG9N = -999 }
+if ($keptG9 -match '\\"pastMax\\":(-?\d+)') { $keptPastG9 = [Math]::Abs($keptPastG9N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptPastG9N - $pastTopG9) -le 1 }
+$keptGapG9 = $keptG9 -match '\\"gap\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$keptLeftG9 = $keptG9 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $endLeft) -le 1
+$keptResultG9 = $false
+if ($keptG9 -match '\\"resultTop\\":(-?\d+)') { $keptResultG9N = [int]$Matches[1] } else { $keptResultG9N = -999 }
+if ($keptG9 -match '\\"resultMax\\":(-?\d+)') { $keptResultG9 = [Math]::Abs($keptResultG9N - ($resultTopG9 - 20)) -le 1 -and $keptResultG9N -lt [int]$Matches[1] - 10 }
+$keptRowsG9 = $keptG9 -match '\\"resultWhole\\":true' -and $keptG9 -match '\\"resultNow8\\":true' -and $keptG9 -match '\\"resultNow7\\":true' -and $keptG9 -match '\\"resultExitSeen\\":false' -and $keptG9 -match '\\"wideWhole\\":true' -and $keptG9 -match '\\"inside\\":true' -and $keptG9 -match '\\"pastExitSeen\\":true' -and $keptG9 -match '\\"pastExitStuck\\":true' -and $keptG9 -match '\\"pastExitWhole\\":true' -and $keptG9 -match '\\"pastExitLowest\\":true' -and $keptG9 -match '\\"allWhole\\":true' -and $keptG9 -match '\\"barUnder\\":true' -and $keptG9 -match '\\"barY\\":(\d+)' -and [int]$Matches[1] -ge 10
+$keptPageG9 = $keptG9 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -and $keptG9 -match '\\"overflow\\":\\"hidden\\"' -and $keptG9 -match '\\"pageTop\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "up-after-secret"
+if (-not ($gy9 -and $gx9 -and $gd9 -and $gpt9 -and $gpl9 -and $grt9 -and $grows9 -and $keptPastG9 -and $keptGapG9 -and $keptLeftG9 -and $keptResultG9 -and $keptRowsG9 -and $keptPageG9)) { Fail 598 "res-up-again-lost" }
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "down-secret"
+$armH0 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const keptPastTop = past.scrollTop;
+  const keptPastLeft = past.scrollLeft;
+  const keptTop = box.scrollTop;
+  page.style.overflowX = "auto";
+  page.style.overflowY = "auto";
+  page.style.paddingBottom = "800px";
+  let spacer = document.getElementById("uitest-wide");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "uitest-wide";
+    spacer.style.cssText = "width:1800px;height:1px;flex:none";
+    page.appendChild(spacer);
+  }
+  if (Math.abs(past.scrollTop - keptPastTop) > 1) past.scrollTop = keptPastTop;
+  if (Math.abs(past.scrollLeft - keptPastLeft) > 1) past.scrollLeft = keptPastLeft;
+  if (Math.abs(box.scrollTop - keptTop) > 1) box.scrollTop = keptTop;
+  page.scrollTop = 40;
+  page.scrollLeft = 40;
+  const r = box.getBoundingClientRect();
+  const rp = past.getBoundingClientRect();
+  const x = Math.round(r.left + 80);
+  const y = Math.round(r.top + 8);
+  const hit = document.elementFromPoint(x, y);
+  const hitResult = !!(hit && hit.closest && hit.closest("#result"));
+  return JSON.stringify({ x, y, hitResult, pastTopEdge: Math.round(rp.top), pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, roomX: page.scrollWidth - page.clientWidth, roomY: page.scrollHeight - page.clientHeight, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight });
+})()
+'@
+Write-Output "armH0=$armH0"
+if ($armH0 -notmatch '\\"roomY\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 599 "page-cannot-scroll" }
+if ($armH0 -notmatch '\\"roomX\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 600 "page-cannot-slide" }
+if ($armH0 -notmatch '\\"hitResult\\":true') { Fail 601 "wheel-missed-result" }
+if ($armH0 -notmatch '\\"x\\":(\d+)') { Fail 602 "no-xh" }
+$xh0 = [int]$Matches[1]
+if ($armH0 -notmatch '\\"y\\":(\d+)') { Fail 602 "no-yh" }
+$yh0 = [int]$Matches[1]
+if ($armH0 -notmatch '\\"pastTopEdge\\":(-?\d+)') { Fail 603 "no-past-edge" }
+if ($yh0 -ge [int]$Matches[1]) { Fail 604 "aim-still-on-past" }
+if ($armH0 -notmatch '\\"pageY\\":(-?\d+)') { Fail 605 "no-page-yh" }
+$pageYh0 = [int]$Matches[1]
+if ($armH0 -notmatch '\\"pageX\\":(-?\d+)') { Fail 606 "no-page-xh" }
+$pageXh0 = [int]$Matches[1]
+if ($armH0 -notmatch '\\"pastTop\\":(-?\d+)') { Fail 607 "no-past-toph" }
+$pastTopH0 = [int]$Matches[1]
+if ($armH0 -notmatch '\\"pastMax\\":(-?\d+)') { Fail 608 "no-past-maxh" }
+$pastMaxH0 = [int]$Matches[1]
+if ([Math]::Abs($pastTopH0 - $pastMaxH0) -gt 1) { Fail 609 "past-not-at-end" }
+if ($armH0 -notmatch '\\"pastLeft\\":(\d+)') { Fail 610 "no-past-lefth" }
+$pastLeftH0 = [int]$Matches[1]
+if ([Math]::Abs($pastLeftH0 - $endLeft) -gt 1) { Fail 611 "past-not-at-tail" }
+if ($armH0 -notmatch '\\"resultTop\\":(-?\d+)') { Fail 612 "no-result-toph" }
+$resultTopH0 = [int]$Matches[1]
+if ($armH0 -notmatch '\\"resultMax\\":(-?\d+)') { Fail 613 "no-result-maxh" }
+$resultMaxH0 = [int]$Matches[1]
+if ($resultMaxH0 - $resultTopH0 -lt 10) { Fail 614 "result-already-at-end" }
+Send-Wheel "9335" $xh0 $yh0 20 | Out-Null
+Start-Sleep -Milliseconds 450
+$downH0 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), wideWhole: !!(wide && wide.whole && wide.seen), end, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barUnder: !!(exitLowest && barY >= 10), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole })) });
+})()
+'@
+Write-Output "downH0=$downH0"
+$hy0 = $downH0 -match '\\"pageY\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageYh0) -le 1
+$hx0 = $downH0 -match '\\"pageX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageXh0) -le 1
+$hd0 = $downH0 -match '\\"docX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$hpt0 = $false
+if ($downH0 -match '\\"pastTop\\":(-?\d+)') { $hpt0N = [int]$Matches[1] } else { $hpt0N = -999 }
+if ($downH0 -match '\\"pastMax\\":(-?\d+)') { $hpt0 = [Math]::Abs($hpt0N - [int]$Matches[1]) -le 1 -and [Math]::Abs($hpt0N - $pastTopH0) -le 1 }
+$hpl0 = $downH0 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $pastLeftH0) -le 1
+$hrt0 = $false
+if ($downH0 -match '\\"resultTop\\":(-?\d+)') { $hrt0N = [int]$Matches[1] } else { $hrt0N = -999 }
+if ($downH0 -match '\\"resultMax\\":(-?\d+)') { $hrt0 = [Math]::Abs($hrt0N - ($resultTopH0 + 20)) -le 1 -and [Math]::Abs($hrt0N - [int]$Matches[1]) -le 1 }
+$hrows0 = $downH0 -match '\\"resultWhole\\":true' -and $downH0 -match '\\"resultNow8\\":true' -and $downH0 -match '\\"resultNow7\\":false' -and $downH0 -match '\\"resultExitSeen\\":true' -and $downH0 -match '\\"wideWhole\\":true' -and $downH0 -match '\\"inside\\":true' -and $downH0 -match '\\"pastExitSeen\\":true' -and $downH0 -match '\\"pastExitStuck\\":true' -and $downH0 -match '\\"pastExitWhole\\":true' -and $downH0 -match '\\"pastExitLowest\\":true' -and $downH0 -match '\\"allWhole\\":true' -and $downH0 -match '\\"barUnder\\":true'
+Send-Eval "9335" "(() => { const page = document.getElementById('helper-scroll'); const spacer = document.getElementById('uitest-wide'); if (spacer) spacer.remove(); page.style.paddingBottom = '0px'; page.style.overflowX = 'hidden'; const extra = page.scrollHeight - page.clientHeight; page.style.overflowY = extra <= 4 ? 'hidden' : 'auto'; page.scrollTop = 0; page.scrollLeft = 0; return String(extra); })()" | Out-Null
+Start-Sleep -Milliseconds 200
+$keptH0 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), h: Math.round(rect.height), top: Math.round(rect.top), bottom: Math.round(rect.bottom), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), wideWhole: !!(wide && wide.whole && wide.seen), end, exit, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barY: Math.round(barY), barUnder: !!(exitLowest && barY >= 10), visible: visible.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), extra: page.scrollHeight - page.clientHeight, overflow: getComputedStyle(page).overflowY, pageTop: page.scrollTop });
+})()
+'@
+Write-Output "keptH0=$keptH0"
+$keptPastH0 = $false
+if ($keptH0 -match '\\"pastTop\\":(-?\d+)') { $keptPastH0N = [int]$Matches[1] } else { $keptPastH0N = -999 }
+if ($keptH0 -match '\\"pastMax\\":(-?\d+)') { $keptPastH0 = [Math]::Abs($keptPastH0N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptPastH0N - $pastTopH0) -le 1 }
+$keptGapH0 = $keptH0 -match '\\"gap\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$keptLeftH0 = $keptH0 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $endLeft) -le 1
+$keptResultH0 = $false
+if ($keptH0 -match '\\"resultTop\\":(-?\d+)') { $keptResultH0N = [int]$Matches[1] } else { $keptResultH0N = -999 }
+if ($keptH0 -match '\\"resultMax\\":(-?\d+)') { $keptResultH0 = [Math]::Abs($keptResultH0N - ($resultTopH0 + 20)) -le 1 -and [Math]::Abs($keptResultH0N - [int]$Matches[1]) -le 1 }
+$keptRowsH0 = $keptH0 -match '\\"resultWhole\\":true' -and $keptH0 -match '\\"resultNow8\\":true' -and $keptH0 -match '\\"resultNow7\\":false' -and $keptH0 -match '\\"resultExitSeen\\":true' -and $keptH0 -match '\\"wideWhole\\":true' -and $keptH0 -match '\\"inside\\":true' -and $keptH0 -match '\\"pastExitSeen\\":true' -and $keptH0 -match '\\"pastExitStuck\\":true' -and $keptH0 -match '\\"pastExitWhole\\":true' -and $keptH0 -match '\\"pastExitLowest\\":true' -and $keptH0 -match '\\"allWhole\\":true' -and $keptH0 -match '\\"barUnder\\":true' -and $keptH0 -match '\\"barY\\":(\d+)' -and [int]$Matches[1] -ge 10
+$keptPageH0 = $keptH0 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -and $keptH0 -match '\\"overflow\\":\\"hidden\\"' -and $keptH0 -match '\\"pageTop\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "down-after-secret"
+if (-not ($hy0 -and $hx0 -and $hd0 -and $hpt0 -and $hpl0 -and $hrt0 -and $hrows0 -and $keptPastH0 -and $keptGapH0 -and $keptLeftH0 -and $keptResultH0 -and $keptRowsH0 -and $keptPageH0)) { Fail 615 "now-down-again-lost" }
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "more-secret"
+$armJ1 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const keptPastTop = past.scrollTop;
+  const keptPastLeft = past.scrollLeft;
+  const keptTop = box.scrollTop;
+  page.style.overflowX = "auto";
+  page.style.overflowY = "auto";
+  page.style.paddingBottom = "800px";
+  let spacer = document.getElementById("uitest-wide");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "uitest-wide";
+    spacer.style.cssText = "width:1800px;height:1px;flex:none";
+    page.appendChild(spacer);
+  }
+  if (Math.abs(past.scrollTop - keptPastTop) > 1) past.scrollTop = keptPastTop;
+  if (Math.abs(past.scrollLeft - keptPastLeft) > 1) past.scrollLeft = keptPastLeft;
+  if (Math.abs(box.scrollTop - keptTop) > 1) box.scrollTop = keptTop;
+  page.scrollTop = 40;
+  page.scrollLeft = 40;
+  const r = box.getBoundingClientRect();
+  const rp = past.getBoundingClientRect();
+  const x = Math.round(r.left + 80);
+  const y = Math.round(r.top + 8);
+  const hit = document.elementFromPoint(x, y);
+  const hitResult = !!(hit && hit.closest && hit.closest("#result"));
+  return JSON.stringify({ x, y, hitResult, pastTopEdge: Math.round(rp.top), pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, roomX: page.scrollWidth - page.clientWidth, roomY: page.scrollHeight - page.clientHeight, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight });
+})()
+'@
+Write-Output "armJ1=$armJ1"
+if ($armJ1 -notmatch '\\"roomY\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 616 "page-cannot-scroll" }
+if ($armJ1 -notmatch '\\"roomX\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 617 "page-cannot-slide" }
+if ($armJ1 -notmatch '\\"hitResult\\":true') { Fail 618 "wheel-missed-result" }
+if ($armJ1 -notmatch '\\"x\\":(\d+)') { Fail 619 "no-xj" }
+$xj1 = [int]$Matches[1]
+if ($armJ1 -notmatch '\\"y\\":(\d+)') { Fail 619 "no-yj" }
+$yj1 = [int]$Matches[1]
+if ($armJ1 -notmatch '\\"pastTopEdge\\":(-?\d+)') { Fail 620 "no-past-edge" }
+if ($yj1 -ge [int]$Matches[1]) { Fail 621 "aim-still-on-past" }
+if ($armJ1 -notmatch '\\"pageY\\":(-?\d+)') { Fail 622 "no-page-yj" }
+$pageYj1 = [int]$Matches[1]
+if ($armJ1 -notmatch '\\"pageX\\":(-?\d+)') { Fail 623 "no-page-xj" }
+$pageXj1 = [int]$Matches[1]
+if ($armJ1 -notmatch '\\"pastTop\\":(-?\d+)') { Fail 624 "no-past-topj" }
+$pastTopJ1 = [int]$Matches[1]
+if ($armJ1 -notmatch '\\"pastMax\\":(-?\d+)') { Fail 625 "no-past-maxj" }
+$pastMaxJ1 = [int]$Matches[1]
+if ([Math]::Abs($pastTopJ1 - $pastMaxJ1) -gt 1) { Fail 626 "past-not-at-end" }
+if ($armJ1 -notmatch '\\"pastLeft\\":(\d+)') { Fail 627 "no-past-leftj" }
+$pastLeftJ1 = [int]$Matches[1]
+if ([Math]::Abs($pastLeftJ1 - $endLeft) -gt 1) { Fail 628 "past-not-at-tail" }
+if ($armJ1 -notmatch '\\"resultTop\\":(-?\d+)') { Fail 629 "no-result-topj" }
+$resultTopJ1 = [int]$Matches[1]
+if ($armJ1 -notmatch '\\"resultMax\\":(-?\d+)') { Fail 630 "no-result-maxj" }
+$resultMaxJ1 = [int]$Matches[1]
+if ([Math]::Abs($resultTopJ1 - $resultMaxJ1) -gt 1) { Fail 631 "result-not-at-end" }
+Send-Wheel "9335" $xj1 $yj1 20 | Out-Null
+Start-Sleep -Milliseconds 450
+$moreJ1 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), wideWhole: !!(wide && wide.whole && wide.seen), end, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barUnder: !!(exitLowest && barY >= 10), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole })) });
+})()
+'@
+Write-Output "moreJ1=$moreJ1"
+$jy1 = $moreJ1 -match '\\"pageY\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageYj1) -le 1
+$jx1 = $moreJ1 -match '\\"pageX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageXj1) -le 1
+$jd1 = $moreJ1 -match '\\"docX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$jpt1 = $false
+if ($moreJ1 -match '\\"pastTop\\":(-?\d+)') { $jpt1N = [int]$Matches[1] } else { $jpt1N = -999 }
+if ($moreJ1 -match '\\"pastMax\\":(-?\d+)') { $jpt1 = [Math]::Abs($jpt1N - [int]$Matches[1]) -le 1 -and [Math]::Abs($jpt1N - $pastTopJ1) -le 1 }
+$jpl1 = $moreJ1 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $pastLeftJ1) -le 1
+$jrt1 = $false
+if ($moreJ1 -match '\\"resultTop\\":(-?\d+)') { $jrt1N = [int]$Matches[1] } else { $jrt1N = -999 }
+if ($moreJ1 -match '\\"resultMax\\":(-?\d+)') { $jrt1 = [Math]::Abs($jrt1N - $resultTopJ1) -le 1 -and [Math]::Abs($jrt1N - [int]$Matches[1]) -le 1 }
+$jrows1 = $moreJ1 -match '\\"resultWhole\\":true' -and $moreJ1 -match '\\"resultNow8\\":true' -and $moreJ1 -match '\\"resultNow7\\":false' -and $moreJ1 -match '\\"resultExitSeen\\":true' -and $moreJ1 -match '\\"wideWhole\\":true' -and $moreJ1 -match '\\"inside\\":true' -and $moreJ1 -match '\\"pastExitSeen\\":true' -and $moreJ1 -match '\\"pastExitStuck\\":true' -and $moreJ1 -match '\\"pastExitWhole\\":true' -and $moreJ1 -match '\\"pastExitLowest\\":true' -and $moreJ1 -match '\\"allWhole\\":true' -and $moreJ1 -match '\\"barUnder\\":true'
+Send-Eval "9335" "(() => { const page = document.getElementById('helper-scroll'); const spacer = document.getElementById('uitest-wide'); if (spacer) spacer.remove(); page.style.paddingBottom = '0px'; page.style.overflowX = 'hidden'; const extra = page.scrollHeight - page.clientHeight; page.style.overflowY = extra <= 4 ? 'hidden' : 'auto'; page.scrollTop = 0; page.scrollLeft = 0; return String(extra); })()" | Out-Null
+Start-Sleep -Milliseconds 200
+$keptJ1 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), h: Math.round(rect.height), top: Math.round(rect.top), bottom: Math.round(rect.bottom), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), wideWhole: !!(wide && wide.whole && wide.seen), end, exit, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barY: Math.round(barY), barUnder: !!(exitLowest && barY >= 10), visible: visible.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), extra: page.scrollHeight - page.clientHeight, overflow: getComputedStyle(page).overflowY, pageTop: page.scrollTop });
+})()
+'@
+Write-Output "keptJ1=$keptJ1"
+$keptPastJ1 = $false
+if ($keptJ1 -match '\\"pastTop\\":(-?\d+)') { $keptPastJ1N = [int]$Matches[1] } else { $keptPastJ1N = -999 }
+if ($keptJ1 -match '\\"pastMax\\":(-?\d+)') { $keptPastJ1 = [Math]::Abs($keptPastJ1N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptPastJ1N - $pastTopJ1) -le 1 }
+$keptGapJ1 = $keptJ1 -match '\\"gap\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$keptLeftJ1 = $keptJ1 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $endLeft) -le 1
+$keptResultJ1 = $false
+if ($keptJ1 -match '\\"resultTop\\":(-?\d+)') { $keptResultJ1N = [int]$Matches[1] } else { $keptResultJ1N = -999 }
+if ($keptJ1 -match '\\"resultMax\\":(-?\d+)') { $keptResultJ1 = [Math]::Abs($keptResultJ1N - $resultTopJ1) -le 1 -and [Math]::Abs($keptResultJ1N - [int]$Matches[1]) -le 1 }
+$keptRowsJ1 = $keptJ1 -match '\\"resultWhole\\":true' -and $keptJ1 -match '\\"resultNow8\\":true' -and $keptJ1 -match '\\"resultNow7\\":false' -and $keptJ1 -match '\\"resultExitSeen\\":true' -and $keptJ1 -match '\\"wideWhole\\":true' -and $keptJ1 -match '\\"inside\\":true' -and $keptJ1 -match '\\"pastExitSeen\\":true' -and $keptJ1 -match '\\"pastExitStuck\\":true' -and $keptJ1 -match '\\"pastExitWhole\\":true' -and $keptJ1 -match '\\"pastExitLowest\\":true' -and $keptJ1 -match '\\"allWhole\\":true' -and $keptJ1 -match '\\"barUnder\\":true' -and $keptJ1 -match '\\"barY\\":(\d+)' -and [int]$Matches[1] -ge 10
+$keptPageJ1 = $keptJ1 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -and $keptJ1 -match '\\"overflow\\":\\"hidden\\"' -and $keptJ1 -match '\\"pageTop\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "more-after-secret"
+if (-not ($jy1 -and $jx1 -and $jd1 -and $jpt1 -and $jpl1 -and $jrt1 -and $jrows1 -and $keptPastJ1 -and $keptGapJ1 -and $keptLeftJ1 -and $keptResultJ1 -and $keptRowsJ1 -and $keptPageJ1)) { Fail 632 "now-more-again-lost" }
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "more-secret"
+$armK2 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const keptPastTop = past.scrollTop;
+  const keptPastLeft = past.scrollLeft;
+  const keptTop = box.scrollTop;
+  page.style.overflowX = "auto";
+  page.style.overflowY = "auto";
+  page.style.paddingBottom = "800px";
+  let spacer = document.getElementById("uitest-wide");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "uitest-wide";
+    spacer.style.cssText = "width:1800px;height:1px;flex:none";
+    page.appendChild(spacer);
+  }
+  if (Math.abs(past.scrollTop - keptPastTop) > 1) past.scrollTop = keptPastTop;
+  if (Math.abs(past.scrollLeft - keptPastLeft) > 1) past.scrollLeft = keptPastLeft;
+  if (Math.abs(box.scrollTop - keptTop) > 1) box.scrollTop = keptTop;
+  page.scrollTop = 40;
+  page.scrollLeft = 40;
+  const r = past.getBoundingClientRect();
+  const rr = box.getBoundingClientRect();
+  const x = Math.round(r.left + 80);
+  const y = Math.round(r.top + 8);
+  const hit = document.elementFromPoint(x, y);
+  const hitPast = !!(hit && hit.closest && hit.closest("#past"));
+  return JSON.stringify({ x, y, hitPast, resultBottom: Math.round(rr.bottom), pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, roomX: page.scrollWidth - page.clientWidth, roomY: page.scrollHeight - page.clientHeight, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight });
+})()
+'@
+Write-Output "armK2=$armK2"
+if ($armK2 -notmatch '\\"roomY\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 633 "page-cannot-scroll" }
+if ($armK2 -notmatch '\\"roomX\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 634 "page-cannot-slide" }
+if ($armK2 -notmatch '\\"hitPast\\":true') { Fail 635 "wheel-missed-past" }
+if ($armK2 -notmatch '\\"x\\":(\d+)') { Fail 636 "no-xk" }
+$xk2 = [int]$Matches[1]
+if ($armK2 -notmatch '\\"y\\":(\d+)') { Fail 636 "no-yk" }
+$yk2 = [int]$Matches[1]
+if ($armK2 -notmatch '\\"resultBottom\\":(-?\d+)') { Fail 637 "no-result-bottom" }
+if ($yk2 -le [int]$Matches[1]) { Fail 638 "aim-still-on-result" }
+if ($armK2 -notmatch '\\"pageY\\":(-?\d+)') { Fail 639 "no-page-yk" }
+$pageYk2 = [int]$Matches[1]
+if ($armK2 -notmatch '\\"pageX\\":(-?\d+)') { Fail 640 "no-page-xk" }
+$pageXk2 = [int]$Matches[1]
+if ($armK2 -notmatch '\\"pastTop\\":(-?\d+)') { Fail 641 "no-past-topk" }
+$pastTopK2 = [int]$Matches[1]
+if ($armK2 -notmatch '\\"pastMax\\":(-?\d+)') { Fail 642 "no-past-maxk" }
+$pastMaxK2 = [int]$Matches[1]
+if ([Math]::Abs($pastTopK2 - $pastMaxK2) -gt 1) { Fail 643 "past-not-at-end" }
+if ($armK2 -notmatch '\\"pastLeft\\":(\d+)') { Fail 644 "no-past-leftk" }
+$pastLeftK2 = [int]$Matches[1]
+if ([Math]::Abs($pastLeftK2 - $endLeft) -gt 1) { Fail 645 "past-not-at-tail" }
+if ($armK2 -notmatch '\\"resultTop\\":(-?\d+)') { Fail 646 "no-result-topk" }
+$resultTopK2 = [int]$Matches[1]
+if ($armK2 -notmatch '\\"resultMax\\":(-?\d+)') { Fail 647 "no-result-maxk" }
+$resultMaxK2 = [int]$Matches[1]
+if ([Math]::Abs($resultTopK2 - $resultMaxK2) -gt 1) { Fail 648 "result-not-at-end" }
+Send-Wheel "9335" $xk2 $yk2 20 | Out-Null
+Start-Sleep -Milliseconds 450
+$moreK2 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), wideWhole: !!(wide && wide.whole && wide.seen), end, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barUnder: !!(exitLowest && barY >= 10), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole })) });
+})()
+'@
+Write-Output "moreK2=$moreK2"
+$ky2 = $moreK2 -match '\\"pageY\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageYk2) -le 1
+$kx2 = $moreK2 -match '\\"pageX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageXk2) -le 1
+$kd2 = $moreK2 -match '\\"docX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$kpt2 = $false
+if ($moreK2 -match '\\"pastTop\\":(-?\d+)') { $kpt2N = [int]$Matches[1] } else { $kpt2N = -999 }
+if ($moreK2 -match '\\"pastMax\\":(-?\d+)') { $kpt2 = [Math]::Abs($kpt2N - [int]$Matches[1]) -le 1 -and [Math]::Abs($kpt2N - $pastTopK2) -le 1 }
+$kpl2 = $moreK2 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $pastLeftK2) -le 1
+$krt2 = $false
+if ($moreK2 -match '\\"resultTop\\":(-?\d+)') { $krt2N = [int]$Matches[1] } else { $krt2N = -999 }
+if ($moreK2 -match '\\"resultMax\\":(-?\d+)') { $krt2 = [Math]::Abs($krt2N - $resultTopK2) -le 1 -and [Math]::Abs($krt2N - [int]$Matches[1]) -le 1 }
+$krows2 = $moreK2 -match '\\"resultWhole\\":true' -and $moreK2 -match '\\"resultNow8\\":true' -and $moreK2 -match '\\"resultNow7\\":false' -and $moreK2 -match '\\"resultExitSeen\\":true' -and $moreK2 -match '\\"wideWhole\\":true' -and $moreK2 -match '\\"inside\\":true' -and $moreK2 -match '\\"pastExitSeen\\":true' -and $moreK2 -match '\\"pastExitStuck\\":true' -and $moreK2 -match '\\"pastExitWhole\\":true' -and $moreK2 -match '\\"pastExitLowest\\":true' -and $moreK2 -match '\\"allWhole\\":true' -and $moreK2 -match '\\"barUnder\\":true'
+Send-Eval "9335" "(() => { const page = document.getElementById('helper-scroll'); const spacer = document.getElementById('uitest-wide'); if (spacer) spacer.remove(); page.style.paddingBottom = '0px'; page.style.overflowX = 'hidden'; const extra = page.scrollHeight - page.clientHeight; page.style.overflowY = extra <= 4 ? 'hidden' : 'auto'; page.scrollTop = 0; page.scrollLeft = 0; return String(extra); })()" | Out-Null
+Start-Sleep -Milliseconds 200
+$keptK2 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), h: Math.round(rect.height), top: Math.round(rect.top), bottom: Math.round(rect.bottom), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  const pastExitSeen = !!(exit && exit.seen);
+  return JSON.stringify({ pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), wideWhole: !!(wide && wide.whole && wide.seen), end, exit, pastExitSeen, pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barY: Math.round(barY), barUnder: !!(exitLowest && barY >= 10), visible: visible.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), extra: page.scrollHeight - page.clientHeight, overflow: getComputedStyle(page).overflowY, pageTop: page.scrollTop });
+})()
+'@
+Write-Output "keptK2=$keptK2"
+$keptPastK2 = $false
+if ($keptK2 -match '\\"pastTop\\":(-?\d+)') { $keptPastK2N = [int]$Matches[1] } else { $keptPastK2N = -999 }
+if ($keptK2 -match '\\"pastMax\\":(-?\d+)') { $keptPastK2 = [Math]::Abs($keptPastK2N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptPastK2N - $pastTopK2) -le 1 }
+$keptGapK2 = $keptK2 -match '\\"gap\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$keptLeftK2 = $keptK2 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $endLeft) -le 1
+$keptResultK2 = $false
+if ($keptK2 -match '\\"resultTop\\":(-?\d+)') { $keptResultK2N = [int]$Matches[1] } else { $keptResultK2N = -999 }
+if ($keptK2 -match '\\"resultMax\\":(-?\d+)') { $keptResultK2 = [Math]::Abs($keptResultK2N - $resultTopK2) -le 1 -and [Math]::Abs($keptResultK2N - [int]$Matches[1]) -le 1 }
+$keptRowsK2 = $keptK2 -match '\\"resultWhole\\":true' -and $keptK2 -match '\\"resultNow8\\":true' -and $keptK2 -match '\\"resultNow7\\":false' -and $keptK2 -match '\\"resultExitSeen\\":true' -and $keptK2 -match '\\"wideWhole\\":true' -and $keptK2 -match '\\"inside\\":true' -and $keptK2 -match '\\"pastExitSeen\\":true' -and $keptK2 -match '\\"pastExitStuck\\":true' -and $keptK2 -match '\\"pastExitWhole\\":true' -and $keptK2 -match '\\"pastExitLowest\\":true' -and $keptK2 -match '\\"allWhole\\":true' -and $keptK2 -match '\\"barUnder\\":true' -and $keptK2 -match '\\"barY\\":(\d+)' -and [int]$Matches[1] -ge 10
+$keptPageK2 = $keptK2 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -and $keptK2 -match '\\"overflow\\":\\"hidden\\"' -and $keptK2 -match '\\"pageTop\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+Write-Output "more-after-secret"
+if (-not ($ky2 -and $kx2 -and $kd2 -and $kpt2 -and $kpl2 -and $krt2 -and $krows2 -and $keptPastK2 -and $keptGapK2 -and $keptLeftK2 -and $keptResultK2 -and $keptRowsK2 -and $keptPageK2)) { Fail 649 "old-more-again-lost" }
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+if (Has-Secret $groot) { Write-Output "before-not-saved" } else { Save $helpp.MainWindowHandle (Join-Path $shot "desktop-rightmoreagain-before.png") }
+$armL3 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const keptPastTop = past.scrollTop;
+  const keptPastLeft = past.scrollLeft;
+  const keptTop = box.scrollTop;
+  page.style.overflowX = "auto";
+  page.style.overflowY = "auto";
+  page.style.paddingBottom = "800px";
+  let spacer = document.getElementById("uitest-wide");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "uitest-wide";
+    spacer.style.cssText = "width:1800px;height:1px;flex:none";
+    page.appendChild(spacer);
+  }
+  if (Math.abs(past.scrollTop - keptPastTop) > 1) past.scrollTop = keptPastTop;
+  if (Math.abs(past.scrollLeft - keptPastLeft) > 1) past.scrollLeft = keptPastLeft;
+  if (Math.abs(box.scrollTop - keptTop) > 1) box.scrollTop = keptTop;
+  page.scrollTop = 40;
+  page.scrollLeft = 40;
+  const r = past.getBoundingClientRect();
+  const rr = box.getBoundingClientRect();
+  const x = Math.round(r.left + 80);
+  const y = Math.round(r.top + 8);
+  const hit = document.elementFromPoint(x, y);
+  const hitPast = !!(hit && hit.closest && hit.closest("#past"));
+  const formula = past.scrollWidth - past.clientWidth;
+  return JSON.stringify({ x, y, hitPast, resultBottom: Math.round(rr.bottom), pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, roomX: page.scrollWidth - page.clientWidth, roomY: page.scrollHeight - page.clientHeight, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft: past.scrollLeft, formula, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight });
+})()
+'@
+Write-Output "armL3=$armL3"
+if ($armL3 -notmatch '\\"roomY\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 650 "page-cannot-scroll" }
+if ($armL3 -notmatch '\\"roomX\\":(\d+)' -or [int]$Matches[1] -lt 40) { Fail 651 "page-cannot-slide" }
+if ($armL3 -notmatch '\\"hitPast\\":true') { Fail 652 "wheel-missed-past" }
+if ($armL3 -notmatch '\\"x\\":(\d+)') { Fail 653 "no-xl" }
+$xl3 = [int]$Matches[1]
+if ($armL3 -notmatch '\\"y\\":(\d+)') { Fail 653 "no-yl" }
+$yl3 = [int]$Matches[1]
+if ($armL3 -notmatch '\\"resultBottom\\":(-?\d+)') { Fail 654 "no-result-bottom" }
+if ($yl3 -le [int]$Matches[1]) { Fail 655 "aim-still-on-result" }
+if ($armL3 -notmatch '\\"pageY\\":(-?\d+)') { Fail 656 "no-page-yl" }
+$pageYl3 = [int]$Matches[1]
+if ($armL3 -notmatch '\\"pageX\\":(-?\d+)') { Fail 657 "no-page-xl" }
+$pageXl3 = [int]$Matches[1]
+if ($armL3 -notmatch '\\"pastTop\\":(-?\d+)') { Fail 658 "no-past-topl" }
+$pastTopL3 = [int]$Matches[1]
+if ($armL3 -notmatch '\\"pastMax\\":(-?\d+)') { Fail 659 "no-past-maxl" }
+$pastMaxL3 = [int]$Matches[1]
+if ([Math]::Abs($pastTopL3 - $pastMaxL3) -gt 1) { Fail 660 "past-not-at-end" }
+if ($armL3 -notmatch '\\"pastLeft\\":(\d+)') { Fail 661 "no-past-leftl" }
+$pastLeftL3 = [int]$Matches[1]
+if ([Math]::Abs($pastLeftL3 - $endLeft) -gt 1) { Fail 662 "past-not-at-tail" }
+if ($armL3 -notmatch '\\"formula\\":(\d+)') { Fail 663 "no-formula-l" }
+$formulaL3 = [int]$Matches[1]
+if (($formulaL3 - $pastLeftL3) -lt 10) { Fail 664 "box-not-narrowed" }
+if ($armL3 -notmatch '\\"resultTop\\":(-?\d+)') { Fail 665 "no-result-topl" }
+$resultTopL3 = [int]$Matches[1]
+if ($armL3 -notmatch '\\"resultMax\\":(-?\d+)') { Fail 666 "no-result-maxl" }
+$resultMaxL3 = [int]$Matches[1]
+if ([Math]::Abs($resultTopL3 - $resultMaxL3) -gt 1) { Fail 667 "result-not-at-end" }
+Send-WheelX "9335" $xl3 $yl3 400 | Out-Null
+Start-Sleep -Milliseconds 450
+$slideL3 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  return JSON.stringify({ pageY: page.scrollTop, pageX: page.scrollLeft, docX: document.documentElement.scrollLeft, pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), wideWhole: !!(wide && wide.whole && wide.seen), end, pastExitSeen: !!(exit && exit.seen), pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barUnder: !!(exitLowest && barY >= 10), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole })) });
+})()
+'@
+Write-Output "slideL3=$slideL3"
+$ly3 = $slideL3 -match '\\"pageY\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageYl3) -le 1
+$lx3 = $slideL3 -match '\\"pageX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1] - $pageXl3) -le 1
+$ld3 = $slideL3 -match '\\"docX\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$lpt3 = $false
+if ($slideL3 -match '\\"pastTop\\":(-?\d+)') { $lpt3N = [int]$Matches[1] } else { $lpt3N = -999 }
+if ($slideL3 -match '\\"pastMax\\":(-?\d+)') { $lpt3 = [Math]::Abs($lpt3N - [int]$Matches[1]) -le 1 -and [Math]::Abs($lpt3N - $pastTopL3) -le 1 }
+$lgap3 = $false
+if ($slideL3 -match '\\"pastLeft\\":(\d+)') { $lleft3N = [int]$Matches[1] } else { $lleft3N = -999 }
+if ($slideL3 -match '\\"gap\\":(-?\d+)') { $lgap3 = [Math]::Abs([int]$Matches[1]) -le 1 -and ($lleft3N - $pastLeftL3) -ge 10 }
+$lrt3 = $false
+if ($slideL3 -match '\\"resultTop\\":(-?\d+)') { $lrt3N = [int]$Matches[1] } else { $lrt3N = -999 }
+if ($slideL3 -match '\\"resultMax\\":(-?\d+)') { $lrt3 = [Math]::Abs($lrt3N - [int]$Matches[1]) -le 1 -and [Math]::Abs($lrt3N - $resultTopL3) -le 1 }
+$lrows3 = $slideL3 -match '\\"resultWhole\\":true' -and $slideL3 -match '\\"resultNow8\\":true' -and $slideL3 -match '\\"resultNow7\\":false' -and $slideL3 -match '\\"resultExitSeen\\":true' -and $slideL3 -match '\\"wideWhole\\":true' -and $slideL3 -match '\\"inside\\":true' -and $slideL3 -match '\\"pastExitSeen\\":true' -and $slideL3 -match '\\"pastExitStuck\\":true' -and $slideL3 -match '\\"pastExitWhole\\":true' -and $slideL3 -match '\\"pastExitLowest\\":true' -and $slideL3 -match '\\"allWhole\\":true' -and $slideL3 -match '\\"barUnder\\":true'
+Send-Eval "9335" "(() => { const page = document.getElementById('helper-scroll'); const spacer = document.getElementById('uitest-wide'); if (spacer) spacer.remove(); page.style.paddingBottom = '0px'; page.style.overflowX = 'hidden'; const extra = page.scrollHeight - page.clientHeight; page.style.overflowY = extra <= 4 ? 'hidden' : 'auto'; page.scrollTop = 0; page.scrollLeft = 0; return String(extra); })()" | Out-Null
+Start-Sleep -Milliseconds 200
+$keptL3 = Send-Eval "9335" @'
+(() => {
+  const page = document.getElementById("helper-scroll");
+  const box = document.getElementById("result");
+  const past = document.getElementById("past");
+  const br = past.getBoundingClientRect();
+  const barY = Math.max(0, past.offsetHeight - past.clientHeight);
+  const barX = Math.max(0, past.offsetWidth - past.clientWidth);
+  const rows = [...past.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= br.top - 1 && r.bottom <= br.bottom - barY + 1;
+    const seen = r.bottom > br.top + 2 && r.top < br.bottom - barY - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, wide: el.textContent.indexOf("QUEEND") >= 0, exit: el.textContent.indexOf("exit=0") === 0, top: Math.round(r.top), bottom: Math.round(r.bottom), el };
+  });
+  const visible = rows.filter((row) => row.seen);
+  const wide = rows.find((row) => row.wide);
+  const exitRow = rows.find((row) => row.exit);
+  let end = null;
+  if (wide && wide.el.firstChild && wide.el.firstChild.length) {
+    const text = wide.el.firstChild;
+    const start = text.textContent.lastIndexOf("QUEEND");
+    const range = document.createRange();
+    range.setStart(text, start);
+    range.setEnd(text, start + "QUEEND".length);
+    const rect = range.getBoundingClientRect();
+    end = { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), inside: rect.width > 4 && rect.top < br.bottom - barY - 2 && rect.bottom > br.top + 2 && rect.left >= br.left + 4 && rect.right <= br.right - barX - 1 };
+  }
+  let exit = null;
+  if (exitRow && exitRow.el.firstChild) {
+    const range = document.createRange();
+    range.selectNodeContents(exitRow.el.firstChild);
+    const rect = range.getBoundingClientRect();
+    exit = { left: Math.round(rect.left), right: Math.round(rect.right), boxLeft: Math.round(br.left), h: Math.round(rect.height), top: Math.round(rect.top), bottom: Math.round(rect.bottom), stuck: rect.left >= br.left - 1 && rect.left <= br.left + 40, whole: !!exitRow.whole, seen: !!exitRow.seen };
+  }
+  const brb = box.getBoundingClientRect();
+  const barYb = Math.max(0, box.offsetHeight - box.clientHeight);
+  const resultRows = [...box.children].map((el) => {
+    const r = el.getBoundingClientRect();
+    const whole = r.height >= 16 && r.top >= brb.top - 1 && r.bottom <= brb.bottom - barYb + 1;
+    const seen = r.bottom > brb.top + 2 && r.top < brb.bottom - barYb - 2;
+    return { t: el.textContent.replace(/\s+/g, " ").trim().slice(0, 24), whole, seen, top: Math.round(r.top), bottom: Math.round(r.bottom) };
+  });
+  const resultSeen = resultRows.filter((row) => row.seen);
+  const pastLeft = past.scrollLeft;
+  const formula = past.scrollWidth - past.clientWidth;
+  const exitLowest = !!(exitRow && exitRow.seen && visible.every((row) => row.bottom <= exitRow.bottom + 1));
+  return JSON.stringify({ pastTop: past.scrollTop, pastMax: past.scrollHeight - past.clientHeight, pastLeft, formula, gap: formula - pastLeft, resultTop: box.scrollTop, resultMax: box.scrollHeight - box.clientHeight, resultWhole: resultSeen.length > 0 && resultSeen.every((row) => row.whole), resultNow8: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-8") === 0), resultNow7: resultRows.some((row) => row.seen && row.t.indexOf("queqiao-now-7") === 0), resultExitSeen: resultRows.some((row) => row.seen && row.t.indexOf("exit=0") === 0), resultSeen: resultSeen.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), wideWhole: !!(wide && wide.whole && wide.seen), end, exit, pastExitSeen: !!(exit && exit.seen), pastExitStuck: !!(exit && exit.stuck), pastExitWhole: !!(exit && exit.whole), pastExitLowest: exitLowest, allWhole: visible.length > 0 && visible.every((row) => row.whole), barY: Math.round(barY), barUnder: !!(exitLowest && barY >= 10), visible: visible.map((row) => ({ t: row.t, whole: row.whole, top: row.top, bottom: row.bottom })), extra: page.scrollHeight - page.clientHeight, overflow: getComputedStyle(page).overflowY, pageTop: page.scrollTop });
+})()
+'@
+Write-Output "keptL3=$keptL3"
+$keptPastL3 = $false
+if ($keptL3 -match '\\"pastTop\\":(-?\d+)') { $keptPastL3N = [int]$Matches[1] } else { $keptPastL3N = -999 }
+if ($keptL3 -match '\\"pastMax\\":(-?\d+)') { $keptPastL3 = [Math]::Abs($keptPastL3N - [int]$Matches[1]) -le 1 -and [Math]::Abs($keptPastL3N - $pastTopL3) -le 1 }
+$keptGapL3 = $keptL3 -match '\\"gap\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+$keptLeftL3 = $keptL3 -match '\\"pastLeft\\":(\d+)' -and [Math]::Abs([int]$Matches[1] - $endLeft) -le 1
+$keptResultL3 = $false
+if ($keptL3 -match '\\"resultTop\\":(-?\d+)') { $keptResultL3N = [int]$Matches[1] } else { $keptResultL3N = -999 }
+if ($keptL3 -match '\\"resultMax\\":(-?\d+)') { $keptResultL3 = [Math]::Abs($keptResultL3N - $resultTopL3) -le 1 -and [Math]::Abs($keptResultL3N - [int]$Matches[1]) -le 1 }
+$keptRowsL3 = $keptL3 -match '\\"resultWhole\\":true' -and $keptL3 -match '\\"resultNow8\\":true' -and $keptL3 -match '\\"resultNow7\\":false' -and $keptL3 -match '\\"resultExitSeen\\":true' -and $keptL3 -match '\\"wideWhole\\":true' -and $keptL3 -match '\\"inside\\":true' -and $keptL3 -match '\\"pastExitSeen\\":true' -and $keptL3 -match '\\"pastExitStuck\\":true' -and $keptL3 -match '\\"pastExitWhole\\":true' -and $keptL3 -match '\\"pastExitLowest\\":true' -and $keptL3 -match '\\"allWhole\\":true' -and $keptL3 -match '\\"barUnder\\":true' -and $keptL3 -match '\\"barY\\":(\d+)' -and [int]$Matches[1] -ge 10
+$keptPageL3 = $keptL3 -match '\\"extra\\":(-?\d+)' -and [int]$Matches[1] -le 4 -and $keptL3 -match '\\"overflow\\":\\"hidden\\"' -and $keptL3 -match '\\"pageTop\\":(-?\d+)' -and [Math]::Abs([int]$Matches[1]) -le 1
+Clear-Secret $groot
+Clear-Secret $hroot
+Start-Sleep -Milliseconds 150
+if (Has-Secret $groot) { Write-Output "after-not-saved" } else { Save $helpp.MainWindowHandle (Join-Path $shot "desktop-rightmoreagain-after.png") }
+if (-not ($ly3 -and $lx3 -and $ld3 -and $lpt3 -and $lgap3 -and $lrt3 -and $lrows3 -and $keptPastL3 -and $keptGapL3 -and $keptLeftL3 -and $keptResultL3 -and $keptRowsL3 -and $keptPageL3)) { Fail 668 "right-more-again-lost" }
 Stop-Process -Id $hostp.Id,$helpp.Id -Force
 $script:hostp = $null
 $script:helpp = $null
