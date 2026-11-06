@@ -31,13 +31,18 @@ func main() {
 		downloads = filepath.Join(".", "downloads")
 	}
 
+	relayAuditURL := os.Getenv("SITE_RELAY_AUDIT_URL")
+	relayAuditToken := os.Getenv("SITE_RELAY_AUDIT_TOKEN")
+
 	srv, err := site.NewServer(site.Config{
-		Addr:         addr,
-		DataPath:     data,
-		Password:     pass,
-		DownloadsDir: downloads,
-		Logger:       logger,
-		Static:       sitefs.FS,
+		Addr:            addr,
+		DataPath:        data,
+		Password:        pass,
+		DownloadsDir:    downloads,
+		Logger:          logger,
+		Static:          sitefs.FS,
+		RelayAuditURL:   relayAuditURL,
+		RelayAuditToken: relayAuditToken,
 	})
 	if err != nil {
 		logger.Error("init failed", "err", err)

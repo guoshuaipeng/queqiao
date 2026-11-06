@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 
 	"gitee.com/CodeYG/remote-assist/relay/internal/relay"
@@ -22,13 +23,24 @@ func main() {
 	if data == "" {
 		data = filepath.Join("data", "relay.db")
 	}
+	auditAddr := os.Getenv("RELAY_AUDIT_ADDR")
+	auditToken := os.Getenv("RELAY_AUDIT_TOKEN")
+	auditRetention := 90
+	if v := os.Getenv("RELAY_AUDIT_RETENTION_DAYS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			auditRetention = n
+		}
+	}
 
 	srv, err := relay.NewServer(relay.Config{
-		Addr:        addr,
-		DataPath:    data,
-		IdleTimeout: relay.DefaultIdleTimeout,
-		MaxSessions: relay.DefaultMaxSessions,
-		Logger:      logger,
+		Addr:               addr,
+		DataPath:           data,
+		IdleTimeout:        relay.DefaultIdleTimeout,
+		MaxSessions:        relay.DefaultMaxSessions,
+		Logger:             logger,
+		AuditAddr:          auditAddr,
+		AuditToken:         auditToken,
+		AuditRetentionDays: auditRetention,
 	})
 	if err != nil {
 		logger.Error("init failed", "err", err)

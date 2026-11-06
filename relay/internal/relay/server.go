@@ -23,27 +23,31 @@ const (
 
 // Config holds listen and resource limits for a small VPS (e.g. 2C2G).
 type Config struct {
-	Addr        string
-	DataPath    string
-	IdleTimeout time.Duration
-	MaxSessions int
-	Logger      *slog.Logger
-	Store       *Store // optional; created from DataPath if nil
+	Addr               string
+	DataPath           string
+	IdleTimeout        time.Duration
+	MaxSessions        int
+	Logger             *slog.Logger
+	Store              *Store // optional; created from DataPath if nil
+	AuditAddr          string // RELAY_AUDIT_ADDR; default loopback when token set
+	AuditToken         string // RELAY_AUDIT_TOKEN; empty = audit HTTP off
+	AuditRetentionDays int    // default 90
 }
 
 // Server is a JSONL-control TCP relay with guest + account pairing.
 type Server struct {
-	cfg      Config
-	store    *Store
-	ln       net.Listener
-	mu       sync.Mutex
-	guests   map[string]*pairSlot // code -> waiting agent
-	devices  map[string]*pairSlot // userID|deviceID -> waiting agent
-	pipes    int                  // active transparent pipes
-	slots    int                  // waiting + piping slots
-	closing  atomic.Bool
-	wg       sync.WaitGroup
-	ownStore bool
+	cfg       Config
+	store     *Store
+	ln        net.Listener
+	mu        sync.Mutex
+	guests    map[string]*pairSlot // code -> waiting agent
+	devices   map[string]*pairSlot // userID|deviceID -> waiting agent
+	pipes     int                  // active transparent pipes
+	slots     int                  // waiting + piping slots
+	closing   atomic.Bool
+	wg        sync.WaitGroup
+	ownStore  bool
+	auditHTTP *AuditHTTP
 }
 
 type pairSlot struct {
@@ -96,6 +100,19 @@ func NewServer(cfg Config) (*Server, error) {
 		srv.store = st
 		srv.ownStore = true
 	}
+	if n, err := srv.store.PurgeGuestAuditOlderThan(cfg.AuditRetentionDays); err != nil {
+		srv.cfg.Logger.Error("purge guest_audit", "err", err)
+	} else if n > 0 {
+		srv.cfg.Logger.Info("purged guest_audit", "rows", n)
+	}
+	ah, err := StartAuditHTTP(srv.store, cfg.AuditAddr, cfg.AuditToken, cfg.Logger)
+	if err != nil {
+		if srv.ownStore {
+			_ = srv.store.Close()
+		}
+		return nil, err
+	}
+	srv.auditHTTP = ah
 	return srv, nil
 }
 
@@ -143,6 +160,11 @@ func (s *Server) Close() error {
 	s.devices = make(map[string]*pairSlot)
 	s.mu.Unlock()
 	s.wg.Wait()
+	if s.auditHTTP != nil {
+		if cerr := s.auditHTTP.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}
 	if s.ownStore {
 		if cerr := s.store.Close(); cerr != nil && err == nil {
 			err = cerr
@@ -407,6 +429,7 @@ func (c *clientConn) opGuestHost(req map[string]any) (bool, error) {
 	if err := c.s.store.SaveGuest(code, password, exp); err != nil {
 		return false, err
 	}
+	c.s.safeAppendAudit(AuditInsert{Event: AuditGenerated, Code: code, OK: intPtr(1)})
 
 	slot, err := c.s.registerAgent("guest", "guest", code, 0, c.conn, c.br)
 	if err != nil {
@@ -423,23 +446,34 @@ func (c *clientConn) opGuestHost(req map[string]any) (bool, error) {
 func (c *clientConn) opGuestJoin(req map[string]any) (bool, error) {
 	code := normalizeCode(asString(req["code"]))
 	password := asString(req["password"])
+	fail := func(err error) (bool, error) {
+		reason := classifyJoinFail(err)
+		c.s.safeAppendAudit(AuditInsert{
+			Event: AuditJoinFailed, Code: code, OK: intPtr(0), FailReason: reason, PeerRole: "helper",
+		})
+		return false, err
+	}
 	if code == "" {
-		return false, fmt.Errorf("missing field code")
+		return fail(fmt.Errorf("missing field code"))
 	}
 	if len(password) < minPasswordLen {
-		return false, fmt.Errorf("password too short (min %d)", minPasswordLen)
+		return fail(fmt.Errorf("password too short (min %d)", minPasswordLen))
 	}
 	ok, err := c.s.store.GuestPasswordOK(code, password)
 	if err != nil {
-		return false, err
+		return fail(err)
 	}
 	if !ok {
-		return false, fmt.Errorf("invalid code or password")
+		return fail(fmt.Errorf("invalid code or password"))
 	}
 	slot, peer, err := c.s.registerHelper("guest", code, c.conn)
 	if err != nil {
-		return false, err
+		return fail(err)
 	}
+	now := time.Now().Unix()
+	c.s.safeAppendAudit(AuditInsert{
+		Event: AuditPaired, Code: code, OK: intPtr(1), PeerRole: "helper", PairedAt: int64Ptr(now),
+	})
 	if err := c.reply(map[string]any{"ok": true, "op": "paired", "mode": "guest", "code": code}); err != nil {
 		c.s.abandonHelper(slot, c.conn)
 		return false, err
@@ -467,9 +501,23 @@ func (c *clientConn) waitAndPipe(slot *pairSlot, mode string) bool {
 		<-slot.done
 		return true
 	case <-slot.done:
+		if mode == "guest" {
+			select {
+			case <-slot.paired:
+			default:
+				c.s.safeAppendAudit(AuditInsert{
+					Event: AuditAbandoned, Code: slot.key, OK: intPtr(0), PeerRole: "agent",
+				})
+			}
+		}
 		return true
 	case <-timer.C:
 		c.s.cfg.Logger.Info("wait timeout", "key", slot.key, "mode", mode)
+		if mode == "guest" {
+			c.s.safeAppendAudit(AuditInsert{
+				Event: AuditWaitTimeout, Code: slot.key, OK: intPtr(0), PeerRole: "agent",
+			})
+		}
 		c.s.abandonAgent(slot, c.conn)
 		_ = c.reply(map[string]any{"ok": false, "op": "paired", "error": "wait timeout"})
 		return true
@@ -596,6 +644,13 @@ func (s *Server) finishSlotLocked(slot *pairSlot) {
 func (s *Server) runPipe(slot *pairSlot, a, b net.Conn, aR, bR *bufio.Reader) {
 	// aR/bR may hold bytes that arrived after the last control line; feed them into the pipe.
 	s.pipePair(slot.key, a, b, aR, bR)
+
+	if slot.kind == "guest" {
+		now := time.Now().Unix()
+		s.safeAppendAudit(AuditInsert{
+			Event: AuditEnded, Code: slot.key, OK: intPtr(1), ClosedAt: int64Ptr(now),
+		})
+	}
 
 	s.mu.Lock()
 	if slot.kind == "guest" {

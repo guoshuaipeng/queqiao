@@ -85,8 +85,10 @@ CREATE TABLE IF NOT EXISTS guest_sessions (
 CREATE INDEX IF NOT EXISTS idx_tokens_user ON tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_devices_user ON devices(user_id);
 `
-	_, err := s.db.Exec(schema)
-	return err
+	if _, err := s.db.Exec(schema); err != nil {
+		return err
+	}
+	return s.ensureGuestAuditSchema()
 }
 
 func hashPassword(pw string) (string, error) {

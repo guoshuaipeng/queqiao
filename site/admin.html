@@ -91,6 +91,30 @@
           <tbody></tbody>
         </table>
       </div>
+
+      <h2 class="section-title" id="session-codes-title">会话码</h2>
+      <p class="hint">只读事件流水（最新在前）。数据来自中继审计旁路；不展示密码、hash、凭证、指纹。</p>
+      <div class="admin-bar" style="margin:0 0 12px;justify-content:flex-start;flex-wrap:wrap">
+        <label style="display:flex;gap:8px;align-items:center;margin:0">按码过滤
+          <input id="sc-code" type="text" placeholder="如 ABC123" style="width:140px" autocomplete="off">
+        </label>
+        <button class="btn" type="button" id="sc-refresh">查询</button>
+      </div>
+      <div class="alert err" id="sc-err"></div>
+      <div class="card" style="overflow-x:auto;padding:0">
+        <table class="data" id="sc-table">
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>会话码</th>
+              <th>事件</th>
+              <th>失败原因</th>
+              <th>角色</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </section>
   </div>
   <script>
@@ -142,6 +166,39 @@
       renderMessages(m.data.messages || []);
       renderCustomers(c.data.customers || []);
       showDash();
+      refreshSessionCodes();
+    }
+
+    async function refreshSessionCodes() {
+      const scErr = document.getElementById("sc-err");
+      showErr(scErr, "");
+      const code = (document.getElementById("sc-code").value || "").trim();
+      const q = code ? ("?code=" + encodeURIComponent(code)) : "";
+      const { res, data } = await api("/admin/api/session-codes" + q);
+      if (res.status === 401) { showLogin(); return; }
+      if (!res.ok || !data.ok) {
+        showErr(scErr, (data && data.error) || "会话码加载失败");
+        return;
+      }
+      if (data.configured === false) {
+        showErr(scErr, data.hint || "未配置中继审计代理");
+      }
+      renderSessionCodes(data.events || []);
+    }
+
+    function renderSessionCodes(list) {
+      const tb = document.querySelector("#sc-table tbody");
+      tb.innerHTML = "";
+      for (const e of list) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${fmtTime(e.ts)}</td>
+          <td class="ink">${escapeHtml(e.code || "")}</td>
+          <td><span class="badge">${escapeHtml(e.event || "")}</span></td>
+          <td>${escapeHtml(e.fail_reason || "")}</td>
+          <td>${escapeHtml(e.peer_role || "")}</td>`;
+        tb.appendChild(tr);
+      }
     }
 
     function renderMessages(list) {
@@ -238,6 +295,11 @@
         headers: { "Accept": "application/json" },
       });
       showLogin();
+    });
+
+    document.getElementById("sc-refresh").addEventListener("click", refreshSessionCodes);
+    document.getElementById("sc-code").addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") { ev.preventDefault(); refreshSessionCodes(); }
     });
 
     refresh();

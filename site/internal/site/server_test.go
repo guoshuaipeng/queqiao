@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -302,7 +303,7 @@ func TestDownloadsServeAndReject(t *testing.T) {
 
 	req = httptest.NewRequest(http.MethodGet, "/downloads/x", nil)
 	rr = httptest.NewRecorder()
-	req.SetPathValue("name", ".." + string(os.PathSeparator) + name)
+	req.SetPathValue("name", ".."+string(os.PathSeparator)+name)
 	srv.handleDownload(rr, req)
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("separator traversal code=%d", rr.Code)
@@ -317,3 +318,124 @@ func TestDownloadsServeAndReject(t *testing.T) {
 	}
 }
 
+func TestSessionCodesRequiresAuthAndProxies(t *testing.T) {
+	// Fake relay audit HTTP
+	mux := http.NewServeMux()
+	mux.HandleFunc("/audit/events", func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth != "Bearer relay-secret" {
+			http.Error(w, "no", http.StatusUnauthorized)
+			return
+		}
+		code := r.URL.Query().Get("code")
+		events := []map[string]any{
+			{"id": 2, "ts": 1700000002, "event": "paired", "code": "ABC123"},
+			{"id": 1, "ts": 1700000001, "event": "generated", "code": "ABC123"},
+		}
+		if code != "" && code != "ABC123" {
+			events = []map[string]any{}
+		}
+		// Include a forbidden key that proxy must strip
+		if len(events) > 0 {
+			events[0]["password_hash"] = "SHOULD_NOT_LEAK"
+			events[0]["fp"] = "SHOULD_NOT_LEAK"
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "events": events})
+	})
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	go http.Serve(ln, mux)
+	t.Cleanup(func() { _ = ln.Close() })
+
+	dir := t.TempDir()
+	srv, err := NewServer(Config{
+		Addr:            ":8088",
+		DataPath:        filepath.Join(dir, "site.db"),
+		Password:        "dev",
+		Static:          testStatic(),
+		RelayAuditURL:   "http://" + ln.Addr().String(),
+		RelayAuditToken: "relay-secret",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = srv.Close() })
+
+	// unauthenticated
+	req := httptest.NewRequest(http.MethodGet, "/admin/api/session-codes", nil)
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("unauth code=%d", rr.Code)
+	}
+
+	// login
+	form := url.Values{"password": {"dev"}}
+	req = httptest.NewRequest(http.MethodPost, "/admin/login", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	var session string
+	for _, c := range rr.Result().Cookies() {
+		if c.Name == sessionCookie {
+			session = c.Value
+		}
+	}
+	if session == "" {
+		t.Fatal("no session")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/admin/api/session-codes?code=ABC123", nil)
+	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: session})
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("code=%d body=%s", rr.Code, rr.Body.String())
+	}
+	body := rr.Body.String()
+	if strings.Contains(body, "SHOULD_NOT_LEAK") || strings.Contains(body, "password_hash") {
+		t.Fatalf("leaked sensitive: %s", body)
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp["ok"] != true || resp["configured"] != true {
+		t.Fatalf("%v", resp)
+	}
+	ev := resp["events"].([]any)
+	if len(ev) != 2 {
+		t.Fatalf("events=%v", ev)
+	}
+}
+
+func TestSessionCodesUnconfigured(t *testing.T) {
+	srv := newTestServer(t)
+	form := url.Values{"password": {"dev"}}
+	req := httptest.NewRequest(http.MethodPost, "/admin/login", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	var session string
+	for _, c := range rr.Result().Cookies() {
+		if c.Name == sessionCookie {
+			session = c.Value
+		}
+	}
+	req = httptest.NewRequest(http.MethodGet, "/admin/api/session-codes", nil)
+	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: session})
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("code=%d", rr.Code)
+	}
+	var resp map[string]any
+	_ = json.Unmarshal(rr.Body.Bytes(), &resp)
+	if resp["configured"] != false {
+		t.Fatalf("%v", resp)
+	}
+}

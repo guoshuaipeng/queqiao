@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai  
 > 实现：鹊桥-服务端（主）；架构对齐文档  
-> 状态：**open（规格已拍板）** — 只读评估结论已合入；**产品锁已补齐（旁路本机 + 事件流水 MVP）**；**尚未实现代码**  
+> 状态：**implemented-local（MVP 已落地，未上生产）** — 2026-11-06 13:23 Asia/Shanghai；guest_audit + 挂钩 + RELAY_AUDIT_TOKEN loopback HTTP；site 代理见 R051/PV-001  
 > 依据：用户要求「服务端记录生成的 code，以及使用记录；管理台可以查看」。只读评估要点（现网 `DeleteGuest` 抹历史、join 失败未入审计、无中继管理 HTTP、site/admin 接单分离）已收口进本轮与 `docs/relay-audit.md`。  
 > **本轮主题**：中继 SQLite **审计表** + **鉴权只读管理列表**；**不**改客户端亲友 UI、**不**改 `guest_*` 协议字段、**不**在用户本机跑应用。
 

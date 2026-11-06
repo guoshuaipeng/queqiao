@@ -28,8 +28,8 @@ var allowedOS = map[string]string{
 	"Windows": "Windows",
 	"macOS":   "macOS",
 	"Linux":   "Linux",
-	"不确定":    "不确定",
-	"不清楚":    "不确定",
+	"不确定":     "不确定",
+	"不清楚":     "不确定",
 }
 
 // Store is SQLite-backed persistence for customers and messages.

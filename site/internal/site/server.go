@@ -6,28 +6,32 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type Config struct {
-	Addr         string
-	DataPath     string
-	Password     string
-	DownloadsDir string
-	Logger       *slog.Logger
-	Static       fs.FS
+	Addr            string
+	DataPath        string
+	Password        string
+	DownloadsDir    string
+	Logger          *slog.Logger
+	Static          fs.FS
+	RelayAuditURL   string // SITE_RELAY_AUDIT_URL e.g. http://127.0.0.1:17992
+	RelayAuditToken string // SITE_RELAY_AUDIT_TOKEN (same secret as RELAY_AUDIT_TOKEN)
 }
 
 type Server struct {
-	cfg  Config
-	store *Store
-	auth *SessionAuth
-	mux  *http.ServeMux
+	cfg        Config
+	store      *Store
+	auth       *SessionAuth
+	mux        *http.ServeMux
 	httpServer *http.Server
-	log  *slog.Logger
+	log        *slog.Logger
 }
 
 func NewServer(cfg Config) (*Server, error) {
@@ -59,8 +63,8 @@ func NewServer(cfg Config) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Store() *Store { return s.store }
-func (s *Server) Auth() *SessionAuth { return s.auth }
+func (s *Server) Store() *Store         { return s.store }
+func (s *Server) Auth() *SessionAuth    { return s.auth }
 func (s *Server) Handler() http.Handler { return s.mux }
 
 func (s *Server) Close() error {
@@ -93,10 +97,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /admin/api/customers", s.requireAdmin(s.handleListCustomers))
 	s.mux.HandleFunc("POST /admin/api/status", s.requireAdmin(s.handleSetStatus))
 	s.mux.HandleFunc("POST /admin/api/note", s.requireAdmin(s.handleSetNote))
+	s.mux.HandleFunc("GET /admin/api/session-codes", s.requireAdmin(s.handleSessionCodes))
 
 	s.mux.HandleFunc("GET /downloads/{name}", s.handleDownload)
 }
-
 
 func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	dir := strings.TrimSpace(s.cfg.DownloadsDir)
@@ -370,4 +374,87 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+func (s *Server) handleSessionCodes(w http.ResponseWriter, r *http.Request) {
+	base := strings.TrimSpace(s.cfg.RelayAuditURL)
+	token := strings.TrimSpace(s.cfg.RelayAuditToken)
+	if base == "" || token == "" {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok": true, "events": []any{}, "configured": false,
+			"hint": "未配置 SITE_RELAY_AUDIT_URL / SITE_RELAY_AUDIT_TOKEN",
+		})
+		return
+	}
+	base = strings.TrimRight(base, "/")
+	u, err := url.Parse(base + "/audit/events")
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "bad relay audit url"})
+		return
+	}
+	q := u.Query()
+	if code := strings.TrimSpace(r.URL.Query().Get("code")); code != "" {
+		q.Set("code", code)
+	}
+	if lim := strings.TrimSpace(r.URL.Query().Get("limit")); lim != "" {
+		if n, err := strconv.Atoi(lim); err == nil && n > 0 {
+			q.Set("limit", strconv.Itoa(n))
+		}
+	}
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, u.String(), nil)
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "proxy build failed"})
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{Timeout: 8 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		s.log.Error("relay audit proxy", "err", err)
+		writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "中继审计不可达"})
+		return
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "proxy read failed"})
+		return
+	}
+	if resp.StatusCode != http.StatusOK {
+		writeJSON(w, http.StatusBadGateway, map[string]any{
+			"ok": false, "error": "中继审计返回 " + strconv.Itoa(resp.StatusCode),
+		})
+		return
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "bad relay json"})
+		return
+	}
+	events, _ := parsed["events"].([]any)
+	safe := make([]map[string]any, 0, len(events))
+	forbid := map[string]bool{
+		"password": true, "pwd": true, "password_hash": true, "fp": true,
+		"payload": true, "remote_addr": true, "remoteaddr": true, "pair": true,
+	}
+	for _, raw := range events {
+		row, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		out := map[string]any{}
+		for k, v := range row {
+			lk := strings.ToLower(k)
+			if forbid[lk] || strings.Contains(lk, "password") || lk == "fp" {
+				continue
+			}
+			out[k] = v
+		}
+		safe = append(safe, out)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "events": safe, "configured": true})
 }

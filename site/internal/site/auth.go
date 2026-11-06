@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	sessionCookie   = "rasite_session"
-	sessionTTL      = 12 * time.Hour
-	defaultDevPass  = "dev"
+	sessionCookie  = "rasite_session"
+	sessionTTL     = 12 * time.Hour
+	defaultDevPass = "dev"
 )
 
 // SessionAuth holds the admin password and in-memory sessions.
