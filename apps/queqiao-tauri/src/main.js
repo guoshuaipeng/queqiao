@@ -76,6 +76,7 @@ function render(s) {
   }
   if (!s.manualCopy) window.__manualFocused = "";
   show($("btn-history"), (s.history || []).length > 0 && !waiting);
+  $("btn-history").textContent = s.showHistory ? "收起" : "查看上次协助记录";
   show($("history"), !!s.showHistory);
   $("history").innerHTML = (s.history || []).map(rowHtml).join("") || "";
 

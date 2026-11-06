@@ -155,6 +155,8 @@
 | 本轮完成 | 确认框里的长命令不从词中间折断 | 命令保持一整行，用横滑看后面 | 框里是一行命令和横向滚动条，没有从连字符处折开 | `acceptance/desktop-cmd-line.png` |
 | 本轮完成 | 关掉再打开，查看上次协助记录仍能看到「已执行：」 | 记录留在这台电脑上 | 结束并关掉进程后再打开，展开记录仍是「已执行：写一句」 | 本机同一数据目录；`acceptance/desktop-reopen-live.png`、`desktop-reopen-after.png` |
 | 本轮完成 | 长命令确认框打开时滚到末尾 | 不用再滑才能看见路径 | 框里露出 `queqiao-reopen-end.txt` | `acceptance/desktop-cmd-end.png` |
+| 本轮完成 | 上次记录保留「已允许这次协助」 | 连上之后这条不要消失 | 进行中能看见；结束后展开记录仍是这句 | 本机 `127.0.0.1:17991`；`acceptance/desktop-kept-live.png`、`desktop-kept-open.png` |
+| 本轮完成 | 记录展开后按钮改成「收起」，再点合上 | 看完能收回去 | 展开是「收起」且能看见记录；再点回到「查看上次协助记录」，记录不再显示 | `acceptance/desktop-kept-open.png`、`desktop-kept-shut.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

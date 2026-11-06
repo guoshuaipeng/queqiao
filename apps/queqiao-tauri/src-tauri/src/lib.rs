@@ -284,7 +284,6 @@ impl Hooks for AppHooks {
                 model.view = "host".into();
                 model.dialog = None;
                 model.peer_ended = false;
-                model.audit.clear();
             }
             Ev::HelperSession => {
                 model.phase = "helper_session".into();
