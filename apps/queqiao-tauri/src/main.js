@@ -197,9 +197,15 @@ function watchResultWheel(result) {
   if (!result || result.__wheel) return;
   result.__wheel = true;
   result.addEventListener("wheel", (event) => {
-    const max = result.scrollHeight - result.clientHeight;
-    if (max <= 1) return;
-    result.scrollTop = Math.min(max, Math.max(0, result.scrollTop + event.deltaY));
+    const maxX = result.scrollWidth - result.clientWidth;
+    const maxY = result.scrollHeight - result.clientHeight;
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY) && maxX > 1) {
+      result.scrollLeft = Math.min(maxX, Math.max(0, result.scrollLeft + event.deltaX));
+      event.preventDefault();
+      return;
+    }
+    if (maxY <= 1) return;
+    result.scrollTop = Math.min(maxY, Math.max(0, result.scrollTop + event.deltaY));
     event.preventDefault();
   }, { passive: false });
 }
@@ -209,11 +215,15 @@ function watchPastSnap(past) {
   past.__snap = true;
   past.addEventListener("scrollend", () => snapNearest(past));
   past.addEventListener("wheel", (event) => {
-    const max = past.scrollHeight - past.clientHeight;
-    if (max <= 1) return;
-    const next = Math.min(max, Math.max(0, past.scrollTop + event.deltaY));
-    if (next === past.scrollTop) return;
-    past.scrollTop = next;
+    const maxX = past.scrollWidth - past.clientWidth;
+    const maxY = past.scrollHeight - past.clientHeight;
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY) && maxX > 1) {
+      past.scrollLeft = Math.min(maxX, Math.max(0, past.scrollLeft + event.deltaX));
+      event.preventDefault();
+      return;
+    }
+    if (maxY <= 1) return;
+    past.scrollTop = Math.min(maxY, Math.max(0, past.scrollTop + event.deltaY));
     event.preventDefault();
   }, { passive: false });
 }

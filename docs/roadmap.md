@@ -185,6 +185,8 @@
 | 本轮完成 | 滚轮在结果框里翻，不要带动整页 | 只翻结果，页面不动 | 结果从 1140 滚到 740，整页仍停在 1 | `acceptance/desktop-wheel-before.png`、`desktop-wheel-after.png` |
 | 本轮完成 | 当前结果框的长行不要被自己的滚动条挡住 | 行尾停在滚动条左边 | 长行右沿距结果框右边 36 | 本机 `127.0.0.1:17991`；`acceptance/desktop-result-gutter.png` |
 | 本轮完成 | 结果框到顶或到底时，继续滚轮不要带动整页 | 头尾都只停在结果框里 | 到底时结果停在 1140、整页仍是 1；到顶后再向上滚，结果仍是 0，整页仍是 1 | `acceptance/desktop-edge-after.png` |
+| 本轮完成 | 长行可以横着滑，能看到行尾 | 不用猜后面还有没有字 | 滑之前行尾在框外；滑到头能看见 `queqiao-wide-QUEEND` | 本机 `127.0.0.1:17991`；`acceptance/desktop-slide-before.png`、`desktop-slide-after.png` |
+| 本轮完成 | 横滑时不要把整页左右带动 | 只动结果框 | 结果横滑了 600，整页和文档的横向位置仍是 0 | `acceptance/desktop-slide-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

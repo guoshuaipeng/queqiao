@@ -185,7 +185,7 @@ test("an early result box is not cut by the window", () => {
 test("previous output opens without pushing the current result away", () => {
   assert.match(js, /function paintPast/);
   assert.match(js, /snapEnd\(\$\("past"\)\)/);
-  assert.match(css, /#past\s*\{[^}]*max-height:\s*calc\(4 \* 20px \+ 2px\)/);
+  assert.match(css, /#past\s*\{[^}]*max-height:\s*calc\(4 \* 20px \+ 2px \+ 16px\)/);
   assert.match(css, /#past > div\s*\{[^}]*height:\s*20px/);
 });
 
@@ -220,6 +220,14 @@ test("the result wheel does not scroll the page", () => {
 test("a long result line stays clear of its scrollbar", () => {
   assert.match(css, /#result\s*\{[^}]*scrollbar-gutter:\s*stable/);
   assert.match(css, /#result\s*\{[^}]*padding:\s*0 20px 0 12px/);
+});
+
+test("a long line can slide sideways without sliding the page", () => {
+  assert.match(css, /#result\s*\{[^}]*overflow-x:\s*auto/);
+  assert.match(css, /#result > div\s*\{[^}]*width:\s*max-content/);
+  assert.match(css, /\.scroll\s*\{[^}]*overflow-x:\s*hidden/);
+  assert.match(js, /Math\.abs\(event\.deltaX\) > Math\.abs\(event\.deltaY\)/);
+  assert.match(js, /result\.scrollLeft = Math\.min\(maxX, Math\.max\(0, result\.scrollLeft \+ event\.deltaX\)\)/);
 });
 
 test("previous lines can scroll and the page scrollbar stays away", () => {
