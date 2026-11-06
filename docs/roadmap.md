@@ -57,8 +57,10 @@
 | R046 | 高频：中继 SQLite 会话码审计表（生成/join 成败/结束）+ 鉴权只读管理列表；禁记禁展 pwd/hash/fp/完整凭证；不改 guest_*；与 site 接单分离 | 鹊桥-服务端（主） | **open（规格已拍板）** | `docs/round-046.md`、`docs/relay-audit.md` |
 | R047 | 高频：Windows **net48 安装包**（Inno 或 MSI 单文件 Setup，依赖 .NET Framework 4.8）；打磨：安装说明写清运行时前提；官网上传可选另轮 | 鹊桥-客户端（主） | **open（规格已开）** | `docs/round-047.md` |
 | R048 | 高频：net48 **去协助 / Helper** 补「复制安装说明」+ MCP「复制 MCP 配置」JSON（对齐 net8/Avalonia）；打磨：缺完整凭证阻断、禁明文降级 | 鹊桥-客户端（主） | **PASS_WITH_NOTES**（编译/文档 `2d427d4`；运行 blocked） | `docs/round-048.md` |
+| R049 | 高频：首页与「去协助/接受协助」**单主窗口**页内切换（不叠窗、保位置/大小；有会话返回/切角色须本机确认结束；安全确认窗不在合并范围）；打磨：中继地址仅高级设置可改、默认内置 | 鹊桥-客户端（主） | **draft / 规格**（未授权实现） | `docs/round-049.md` |
+| R050 | 高频：亲友主路径**短码**（会话码+8位密码）一次复制/粘贴即可**安全**连接 | 架构方案 → 客户端/中继按方案 | **blocked**（等架构短凭证 E2E；禁止 TOFU/跳校验/未绑定指纹当认证） | `docs/quality-connection-credential.md`、`docs/tls-trust.md` |
 
-> **当前**：并行三轮——**R046** **open（规格已拍板）**（服务端：会话码审计 + 管理台只读；见 `docs/round-046.md`、`docs/relay-audit.md`）；**R047** **open（规格已开）**（客户端：net48 单文件安装包；见 `docs/round-047.md`）；**R048** 编译/文档 **PASS_WITH_NOTES**（`2d427d4`；运行 blocked；见 `docs/round-048.md`）。R045 编译/文档 **PASS_WITH_NOTES**（`39d6dc1`），运行仍 blocked。R044 编译/文档 **PASS_WITH_NOTES**（`7cad0ab`），运行仍 blocked；Avalonia/CLI 完整载荷另轮。R042 已产品验收（出包 `8d61398`，上架 `f90bd8f`，2026-11-06）。
+> **当前**：并行——**R046** open（规格已拍板）；**R047** open（规格已开）；**R048** compiled（运行未验收）。另锁定体验规格：**R049** draft（单主窗口 + 高级中继 UI，未授权实现）；**R050** **blocked**（短凭证安全可连，等架构；见 `quality-connection-credential.md`）。用户重申：复制目标=短码；单主窗口；**不得**未验证称短码可安全连接。R045/R044 运行仍 blocked；R042 已产品验收。
 
 > R041 已产品验收（`aeafeeb`，2026-11-06）；R042 已产品验收（公网 Win 75,587,213 / Linux 8,005,849）。
 
