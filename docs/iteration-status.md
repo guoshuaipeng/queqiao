@@ -436,3 +436,9 @@ elay/internal/relay/audit_test.go
 - **PV-001**：状态「待验收」= **本地浏览器点验**即可标完成；公网上线另授。测试勿把「未部署到公网」当功能 FAIL。
 - **继续协调**：首页紧凑（ModeSelect）+ PV-004（Net48 安装语言）并行。
 
+
+### 2026-11-06 14:29 Asia/Shanghai · PRODUCT-VERSIONS PV-002 授权句已改
+
+- 按产品要求：将「须用户确认后再交实现」改为「用户已确认 + 产品已授权本地紧凑改版（LOCAL-IMPL-AUTH.md）」。
+- 同提交纳入工作区已有的 PV-004 待开发条文（产品先前未 commit 的落盘）。
+
