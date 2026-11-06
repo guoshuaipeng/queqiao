@@ -215,6 +215,8 @@
 | 本轮完成 | 松手后第一行是整行 | 翻到头不被切成半行 | 滚动放在 7 后松手回到 0，`queqiao-line-1` 是整行 | `acceptance/desktop-up-before.png`、`desktop-up-after.png` |
 | 本轮完成 | 当前结果横滑到行尾后再往上翻到第一行，横向仍停在行尾 | 翻上去不丢掉行尾 | 松手后竖向是 0，横向 715，和尽头一致；`exit=0` 从框左 24 起落在 37 | 本机 `127.0.0.1:17991`；`acceptance/desktop-rup-old.png`、`desktop-rup-after.png` |
 | 本轮完成 | 当前结果松手后第一行是整行 | 翻到头不被切成半行 | 滚动放在 7 后松手回到 0，`queqiao-line-1` 是整行 | `acceptance/desktop-rup-before.png`、`desktop-rup-after.png` |
+| 本轮完成 | 当前结果翻到第一行后再滚回最底下，横向仍停在行尾 | 滚回去不丢掉行尾 | 松手后竖向回到 76，横向 715，和尽头一致 | 本机 `127.0.0.1:17991`；`acceptance/desktop-back-old.png`、`desktop-back-after.png` |
+| 本轮完成 | 滚回后 exit=0 是整行，QUEEND 在框里 | 末行和行尾一起看全 | `exit=0` 是整行，`QUEEND` 在 727–767 | `acceptance/desktop-back-before.png`、`desktop-back-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

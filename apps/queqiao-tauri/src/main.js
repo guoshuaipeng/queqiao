@@ -188,14 +188,21 @@ function snapNearest(box) {
   const max = Math.max(0, box.scrollHeight - box.clientHeight);
   const step = rowStep(box);
   if (step <= 1) return;
-  if (max - box.scrollTop <= 2) return;
+  const x = box.__rowTail || box.scrollLeft;
+  const keep = () => {
+    if ((x || 0) > 1 && Math.abs(box.scrollLeft - x) > 1) box.scrollLeft = x;
+    shiftShortRows(box);
+  };
+  if (max - box.scrollTop < step) {
+    if (Math.abs(box.scrollTop - max) >= 1) box.scrollTop = max;
+    keep();
+    return;
+  }
   let snapped = Math.round(box.scrollTop / step) * step;
   if (snapped > max) snapped = Math.floor(box.scrollTop / step) * step;
   snapped = Math.max(0, Math.min(max, snapped));
-  const x = box.__rowTail || box.scrollLeft;
   if (Math.abs(snapped - box.scrollTop) >= 1) box.scrollTop = snapped;
-  if ((x || 0) > 1 && Math.abs(box.scrollLeft - x) > 1) box.scrollLeft = x;
-  shiftShortRows(box);
+  keep();
 }
 
 function placeRail(box) {
