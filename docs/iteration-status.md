@@ -562,3 +562,15 @@ elay/internal/relay/audit_test.go
 - **红线**：R049 外未授；R050 blocked；不 push/上线/换用户包；缺授权隔离环境测记 blocked；不扩大 PV-001 环境。
 - status 仍仅迭代写。
 
+
+### 2026-11-06 14:50 Asia/Shanghai · 客户端 A 只读准备完成 + 细则待补缺口
+
+- **客户端**：A 结构/状态**只读准备完成**（**零改仓**）；正式编码等细则收口。
+- **最小触点（准备结论）**：Shell 双区宿主 + 停切页改 ClientSize；AppShell 显式启 Agent/Helper 与互斥；Agent/Helper 暴露入口状态、内部滚动。
+- **关键源码缺口（交体验细则 / 产品收口 · 不扩本轮授权）**：
+  1. Agent：确认逻辑把中继等待也算活动；有 PairedClientsChanged/SessionChanged，入口无统一 Waiting/Connected。须定：就绪条 vs 完整业务页；等待中切角色确认/停监听。
+  2. Helper：连接中 client 可能仍 null，ConfirmEnd 仅看 client；按钮 Disable≠全局取消。须定：连接中取消 / attempt 世代与迟到成功丢弃，防切角色后偷偷建连。
+  3. 现 ShowHome/Accept/Control 自动改 ClientSize，Helper 亦有增高；固定外框须一并收口。840×600 / &lt;760 **仍非验收数**。
+- **门禁建议（与 DECISION §4 对齐）**：冷启 0 监听、显式开启、防连点、取消/清理失败不切换、断线不自动重连、Bounds 不变、200% DPI 滚动可达。
+- **体验**：A 细则在 box `/workspace/ux-entry-a-20261106/`，**首稿未过自检**——**暂勿按 840×600 稿组织放行/全员复核**；修订后再交增量复核。
+
