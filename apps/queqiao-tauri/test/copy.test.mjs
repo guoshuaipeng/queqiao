@@ -123,6 +123,11 @@ test("write confirm shows the command without an extra click", () => {
   assert.match(js, /show\(\$\("dlg-detail"\), hasDetail\)/);
 });
 
+test("confirm command does not break in the middle of a word", () => {
+  assert.match(css, /#dlg-detail\s*\{[^}]*white-space:\s*pre\b/);
+  assert.match(css, /#dlg-detail\s*\{[^}]*overflow-x:\s*auto/);
+});
+
 test("a finished change clears the command", () => {
   const link = fs.readFileSync(new URL("../src-tauri/src/link.rs", import.meta.url), "utf8");
   const doneAt = link.indexOf("copy::DONE");
