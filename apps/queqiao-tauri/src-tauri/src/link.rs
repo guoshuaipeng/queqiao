@@ -503,7 +503,15 @@ fn helper_jobs(tls: &mut dyn StreamRw, token: &str, jobs: &Receiver<Job>, hooks:
         }
         let job = match jobs.recv_timeout(Duration::from_millis(200)) {
             Ok(j) => j,
-            Err(mpsc::RecvTimeoutError::Timeout) => continue,
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                if hooks.peer_gone() {
+                    if hooks.alive() {
+                        hooks.emit(Ev::PeerEnded);
+                    }
+                    return;
+                }
+                continue;
+            }
             Err(mpsc::RecvTimeoutError::Disconnected) => return,
         };
         if job.gen != hooks.generation() || !hooks.alive() {

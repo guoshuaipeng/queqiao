@@ -128,6 +128,8 @@
 | 本轮完成 | 窄于 760 时滚轮把「连接」滚进视野 | 小窗口不用去拖滚动条也能点连接 | 客户区 640×360 时「连接」先在客户区下方，滚轮后进入客户区 | `acceptance/desktop-narrow-before-wheel.png`、`desktop-narrow-after-wheel.png`；按钮从客户区外移到区内 |
 | 本轮完成 | 协助端点「取消」后双方都不进会话，被协助端仍在等待 | 连到一半可以停，不会因此被连上 | 弹窗出现后点「取消」；弹窗消失；仍有「等待对方连接」；没有已连接。协助端回到「连接」，没有「取消」 | 本机 `127.0.0.1:17991`；`acceptance/desktop-before-cancel.png`、`desktop-after-cancel-helper.png` |
 | 本轮完成 | 配对弹窗不把后面的连接原文透出来 | 旁人看不到凭证 | 弹窗打开时界面树里没有凭证原文，画面是实底遮罩加弹窗 | `acceptance/desktop-cancel-dialog.png`；断言 secretDuringDialog 为假 |
+| 本轮完成 | 已连接后点「结束本次协助」，双方离开，这次不能再进 | 亲友能结束，结束后旧凭证进不来 | 双方都出现已连接；确认结束后都回到首页；再连没有弹窗、没有已连接，协助端显示没能连上 | 本机 `127.0.0.1:17991`；`acceptance/desktop-during-session.png`、`desktop-after-end.png`、`desktop-after-end-helper.png` |
+| 本轮完成 | 协助端点「取消」后显示「已取消，没有连上。」 | 点了取消能看出来没有连上 | 取消后出现这句，没有进入会话 | `acceptance/desktop-cancel-hint.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

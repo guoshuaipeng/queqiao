@@ -263,6 +263,7 @@ impl Hooks for AppHooks {
         if !self.alive() {
             return;
         }
+        let mut clear_secrets = false;
         match ev {
             Ev::Waiting { code, payload } => {
                 let mut secrets = self.shared.secrets.lock().expect("secrets");
@@ -336,14 +337,38 @@ impl Hooks for AppHooks {
                 model.op_busy = false;
             }
             Ev::PeerEnded => {
-                model.peer_ended = true;
-                model.op_busy = false;
-                model.op_status = text::PEER_ENDED.into();
+                clear_secrets = true;
+                let helper = model.view == "helper" || model.phase == "helper_session";
                 self.shared.remember_locked(&mut model);
+                model.phase = "idle".into();
+                model.view = "home".into();
+                model.dialog = None;
+                model.peer_ended = false;
+                model.code.clear();
+                model.password_len = 0;
+                model.full_gen = 0;
+                model.op_busy = false;
+                model.op_status.clear();
+                model.audit.clear();
+                if helper {
+                    model.helper_error = text::PEER_ENDED.into();
+                    model.helper_status.clear();
+                    model.left_note.clear();
+                } else {
+                    model.left_note = text::PEER_ENDED.into();
+                    model.helper_error.clear();
+                }
             }
             Ev::Busy(b) => model.op_busy = b,
         }
         drop(model);
+        if clear_secrets {
+            let mut secrets = self.shared.secrets.lock().expect("secrets");
+            secrets.password.clear();
+            secrets.payload.clear();
+            secrets.code.clear();
+            secrets.pending_via = None;
+        }
         if self.alive() {
             self.shared.publish();
         }
@@ -1009,8 +1034,10 @@ fn cancel_connect(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, 
     let _ = state.bump();
     let _ = state.wait_worker();
     let mut model = state.model.lock().expect("model");
-    model.phase = "idle".into();
+    model.phase = "helper_fail".into();
+    model.view = "home".into();
     model.helper_status.clear();
+    model.helper_error = text::CANCELLED_CONNECT.into();
     model.op_busy = false;
     model.op_status.clear();
     model.dialog = None;

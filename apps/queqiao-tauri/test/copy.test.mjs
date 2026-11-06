@@ -88,6 +88,10 @@ test("pair dialog does not leave the credential readable behind it", () => {
   assert.ok(js.includes("s.dialog ? \"\""));
 });
 
+test("cancel tells the helper it did not connect", () => {
+  assert.ok(blob.includes("已取消，没有连上。"));
+});
+
 test("older snapshots do not replace a newer one", () => {
   assert.ok(js.includes("__queqiaoSeq"));
   assert.ok(js.includes("s.seq"));

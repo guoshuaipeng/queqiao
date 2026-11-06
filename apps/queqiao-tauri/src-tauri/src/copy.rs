@@ -47,6 +47,7 @@ pub const FULL_NEEDS_PEER: &str =
 pub const HOST_CONNECTED: &str = "正在接受协助 · 已连接";
 pub const HELPER_CONNECTED: &str = "正在协助对方 · 已连接";
 pub const PEER_ENDED: &str = "对方已结束这次协助。";
+pub const CANCELLED_CONNECT: &str = "已取消，没有连上。";
 pub const BUSY_OP: &str = "正在执行…";
 pub const EMPTY_AUDIT: &str = "对方还没有做任何操作";
 pub const EMPTY_RESULT: &str = "点上面的操作，结果会显示在这里";
