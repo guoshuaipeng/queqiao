@@ -45,3 +45,7 @@
 - **完整连接凭证载荷已接线；实际连接、安全校验与界面运行验收另计。**
 - R043 编译/文档核对：**PASS_WITH_NOTES**；真实连接 / 运行验收：**仍 blocked**（非可公网已验证产物）。
 - net8 Helper「无指纹 force Insecure」已知债 → 另开轮（记入 R044 备忘），不得扩大主路径。
+
+## 短凭证主路径（目标）
+
+亲友主路径目标只复制「会话码 + 8 位验证密码」；业务 TLS 仍钉被控 Agent 临时业务证书 fp。短码+密码须经 [S1 密封指纹](short-credential-trust.md)（默认官方中继诚实）或 [S0 完整载荷](short-credential-trust.md) 取得可验证 fp；**禁止无 fp 连接**。S1 不抵抗已掌握 pwd 的恶意中继。服务器不知密码且不可冒充的强化目标见 [PAKE 唯一凭证评估](pake-unique-credential-eval.md)。未实现前仍沿用既有「缺 fp 阻断」。

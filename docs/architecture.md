@@ -206,3 +206,10 @@ Windows 主线演示仍按现有安排；小体积 4.8 对比版仅 Windows。�
 - **缺指纹 → 安全阻断**；禁止 TOFU；禁止自动 skipTls / Insecure 降明文。`--insecure` 仅显式调试。
 - **与现网**：中继 `:17891` 普通 TCP、不终结业务 TLS；不改 `guest_*` 字段。
 - 实现：「鹊桥-客户端」；不改 `relay/` 协议字段。
+
+## 短凭证与唯一凭证（文档指针）
+
+主路径目标：只复制会话码+密码；业务仍钉 Agent fp。过渡双路径 S0/S1 见上表两篇；S1 身份引入依赖官方中继诚实。PAKE 唯一凭证须端点终止认证且收口服务器授权旁路后才可宣称；账号免密兼容由产品/用户选择。身份认证与三档写确认正交。
+
+| [short-credential-trust.md](short-credential-trust.md) | 短凭证 S0/S1 信任模型（密封指纹过渡）与不可降级底线 |
+| [pake-unique-credential-eval.md](pake-unique-credential-eval.md) | PAKE 唯一凭证正式评估（不信任中继；与账号免密冲突待产品拍板） |

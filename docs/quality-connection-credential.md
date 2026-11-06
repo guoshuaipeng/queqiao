@@ -111,3 +111,7 @@
 - `docs/round-044.md`
 - `docs/PRODUCT.md`
 - `src/RemoteAssist.Protocol/PairQrPayload.cs`（`BuildRelay`）
+
+## 目标主路径复制（短凭证）
+
+主按钮目标为「复制会话码和密码」：只复制两行 code/pwd（新会话 8 位），不复制中继地址或长串；默认中继内置，仅高级可改；高级保留「复制完整连接凭证」。安全仍钉 Agent fp：短路径须完成 S1 解封绑定；旧会话无 sealed_fp 时提示新建或显式用 S0，禁止 TOFU/明文。详见 [短凭证信任模型](short-credential-trust.md) 与 [PAKE 唯一凭证评估](pake-unique-credential-eval.md)。S1 **不是**「服务器不知道密码」。身份认证与本机三档写确认正交。
