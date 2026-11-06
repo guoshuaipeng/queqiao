@@ -69,6 +69,7 @@
 - 构建 / 编译通过 ≠ UI / 运行通过。
 - Linux 客户端路径通过 ≠ Net48 Windows 亲友主路径通过（须分标）。
 - 专项测试须在约定且符合用户限制的环境完成；缺环境记阻塞，不写假 PASS。
+- 部署表述使用三态 `implemented-local` / `pending-prod-auth` / `prod-verified`（定义见 `docs/architecture.md` §16）：**未部署 / 待上线授权** 与 **功能坏** 必须分开写。
 
 ### 8. 收尾
 
