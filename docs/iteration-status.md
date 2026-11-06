@@ -747,3 +747,13 @@ elay/internal/relay/audit_test.go
 - 既有 Win/Linux 入口应保留，不因历史文档未验而删。
 - 边界：不改 /admin、API、表单字段、下载名/磁盘文件；不编码/不起服务/不部署。
 - **A-480-delta-v1.1 仍优先**；官网并行、**不编码**。不据此改客户端入口稿。
+
+
+### 2026-11-06 15:13 Asia/Shanghai · Tauri 迁移分支已建（本地）
+
+- **分支**：feat/tauri-client-migration @ 基点 7d7178c
+- **工作树**：E:\IdeaProjects\remote-assist-wt-tauri
+- **落盘**：docs/tauri-migration/（ARCHITECTURE-BOUNDARY / DECISION / IMPLEMENTATION-AUTH / 探针 / BRANCH-RECEIPT）
+- **未做**：push；删 .NET；解 R050；官网混入；探针当完成
+- **客户端**：必须另 worktree；主树 E:\IdeaProjects\remote-assist 仍有未提交脏改，勿在其上开发迁移
+- **入口 A net48**：按产品 15:05 冻结；新栈 UI 基线仍为 A-480-delta-v1.1（见 ARCHITECTURE-BOUNDARY §7）
