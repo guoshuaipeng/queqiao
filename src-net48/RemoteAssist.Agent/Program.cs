@@ -84,10 +84,10 @@ internal static class Program
             }
             catch (Exception ex)
             {
-                try { Console.WriteLine($"[主界面失败] {ex}"); } catch { /* ignore */ }
+                try { Console.WriteLine("[主界面失败] " + FriendConnectGuide.RedactSecureMaterial(ex.ToString())); } catch { /* ignore */ }
                 try
                 {
-                    MessageBox.Show(ex.ToString(), "鹊桥启动失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(FriendConnectGuide.RedactSecureMaterial(ex.ToString()), "鹊桥启动失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 catch { /* ignore */ }
                 tcs.TrySetException(ex);

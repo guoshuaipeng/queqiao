@@ -427,7 +427,7 @@ internal sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            SetStatus("读取剪贴板失败：" + ex.Message);
+            SetStatus("读取剪贴板失败：" + FriendConnectGuide.RedactSecureMaterial(ex.Message));
         }
     }
 
@@ -587,7 +587,7 @@ internal sealed class MainForm : Form
         catch (Exception ex)
         {
             SetStatus("调用失败：" + FriendConnectGuide.FriendlyOrRaw(ex));
-            AppendOutput("[" + tool + "] ERR: " + ex.Message + "\r\n");
+            AppendOutput("[" + tool + "] ERR: " + FriendConnectGuide.RedactSecureMaterial(ex.Message) + "\r\n");
         }
         finally
         {

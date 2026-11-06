@@ -13,11 +13,19 @@ public static class SessionPasswordGenerator
     public static string Generate(int length = DefaultLength)
     {
         if (length < 4) length = 4;
-        var bytes = new byte[length];
-        Net48Crypto.FillRandom(bytes);
         var sb = new StringBuilder(length);
+        var one = new byte[1];
         for (var i = 0; i < length; i++)
-            sb.Append((char)('0' + (bytes[i] % 10)));
+        {
+            // 拒绝采样：丢弃 250..255，避免 byte%10 模偏
+            byte b;
+            do
+            {
+                Net48Crypto.FillRandom(one);
+                b = one[0];
+            } while (b >= 250);
+            sb.Append((char)('0' + (b % 10)));
+        }
         return sb.ToString();
     }
 

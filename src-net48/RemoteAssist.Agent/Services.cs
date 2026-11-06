@@ -53,7 +53,9 @@ internal sealed class AuditLog
 
     public void Write(string eventType, string detail)
     {
-        var line = $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz}\t{eventType}\t{detail}";
+        // 审计/控制台均不得落完整凭证（载荷、密码、指纹、会话码）
+        var safeDetail = FriendConnectGuide.RedactSecureMaterial(detail ?? "");
+        var line = $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz}\t{eventType}\t{safeDetail}";
         lock (_lock)
         {
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);

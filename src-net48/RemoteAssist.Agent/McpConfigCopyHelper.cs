@@ -76,7 +76,7 @@ internal static class McpConfigCopyHelper
         }
         catch (Exception ex)
         {
-            return new Outcome(OutcomeKind.Failed, false, "复制失败：" + ex.Message, "", payload);
+            return new Outcome(OutcomeKind.Failed, false, "复制失败：" + FriendConnectGuide.RedactSecureMaterial(ex.Message), "", payload);
         }
     }
 

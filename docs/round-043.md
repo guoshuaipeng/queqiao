@@ -263,6 +263,19 @@ remoteassist:pair?v=2&via=relay&relay={host:port}&code={SESSION_CODE}&pwd={PASSW
 | 中继字段 | 未改 |
 
 
+
+
+## 凭证日志脱敏（同轮安全补丁）
+
+net48 控制台/审计/错误路径不得输出完整 `PairQrPayload`、密码、会话码、业务指纹：
+
+- `AgentHost.PrintBanner` / 会话刷新：仅非敏感状态；引导界面「复制连接凭证」
+- `AuditLog.Write` 统一经 `RedactSecureMaterial`；调用点去掉 `code=`/`fp=` 明文
+- UI `SetStatus` / Helper 失败输出 / MCP 复制失败 / 启动失败 MessageBox：脱敏
+- `SessionPasswordGenerator` / `SessionCodeGenerator`：拒绝采样消除 `byte%N` 模偏
+
+未删界面分享（复制连接凭证 / 二维码 / 口述短码展示）。
+
 ## 参考
 
 - `docs/quality-connection-credential.md`（连接凭证规范）

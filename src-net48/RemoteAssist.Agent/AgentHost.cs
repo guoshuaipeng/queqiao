@@ -230,8 +230,8 @@ internal sealed class AgentHost
             }
         }
 
-        _audit.Write("session_refresh", $"code={code}; kicked_all=true");
-        Console.WriteLine($"[会话码已刷新] {code}");
+        _audit.Write("session_refresh", "kicked_all=true");
+        Console.WriteLine("[会话码已刷新]（新凭证仅经界面「复制连接凭证」，日志不输出码/密码/载荷）");
         SessionChanged?.Invoke();
         PairedClientsChanged?.Invoke();
         return code;
@@ -244,19 +244,17 @@ internal sealed class AgentHost
         Console.WriteLine("========================================");
         Console.WriteLine($"监听端口 : {Port}");
         Console.WriteLine($"传输加密 : {(_insecure ? "明文 --insecure（仅调试）" : "TLS 1.2/1.3 + 证书指纹钉扎（默认）")}");
-        if (!_insecure && _certFingerprint is not null)
-            Console.WriteLine($"证书指纹 : {_certFingerprint}");
+        Console.WriteLine(_insecure
+            ? "证书指纹 : （明文调试模式无）"
+            : "证书指纹 : 已就绪（日志不输出；请用界面「复制连接凭证」）");
         Console.WriteLine($"本机地址 : {string.Join(", ", LanIps)}");
         Console.WriteLine($"QR 主机  : {SelectedHost}");
-        Console.WriteLine($"会话码   : {SessionCode}");
-        Console.WriteLine($"二维码载荷: {QrPayload}");
+        Console.WriteLine("会话凭证 : 已生成（码/密码/完整载荷不写日志；请用界面复制）");
         Console.WriteLine($"审计日志 : {AuditPath}");
         Console.WriteLine($"确认方式 : {(_autoYes ? "自动(--yes)" : _headless ? "控制台(--headless)" : "本机窗口+托盘(默认)")}");
         Console.WriteLine($"确认超时 : {_confirmTimeoutSeconds}s");
         Console.WriteLine();
-        Console.WriteLine("协助端示例:");
-        Console.WriteLine($"  dotnet run --project src/RemoteAssist.Helper -- pair {SelectedHost} {SessionCode}");
-        Console.WriteLine($"  dotnet run --project src/RemoteAssist.Helper -- pair \"{QrPayload}\"");
+        Console.WriteLine("协助端：粘贴被控端「复制连接凭证」得到的完整安全载荷（勿从日志读取凭证）。");
         Console.WriteLine();
         if (_autoYes)
             Console.WriteLine("自动确认已开启 (--yes)，仅用于本地联调。");
@@ -274,13 +272,13 @@ internal sealed class AgentHost
             return;
 
         if (!_insecure && _serverCert is not null)
-            _audit.Write("tls_cert", $"fp={_certFingerprint}");
+            _audit.Write("tls_cert", "ephemeral_cert_ready");
         else if (_insecure)
             _audit.Write("tls_off", "insecure plaintext");
 
         _cts = new CancellationTokenSource();
         _audit.Write("agent_start",
-            $"relay={_preferRelay}; relayEp={_relayEndpoint}; port={Port}; code={SessionCode}; host={SelectedHost}; tls={(!_insecure).ToString().ToLowerInvariant()}; confirm={(_autoYes ? "auto" : _headless ? "console" : "ui-tray")}; timeout={_confirmTimeoutSeconds}s");
+            $"relay={_preferRelay}; relayEp={_relayEndpoint}; port={Port}; host={SelectedHost}; tls={(!_insecure).ToString().ToLowerInvariant()}; confirm={(_autoYes ? "auto" : _headless ? "console" : "ui-tray")}; timeout={_confirmTimeoutSeconds}s");
 
         if (_preferRelay)
         {
@@ -384,7 +382,7 @@ internal sealed class AgentHost
                             lock (_codeLock) _sessionCode = c;
                             SetRelayPhase("ready", null);
                             try { SessionChanged?.Invoke(); } catch { /* UI */ }
-                            _audit.Write("relay_guest_code", $"code={c}");
+                            _audit.Write("relay_guest_code", "assigned");
                         },
                         ct: ct)
                     .ConfigureAwait(false);
@@ -392,7 +390,7 @@ internal sealed class AgentHost
                 lock (_codeLock) _sessionCode = code;
                 SetRelayPhase("waiting", null);
                 try { SessionChanged?.Invoke(); } catch { /* UI */ }
-                _audit.Write("relay_guest_paired", $"code={code}");
+                _audit.Write("relay_guest_paired", "ok");
                 SetRelayPhase("paired", null);
                 // R043 安全纠错：与 net8 / architecture 一致 — 中继 pipe 内业务 TLS（非 --insecure）
                 await HandleStreamAsync(relay, relay.Stream, $"relay-guest/{host}:{port}", skipTls: false, ct)
@@ -405,7 +403,7 @@ internal sealed class AgentHost
             catch (Exception ex)
             {
                 SetRelayPhase("error", FriendConnectGuide.FriendlyOrRaw(ex));
-                _audit.Write("relay_guest_error", ex.ToString());
+                _audit.Write("relay_guest_error", FriendConnectGuide.RedactSecureMaterial(ex.ToString()));
                 try { await Task.Delay(2000, ct).ConfigureAwait(false); } catch { break; }
             }
             finally
@@ -483,7 +481,7 @@ internal sealed class AgentHost
         }
         catch (Exception ex)
         {
-            _audit.Write("client_error", $"{remote}; {ex.Message}");
+            _audit.Write("client_error", $"{remote}; {FriendConnectGuide.RedactSecureMaterial(ex.Message)}");
         }
         finally
         {
@@ -566,7 +564,7 @@ internal sealed class AgentHost
         }
         catch (Exception ex)
         {
-            _audit.Write("client_error", $"{remote}; {ex.Message}");
+            _audit.Write("client_error", $"{remote}; {FriendConnectGuide.RedactSecureMaterial(ex.Message)}");
         }
         finally
         {
@@ -722,9 +720,10 @@ internal sealed class AgentHost
         }
         catch (Exception ex)
         {
-            _audit.Write("tool_error", $"tool={tool}; {ex.Message}");
+            var safeErr = FriendConnectGuide.RedactSecureMaterial(ex.Message);
+            _audit.Write("tool_error", $"tool={tool}; {safeErr}");
             await FrameIo.WriteAsync(stream, "tool_result",
-                new ToolResponse { Ok = false, Error = ex.Message }, id: envelope.Id).ConfigureAwait(false);
+                new ToolResponse { Ok = false, Error = safeErr }, id: envelope.Id).ConfigureAwait(false);
         }
     }
 

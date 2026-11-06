@@ -122,7 +122,7 @@ public static class FriendConnectGuide
         if (kind is FriendConnectFailKind.None or FriendConnectFailKind.Other)
         {
             // 其它错误仍给可执行兜底，避免露出端口/入站术语
-            var raw = ex.Message ?? "";
+            var raw = RedactSecureMaterial(ex.Message ?? "");
             if (LooksTechnicalLeak(raw))
                 return FailRelayUnreachable;
             return string.IsNullOrWhiteSpace(raw) ? FailRelayUnreachable : raw;
@@ -177,17 +177,28 @@ public static class FriendConnectGuide
     public const string NeedFingerprintHint =
         "还缺少安全校验（证书指纹）。下一步：请对方重新点「复制连接凭证」发来完整载荷；或展开「高级」填写 TLS 指纹。";
 
-    /// <summary>日志/异常展示用：掩码载荷中的 pwd 与 fp，避免完整凭证回显。</summary>
+    /// <summary>日志/异常/审计用：掩码完整 PairQrPayload、pwd/fp/code、短凭证与指纹，避免完整凭证回显。</summary>
     public static string RedactSecureMaterial(string? text)
     {
         if (string.IsNullOrEmpty(text)) return "";
         var s = text;
         try
         {
+            // 整段 remoteassist:pair… 载荷
             s = System.Text.RegularExpressions.Regex.Replace(
-                s, @"(?i)([?&]pwd=)[^&\s]+", "$1***");
+                s, @"(?i)remoteassist:pair\?\S+", "remoteassist:pair?[REDACTED]");
             s = System.Text.RegularExpressions.Regex.Replace(
-                s, @"(?i)([?&]fp=)[^&\s]+", "$1***");
+                s, @"(?i)([?&](?:pwd|fp|code)=)[^&\s]+", "$1***");
+            s = System.Text.RegularExpressions.Regex.Replace(
+                s, @"(?i)\b(pwd|password|fp|fingerprint|code)\s*=\s*[^;\s,]+", "$1=***");
+            s = System.Text.RegularExpressions.Regex.Replace(
+                s, @"(?i)(验证密码|密码|password|pwd|会话码|session\s*code|证书指纹|fingerprint)\s*[:：]\s*\S+", "$1：***");
+            // 口述短码 {会话码}-{数字}
+            s = System.Text.RegularExpressions.Regex.Replace(
+                s, @"\b[A-Z2-9]{4,12}-\d{4,12}\b", "[REDACTED_CRED]");
+            // 裸 64 hex 指纹
+            s = System.Text.RegularExpressions.Regex.Replace(
+                s, @"\b[0-9A-Fa-f]{64}\b", "[REDACTED_FP]");
         }
         catch { /* ignore */ }
         if (s.Length > 160) s = s.Substring(0, 160) + "…";

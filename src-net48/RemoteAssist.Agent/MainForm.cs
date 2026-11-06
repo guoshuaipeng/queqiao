@@ -303,13 +303,13 @@ internal sealed class MainForm : Form
                 Clipboard.SetText(_host.QrPayload);
                 SetStatus("已复制会话载荷（含 IP / 端口 / 会话码 / TLS 指纹）。");
             }
-            catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
+            catch (Exception ex) { SetStatus("复制失败：" + FriendConnectGuide.RedactSecureMaterial(ex.Message)); }
         };
         var btnCopyMcp = MakeButton("复制 MCP 配置", 124, 48, 120);
         btnCopyMcp.Click += (_, _) =>
         {
             var outcome = McpConfigCopyHelper.Copy(_host.QrPayload, this);
-            SetStatus(outcome.Message);
+            SetStatus(FriendConnectGuide.RedactSecureMaterial(outcome.Message));
         };
         var btnCopyCode = MakeButton("复制连接凭证", 252, 48, 100);
         btnCopyCode.Click += (_, _) => CopySecureCredential();
@@ -568,7 +568,7 @@ internal sealed class MainForm : Form
         catch (Exception ex)
         {
             _qrBox.Image = null;
-            SetStatus("二维码生成失败：" + ex.Message);
+            SetStatus("二维码生成失败：" + FriendConnectGuide.RedactSecureMaterial(ex.Message));
         }
     }
 

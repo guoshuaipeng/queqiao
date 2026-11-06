@@ -40,7 +40,7 @@ internal static class ConfirmPrompt
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[确认窗口失败，回退控制台] {ex.Message}");
+                    Console.WriteLine("[确认窗口失败，回退控制台] " + FriendConnectGuide.RedactSecureMaterial(ex.Message));
                     return AskConsole(info);
                 }
             }).ConfigureAwait(false);
@@ -81,7 +81,7 @@ internal static class ConfirmPrompt
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[配对窗口失败，回退控制台] {ex.Message}");
+                    Console.WriteLine("[配对窗口失败，回退控制台] " + FriendConnectGuide.RedactSecureMaterial(ex.Message));
                     return AskPairConsole(info);
                 }
             }).ConfigureAwait(false);

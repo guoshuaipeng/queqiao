@@ -12,10 +12,20 @@ public static class SessionCodeGenerator
             throw new ArgumentOutOfRangeException(nameof(length));
 
         var chars = new char[length];
-        var bytes = new byte[length];
-        Net48Crypto.FillRandom(bytes);
+        var one = new byte[1];
+        var mod = Alphabet.Length;
+        // 拒绝采样：仅用 < (256 - 256%mod) 的字节，避免 mod 偏
+        var limit = 256 - (256 % mod);
         for (var i = 0; i < length; i++)
-            chars[i] = Alphabet[bytes[i] % Alphabet.Length];
+        {
+            byte b;
+            do
+            {
+                Net48Crypto.FillRandom(one);
+                b = one[0];
+            } while (b >= limit);
+            chars[i] = Alphabet[b % mod];
+        }
         return new string(chars);
     }
 
