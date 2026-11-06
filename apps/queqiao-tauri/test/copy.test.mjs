@@ -307,7 +307,8 @@ test("previous lines can scroll and the page scrollbar stays away", () => {
 test("a short window keeps the task and the end button inside", () => {
   assert.match(js, /window\.addEventListener\("resize", \(\) => \{/);
   assert.match(js, /document\.body\.classList\.toggle\("tight", tight\)/);
-  assert.match(js, /const rowFloor = rowHeight\(1\)/);
+  assert.match(js, /rows \* 20 \+ 2 \+ \(wide \? 12 : 0\)/);
+  assert.match(js, /if \(\(window\.__resultStick \|\| "end"\) === "end"\) snapEnd\(result\)/);
   assert.match(js, /scroller\.style\.gap = "0px"/);
   assert.match(css, /body\.tight \.endbar\s*\{[^}]*height:\s*44px/);
   assert.match(css, /body\.tight #summary\s*\{[^}]*height:\s*30px/);

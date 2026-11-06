@@ -466,24 +466,28 @@ function fitSpan() {
     scroller.style.paddingBottom = "0px";
     extra = scroller.scrollHeight - scroller.clientHeight;
   }
-  if (tight && extra > 4) {
+  if (tight) {
     scroller.style.paddingTop = "0px";
     scroller.style.paddingBottom = "0px";
     scroller.style.gap = "0px";
     if (propose && !propose.hidden) propose.style.gap = "0px";
-    extra = scroller.scrollHeight - scroller.clientHeight;
-    const rowFloor = rowHeight(1);
-    let guard2 = 0;
-    while (extra > 4 && guard2 < 24) {
-      const rh = parseFloat(result.style.maxHeight) || 0;
-      const ph = past ? parseFloat(past.style.maxHeight) || 0 : 0;
-      if (rh <= rowFloor && (!past || ph <= rowFloor)) break;
-      if (rh >= ph && rh > rowFloor) result.style.maxHeight = Math.max(rowFloor, rh - 4) + "px";
-      else if (past && ph > rowFloor) past.style.maxHeight = Math.max(rowFloor, ph - 4) + "px";
-      else break;
-      extra = scroller.scrollHeight - scroller.clientHeight;
-      guard2 += 1;
+    const fitRows = (box, rows) => {
+      box.style.maxHeight = (rows * 20 + 2) + "px";
+      const wide = box.scrollWidth > box.clientWidth + 1;
+      box.style.maxHeight = (rows * 20 + 2 + (wide ? 12 : 0)) + "px";
+    };
+    fitRows(result, resultRows);
+    if (past) fitRows(past, pastRows);
+    if ((window.__resultStick || "end") === "end") snapEnd(result);
+    else snapNearest(result);
+    if (past) snapNearest(past);
+    placeRail(result);
+    pinShortRows(result);
+    if (past) {
+      placeRail(past);
+      pinShortRows(past);
     }
+    extra = scroller.scrollHeight - scroller.clientHeight;
   }
   scroller.style.overflowY = extra <= 4 ? "hidden" : "auto";
 }
