@@ -228,10 +228,12 @@ function slideBy(box, delta) {
   if (next >= max - 1) box.scrollLeft = box.scrollWidth;
   else box.scrollLeft = Math.max(0, next);
   if (box.scrollTop !== y) box.scrollTop = y;
+  box.__keepY = y;
   box.__rowTail = box.scrollLeft;
   shiftShortRows(box);
   requestAnimationFrame(() => {
     if (Math.abs(box.scrollTop - y) > 1) box.scrollTop = y;
+    box.__keepY = null;
   });
 }
 
@@ -292,7 +294,14 @@ function watchResultWheel(result) {
 function watchPastSnap(past) {
   if (!past || past.__snap) return;
   past.__snap = true;
-  past.addEventListener("scrollend", () => snapNearest(past));
+  past.addEventListener("scrollend", () => {
+    if (past.__keepY != null) {
+      if (Math.abs(past.scrollTop - past.__keepY) > 1) past.scrollTop = past.__keepY;
+      past.__keepY = null;
+      return;
+    }
+    snapNearest(past);
+  });
   past.addEventListener("wheel", (event) => {
     const maxX = past.scrollWidth - past.clientWidth;
     const maxY = past.scrollHeight - past.clientHeight;
