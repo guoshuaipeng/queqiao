@@ -256,3 +256,21 @@ elay/internal/relay/audit_test.go
 - **PV-003**：已待验收（`63cf098`）；产物 `artifacts\installer\RemoteAssist-Net48-Setup-0.1.0.exe`。
 - **PV-002**：仍进行中（工作区已有 ModeSelectForm/MainForm 改动与 docs/shots）。
 
+### 2026-11-06 13:45 Asia/Shanghai · PV-002 客户端首页/协助端 UI 观感
+
+- **状态**：实现完成 → **待验收**（未改用户说明原文；PRODUCT-VERSIONS 仅改状态标记）。
+- **改动路径**：
+  - `src-net48/RemoteAssist.App/ModeSelectForm.cs` — ClientSize 560×392；双角色卡加高 120px、间距收紧、hover 描边、「点击进入」+ ›；底栏贴底，去掉大片空灰。
+  - `src-net48/RemoteAssist.Helper.UI/MainForm.cs` — 窗体 840×820；连接区凭证框加高加宽；主操作按钮单行（剪贴板/安装说明/连接/断开）；排障五钮单行加宽加高；路径/命令参数框 776×36；MakeButton 高 34。
+  - `docs/shots/pv002-mode-select-*.png`、`docs/shots/pv002-helper-*.png` — 本机启动截屏（全屏，供对照）。
+- **验证**：
+  | 项 | 结果 |
+  |----|------|
+  | `dotnet build` RemoteAssist.App (net48 Release) | PASS（既有 ShellMainForm CS0414 警告） |
+  | `dotnet build` RemoteAssist.Helper.UI | PASS |
+  | UI 启动截图（首页 / `--control` 协助端） | 已跑；见 docs/shots |
+  | 人工像素级验收 | **待用户**（编译≠验收） |
+- **业务逻辑**：未改连接/排障/中继行为；仅布局与字号。
+- **commit**：`27175fc`（本地；未 push）。
+- **红线**：未 push、未上公网、未动 relay/site/AI-SSH-Pro。
+- **并行**：PV-003 仍可并行（installer/icon，文件隔离）。

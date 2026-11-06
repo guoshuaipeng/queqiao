@@ -63,7 +63,7 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 ### PV-002 · 客户端首页与协助端 UI 观感优化
 
-- **状态**：进行中
+- **状态**：待验收
 - **标题**：首页大面积空白难看；协助端按钮折行、输入框过窄，需改好看
 - **版本**：v0.2
 - **说明**：
@@ -105,12 +105,12 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 ## 机器人记录（请勿当需求原文改；可浏览）
 
-> 更新：2026-11-06 13:41 Asia/Shanghai
-> 最近检查：2026-11-06 13:41 Asia/Shanghai
-> 当前项：PV-002 进行中；PV-003 待验收；PV-001 待验收
-> 本轮结果：本地 commit b964b8a（R046+PV-001）；例程已启用；开工 PV-002/003
-> 测试：relay+site unit PASS
-> 提交：b964b8a（本地；未 push）
+> 更新：2026-11-06 13:46 Asia/Shanghai
+> 最近检查：2026-11-06 13:46 Asia/Shanghai
+> 当前项：PV-002 待验收；PV-003 待验收；PV-001 待验收
+> 本轮结果：PV-002 UI 布局落地（ModeSelectForm + Helper MainForm）；commit 94e41f2；见 iteration-status
+> 测试：net48 App+Helper.UI build PASS；UI 截图 docs/shots
+> 提交：94e41f2（本地；未 push）
 > 阻塞：无（公网上机仍未授权）
 
 ### 检查日志（新在上）

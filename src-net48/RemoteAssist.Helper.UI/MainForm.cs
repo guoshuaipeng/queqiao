@@ -55,7 +55,7 @@ internal sealed class MainForm : Form
         MaximizeBox = false;
         MinimizeBox = true;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(780, 780);
+        ClientSize = new Size(840, 820);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
         Icon = AppIcons.CreateAppIcon();
@@ -112,32 +112,37 @@ internal sealed class MainForm : Form
             header.Controls.Add(btnHome);
         }
 
-        var pairCard = MakeCard(16, 80, 748, 220);
+        var pairCard = MakeCard(16, 80, 808, 248);
         pairCard.Controls.Add(SectionTitle("1. 连接", 12, 10));
         pairCard.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(16, 40),
-            Size = new Size(520, 20),
+            Size = new Size(760, 20),
             Text = FriendConnectGuide.PasteCredentialLabel,
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
 
+        // PV-002：加高输入框（Multiline 才能吃到 Height）；凭证区加宽
         _inputBox = new TextBox
         {
-            Location = new Point(16, 62),
-            Size = new Size(600, 26),
-            Font = new Font("Consolas", 9.5F)
+            Location = new Point(16, 64),
+            Size = new Size(776, 34),
+            Font = new Font("Consolas", 10.5F),
+            Multiline = true,
+            AcceptsReturn = false,
+            ScrollBars = ScrollBars.None
         };
         _inputBox.TextChanged += (_, _) => RefreshPreview();
         pairCard.Controls.Add(_inputBox);
 
-        var btnClip = MakeButton("从剪贴板", 626, 60, 100);
+        // 主操作按钮单行：从剪贴板 / 复制安装说明 / 连接 / 断开
+        var btnClip = MakeButton("从剪贴板", 16, 110, 120);
         btnClip.Click += (_, _) => PasteClipboard();
         pairCard.Controls.Add(btnClip);
 
         // R048：亲友向「复制安装说明」轻按钮（不抢「连接」主按钮）
-        var btnInstallGuide = MakeButton("复制安装说明", 450, 36, 140);
+        var btnInstallGuide = MakeButton("复制安装说明", 148, 110, 140);
         btnInstallGuide.FlatStyle = FlatStyle.Flat;
         btnInstallGuide.BackColor = Color.White;
         btnInstallGuide.ForeColor = Color.FromArgb(0x3C, 0x40, 0x43);
@@ -145,48 +150,48 @@ internal sealed class MainForm : Form
         btnInstallGuide.Click += (_, _) => CopyInstallInstructions();
         pairCard.Controls.Add(btnInstallGuide);
 
-        _previewLabel = new Label
-        {
-            AutoSize = false,
-            Location = new Point(16, 100),
-            Size = new Size(540, 28),
-            Font = new Font("Consolas", 9F),
-            ForeColor = Color.FromArgb(0x20, 0x24, 0x27),
-            Text = FriendConnectGuide.PasteCredentialHint
-        };
-        pairCard.Controls.Add(_previewLabel);
-
-        _btnConnect = MakeButton(FriendConnectGuide.ConnectButtonText, 566, 98, 80);
+        _btnConnect = MakeButton(FriendConnectGuide.ConnectButtonText, 560, 110, 120);
         _btnConnect.BackColor = Color.FromArgb(0x0F, 0x9D, 0x58);
         _btnConnect.ForeColor = Color.White;
         _btnConnect.FlatStyle = FlatStyle.Flat;
         _btnConnect.Click += async (_, _) => await ConnectAsync().ConfigureAwait(true);
         pairCard.Controls.Add(_btnConnect);
 
-        _btnDisconnect = MakeButton("断开", 654, 98, 70);
+        _btnDisconnect = MakeButton("断开", 692, 110, 100);
         _btnDisconnect.Enabled = false;
         _btnDisconnect.Click += (_, _) => Disconnect();
         pairCard.Controls.Add(_btnDisconnect);
 
+        _previewLabel = new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 156),
+            Size = new Size(776, 24),
+            Font = new Font("Consolas", 9F),
+            ForeColor = Color.FromArgb(0x20, 0x24, 0x27),
+            Text = FriendConnectGuide.PasteCredentialHint
+        };
+        pairCard.Controls.Add(_previewLabel);
+
         _failHintLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(16, 136),
-            Size = new Size(710, 40),
+            Location = new Point(16, 184),
+            Size = new Size(776, 28),
             ForeColor = Color.FromArgb(0xC5, 0x22, 0x1F),
             Text = ""
         };
         pairCard.Controls.Add(_failHintLabel);
 
-        _btnAdvanced = MakeButton("高级 ▸", 16, 180, 100);
+        _btnAdvanced = MakeButton("高级 ▸", 16, 218, 100);
         _btnAdvanced.Click += (_, _) => ToggleAdvanced();
         pairCard.Controls.Add(_btnAdvanced);
 
         _statusLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(130, 182),
-            Size = new Size(590, 24),
+            Location = new Point(130, 220),
+            Size = new Size(650, 28),
             TextAlign = ContentAlignment.MiddleLeft,
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
             Text = HelperSessionCopy.StatusDisconnectedSelf
@@ -194,7 +199,7 @@ internal sealed class MainForm : Form
         pairCard.Controls.Add(_statusLabel);
         Controls.Add(pairCard);
 
-        _advancedPanel = MakeCard(16, 310, 748, 150);
+        _advancedPanel = MakeCard(16, 340, 808, 150);
         _advancedPanel.Visible = false;
         _advancedPanel.Controls.Add(new Label
         {
@@ -208,8 +213,11 @@ internal sealed class MainForm : Form
         _hostBox = new TextBox
         {
             Location = new Point(56, 40),
-            Size = new Size(140, 26),
-            Font = new Font("Consolas", 9.5F),
+            Size = new Size(160, 32),
+            Font = new Font("Consolas", 10F),
+            Multiline = true,
+            AcceptsReturn = false,
+            ScrollBars = ScrollBars.None,
             Text = _settings.LastHost ?? ""
         };
         _hostBox.TextChanged += (_, _) => RefreshPreview();
@@ -219,8 +227,11 @@ internal sealed class MainForm : Form
         _portBox = new TextBox
         {
             Location = new Point(250, 40),
-            Size = new Size(70, 26),
-            Font = new Font("Consolas", 9.5F),
+            Size = new Size(80, 32),
+            Font = new Font("Consolas", 10F),
+            Multiline = true,
+            AcceptsReturn = false,
+            ScrollBars = ScrollBars.None,
             Text = (_settings.LastPort ?? ConnectDraftParser.DefaultPort).ToString()
         };
         _portBox.TextChanged += (_, _) => RefreshPreview();
@@ -251,8 +262,11 @@ internal sealed class MainForm : Form
         _fpBox = new TextBox
         {
             Location = new Point(86, 76),
-            Size = new Size(640, 26),
-            Font = new Font("Consolas", 8.5F),
+            Size = new Size(700, 32),
+            Font = new Font("Consolas", 9.5F),
+            Multiline = true,
+            AcceptsReturn = false,
+            ScrollBars = ScrollBars.None,
             Text = _settings.LastFingerprint ?? ""
         };
         _fpBox.TextChanged += (_, _) => RefreshPreview();
@@ -269,18 +283,21 @@ internal sealed class MainForm : Form
         _relayBox = new TextBox
         {
             Location = new Point(86, 110),
-            Size = new Size(280, 26),
-            Font = new Font("Consolas", 9.5F),
+            Size = new Size(320, 32),
+            Font = new Font("Consolas", 10F),
+            Multiline = true,
+            AcceptsReturn = false,
+            ScrollBars = ScrollBars.None,
             Text = _settings.RelayEndpoint ?? RelayEndpoint.DefaultEndpoint
         };
         _advancedPanel.Controls.Add(_relayBox);
-        var btnSaveRelay = MakeButton("保存中继", 376, 108, 90);
+        var btnSaveRelay = MakeButton("保存中继", 420, 108, 100);
         btnSaveRelay.Click += (_, _) => SaveRelaySetting();
         _advancedPanel.Controls.Add(btnSaveRelay);
         _advancedPanel.Controls.Add(new Label
         {
             AutoSize = false,
-            Location = new Point(480, 112),
+            Location = new Point(532, 112),
             Size = new Size(250, 24),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
             Text = "默认 " + RelayEndpoint.DefaultPublic
@@ -288,13 +305,13 @@ internal sealed class MainForm : Form
         Controls.Add(_advancedPanel);
 
         // R048：MCP 安装卡主屏常显（不必等连上）；不自动对外监听 MCP
-        _mcpCard = MakeCard(16, 310, 748, 168);
+        _mcpCard = MakeCard(16, 340, 808, 168);
         _mcpCard.Controls.Add(SectionTitle(McpInstallGuide.SectionTitle, 12, 10));
         _mcpCard.Controls.Add(new Label
         {
             AutoSize = false,
             Location = new Point(16, 40),
-            Size = new Size(710, 64),
+            Size = new Size(770, 64),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
             Text = McpInstallGuide.StepsBlock
         });
@@ -314,14 +331,15 @@ internal sealed class MainForm : Form
         _mcpCard.Controls.Add(btnCopySkill);
         Controls.Add(_mcpCard);
 
-        _toolCard = MakeCard(16, 490, 748, 300);
+        // PV-002：排障按钮单行加宽加高；路径/命令参数输入加高加宽
+        _toolCard = MakeCard(16, 520, 808, 320);
         _toolCard.Controls.Add(SectionTitle("2. 排障操作（连上后可用）", 12, 10));
 
-        var btnProcs = MakeButton("进程列表", 16, 48, 100);
-        var btnLs = MakeButton("列目录", 126, 48, 90);
-        var btnLogs = MakeButton("读日志尾", 226, 48, 90);
-        var btnCat = MakeButton("读文件", 326, 48, 90);
-        var btnRun = MakeButton("跑命令", 426, 48, 90);
+        var btnProcs = MakeButton("进程列表", 16, 48, 140);
+        var btnLs = MakeButton("列目录", 168, 48, 140);
+        var btnLogs = MakeButton("读日志尾", 320, 48, 140);
+        var btnCat = MakeButton("读文件", 472, 48, 140);
+        var btnRun = MakeButton("跑命令", 624, 48, 152);
         _toolButtons = new[] { btnProcs, btnLs, btnLogs, btnCat, btnRun };
         foreach (var b in _toolButtons)
             _toolCard.Controls.Add(b);
@@ -329,27 +347,30 @@ internal sealed class MainForm : Form
         _toolCard.Controls.Add(new Label
         {
             AutoSize = false,
-            Location = new Point(16, 88),
-            Size = new Size(200, 20),
+            Location = new Point(16, 96),
+            Size = new Size(240, 22),
             Text = "路径 / 命令参数",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
         _argBox = new TextBox
         {
-            Location = new Point(16, 110),
-            Size = new Size(710, 26),
-            Font = new Font("Consolas", 9.5F)
+            Location = new Point(16, 120),
+            Size = new Size(776, 36),
+            Font = new Font("Consolas", 11F),
+            Multiline = true,
+            AcceptsReturn = false,
+            ScrollBars = ScrollBars.None
         };
         _toolCard.Controls.Add(_argBox);
 
         _outputBox = new TextBox
         {
-            Location = new Point(16, 146),
-            Size = new Size(710, 130),
+            Location = new Point(16, 168),
+            Size = new Size(776, 132),
             Multiline = true,
             ScrollBars = ScrollBars.Vertical,
             ReadOnly = true,
-            Font = new Font("Consolas", 8.5F),
+            Font = new Font("Consolas", 9F),
             BackColor = Color.White
         };
         _toolCard.Controls.Add(_outputBox);
@@ -401,18 +422,19 @@ internal sealed class MainForm : Form
     private void LayoutPanels()
     {
         _advancedPanel.Visible = _advancedOpen;
-        // pairCard ends ~300; MCP 卡常显在 310
-        _mcpCard.Top = 310;
-        var top = 310 + _mcpCard.Height + 10;
+        // PV-002：pairCard 加高后 MCP 卡起点下移
+        const int mcpTop = 340;
+        _mcpCard.Top = mcpTop;
+        var top = mcpTop + _mcpCard.Height + 12;
         if (_advancedOpen)
         {
             _advancedPanel.Top = top;
-            top = top + _advancedPanel.Height + 10;
+            top = top + _advancedPanel.Height + 12;
         }
         _toolCard.Top = top;
         var need = top + _toolCard.Height + 24;
         if (ClientSize.Height < need)
-            ClientSize = new Size(ClientSize.Width, Math.Min(need, 980));
+            ClientSize = new Size(ClientSize.Width, Math.Min(need, 1040));
     }
 
     private static Panel MakeCard(int x, int y, int w, int h) => new()
@@ -445,8 +467,9 @@ internal sealed class MainForm : Form
     {
         Text = text,
         Location = new Point(x, y),
-        Size = new Size(w, 28),
-        FlatStyle = FlatStyle.System
+        Size = new Size(w, 34),
+        FlatStyle = FlatStyle.System,
+        Font = new Font("Microsoft YaHei UI", 9.5F)
     };
 
 
