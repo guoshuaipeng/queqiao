@@ -26,11 +26,16 @@ internal sealed record ConfirmOutcome(
         $"tool={tool}; source={source}; via={Channel.ToString().ToLowerInvariant()}; result={Decision.ToString().ToLowerInvariant()}; at={AtUtc:o}; {summary}";
 }
 
+/// <summary>写操作确认请求：Summary=人话主句（Headline），Detail=次要命令/路径。</summary>
 internal sealed record ConfirmRequestInfo(
     string Source,
     string Tool,
     string Summary,
-    int TimeoutSeconds);
+    int TimeoutSeconds,
+    string? Detail = null)
+{
+    public string Headline => string.IsNullOrWhiteSpace(Summary) ? "执行一项电脑操作" : Summary;
+}
 
 internal sealed record PairRequestInfo(
     string RemoteEndpoint,

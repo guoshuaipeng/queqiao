@@ -193,10 +193,11 @@ internal static class ConfirmPrompt
     private static ConfirmOutcome AskConsole(ConfirmRequestInfo info)
     {
         Console.WriteLine();
-        Console.WriteLine("!!!!!!!! 需要确认的操作 !!!!!!!!");
+        Console.WriteLine("!!!!!!!! " + WriteConfirmCopy.DialogTitle + " !!!!!!!!");
         Console.WriteLine($"来源: {info.Source}");
-        Console.WriteLine($"工具: {info.Tool}");
-        Console.WriteLine($"详情: {info.Summary}");
+        Console.WriteLine($"说明: {info.Headline}");
+        if (!string.IsNullOrWhiteSpace(info.Detail))
+            Console.WriteLine($"细节: {info.Detail}");
         Console.WriteLine($"超时: {info.TimeoutSeconds}s（无输入则自动拒绝）");
         Console.Write("是否允许执行? [Y/N] > ");
 
