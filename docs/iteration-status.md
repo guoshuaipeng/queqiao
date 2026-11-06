@@ -494,3 +494,9 @@ elay/internal/relay/audit_test.go
 - **截图**：`docs/shots/pv004-wizard-zh-CN-uilang.png`、`pv004-wizard-en-LANG.png`（短时启向导取图后退出；**≠完整安装点验**）。
 - **口径**：**未写运行 PASS**；未改备用 `RemoteAssist.iss`；未 push。状态 → **待验收**（完整向导/系统语言核验仍可补）。
 
+
+### 2026-11-06 14:33 Asia/Shanghai · PRODUCT-VERSIONS：PV-002/004 → 待验收
+
+- PV-004 完整性核验后标 **待验收**（未写运行 PASS）。
+- PV-002 首页紧凑 `aa72bd8` 后标 **待验收**（未写观感 PASS）；纠正暂存区误带的「进行中」。
+
