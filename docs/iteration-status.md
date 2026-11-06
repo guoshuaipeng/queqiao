@@ -522,3 +522,11 @@ elay/internal/relay/audit_test.go
 - **验证**：`dotnet build src-net48/RemoteAssist.App/RemoteAssist.App.csproj -c Release -o artifacts/pv002-build-check` → **PASS**（0 error）。GUI 未启 → 运行未测。
 - **Git**：本地 commit `8a52ba4`（仅 ModeSelect）；**不 push**；不改 installer/产品脏文档；**不继续**首页小窗/业务大窗分设迭代（等新草案+授权）。
 - **未做**：GUI 点验；push；回滚 `aa72bd8` 尺寸分设；新尺寸策略。
+
+### 2026-11-06 14:41 Asia/Shanghai · 入口 IA 方案池邀评（仅评审）
+
+- 材料：共享 box `/workspace/ux-shell-size-transition-20261106/ia-alternatives.md` + `ia-preview.png`（旧尺寸 options 非本轮）。
+- **迭代评审**：首选 **B**；备选 **A**。C/D/E 本轮不推（见回产品全文）。
+- **硬阻塞**：未产品收口唯一范围前不改码；切页不跳窗；不改凭证/安全；不 push/上线；不解锁 R050；票数≠安全审查；未真 UI 不 PASS。
+- 等产品定唯一范围/执笔/验收后再协调实现。
+
