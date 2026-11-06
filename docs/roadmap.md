@@ -53,9 +53,9 @@
 | R042 | 高频：官网安装包跟上含 R041 的客户端；打磨：首页旁注不改、补公网下载截图 | 鹊桥-客户端出包 / 鹊桥-服务端上架 | **done（产品已验收）** | `docs/round-042.md` |
 | R043 | 高频：Windows net48 主路径对齐（会话码+公网中继、去局域网主表单、品牌鹊桥、被控首启人话、**连接凭证一次粘贴/8位验证码**）；打磨：Avalonia/CLI 凭证同步或 S005，产能紧则 R044 | 鹊桥-客户端 | **PASS_WITH_NOTES**（编译/文档；真连 blocked） | `docs/round-043.md`、`docs/quality-connection-credential.md` |
 | R044 | 高频：完整连接凭证**逐字文案**扫尾（亲友 UI 无指纹/TLS 技术词）；Avalonia/CLI 本轮未改（完整载荷未移植） | 鹊桥-体验（规格已定）/ 鹊桥-客户端（实现） | **PASS_WITH_NOTES**（编译/文档 `7cad0ab`；运行 blocked） | `docs/round-044.md`、`docs/quality-connection-credential.md` |
-| R045 | 高频：亲友失败文案残留（码+密码→完整连接凭证）+ Helper 缺安全验证提示收窄（仅缺 fp/短凭证）+ 文档状态行清理；稳定性/UX，不扩功能 | 鹊桥-客户端 | **open** | `docs/round-045.md` |
+| R045 | 高频：亲友失败文案残留（码+密码→完整连接凭证）+ Helper 缺安全验证提示收窄（仅缺 fp/短凭证）+ 文档状态行清理；稳定性/UX，不扩功能 | 鹊桥-客户端 | **compiled**（net48；运行未验收） | `docs/round-045.md` |
 
-> **当前**：R045 **open**（亲友失败文案残留 + Helper 缺安全验证提示收窄 + 文档状态清理；仅 net48；不扩功能）。R044 编译/文档 **PASS_WITH_NOTES**（`7cad0ab`；产物 19968 B / 2026-11-06 09:46:59 Asia/Shanghai / SHA256 `a78c0f24…d81e`），运行仍 blocked；Avalonia/CLI 完整载荷另轮。R043 编译/文档 **PASS_WITH_NOTES**（`0122127`），真连仍 blocked。见 `docs/round-045.md`、`docs/round-044.md`。R042 已产品验收（出包 `8d61398`，上架 `f90bd8f`，2026-11-06）。
+> **当前**：R045 **compiled**（net48 失败文案+catch 收窄；运行未验收；仅 net48；不扩功能）。R044 编译/文档 **PASS_WITH_NOTES**（`7cad0ab`；产物 19968 B / 2026-11-06 09:46:59 Asia/Shanghai / SHA256 `a78c0f24…d81e`），运行仍 blocked；Avalonia/CLI 完整载荷另轮。R043 编译/文档 **PASS_WITH_NOTES**（`0122127`），真连仍 blocked。见 `docs/round-045.md`、`docs/round-044.md`。R042 已产品验收（出包 `8d61398`，上架 `f90bd8f`，2026-11-06）。
 
 > R041 已产品验收（`aeafeeb`，2026-11-06）；R042 已产品验收（公网 Win 75,587,213 / Linux 8,005,849）。
 

@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai  
 > 实现：鹊桥-客户端  
-> 状态：**open（规格已定；待实现与编译/文档核对）**  
+> 状态：**compiled（net48 失败文案+Helper catch 收窄已接线；编译通过；运行未验收）**  
 > 依据：R044 编译/文档 **PASS_WITH_NOTES**（`7cad0ab`）；运行仍 blocked。  
 > **本轮主题**：稳定性 / UX 收尾，**不**扩功能、**不**改凭证格式与信任模型。  
 > **范围默认仅 net48**（除非改动极琐碎且同文件可顺手）；仍**不**在用户本机跑 UI；Avalonia/CLI 完整载荷主路径**另轮**。
@@ -34,6 +34,27 @@
 
 - 客户端：改动文件列表；错误分支对照（缺 fp vs 错密码 vs 不匹配）；无 UI 编译产物元数据；明确未做项。
 - 产品：编译/文档核对；运行验收另计。
+
+
+
+## 交付（net48 · 编译）
+
+> 时间：2026-11-06 Asia/Shanghai · **不改**凭证格式 / 信任模型 / 阻断条件 / 脱敏逻辑。
+
+### 改动
+
+- `FriendConnectGuide.cs`：`FailWrongPassword` / `FailPeerNotAccepting` / `FailStaleCode` → 完整连接凭证口径
+- `Helper.UI/MainForm.cs`：`ConnectAsync` 通用 catch **不再**追加 `MissingSecurityInfoHint`；仍 `RedactSecureMaterial(FriendlyOrRaw)`
+- 保留：连接前缺 fp 预检、`ConnectDraftParser`/`Need*`、`AssistClient` 缺安全验证阻断
+
+### 明确未做
+
+- 用户本机运行 / 联调 / 截图；Avalonia/CLI；包装部署；真连验收；历史改写
+
+### 编译
+
+- `scripts/build-net48.ps1` publish-only（不自动启动）
+
 
 ## 参考
 

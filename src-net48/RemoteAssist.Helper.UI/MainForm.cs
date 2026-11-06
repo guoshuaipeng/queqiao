@@ -514,7 +514,7 @@ internal sealed class MainForm : Form
         {
             var friendly = FriendConnectGuide.FriendlyOrRaw(ex);
             SetStatus("连接失败");
-            SetFailHint(FriendConnectGuide.RedactSecureMaterial(friendly) + "\r\n" + FriendConnectGuide.MissingSecurityInfoHint);
+            SetFailHint(FriendConnectGuide.RedactSecureMaterial(friendly));
             SetConnectedUi(false);
         }
         finally

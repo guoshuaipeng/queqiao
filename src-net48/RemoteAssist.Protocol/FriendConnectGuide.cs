@@ -49,16 +49,16 @@ public static class FriendConnectGuide
     public const string PairedClientsEmpty = "（暂无）";
 
     public const string FailWrongPassword =
-        "验证密码不对。请对方再点一次「复制码+密码」发给你，不要只发会话码。";
+        "验证密码不对。请对方再点一次「复制连接凭证」，把完整内容发给你。";
 
     public const string FailStaleCode =
-        "对方已刷新会话，旧码失效了。请对方重新复制并发给你。";
+        "对方已刷新会话，旧连接凭证失效了。请对方重新「复制连接凭证」发给你。";
 
     public const string FailRelayUnreachable =
         "现在连不上网络。请双方检查网络后重试。";
 
     public const string FailPeerNotAccepting =
-        "对方还没打开「接受协助」。请对方在首页选择「接受协助」，再把码和密码发给你。";
+        "对方还没打开「接受协助」。请对方在首页选择「接受协助」，再把完整连接凭证发给你。";
 
     public static string MessageFor(FriendConnectFailKind kind) => kind switch
     {
