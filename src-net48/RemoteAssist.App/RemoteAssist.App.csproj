@@ -12,6 +12,7 @@
     <AssemblyTitle>鹊桥</AssemblyTitle>
     <Description>鹊桥远程协助</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>assets\app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\RemoteAssist.Agent\RemoteAssist.Agent.csproj" />

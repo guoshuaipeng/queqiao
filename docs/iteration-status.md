@@ -233,3 +233,15 @@ elay/internal/relay/audit_test.go
 - 已告知**日常**：可转告用户已开工；例程已启用。
 - PV-002/003 实现仍进行中。
 
+
+### 2026-11-06 13:44 Asia/Shanghai · 鹊桥-迭代 PV-003 安装包图标
+
+- **Bot**：鹊桥-迭代（本机仓；未用 CloudAgent）。
+- **改动**：新增品牌 `installer/assets/app.ico`（多尺寸）+ `src-net48/RemoteAssist.App/assets/app.ico`；App `ApplicationIcon`；`RemoteAssist-Net48.iss` 增加 `SetupIconFile` 与 [Icons] `IconFilename`；`scripts/generate-app-icon.ps1` 可重生。
+- **未改**：Helper.UI / AppIcons.cs（避 PV-002 冲突）；未 push；未替换生产下载包。
+- **验证**：Inno 编译成功；Staging publish（因 `artifacts\app-net48-fd` 被运行中鹊桥进程锁定，改用 `artifacts\app-net48-fd-pv003`）；Setup/EXE `ExtractAssociatedIcon` 均得 32x32 品牌图（非默认灰标）。
+- **产物**：`E:\IdeaProjects\remote-assist\artifacts\installer\RemoteAssist-Net48-Setup-0.1.0.exe`（bytes=2395215，SHA256=4F9A09FD663E652D9C178EAB0462351028117E38802545CA63AC83BEB3AD8280）。
+- **阻塞**：默认 `build-installer-net48.ps1` publish 到 `app-net48-fd` 时若鹊桥在跑会文件锁失败；本次用独立 staging 闭环。真机安装后开始菜单/桌面快捷方式建议人工点验。
+- **PV-003**：→ **待验收**。
+- **聊天**：不对用户发消息（本条仅写文件）。
+
