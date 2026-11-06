@@ -395,3 +395,13 @@ elay/internal/relay/audit_test.go
 - **PV-004 产品拍板**：本轮**只修** Windows 主路径 `installer/RemoteAssist-Net48.iss`（含必需共享语言资源 / 同语种安装前说明）。备用 net8 `RemoteAssist.iss` **本轮不改**，登记后续对齐项；不阻挡 net48 交付；**不得**把 net48 结果泛称所有安装器满足。正式 docs 指针产品收口后即给；此前不新增前置问题。
 - 已通知客户端按 Net48-only 准备；仍等正式指针后再改 iss。未 push。
 
+
+### 2026-11-06 14:24 Asia/Shanghai · PV-004 正式授权开工（客户端执笔）
+
+- **依据**：产品正式 docs 指针；`PRODUCT-VERSIONS` PV-004 状态 **待开发** + 本地实现/构建测试放行。
+- **范围**：仅 `installer/RemoteAssist-Net48.iss` + 必要语言资源 + 同语种安装前说明；**不改** `RemoteAssist.iss`；不动 R049/R050。
+- **红线**：不上生产、不装用户机、不 push；验收须真实安装向导截图 + 系统语言核验；与 PV-003 联合包须含**最新 UI 提交**与产物 hash（现 13:43 Setup 仍不可冒充含最终 UI）。
+- **并行**：主界面紧凑改版（PV-002）**未授权**——等体验方案 + 用户确认。
+- **分工**：客户端 = 唯一 installer 写入者执笔；迭代写本 status、协调验收口径；未实测不 PASS。
+- **产品未提交文档**：PRODUCT-VERSIONS / ux-user-confirmations / agents/产品.md 等工作区改动仍属产品侧，本轮迭代**不代 commit** 那些文件（避免抢写）。
+
