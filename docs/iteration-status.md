@@ -475,3 +475,13 @@ elay/internal/relay/audit_test.go
 - 先前 index 中已暂存的 PV-004 iss/语言资源/向导截图已随提交入库（现 HEAD 说明已改正）。请客户端核验该提交是否完整；真 Setup 点验前不记语言 PASS。
 - PV-001 环境 A/B/C 仍等用户选定。
 
+
+### 2026-11-06 14:32 Asia/Shanghai · PV-002 首页紧凑已落地（待观感验收）
+
+- **commit**：`aa72bd8` — ModeSelectForm + ShellMainForm + `docs/shots/pv002-home-compact-143130.png`
+- **实现要点**（客户端执笔）：默认客户区 **640×360**、可缩放、两卡等分、定稿文案、去 CLI；ShowHome / Accept / Control **分设客户区**（共享壳未全局永久缩死）。
+- **构建**：net48 Release PASS；真实启动截图已入库。
+- **验收口径**：**未写观感 PASS**（对照 `docs/ux-home-compact-20261106/`）；未碰 installer；未 push。
+- **并行**：PV-004 完整性核验仍由客户端进行；未真 Setup 点验前不记语言 PASS。
+- **PV-001 环境**：用户未答 A/B/C（改谈窗口图标）→ **暂搁置**；继续不扩环境；测试勿把未公网当 FAIL。
+
