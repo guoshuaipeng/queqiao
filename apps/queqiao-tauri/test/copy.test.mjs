@@ -204,6 +204,18 @@ test("the previous exit line and the tool row stay whole", () => {
   assert.match(css, /#ops-bar\s*\{[^}]*position:\s*sticky/);
 });
 
+test("a long previous line stays clear of the scrollbar", () => {
+  assert.match(css, /#past\s*\{[^}]*scrollbar-gutter:\s*stable/);
+  assert.match(css, /#past\s*\{[^}]*padding:\s*0 20px 0 12px/);
+});
+
+test("the result wheel does not scroll the page", () => {
+  assert.match(js, /function watchResultWheel/);
+  assert.match(js, /result\.addEventListener\("wheel"/);
+  assert.match(js, /event\.preventDefault\(\)/);
+  assert.match(js, /watchResultWheel\(result\)/);
+});
+
 test("previous lines can scroll and the page scrollbar stays away", () => {
   assert.match(js, /function snapNearest/);
   assert.match(js, /past\.addEventListener\("scrollend", \(\) => snapNearest\(past\)\)/);

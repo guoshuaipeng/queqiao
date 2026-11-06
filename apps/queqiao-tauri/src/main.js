@@ -193,6 +193,17 @@ function snapNearest(box) {
   box.scrollTop = snapped;
 }
 
+function watchResultWheel(result) {
+  if (!result || result.__wheel) return;
+  result.__wheel = true;
+  result.addEventListener("wheel", (event) => {
+    const max = result.scrollHeight - result.clientHeight;
+    if (max <= 1) return;
+    result.scrollTop = Math.min(max, Math.max(0, result.scrollTop + event.deltaY));
+    event.preventDefault();
+  }, { passive: false });
+}
+
 function watchPastSnap(past) {
   if (!past || past.__snap) return;
   past.__snap = true;
@@ -320,6 +331,7 @@ function revealResult(sync) {
 function paintResult(text) {
   const result = $("result");
   watchScroll(result, "__resultStick");
+  watchResultWheel(result);
   if (!result.__applying) {
     window.__resultStick = pinnedToEnd(result) ? "end" : "place";
     window.__resultStickTop = result.scrollTop;

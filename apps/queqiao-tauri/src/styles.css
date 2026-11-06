@@ -111,11 +111,12 @@ button, input { font-family: inherit; }
   max-height: calc(4 * 20px + 2px);
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   scroll-snap-type: y mandatory;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fbfdff;
-  padding: 0 12px;
+  padding: 0 20px 0 12px;
   flex: 0 0 auto;
   font-family: Consolas, monospace;
   font-size: 12px;
