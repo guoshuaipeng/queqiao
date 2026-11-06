@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -5,106 +6,217 @@ using System.Windows.Forms;
 namespace RemoteAssist.App;
 
 /// <summary>
-/// 启动首页：接受协助（被控） / 去协助别人（控制）。
-/// PV-002：收紧空白、卡片更像可点入口、版面更饱满。
+/// 启动首页：接受协助 / 去协助别人。
+/// PV-002 紧凑方案：两卡等分可用高度，卡底→脚注约 20，短文案，无 CLI 脚注。
 /// </summary>
 internal sealed class ModeSelectForm : Form
 {
     public event Action? AcceptClicked;
     public event Action? ControlClicked;
 
+    private const int HeaderH = 64;
+    private const int TopPad = 16;
+    private const int SidePad = 20;
+    private const int CardGap = 12;
+    private const int CardToFoot = 20;
+    private const int FootH = 34;
+    private const int MaxCardH = 160;
+    private const int MinCardH = 72;
+
+    private readonly Panel _header;
+    private readonly Label _titleLabel;
+    private readonly Label _subtitleLabel;
+    private readonly Button _btnAccept;
+    private readonly Button _btnControl;
+    private readonly Label _footer;
+    private readonly Panel _scrollBody;
+
     public ModeSelectForm()
     {
         Text = "鹊桥";
-        FormBorderStyle = FormBorderStyle.FixedSingle;
+        FormBorderStyle = FormBorderStyle.None;
         MaximizeBox = false;
-        MinimizeBox = true;
-        StartPosition = FormStartPosition.CenterScreen;
-        // 收紧窗体高度，避免顶栏+双卡偏上、下方大片空灰
-        ClientSize = new Size(560, 392);
+        MinimizeBox = false;
+        StartPosition = FormStartPosition.Manual;
+        ClientSize = new Size(640, 360);
         BackColor = Color.FromArgb(0xF7, 0xF8, 0xFA);
         Font = new Font("Microsoft YaHei UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
-        Icon = CreateAppIcon();
+        AutoScroll = false;
+        DoubleBuffered = true;
 
-        var header = new Panel
+        _scrollBody = new Panel
+        {
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+            BackColor = BackColor
+        };
+        Controls.Add(_scrollBody);
+
+        _header = new Panel
         {
             Location = new Point(0, 0),
-            Size = new Size(560, 76),
+            Size = new Size(640, HeaderH),
             BackColor = Color.FromArgb(0x1A, 0x73, 0xE8)
         };
-        header.Controls.Add(new Label
+        _titleLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(24, 14),
-            Size = new Size(500, 28),
+            Location = new Point(SidePad, 10),
+            Size = new Size(600, 26),
             ForeColor = Color.White,
-            Font = new Font(Font.FontFamily, 16F, FontStyle.Bold),
+            Font = new Font(Font.FontFamily, 15F, FontStyle.Bold),
             Text = "鹊桥",
             BackColor = Color.Transparent
-        });
-        header.Controls.Add(new Label
+        };
+        _subtitleLabel = new Label
         {
             AutoSize = false,
-            Location = new Point(24, 44),
-            Size = new Size(500, 22),
+            Location = new Point(SidePad, 36),
+            Size = new Size(600, 20),
             ForeColor = Color.FromArgb(0xE3, 0xF0, 0xFF),
-            Text = "一个应用，两种角色 — 先选你要做什么",
+            Text = "选择你要做的事",
             BackColor = Color.Transparent
-        });
-        Controls.Add(header);
+        };
+        _header.Controls.Add(_titleLabel);
+        _header.Controls.Add(_subtitleLabel);
+        _scrollBody.Controls.Add(_header);
 
-        var btnAccept = MakeModeButton(
-            "接受协助（被控）",
-            "点「复制连接凭证」，把复制出来的整段发给要帮你的人。危险操作需你本机确认。",
-            Color.FromArgb(0x1A, 0x73, 0xE8),
-            20, 92);
-        btnAccept.Click += (_, _) => AcceptClicked?.Invoke();
-        Controls.Add(btnAccept);
+        _btnAccept = MakeModeButton(
+            "接受协助",
+            "把连接凭证发给来帮你的人。",
+            Color.FromArgb(0x1A, 0x73, 0xE8));
+        _btnAccept.Click += (_, _) => AcceptClicked?.Invoke();
+        _scrollBody.Controls.Add(_btnAccept);
 
-        var btnControl = MakeModeButton(
-            "去协助别人（控制）",
-            "把对方通过「复制连接凭证」发来的整段粘贴到这里。连接后查看进程 / 日志 / 文件，或提议执行命令。",
-            Color.FromArgb(0x0F, 0x9D, 0x58),
-            20, 224);
-        btnControl.Click += (_, _) => ControlClicked?.Invoke();
-        Controls.Add(btnControl);
+        _btnControl = MakeModeButton(
+            "去协助别人",
+            "粘贴对方的连接凭证，开始协助。",
+            Color.FromArgb(0x0F, 0x9D, 0x58));
+        _btnControl.Click += (_, _) => ControlClicked?.Invoke();
+        _scrollBody.Controls.Add(_btnControl);
 
-        Controls.Add(new Label
+        _footer = new Label
         {
             AutoSize = false,
-            Location = new Point(24, 356),
-            Size = new Size(512, 28),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "默认经公网中继连接。局域网 Host/端口仅在协助端「高级」里。也可用 --accept / --control 直达对应模式。"
-        });
+            Text = "默认通过中继连接",
+            BackColor = Color.Transparent
+        };
+        _scrollBody.Controls.Add(_footer);
+
+        Resize += (_, _) => Relayout();
+        Relayout();
     }
 
-    private static Button MakeModeButton(string title, string subtitle, Color accent, int x, int y)
+    private void Relayout()
     {
-        const int cardH = 120;
-        const int cardW = 520;
+        var w = Math.Max(_scrollBody.ClientSize.Width, 480);
+        var h = Math.Max(_scrollBody.ClientSize.Height, 280);
+
+        _header.SetBounds(0, 0, w, HeaderH);
+        _titleLabel.SetBounds(SidePad, 10, Math.Max(80, w - SidePad * 2), 26);
+        _subtitleLabel.SetBounds(SidePad, 36, Math.Max(80, w - SidePad * 2), 20);
+
+        var contentTop = HeaderH + TopPad;
+        var availableForCards = h - contentTop - CardToFoot - FootH - CardGap;
+        var rawCardH = availableForCards / 2;
+        var cardH = Math.Max(MinCardH, Math.Min(MaxCardH, rawCardH));
+
+        // 卡高封顶后剩余高度：整体内容块垂直居中，不堆成卡脚空灰
+        var cardsBlockH = cardH + CardGap + cardH;
+        var belowHeaderH = cardsBlockH + CardToFoot + FootH;
+        var freeBelowHeader = h - HeaderH - TopPad - belowHeaderH;
+        var blockTop = contentTop;
+        if (rawCardH > MaxCardH && freeBelowHeader > 0)
+            blockTop = HeaderH + TopPad + freeBelowHeader / 2;
+
+        var cardW = Math.Max(200, w - SidePad * 2);
+        _btnAccept.SetBounds(SidePad, blockTop, cardW, cardH);
+        LayoutCardInner(_btnAccept, cardW, cardH);
+        _btnControl.SetBounds(SidePad, blockTop + cardH + CardGap, cardW, cardH);
+        LayoutCardInner(_btnControl, cardW, cardH);
+
+        var footY = blockTop + cardH + CardGap + cardH + CardToFoot;
+        _footer.SetBounds(SidePad, footY, cardW, FootH);
+
+        // 内容高于可视区时靠 AutoScroll 保可达
+        var needH = footY + FootH + 8;
+        _scrollBody.AutoScrollMinSize = new Size(0, Math.Max(needH, h));
+    }
+
+    private static void LayoutCardInner(Button btn, int cardW, int cardH)
+    {
+        foreach (Control c in btn.Controls)
+        {
+            if (c is Panel bar && bar.Width <= 8)
+            {
+                bar.SetBounds(0, 0, 6, cardH);
+                continue;
+            }
+            if (c is Label lbl)
+            {
+                if (lbl.Text == "›")
+                {
+                    lbl.SetBounds(cardW - 44, Math.Max(0, (cardH - 40) / 2), 36, 40);
+                }
+                else if (ReferenceEquals(lbl.Tag, "title"))
+                {
+                    // title+sub as a group vertically centered
+                }
+            }
+        }
+
+        Label? title = null;
+        Label? sub = null;
+        Label? chevron = null;
+        Panel? accent = null;
+        foreach (Control c in btn.Controls)
+        {
+            if (c is Panel p && p.Width <= 8) accent = p;
+            else if (c is Label l)
+            {
+                if (l.Text == "›") chevron = l;
+                else if (Equals(l.Tag, "title")) title = l;
+                else if (Equals(l.Tag, "sub")) sub = l;
+            }
+        }
+
+        accent?.SetBounds(0, 0, 6, cardH);
+        chevron?.SetBounds(cardW - 44, Math.Max(0, (cardH - 40) / 2), 36, 40);
+
+        const int textLeft = 20;
+        var textW = Math.Max(80, cardW - 68);
+        var titleH = 28;
+        var subH = Math.Min(44, Math.Max(20, cardH / 3));
+        var groupH = titleH + 4 + subH;
+        var groupTop = Math.Max(10, (cardH - groupH) / 2);
+        if (title is not null)
+            title.SetBounds(textLeft, groupTop, textW, titleH);
+        if (sub is not null)
+            sub.SetBounds(textLeft, groupTop + titleH + 4, textW, subH);
+    }
+
+    private static Button MakeModeButton(string title, string subtitle, Color accent)
+    {
         var btn = new Button
         {
-            Location = new Point(x, y),
-            Size = new Size(cardW, cardH),
             FlatStyle = FlatStyle.Flat,
             BackColor = Color.White,
             TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(18, 12, 18, 12),
+            Padding = new Padding(0),
             Cursor = Cursors.Hand,
-            Font = new Font("Microsoft YaHei UI", 9.5F)
+            Font = new Font("Microsoft YaHei UI", 9.5F),
+            Text = ""
         };
         btn.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
         btn.FlatAppearance.BorderSize = 1;
         btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(0xF0, 0xF4, 0xFF);
 
-        btn.Text = "";
         var titleLabel = new Label
         {
+            Tag = "title",
             AutoSize = false,
-            Location = new Point(20, 16),
-            Size = new Size(430, 28),
-            Font = new Font("Microsoft YaHei UI", 13.5F, FontStyle.Bold),
+            Font = new Font("Microsoft YaHei UI", 13F, FontStyle.Bold),
             ForeColor = accent,
             Text = title,
             BackColor = Color.Transparent,
@@ -112,31 +224,17 @@ internal sealed class ModeSelectForm : Form
         };
         var subLabel = new Label
         {
+            Tag = "sub",
             AutoSize = false,
-            Location = new Point(20, 48),
-            Size = new Size(430, 44),
             Font = new Font("Microsoft YaHei UI", 9F),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
             Text = subtitle,
             BackColor = Color.Transparent,
             Cursor = Cursors.Hand
         };
-        var hint = new Label
-        {
-            AutoSize = false,
-            Location = new Point(20, 94),
-            Size = new Size(200, 18),
-            Font = new Font("Microsoft YaHei UI", 8.5F),
-            ForeColor = accent,
-            Text = "点击进入",
-            BackColor = Color.Transparent,
-            Cursor = Cursors.Hand
-        };
         var chevron = new Label
         {
             AutoSize = false,
-            Location = new Point(cardW - 48, 40),
-            Size = new Size(36, 40),
             Font = new Font("Segoe UI", 22F, FontStyle.Regular),
             ForeColor = accent,
             Text = "›",
@@ -147,20 +245,15 @@ internal sealed class ModeSelectForm : Form
         void ForwardClick(object? s, EventArgs e) => btn.PerformClick();
         titleLabel.Click += ForwardClick;
         subLabel.Click += ForwardClick;
-        hint.Click += ForwardClick;
         chevron.Click += ForwardClick;
         btn.Controls.Add(titleLabel);
         btn.Controls.Add(subLabel);
-        btn.Controls.Add(hint);
         btn.Controls.Add(chevron);
-
-        var bar = new Panel
+        btn.Controls.Add(new Panel
         {
-            Location = new Point(0, 0),
-            Size = new Size(6, cardH),
+            Size = new Size(6, 100),
             BackColor = accent
-        };
-        btn.Controls.Add(bar);
+        });
 
         btn.MouseEnter += (_, _) =>
         {
@@ -169,7 +262,6 @@ internal sealed class ModeSelectForm : Form
         };
         btn.MouseLeave += (_, _) =>
         {
-            // 子控件上的离开会冒泡；仅当鼠标真正离开卡片再还原
             var pt = btn.PointToClient(Cursor.Position);
             if (btn.ClientRectangle.Contains(pt)) return;
             btn.FlatAppearance.BorderColor = Color.FromArgb(0xDA, 0xDE, 0xE3);
@@ -195,3 +287,4 @@ internal sealed class ModeSelectForm : Form
         return (Icon)tmp.Clone();
     }
 }
+
