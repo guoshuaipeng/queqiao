@@ -265,6 +265,12 @@ test("a horizontal wheel on previous results does not move the page", () => {
   assert.match(js, /slideBy\(past, event\.deltaX\)/);
 });
 
+test("the result snaps to a whole first line without losing the tail", () => {
+  assert.match(js, /result\.addEventListener\("scrollend"/);
+  assert.match(js, /snapNearest\(result\)/);
+  assert.match(js, /result\.__keepY != null/);
+});
+
 test("horizontal bars sit under the text rows", () => {
   assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*height:\s*12px/);
   assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px \+ 16px/);

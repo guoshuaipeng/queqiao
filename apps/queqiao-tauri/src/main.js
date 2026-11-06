@@ -277,6 +277,14 @@ function watchShortPin(box) {
 function watchResultWheel(result) {
   if (!result || result.__wheel) return;
   result.__wheel = true;
+  result.addEventListener("scrollend", () => {
+    if (result.__keepY != null) {
+      if (Math.abs(result.scrollTop - result.__keepY) > 1) result.scrollTop = result.__keepY;
+      result.__keepY = null;
+      return;
+    }
+    snapNearest(result);
+  });
   result.addEventListener("wheel", (event) => {
     const maxX = result.scrollWidth - result.clientWidth;
     const maxY = result.scrollHeight - result.clientHeight;
