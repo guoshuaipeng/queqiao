@@ -222,12 +222,17 @@ function pinShortRows(box) {
 }
 
 function slideBy(box, delta) {
+  const y = box.scrollTop;
   const max = Math.max(0, box.scrollWidth - box.clientWidth);
   const next = box.scrollLeft + delta;
   if (next >= max - 1) box.scrollLeft = box.scrollWidth;
   else box.scrollLeft = Math.max(0, next);
+  if (box.scrollTop !== y) box.scrollTop = y;
   box.__rowTail = box.scrollLeft;
   shiftShortRows(box);
+  requestAnimationFrame(() => {
+    if (Math.abs(box.scrollTop - y) > 1) box.scrollTop = y;
+  });
 }
 
 function shiftShortRows(box) {

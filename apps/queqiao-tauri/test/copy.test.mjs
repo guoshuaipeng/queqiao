@@ -259,7 +259,8 @@ test("a short previous result wheel does not scroll the page", () => {
 });
 
 test("a horizontal wheel on previous results does not move the page", () => {
-  assert.match(js, /function slideBy/);
+  assert.match(js, /const y = box\.scrollTop/);
+  assert.match(js, /if \(box\.scrollTop !== y\) box\.scrollTop = y/);
   assert.match(js, /if \(next >= max - 1\) box\.scrollLeft = box\.scrollWidth/);
   assert.match(js, /slideBy\(past, event\.deltaX\)/);
 });
