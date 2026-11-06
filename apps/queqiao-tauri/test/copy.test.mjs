@@ -136,6 +136,12 @@ test("an open record button says collapse", () => {
   assert.match(js, /showHistory \? "收起"/);
 });
 
+test("a long record opens at the newest line", () => {
+  assert.match(js, /openingHistory/);
+  assert.match(js, /history\.scrollTop = history\.scrollHeight/);
+  assert.match(css, /#history\s*\{[^}]*overflow-y:\s*auto/);
+});
+
 test("a finished change clears the command", () => {
   const link = fs.readFileSync(new URL("../src-tauri/src/link.rs", import.meta.url), "utf8");
   const doneAt = link.indexOf("copy::DONE");
