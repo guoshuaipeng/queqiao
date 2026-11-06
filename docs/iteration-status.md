@@ -364,3 +364,27 @@ elay/internal/relay/audit_test.go
   - 写文件 ≠ push/上机；R050 仍 blocked。
 - 本侧已在 `docs/agents/迭代.md` §7 与例程 prompt 固化同分界；待 `dev-iteration.md` 落盘后以该文为出入口径权威，有差异则改职责/例程对齐正文。
 
+
+### 2026-11-06 14:21 A44ia/S2an公元2ai · 例程检查：无待开发；dev-iteration.md 已落盘
+
+- **队列**：无「待开发」。PV-001/002/003 均为 **待验收**；PV-004 仍为 **草稿**（未放行实现）。
+- **PV-002**：观感未过 → 布局冻结，等体验修订方案 + 用户确认；本侧不改代码。
+- **PV-003**：本地图标闭环已待验收；不上生产换包。
+- **规范**：`docs/dev-iteration.md` **已落盘** → 小步迭代以该文为出入口径权威；与 `docs/agents/迭代.md` §7/§8 一致。
+- **脏树**：工作区另有产品/体验/质量文档未提交改动（含 PV-004 记账、ux 确认台账等）→ **本侧不抢提交**，留给产品/架构/体验各自收口。
+- **未做**：业务代码、installer、push、上公网、R049/R050。
+- **通知**：无阻塞需用户决策 → **不向聊天回执**。
+
+
+### 2026-11-06 14:21 Asia/Shanghai · 客户端 PV-004 只读分析回传
+
+- **范围**：零改动 / 零下载 / 零运行 Setup。
+- **事实**：
+  - 本机 Inno **6.6.1** 确认缺简中 isl；
+  - `RemoteAssist-Net48.iss` 与 `RemoteAssist.iss` 目前仅 English 框架；Tasks/Icons/Run 及 Net48 `InfoBefore` 多处中文硬编码 → 需完整双语化；
+  - 本地帮助确认 `LanguageDetectionMethod=uilanguage` 对应系统显示语言；English 列为第一条即可引擎保底；`ShowLanguageDialog=no` 不弹框。
+- **前置**：官方译文源指向 https://jrsoftware.org/files/istrans/ ；**尚未**下载或核实该译文许可 → 取入前置。
+- **验收**：Windows 向导语言/混搭验收 **不能**用 Linux 替代；不在用户机启动 Setup。
+- **待产品正式指针**：PRODUCT-VERSIONS 现仍草稿且与 status 拟定范围不完全一致；指针落定前不实现。
+- **待产品明确**：正式指针是否**同时覆盖备用 net8** `RemoteAssist.iss`（客户端提问；迭代不擅自定）。
+
