@@ -757,3 +757,10 @@ elay/internal/relay/audit_test.go
 - **未做**：push；删 .NET；解 R050；官网混入；探针当完成
 - **客户端**：必须另 worktree；主树 E:\IdeaProjects\remote-assist 仍有未提交脏改，勿在其上开发迁移
 - **入口 A net48**：按产品 15:05 冻结；新栈 UI 基线仍为 A-480-delta-v1.1（见 ARCHITECTURE-BOUNDARY §7）
+
+
+### 2026-11-06 15:15 Asia/Shanghai · Tauri worktree 交接客户端
+
+- **唯一写入**：鹊桥-客户端 → E:\IdeaProjects\remote-assist-wt-tauri @ feat/tauri-client-migration
+- 迭代释放该 wt 编码权；不另开第二同分支 worktree。
+- tip 见本提交；仍未 push。
