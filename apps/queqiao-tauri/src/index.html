@@ -7,66 +7,169 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app" id="app">
-      <header class="page-header">
-        <div class="brand">
-          <h1>鹊桥</h1>
-          <p class="tagline">亲友之间，发凭证或粘贴连接。</p>
-        </div>
-        <p class="dev-badge" role="status">开发阶段 · D0 空壳 · 未接真实会话</p>
+    <div class="client" id="app">
+      <header class="top" id="top">
+        <div class="logo"><i></i>鹊桥</div>
+        <button type="button" class="gear" id="btn-settings">⚙ 设置</button>
+        <button type="button" class="back" id="btn-back" hidden>← 返回</button>
+        <h1 id="settings-title" hidden>设置</h1>
       </header>
+      <p class="tagline" id="tagline">亲友之间，发凭证或粘贴连接。</p>
+      <div id="banner" class="banner" hidden></div>
 
-      <section class="dual-zones" aria-label="入口双区">
-        <article class="zone zone-left" aria-labelledby="zone-left-title">
-          <h2 id="zone-left-title">请人帮我</h2>
-          <p class="zone-status" id="left-status">未开启接受协助</p>
-          <p class="zone-help">开启后，把完整连接凭证发给对方，再等待对方连接。</p>
-          <div class="zone-actions">
-            <button type="button" id="btn-start-accept" disabled title="D1 及以后实现">
-              开启接受协助
-            </button>
-            <button type="button" id="btn-stop-accept" disabled hidden title="D1 及以后实现">
-              停止接受
-            </button>
-            <button type="button" id="btn-copy-cred" disabled hidden title="D1 及以后实现">
-              复制连接凭证
-            </button>
+      <main id="home" class="zones">
+        <section class="zone" id="zone-left">
+          <div id="left-idle">
+            <h2>请人帮我</h2>
+            <p>让你信任的人帮你查电脑。对方要改动时会先问你。</p>
+            <div class="steps">
+              <div class="step"><b>1</b>点「开启接受协助」</div>
+              <div class="step"><b>2</b>复制连接凭证，发给帮你的人</div>
+              <div class="step"><b>3</b>对方连上时，点「允许协助」</div>
+            </div>
           </div>
-          <p class="zone-note" id="left-note">冷启动未监听。真实开启与凭证尚未实现，按钮已禁用。</p>
-        </article>
+          <div id="left-wait" hidden>
+            <div class="status" id="left-status"><span class="dot wait"></span>等待对方连接</div>
+            <div>
+              <div class="hint">会话码</div>
+              <div class="code" id="session-code"></div>
+            </div>
+            <div class="row">
+              <span class="hint">密码</span>
+              <span class="pwd" id="session-pwd">••••••••</span>
+              <button type="button" class="link" id="btn-reveal">显示</button>
+            </div>
+            <div class="note" id="wait-note">对方连上时会先弹窗问你，你点「允许协助」才算连上。</div>
+          </div>
+          <div class="spacer"></div>
+          <p class="hint" id="left-note"></p>
+          <div class="row" id="left-actions">
+            <button type="button" class="btn primary block" id="btn-start">开启接受协助</button>
+            <button type="button" class="btn primary" id="btn-copy" hidden>复制连接凭证</button>
+            <button type="button" class="btn" id="btn-stop" hidden>停止接受</button>
+          </div>
+          <p class="ok" id="copy-hint"></p>
+          <textarea id="manual-copy" class="manual" hidden readonly></textarea>
+          <button type="button" class="link history-link" id="btn-history" hidden>查看上次协助记录</button>
+          <div id="history" class="log" hidden></div>
+        </section>
+        <section class="zone" id="zone-right">
+          <h2>我帮别人</h2>
+          <p id="right-lead">粘贴对方发来的连接凭证，点连接。</p>
+          <div class="input-wrap">
+            <input id="cred" type="text" placeholder="粘贴连接凭证" autocomplete="off" spellcheck="false" />
+            <button type="button" class="paste" id="btn-paste">粘贴</button>
+          </div>
+          <div class="steps" id="right-steps">
+            <div class="step"><b>1</b>让对方发来连接凭证</div>
+            <div class="step"><b>2</b>粘贴到上面，点「连接」</div>
+          </div>
+          <div class="status" id="right-status" hidden></div>
+          <p class="err" id="right-error"></p>
+          <div class="spacer"></div>
+          <button type="button" class="btn primary block" id="btn-connect" disabled>连接</button>
+          <button type="button" class="btn block" id="btn-cancel" hidden>取消</button>
+          <p class="hint" id="right-hint"></p>
+          <button type="button" class="link" id="btn-install">对方还没装鹊桥？复制安装说明</button>
+        </section>
+      </main>
 
-        <article class="zone zone-right" aria-labelledby="zone-right-title">
-          <h2 id="zone-right-title">我帮别人</h2>
-          <p class="zone-status" id="right-status">未连接</p>
-          <label class="field-label" for="cred-input">粘贴连接凭证</label>
-          <textarea
-            id="cred-input"
-            rows="3"
-            placeholder="粘贴完整连接凭证（勿自动联网）"
-            autocomplete="off"
-            spellcheck="false"
-          ></textarea>
-          <div class="zone-actions">
-            <button type="button" id="btn-connect" disabled title="D1 及以后实现">
-              连接
-            </button>
-            <button type="button" id="btn-cancel-connect" disabled hidden title="D1 及以后实现">
-              取消
-            </button>
-          </div>
-          <p class="zone-note" id="right-note">不会自动读取剪贴板或发起连接。真实连接尚未实现，按钮已禁用。</p>
-        </article>
+      <section id="host" class="session" hidden>
+        <div class="sbar"><div class="status"><span class="dot" id="host-dot"></span><span id="host-title">正在接受协助 · 已连接</span></div></div>
+        <div class="trust" id="trust-full" hidden>⚠ 当前是「完全信任」：这次协助的改动不会再问你。<button type="button" class="btn" id="btn-end-full">结束完全信任</button></div>
+        <div class="trust loose" id="trust-loose" hidden>当前是「宽松」：只有高风险改动才会问你。<button type="button" class="btn" id="btn-back-ask">改回每次询问</button></div>
+        <div class="scroll">
+          <div class="note">对方已连接。请核对对方身份，不要随便信任陌生人。</div>
+          <div class="sec">对方做过的事</div>
+          <div class="log" id="audit"></div>
+        </div>
       </section>
 
-      <footer class="page-footer">
-        <p class="flow">请人帮我：开启 → 发凭证 → 等对方连接</p>
-        <p class="flow">我帮别人：粘贴完整凭证 → 点连接</p>
-        <p class="safety">只把连接凭证私下发给你信任、愿意请其帮忙的人。</p>
-        <p class="stage-disclaimer">
-          本窗口为 Tauri 迁移 D0 布局方向示意（A-480-delta-v1.1）。截屏、键鼠、系统命令、relay/pair 均未接入；禁止当作已上线能力。
-        </p>
+      <section id="helper" class="session" hidden>
+        <div class="sbar"><div class="status"><span class="dot" id="helper-dot"></span><span id="helper-title">正在协助对方 · 已连接</span></div></div>
+        <div class="scroll" id="helper-scroll">
+          <div id="helper-tools">
+            <div class="sec">常用操作</div>
+            <div class="ops">
+              <button type="button" class="btn" data-tool="ListProcesses">查看正在运行的程序</button>
+              <button type="button" class="btn" data-tool="ListDir">查看文件夹</button>
+              <button type="button" class="btn" data-tool="ReadLogTail">查看日志</button>
+              <button type="button" class="btn" data-tool="ReadFile">查看文件</button>
+              <button type="button" class="btn" data-tool="RunCommand">提议一项改动</button>
+            </div>
+            <div class="path-row" id="path-row" hidden>
+              <input id="path" type="text" placeholder="路径" />
+              <button type="button" class="btn" id="btn-path-go">查看</button>
+            </div>
+            <div class="propose" id="propose" hidden>
+              <input id="summary" type="text" placeholder="要做什么" />
+              <input id="command" type="text" placeholder="命令" />
+              <button type="button" class="btn primary" id="btn-propose">发给对方确认</button>
+            </div>
+            <p class="hint" id="op-status"></p>
+          </div>
+          <div class="row"><span class="sec">结果</span><button type="button" class="link" id="btn-copy-result">复制结果</button></div>
+          <pre class="result" id="result">点上面的操作，结果会显示在这里</pre>
+          <button type="button" class="link" id="btn-past">▸ 之前的结果</button>
+          <div id="past" hidden></div>
+        </div>
+      </section>
+
+      <section id="settings" class="set" hidden>
+        <div class="grp">
+          <h4>对方要改这台电脑时</h4>
+          <label class="radio"><input type="radio" name="trust" value="ask" /><b>每次询问</b><span>对方改动前都会问你（推荐）</span></label>
+          <label class="radio"><input type="radio" name="trust" value="relaxed" /><b>宽松</b><span>只有高风险改动才问你，其余会记下但不再打扰</span></label>
+          <label class="radio"><input type="radio" name="trust" value="full" /><b>完全信任</b><span>仅这次不再询问，但会记下</span></label>
+          <p class="hint">高风险包括删除文件、关机、改权限等。如果对方只能查看，不会因为这个设置就能改你的电脑。</p>
+        </div>
+        <div class="grp">
+          <h4>连接服务器</h4>
+          <p class="hint">一般不用改。只有对方或管理员告诉你换服务器时才改这里。</p>
+          <div class="row">
+            <input id="relay" type="text" />
+            <button type="button" class="btn" id="btn-save-relay">保存</button>
+            <button type="button" class="link" id="btn-reset-relay">恢复默认</button>
+          </div>
+          <p class="ok" id="relay-hint"></p>
+        </div>
+        <div class="grp">
+          <h4>给 AI 助手用（MCP）</h4>
+          <p class="hint">复制后粘贴到 Cursor 的 MCP 设置。写操作仍要这台电脑确认。</p>
+          <div class="row">
+            <button type="button" class="btn" id="btn-mcp">复制 MCP 配置</button>
+            <button type="button" class="btn" id="btn-usage">复制使用说明</button>
+          </div>
+        </div>
+        <div class="grp">
+          <h4>关于</h4>
+          <div class="row">
+            <span class="hint" id="version">版本</span>
+            <button type="button" class="link" id="btn-site">官网</button>
+            <button type="button" class="link" id="btn-records">查看协助记录</button>
+          </div>
+          <p class="ok" id="settings-hint"></p>
+        </div>
+      </section>
+
+      <footer class="foot" id="foot">🔒 只把连接凭证私下发给你信任的人。</footer>
+      <footer class="endbar" id="endbar" hidden>
+        <button type="button" class="btn danger" id="btn-end">结束本次协助</button>
       </footer>
+
+      <div class="mask" id="mask" hidden>
+        <div class="dlg" role="dialog" aria-modal="true">
+          <h3 id="dlg-title"></h3>
+          <p id="dlg-body"></p>
+          <button type="button" class="link" id="dlg-detail-toggle" hidden>▸ 查看详细</button>
+          <pre class="result" id="dlg-detail" hidden></pre>
+          <div class="row end">
+            <button type="button" class="btn" id="dlg-no">拒绝</button>
+            <button type="button" class="btn primary" id="dlg-yes">允许</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <script type="module" src="main.js"></script>
+    <script src="main.js"></script>
   </body>
 </html>

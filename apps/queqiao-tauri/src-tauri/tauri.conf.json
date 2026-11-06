@@ -14,6 +14,8 @@
         "title": "鹊桥",
         "width": 840,
         "height": 480,
+        "minWidth": 640,
+        "minHeight": 360,
         "resizable": true,
         "minimizable": true,
         "maximizable": false,

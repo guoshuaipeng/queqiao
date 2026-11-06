@@ -5,6 +5,7 @@
   "description": "鹊桥 Tauri v2 客户端壳（D0 空壳 · 开发阶段）",
   "type": "module",
   "scripts": {
+    "check": "node --test test/copy.test.mjs",
     "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build"
