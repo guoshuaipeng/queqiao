@@ -251,6 +251,8 @@
 | 本轮完成 | QUEEND 仍在框里，横向仍停在行尾 | 滚回去不丢掉行尾 | 滚的时候 `QUEEND` 在 687–727，横向仍是 715。撤掉临时撑高后横向 715，和尽头一致，`QUEEND` 在 727–767 | `acceptance/desktop-growdown-after.png` |
 | 本轮完成 | 滚回最底下后，exit=0 仍留在左边，这一行仍是整行 | 滚回去末行不跟着行尾跑走 | 竖向 60。`exit=0` 行高 20，在 364–384。字从 37 到 77，框左是 24 | 本机 `127.0.0.1:17991`；`acceptance/desktop-growexit-before.png`、`desktop-growexit-after.png` |
 | 本轮完成 | 横滑条仍坐在这行下面 | 横滑条不压住 exit=0 | 横滑条占 12。墨水到画面 408，横滑条从 415 开始 | `acceptance/desktop-growexit-after.png` |
+| 本轮完成 | 滚回最底下后再点开之前的结果，当前结果里的 exit=0 仍是整行，还留在左边 | 点开不把当前末行带走 | 竖向 100。`exit=0` 行高 20，在 316–336。字从 37 到 77，框左是 24 | 本机 `127.0.0.1:17991`；`acceptance/desktop-growpast-before.png`、`desktop-growpast-after.png` |
+| 本轮完成 | 之前的结果停在最新一行，这一行是整行，协助页不多出竖向滚动条 | 点开就看见最新一行，整页不另加竖条 | 可滚距离是 0。最新 `exit=0` 在 395–415，是整行。多出来的高度是 0，滚动是 hidden | `acceptance/desktop-growpast-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
