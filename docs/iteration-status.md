@@ -7,6 +7,19 @@
 
 ---
 
+## 当前口径（置顶 · 以本节约为准）
+
+见 [docs/CURRENT-POSTURE.md](CURRENT-POSTURE.md)。摘要：
+
+- **官网静态改版：已授权服务端实施**（主树 site/index.html + styles.css，有条件发布）。**废止**「官网不编码」。
+- **旧 net48 功能开发：暂停**。不派紧凑/入口 A 编码；不续 PV-004 安装器。
+- **Tauri**：E:\IdeaProjects\remote-assist-wt-tauri / feat/tauri-client-migration，客户端唯一写入；UI=A-480-delta-v1.1。
+- **R049** 未授不可验收；**R050** blocked。
+
+> 下方历史记录中凡写「官网不编码 / A 等 net48 放编码」等，**以本节与 CURRENT-POSTURE 覆盖**。
+
+---
+
 ## 使用说明（bot）
 
 1. 先读 PRODUCT-VERSIONS.md：仅处理 **待开发**；草稿 / 暂停 不实现。  
@@ -758,3 +771,11 @@ elay/internal/relay/audit_test.go
 - **未做**：业务码、installer、push、上公网、扩 PV-001 点验环境。
 - **通知**：无新用户决策阻塞 → **安静**。
 
+
+
+### 2026-11-06 15:22 Asia/Shanghai · 口径纠正（产品要求改写 status）
+
+- 已置顶「当前口径」并新增 docs/CURRENT-POSTURE.md。
+- 官网：已授服务端实施（废止不编码表述）。net48 暂停。Tauri wt 客户端唯一写入。
+- 例程检查提示与 agent 简介已同步；勿再派 net48/A 编码或续 PV-004 安装器。
+- commit 指针：见本轮 git log（主树）。
