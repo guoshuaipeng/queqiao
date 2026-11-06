@@ -1,0 +1,3 @@
+docs(R043): 安全闸门未通过 — 公网中继业务明文，暂不验收
+
+只读复核 5996705：AgentHost skipTls + Helper force Insecure 导致 guest 路径业务明文，违反 architecture/PRODUCT；对照 net8 agent 仍 TLS。附修复方案，不扩协议字段。

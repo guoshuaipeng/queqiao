@@ -1,0 +1,5 @@
+feat(R043/net48): 复制连接凭证改为完整安全载荷（含 Agent 业务 fp）
+
+产品 09:15：主路径一次粘贴 PairQrPayload.BuildRelay（code+pwd+tls+fp）；
+口述短码仅展示不可默认可连；缺/坏 fp 阻断；无 Insecure/skipTls 降级。
+未覆盖 docs/tls-trust.md（与「内置官方指纹」冲突，待架构按产品撤回修正）。

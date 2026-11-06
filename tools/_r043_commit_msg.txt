@@ -1,0 +1,6 @@
+feat(R043/net48): 主路径对齐公网中继+连接凭证，修复接受协助首启
+
+- 协助端：单框凭证/载荷+连接；Host/Port/TLS 高级默认折叠；默认 121.196.45.81:17891；去「即将支持」
+- Protocol：8 位数字验证码、{码}-{验证码} 复制/解析、兼容旧两行；guest_host/guest_join 接线
+- 被控：复制连接凭证；preferRelay guest_host；ConfirmPrompt/AppShell 人话错误（根因 SetCompatibleTextRenderingDefault）
+- 文档：开放问题结论；本交付不附用户本机运行截图（硬约束）

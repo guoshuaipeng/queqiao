@@ -29,3 +29,14 @@
 - R005（横幅收起与折行）
 - 信任等级（见 docs/trust-levels.md，排 R007）
 - 重做配对确认窗、改中继、换 UI 框架
+
+## 产品验收（2026-11-05 Asia/Shanghai）
+
+状态保持 **done**。产品对照 `docs/screenshots/r006-home.png` / `r006-agent.png` / `r006-agent-refresh-confirm.png` / `r006-helper-disconnected.png` / `r006-helper-account-unselected.png` / `r006-helper-account-selected.png` / `r006-helper-connected.png`，按 `docs/quality.md` 四项验收 **通过**：
+
+- 首页两张整卡可点，有「进入 ›」；接受协助偏蓝、去协助别人偏绿。
+- 被协助端「复制码+密码」为唯一蓝色实心主按钮；「刷新会话码」为轻按钮，点击先确认「旧码会失效…」（刷新会话码 / 取消）。
+- 协助端账号/密码有可见标签；未选设备时免密连接禁用并提示「请先点选一台自己的电脑」；选中后按钮为「连接：设备名」。
+- 未连接不展示灰色常用操作；连上后白话五键；「连接」唯一绿色实心主按钮，「复制安装说明」为轻按钮。
+
+已开 R007。

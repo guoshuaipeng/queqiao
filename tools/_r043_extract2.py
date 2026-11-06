@@ -1,0 +1,22 @@
+from pathlib import Path
+
+# Extract RelayGuestLoopAsync full method from net8
+t = Path('src/RemoteAssist.Agent/AgentHost.cs').read_text(encoding='utf-8')
+start = t.find('private async Task RelayGuestLoopAsync')
+end = t.find('private async Task RelayDeviceLoopAsync')
+print('GuestLoop len', end-start)
+Path('tools/_r043_guest_loop_net8.txt').write_text(t[start:end], encoding='utf-8')
+print(t[start:end][:3000])
+print('===== ctor signature =====')
+i=t.find('public AgentHost(')
+print(t[i:i+1200])
+print('===== RefreshSession in net8 =====')
+i=t.find('public string RefreshSessionCode')
+print(t[i:i+900])
+print('===== FormatShareClipboard net8 =====')
+f=Path('src/RemoteAssist.Protocol/FriendConnectGuide.cs').read_text(encoding='utf-8')
+i=f.find('FormatShareClipboard')
+print(f[i:i+600])
+i=f.find('TryParseShareText')
+print('TryParse start')
+print(f[i:i+1500])

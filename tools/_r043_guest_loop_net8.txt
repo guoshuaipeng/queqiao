@@ -1,0 +1,58 @@
+private async Task RelayGuestLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            string password;
+            lock (_codeLock) password = _sessionPassword;
+
+            if (!RelayEndpoint.TryParse(_relayEndpoint, out var host, out var port, out var err))
+            {
+                _audit.Write("relay_bad_endpoint", err);
+                try { await Task.Delay(5000, ct).ConfigureAwait(false); } catch { break; }
+                continue;
+            }
+
+            RelayClient? relay = null;
+            try
+            {
+                SetRelayPhase("dialing", null);
+                _audit.Write("relay_guest_dial", $"ep={host}:{port}");
+                // JSONL: guest_host 由服务端签发 code；配对完成后再跑业务 TLS
+                var (client, code) = await RelayClient.GuestHostAsync(
+                        host, port, password, preferredCode: null,
+                        onCodeAssigned: c =>
+                        {
+                            lock (_codeLock) _sessionCode = c;
+                            SetRelayPhase("ready", null);
+                            SessionChanged?.Invoke();
+                            _audit.Write("relay_guest_code", $"code={c}");
+                        },
+                        ct: ct)
+                    .ConfigureAwait(false);
+                relay = client;
+                lock (_codeLock) _sessionCode = code;
+                SetRelayPhase("waiting", null);
+                SessionChanged?.Invoke();
+                _audit.Write("relay_guest_paired", $"code={code}");
+                SetRelayPhase("paired", null);
+                await HandleStreamAsync(relay, relay.Stream, $"relay-guest/{host}:{port}", ownerLink: false, ct)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                SetRelayPhase("error", ex.Message);
+                _audit.Write("relay_guest_error", ex.Message);
+                try { await Task.Delay(2000, ct).ConfigureAwait(false); } catch { break; }
+            }
+            finally
+            {
+                try { relay?.Dispose(); } catch { /* ignore */ }
+            }
+        }
+    }
+
+    

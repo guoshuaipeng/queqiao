@@ -1,0 +1,6 @@
+fix(R043/net48): P0 移除中继业务明文回退；短凭证无业务指纹则阻断
+
+- AgentHost: skipTls false；QrPayload preferRelay 恢复 useTls+本机 Agent 业务证指纹
+- Helper: 删除无指纹自动 Insecure；人话引导完整载荷/高级指纹
+- 核实：无官方业务指纹可内置；中继 TCP 明文控制面；fp= 为每进程临时自签业务证，不可用中继证钉扎
+- 状态仍 blocked；不改 net8 Helper 债；不扩协议
