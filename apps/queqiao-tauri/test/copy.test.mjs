@@ -107,6 +107,17 @@ test("write confirm shows the remaining seconds", () => {
   assert.match(js, /d\.kind === "pair" \|\| d\.kind === "write"/);
 });
 
+test("log result scrolls to the newest line", () => {
+  assert.match(js, /result\.scrollTop = result\.scrollHeight/);
+  assert.match(css, /\.result\s*\{[^}]*max-height:\s*168px/);
+  assert.match(css, /\.result\s*\{[^}]*overflow:\s*auto/);
+});
+
+test("path view button stays on one line", () => {
+  assert.match(css, /#btn-path-go\s*\{[^}]*white-space:\s*nowrap/);
+  assert.match(css, /\.path-row #path\s*\{[^}]*min-width:\s*0/);
+});
+
 test("cancel tells the helper it did not connect", () => {
   assert.ok(blob.includes("已取消，没有连上。"));
 });

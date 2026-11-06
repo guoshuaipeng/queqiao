@@ -144,6 +144,9 @@
 | 本轮完成 | 文件夹结果用「文件 / 文件夹」 | 不用看英文缩写 | 结果行是「文件」和「文件夹」，没有 FILE/DIR | `acceptance/desktop-dir-kinds.png` |
 | 本轮完成 | 查看日志填好路径后直接出末尾内容，不弹确认 | 看日志不必先问一遍，也不把开头当结果 | 填路径点查看后没有确认弹窗；结果含文件末尾行、不含开头行；被协助端记下查看日志 | 本机 `127.0.0.1:17991`；`acceptance/desktop-log-before.png`、`desktop-log-after.png` |
 | 本轮完成 | 空文件夹写「这个文件夹是空的。」 | 打开空目录不会看成没结果 | 查看空文件夹后结果是这句，没有确认弹窗 | `acceptance/desktop-empty-dir.png` |
+| 本轮完成 | 宽松时普通改动不再弹确认，删除仍要确认 | 少打扰，但删文件、关机仍要问 | 普通 echo 没有确认弹窗，结果回来，记下「已执行」；`del` 仍弹出确认，拒绝后没有执行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-relaxed-host.png`、`desktop-relaxed-before.png`、`desktop-relaxed-ok.png`、`desktop-relaxed-risk.png` |
+| 本轮完成 | 查看日志滚到末尾，并写明只显示了末尾多少行 | 最新一行不用再往下翻 | 结果框露出 `queqiao-log-tail` 和「只显示了末尾 80 行。」 | `acceptance/desktop-log-tail.png` |
+| 本轮完成 | 路径旁的「查看」保持横排 | 按钮不会被挤成两行字 | 按钮宽 62、高 38 | `acceptance/desktop-log-button.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

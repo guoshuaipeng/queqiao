@@ -120,7 +120,13 @@ fn read_log(path: &str, lines: usize) -> Result<String, String> {
         return Ok("这个日志是空的。".into());
     }
     let from = all.len().saturating_sub(lines.max(1));
-    Ok(all[from..].join("\n"))
+    let shown = &all[from..];
+    let body = shown.join("\n");
+    if from > 0 {
+        Ok(format!("{body}\n只显示了末尾 {} 行。", shown.len()))
+    } else {
+        Ok(body)
+    }
 }
 
 fn read_limited(path: &str, max: usize, raw_ok: bool) -> Result<String, String> {
@@ -260,7 +266,14 @@ mod tests {
         std::fs::write(&log, body).unwrap();
         let tail = read_log(log.to_str().unwrap(), 80).unwrap();
         assert!(tail.contains("queqiao-log-tail"));
+        assert!(tail.contains("只显示了末尾 80 行。"));
+        assert!(tail.trim_end().ends_with("只显示了末尾 80 行。"));
         assert!(!tail.contains("queqiao-log-head"));
+        let short = dir.join("short.log");
+        std::fs::write(&short, "one\ntwo\n").unwrap();
+        let whole = read_log(short.to_str().unwrap(), 80).unwrap();
+        assert_eq!(whole, "one\ntwo");
+        assert!(!whole.contains("只显示了"));
         std::fs::remove_dir_all(&dir).ok();
     }
 

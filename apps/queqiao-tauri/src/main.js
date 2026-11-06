@@ -109,7 +109,9 @@ function render(s) {
     b.disabled = !!s.opBusy || ended;
   });
   $("op-status").textContent = s.opBusy ? "正在执行…" : (s.opStatus || "");
-  $("result").textContent = s.result || "点上面的操作，结果会显示在这里";
+  const result = $("result");
+  result.textContent = s.result || "点上面的操作，结果会显示在这里";
+  result.scrollTop = result.scrollHeight;
   if (typeof s.formEpoch === "number" && s.formEpoch > (window.__formEpoch || 0)) {
     window.__formEpoch = s.formEpoch;
     $("summary").value = "";
