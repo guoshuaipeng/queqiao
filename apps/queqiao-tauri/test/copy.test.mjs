@@ -285,6 +285,7 @@ test("a long result line stays clear of its scrollbar", () => {
 test("a wide result does not bring back the page scrollbar", () => {
   assert.match(js, /if \(!past\) scroller\.style\.paddingBottom = "0px"/);
   assert.match(js, /scroller\.style\.overflowY = extra <= 4 \? "hidden" : "auto"/);
+  assert.match(js, /while \(extra > 4 && shrinks < 8\)/);
 });
 
 test("a long line can slide sideways without sliding the page", () => {

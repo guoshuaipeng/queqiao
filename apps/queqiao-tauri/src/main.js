@@ -495,6 +495,24 @@ function fitSpan() {
   };
   settle(result, (window.__resultStick || "end") === "end");
   if (past) settle(past, false);
+  extra = scroller.scrollHeight - scroller.clientHeight;
+  let shrinks = 0;
+  while (extra > 4 && shrinks < 8) {
+    scroller.style.paddingTop = "0px";
+    scroller.style.paddingBottom = "0px";
+    scroller.style.gap = "0px";
+    extra = scroller.scrollHeight - scroller.clientHeight;
+    if (extra <= 4) break;
+    if (resultRows > resultMin) resultRows -= 1;
+    else if (past && pastRows > pastMin) pastRows -= 1;
+    else break;
+    fitRows(result, resultRows);
+    if (past) fitRows(past, pastRows);
+    settle(result, (window.__resultStick || "end") === "end");
+    if (past) settle(past, false);
+    extra = scroller.scrollHeight - scroller.clientHeight;
+    shrinks += 1;
+  }
   placeRail(result);
   if (past) placeRail(past);
   extra = scroller.scrollHeight - scroller.clientHeight;
