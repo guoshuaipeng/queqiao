@@ -193,6 +193,17 @@ function snapNearest(box) {
   box.scrollTop = snapped;
 }
 
+function placeRail(box) {
+  if (!box) return;
+  const hold = box.closest(".box-hold");
+  const rail = hold && hold.querySelector(":scope > .rail");
+  if (!rail) return;
+  const barX = Math.max(0, box.offsetWidth - box.clientWidth);
+  const barY = Math.max(0, box.offsetHeight - box.clientHeight);
+  rail.style.right = (barX + 1) + "px";
+  rail.style.bottom = (barY + 1) + "px";
+}
+
 function watchResultWheel(result) {
   if (!result || result.__wheel) return;
   result.__wheel = true;
@@ -301,7 +312,12 @@ function fitSpan() {
   if (box.bottom > viewBottom - 1) scroller.scrollTop += box.bottom - viewBottom;
   box = span();
   if (box.top < viewTop - 1) scroller.scrollTop -= viewTop - box.top;
-  if (past) snapNearest(past);
+  if (past && past.__openEnd) {
+    snapEnd(past);
+    past.__openEnd = false;
+  } else if (past) snapNearest(past);
+  placeRail(result);
+  if (past) placeRail(past);
   let extra = scroller.scrollHeight - scroller.clientHeight;
   if (extra > 1 && bar) {
     bar.style.paddingBottom = "0px";
@@ -509,7 +525,10 @@ function bindUi() {
     $("past").hidden = !$("past").hidden;
     const n = state && state.past ? state.past.length : 0;
     $("btn-past").textContent = ($("past").hidden ? "▸ " : "▾ ") + "之前的结果" + (n ? "（" + n + "）" : "");
-    if (!$("past").hidden) snapEnd($("past"));
+    if (!$("past").hidden) {
+      $("past").__openEnd = true;
+      snapEnd($("past"));
+    }
     revealResult(false);
   };
   document.querySelectorAll('input[name="trust"]').forEach((el) => {

@@ -200,13 +200,13 @@ test("the previous exit line and the tool row stay whole", () => {
   assert.match(js, /const bar = \$\("ops-bar"\)/);
   assert.match(js, /else if \(past && pastRows > 2\) pastRows -= 1/);
   assert.match(js, /scroller\.style\.paddingBottom = "16px"/);
-  assert.match(js, /if \(past\) snapNearest\(past\)/);
+  assert.match(js, /else if \(past\) snapNearest\(past\)/);
   assert.match(css, /#ops-bar\s*\{[^}]*position:\s*sticky/);
 });
 
 test("a long previous line stays clear of the scrollbar", () => {
   assert.match(css, /#past\s*\{[^}]*scrollbar-gutter:\s*stable/);
-  assert.match(css, /#past\s*\{[^}]*padding:\s*0 20px 0 12px/);
+  assert.match(css, /#past\s*\{[^}]*padding:\s*0 36px 0 12px/);
 });
 
 test("the result wheel does not scroll the page", () => {
@@ -217,6 +217,13 @@ test("the result wheel does not scroll the page", () => {
   assert.match(css, /#result\s*\{[^}]*overscroll-behavior:\s*contain/);
 });
 
+test("opening previous results lands on the newest lines", () => {
+  assert.match(js, /\$\("past"\)\.__openEnd = true/);
+  assert.match(js, /if \(past && past\.__openEnd\) \{\s*snapEnd\(past\);\s*past\.__openEnd = false;/);
+  assert.match(js, /function placeRail/);
+  assert.match(css, /\.rail\s*\{[^}]*width:\s*24px/);
+});
+
 test("horizontal bars sit under the text rows", () => {
   assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*height:\s*12px/);
   assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px \+ 16px/);
@@ -225,7 +232,7 @@ test("horizontal bars sit under the text rows", () => {
 
 test("a long result line stays clear of its scrollbar", () => {
   assert.match(css, /#result\s*\{[^}]*scrollbar-gutter:\s*stable/);
-  assert.match(css, /#result\s*\{[^}]*padding:\s*0 20px 0 12px/);
+  assert.match(css, /#result\s*\{[^}]*padding:\s*0 36px 0 12px/);
 });
 
 test("a wide result does not bring back the page scrollbar", () => {
