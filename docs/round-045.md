@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai  
 > 实现：鹊桥-客户端  
-> 状态：**compiled（net48 失败文案+Helper catch 收窄已接线；编译通过；运行未验收）**  
+> 状态：**编译/文档核对 = PASS_WITH_NOTES（`39d6dc1`）；运行验收仍 blocked（未验收）**  
 > 依据：R044 编译/文档 **PASS_WITH_NOTES**（`7cad0ab`）；运行仍 blocked。  
 > **本轮主题**：稳定性 / UX 收尾，**不**扩功能、**不**改凭证格式与信任模型。  
 > **范围默认仅 net48**（除非改动极琐碎且同文件可顺手）；仍**不**在用户本机跑 UI；Avalonia/CLI 完整载荷主路径**另轮**。
@@ -54,7 +54,33 @@
 ### 编译
 
 - `scripts/build-net48.ps1` publish-only（不自动启动）
+- 产物：`E:\IdeaProjects\remote-assist\artifacts\app-net48-fd\RemoteAssist.Net48.exe`
+- **19968** 字节 · **2026-11-06 09:57:04 Asia/Shanghai**
+- SHA256 `57F9ADB65B4FEC7A647E9966EAA105A1F4B8B24F23B320FFF3A75265706C60BF`
 
+## 产品验收 · 编译/文档核对（2026-11-06 Asia/Shanghai）
+
+**结论：编译/文档核对 = PASS_WITH_NOTES；真实连接 / 运行验收 = 仍 blocked（未验收）。**  
+**不是**可公网使用的已验证客户端。
+
+| 项 | 结果 |
+|----|------|
+| 证据 commit | `39d6dc1ee96a1748cffb59ead4493e6171a8d3e8`（短 `39d6dc1`） |
+| 范围 | 只读源码 + 文档 + 产物元数据核对；**未**在用户本机启动 UI / 联调 / 截图 |
+| net48 无 UI 编译 | 客户端交付后无 UI publish 成功 |
+| 产物 | `RemoteAssist.Net48.exe`，**19968** 字节，**2026-11-06 09:57:04 Asia/Shanghai**，SHA256 `57F9ADB65B4FEC7A647E9966EAA105A1F4B8B24F23B320FFF3A75265706C60BF` |
+| 失败文案 | `FailWrongPassword` / `FailPeerNotAccepting` / `FailStaleCode` 已改为完整连接凭证口径 |
+| Helper catch | 通用 catch **仅** `SetFailHint(RedactSecureMaterial(friendly))`，**不再**一律追加 `MissingSecurityInfoHint` |
+| 缺 fp 预检 | 保留；`ConnectDraftParser` / `AssistClient` 缺安全验证阻断保留 |
+| 凭证格式 / 信任模型 / 脱敏 / 8 位规则 | **未改** |
+| Avalonia / CLI | **本轮未改** |
+| 真实连接 | **blocked / 未验收** |
+
+### NOTES（转入 R046 / 备忘）
+
+1. 各失败场景仅源码核对，**未**实机验证文案弹出路径。
+2. Avalonia/CLI 完整安全载荷主路径、本机外运行验收、net8 Insecure 债 → **另轮**。
+3. 产品新需求（会话码生成/使用审计 + 管理台只读查看）→ **R046**（服务端轮；见 `docs/round-046.md`）。
 
 ## 参考
 
