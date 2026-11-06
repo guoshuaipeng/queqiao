@@ -225,6 +225,8 @@
 | 本轮完成 | 缩到最小高度后，协助页仍不要多出一条竖向滚动条 | 最矮时整页不再被撑高 | 多出来的高度是 0，滚动是 hidden；窗口右侧没有整页竖条 | `acceptance/desktop-minh-after.png`。改之前的 `desktop-minh-old.png` 缩下去后整页仍被撑高 |
 | 本轮完成 | 缩到最小高度后，当前结果里的 exit=0 仍是整行 | 最矮时末行不被切成半行 | 客户区 840×360。框高 22，滚动 20。`exit=0` 行高 20，在 222–242，看得见的只有这一行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-minline-before.png`、`desktop-minline-after.png`。改之前的 `desktop-minline-old.png` 末行被切掉 |
 | 本轮完成 | 之前的结果里看得见的那一行也是整行，横滑条坐在这行下面 | 最矮时横滑条不压住这一行 | 框高 34，横滑条占 12。`exit=0` 行高 20，在 261–281。墨水到画面 305，横滑条从 312 开始 | `acceptance/desktop-minline-after.png` |
+| 本轮完成 | 缩到最小高度后，当前结果再往上翻一行，queqiao-now 仍是整行 | 最矮时往上翻不停在半行 | 从滚动 20 翻到 0。`queqiao-now` 行高 20，在 222–242，看得见的只有这一行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-minup-before.png`、`desktop-minup-after.png` |
+| 本轮完成 | 之前的结果往上翻到长行时，这一行仍是整行，横滑条仍坐在下面 | 最矮时翻到长行不被横滑条切掉 | 从滚动 120 翻到 100。长行高 20，在 261–281。墨水到画面 305，横滑条从 312 开始 | `acceptance/desktop-minup-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
