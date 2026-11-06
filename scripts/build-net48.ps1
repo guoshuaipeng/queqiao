@@ -28,6 +28,14 @@ try {
   $exe = Get-Item (Join-Path $outDir "RemoteAssist.Net48.exe")
   $total = (Get-ChildItem $outDir -File | Measure-Object Length -Sum).Sum
   Write-Host ("EXE: {0:N1} KB | folder: {1:N1} KB ({2:N2} MB)" -f ($exe.Length/1KB), ($total/1KB), ($total/1MB))
+
+  # R047/⑤：把 net48 MCP 宿主打进同一分发目录（亲友主路径）
+  Write-Host "== Publishing net48 MCP into App output ==" -ForegroundColor Cyan
+  & (Join-Path $PSScriptRoot "publish-mcp-net48.ps1") -Configuration $Configuration
+  if ($LASTEXITCODE -ne 0) { throw "publish-mcp-net48 failed" }
+  $mcpSrc = Join-Path $root "artifacts\mcp-net48-fd"
+  Copy-Item (Join-Path $mcpSrc "*") $outDir -Recurse -Force
+  Write-Host "MCP copied into $outDir"
   Write-Host "Run: $($exe.FullName)"
   Write-Host "Requires: .NET Framework 4.8 (usually preinstalled on Win10/11). No self-contained bundle needed."
 }

@@ -11,6 +11,12 @@ public static class McpExeLocator
 {
     private static readonly string[] RelativeCandidates =
     [
+        // ⑤ 亲友主路径：net48 FW4.8 依赖宿主（安装目录旁 / 制品目录）
+        "RemoteAssist.Mcp.exe",
+        Path.Combine("mcp", "RemoteAssist.Mcp.exe"),
+        Path.Combine("artifacts", "mcp-net48-fd", "RemoteAssist.Mcp.exe"),
+        Path.Combine("artifacts", "app-net48-fd", "RemoteAssist.Mcp.exe"),
+        // 兼容备用：net8 publish
         Path.Combine("artifacts", "mcp-win-x64-sc", "RemoteAssist.Mcp.exe"),
         Path.Combine("artifacts", "mcp-win-x64-fd", "RemoteAssist.Mcp.exe"),
     ];
@@ -36,7 +42,7 @@ public static class McpExeLocator
 
         return Path.GetFullPath(Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            "IdeaProjects", "remote-assist", RelativeCandidates[0]));
+            "IdeaProjects", "remote-assist", "artifacts", "mcp-net48-fd", "RemoteAssist.Mcp.exe"));
     }
 
     /// <summary>若找到真实存在的 MCP exe 则返回 true。</summary>
@@ -115,8 +121,9 @@ public static class McpExeLocator
                 var dir = new DirectoryInfo(start);
                 for (var i = 0; i < 10 && dir is not null; i++, dir = dir.Parent)
                 {
+                    var script48 = Path.Combine(dir.FullName, "scripts", "publish-mcp-net48.ps1");
                     var script = Path.Combine(dir.FullName, "scripts", "publish-mcp.ps1");
-                    if (File.Exists(script))
+                    if (File.Exists(script48) || File.Exists(script))
                         return dir.FullName;
                 }
             }
@@ -133,6 +140,8 @@ public static class McpExeLocator
     {
         var root = TryFindRepoRoot();
         if (root is null) return null;
+        var script48 = Path.Combine(root, "scripts", "publish-mcp-net48.ps1");
+        if (File.Exists(script48)) return script48;
         var script = Path.Combine(root, "scripts", "publish-mcp.ps1");
         return File.Exists(script) ? script : null;
     }
@@ -144,7 +153,7 @@ public static class McpExeLocator
         if (!string.IsNullOrEmpty(script))
             return $"powershell -NoProfile -ExecutionPolicy Bypass -File \"{script}\"";
 
-        return "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\publish-mcp.ps1";
+        return "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\publish-mcp-net48.ps1";
     }
 
     private static List<string> CandidateRoots()

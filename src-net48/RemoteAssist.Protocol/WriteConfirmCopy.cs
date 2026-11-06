@@ -45,7 +45,7 @@ public static class WriteConfirmCopy
     /// </summary>
     public const string InstallInstructions =
         "请打开官网下载「鹊桥远程协助」：http://121.196.45.81/\n" +
-        "Windows 安装包：http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe（需要本机已安装 .NET Framework 4.8）\n" +
+        "Windows 安装包：http://121.196.45.81/downloads/RemoteAssist-Net48-Setup-0.1.0.exe（需要本机已安装 .NET Framework 4.8；勿再主推 net8 自包含 RemoteAssist-Setup）\n" +
         "Linux 包：http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz（解开后运行，需要先装好 .NET 8 桌面方向运行时）\n" +
         "macOS 尚未提供正式下载。\n" +
         "如果你手头有安装包，也可以一起发出去。\n" +

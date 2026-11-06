@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Publish unified App + compile Inno Setup installer (Setup.exe).
+  【兼容备用】Publish net8 自包含 App + Inno Setup。亲友主路径请用 build-installer-net48.ps1。
 
 .EXAMPLE
   .\scripts\build-installer.ps1

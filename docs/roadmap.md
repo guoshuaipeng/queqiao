@@ -55,12 +55,12 @@
 | R044 | 高频：完整连接凭证**逐字文案**扫尾（亲友 UI 无指纹/TLS 技术词）；Avalonia/CLI 本轮未改（完整载荷未移植） | 鹊桥-体验（规格已定）/ 鹊桥-客户端（实现） | **PASS_WITH_NOTES**（编译/文档 `7cad0ab`；运行 blocked） | `docs/round-044.md`、`docs/quality-connection-credential.md` |
 | R045 | 高频：亲友失败文案残留（码+密码→完整连接凭证）+ Helper 缺安全验证提示收窄（仅缺 fp/短凭证）+ 文档状态行清理；稳定性/UX，不扩功能 | 鹊桥-客户端 | **PASS_WITH_NOTES**（编译/文档 `39d6dc1`；运行 blocked） | `docs/round-045.md` |
 | R046 | 高频：中继 SQLite 会话码审计表（生成/join 成败/结束）+ 鉴权只读管理列表；禁记禁展 pwd/hash/fp/完整凭证；不改 guest_*；与 site 接单分离 | 鹊桥-服务端（主） | **open（规格已拍板）** | `docs/round-046.md`、`docs/relay-audit.md` |
-| R047 | 高频：Windows **net48 Framework 4.8 依赖小 Setup**（Inno/MSI；非几十兆自包含）；打磨：安装说明须写 **Framework 4.8**（改掉仍写「.NET 8 运行时」的 `WriteConfirmCopy`，须客户端授权）；官网上传可选另轮 | 鹊桥-客户端（主） | **open（规格已开）** | `docs/round-047.md` |
+| R047 | 高频：Windows **net48 Framework 4.8 依赖小 Setup**（Inno/MSI；非几十兆自包含）；打磨：安装说明须写 **Framework 4.8**（改掉仍写「.NET 8 运行时」的 `WriteConfirmCopy`，须客户端授权）；官网上传可选另轮 | 鹊桥-客户端（主） | **compiled（安装向导/官网未验）** | `docs/round-047.md` |
 | R048 | 高频：net48 **去协助 / Helper** 补「复制安装说明」+ MCP「复制 MCP 配置」JSON（对齐 net8/Avalonia）；打磨：缺完整凭证阻断、禁明文降级 | 鹊桥-客户端（主） | **PASS_WITH_NOTES**（编译/文档 `2d427d4`；运行 blocked） | `docs/round-048.md` |
 | R049 | 高频：首页与「去协助/接受协助」**单主窗口**页内切换（不叠窗、保位置/大小；有会话返回/切角色须本机确认结束；安全确认窗不在合并范围）；打磨：中继地址仅高级设置可改、默认内置（与 PAKE/**R050** **独立**，可另授权） | 鹊桥-客户端（主） | **draft / 待用户确认交互**（体验草案已出；未确认前不开 UI 实现） | `docs/round-049.md`、`docs/quality-single-window-codes-draft.md`（**待确认**） |
 | R050 | 高频：亲友主路径**短码**安全可连 + **严格唯一凭证**（code+8位密码；取消账号免密/`connect_device`/`ownerLink` 与设备密钥快捷连；自有设备也输入；服务端不知明文密码；成熟 PAKE） | 架构（PAKE 正式评估）→ 产品对照验收 → **授权后**实现 | **blocked**（决策已锁定；未授权实现；勿宣称现网已安全满足） | `docs/round-050.md`、`docs/PRODUCT.md`、`docs/pake-unique-credential-eval.md` |
 
-> **当前**：并行——**R046** open（规格已拍板）；**R047** open（规格已开；主维护小包）；**R048** compiled（运行未验收）。**R049** draft / **待用户确认**（交互见 `quality-single-window-codes-draft.md`；确认前不开 UI）。**R050** **blocked**（**严格唯一凭证已拍板** 2026-11-06 10:35；取消免密/设备密钥旁路；仍等架构 PAKE 正式评估收口后授权实现；**不得**宣称现网已安全满足；见 `round-050.md`）。R045/R044 运行仍 blocked；R042 已产品验收。
+> **当前**：并行——**R046** open；**R047** compiled（Net48-Setup 已出；安装向导/官网未验）；**R048** compiled（运行未验收）。**R049** draft / **待用户确认**（交互见 `quality-single-window-codes-draft.md`；确认前不开 UI）。**R050** **blocked**（**严格唯一凭证已拍板** 2026-11-06 10:35；取消免密/设备密钥旁路；仍等架构 PAKE 正式评估收口后授权实现；**不得**宣称现网已安全满足；见 `round-050.md`）。R045/R044 运行仍 blocked；R042 已产品验收。
 >
 > **Windows 主维护锁定（2026-11-06）**：亲友主路径 = **net48 Framework 4.8 依赖小包**；**冻结 `src/` net8 WinForms 功能**（仅安全/协议关键回补）。**net8 上已迭代且仍属产品意图的能力须全量迁 net48（能力对等）**；已知 backlog：信任三档、「结束这次协助」、已确认改动回看、`WriteConfirmCopy` 文案/安装前提；**不迁账号免密**（已废止）。**不为对等回填 net8**；**Avalonia = Mac/Linux**，非 Windows 亲友主路径。
 

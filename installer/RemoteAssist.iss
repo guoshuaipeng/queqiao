@@ -1,3 +1,4 @@
+; 【兼容备用】net8 自包含 Setup。亲友主路径请用 RemoteAssist-Net48.iss / build-installer-net48.ps1
 ; RemoteAssist — Inno Setup 6 script (unified App: accept + control)
 ; 构建：先 publish App，再 ISCC 本脚本。见 scripts\build-installer.ps1
 

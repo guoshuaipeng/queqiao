@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai  
 > 实现：鹊桥-客户端（主；Inno 或 MSI）；官网上传可选后续轮  
-> 状态：**open（规格已开）** — **尚未实现代码**  
+> 状态：**done（实现已交 · 编译/文档）** — 未跑安装向导验收；官网上传另排  
 > 依据：用户确认「可以打包成一个安装包发给别人安装」；当前 `artifacts/app-net48-fd` 约 1.5 MB 解压即用目录依赖本机 **.NET Framework 4.8**，尚无单文件 Setup。  
 > **并行说明**：**R046**（会话码审计 + 管理台只读）仍由服务端推进、互不阻塞；本轮只做 Windows **net48** 安装包。
 
@@ -56,3 +56,19 @@
 - `docs/PRODUCT.md`（Windows 主路径 = net48）
 - `installer/RemoteAssist.iss`、`installer/README.md`、`scripts/build-net48.ps1`
 - `docs/round-043.md`～`docs/round-045.md`（当前 net48 功能水位）
+
+
+## 交付说明（客户端 · 2026-11-06 Asia/Shanghai）
+
+### 做了什么
+- net48 独立 MCP 宿主：`src-net48/RemoteAssist.Mcp` → `artifacts/mcp-net48-fd/RemoteAssist.Mcp.exe`（FW4.8 依赖）
+- `AssistConnectOptions.TryParse` 迁入 net48（缺指纹默认阻断；明文仅显式 `--insecure`）
+- `build-net48.ps1` 将 MCP 拷入 `artifacts/app-net48-fd/`
+- 主推 Setup：`installer/RemoteAssist-Net48.iss` + `scripts/build-installer-net48.ps1` → `RemoteAssist-Net48-Setup-*.exe`
+- net8 `RemoteAssist.iss` / `build-installer.ps1` 标为**兼容备用**，勿作亲友主路径
+- 安装旁注：`installer/net48-runtime-note.txt`；复制安装说明 URL 改为 Net48 Setup 文件名
+
+### 未做
+- 官网上传/生产机替换（产品另排）
+- 本机运行安装向导 / UI / 真连验收
+- 信任三档 UI；免密/ownerLink；R049 验收宣称

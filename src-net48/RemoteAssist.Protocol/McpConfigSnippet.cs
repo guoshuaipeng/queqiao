@@ -6,7 +6,7 @@ namespace RemoteAssist.Protocol;
 public static class McpConfigSnippet
 {
     public const string DefaultServerName = "remote-assist";
-    public const string DefaultRelativeExeHint = "artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe";
+    public const string DefaultRelativeExeHint = "artifacts/mcp-net48-fd/RemoteAssist.Mcp.exe";
 
     /// <summary>
     /// 推荐：exe + env.REMOTE_ASSIST_PAYLOAD（换会话码时只改 env）。
@@ -100,3 +100,4 @@ public static class McpConfigSnippet
         return s;
     }
 }
+
