@@ -103,6 +103,10 @@ test("countdown does not pretend to be a click on reject", () => {
   assert.ok(!js.includes("dlgLeft <= 0) {"));
 });
 
+test("write confirm shows the remaining seconds", () => {
+  assert.match(js, /d\.kind === "pair" \|\| d\.kind === "write"/);
+});
+
 test("cancel tells the helper it did not connect", () => {
   assert.ok(blob.includes("已取消，没有连上。"));
 });

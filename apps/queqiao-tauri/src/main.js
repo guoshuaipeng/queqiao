@@ -169,8 +169,9 @@ function renderDialog(d) {
 }
 
 function paintCount(d) {
-  if (d.kind === "pair") {
-    $("dlg-yes").textContent = (d.primary || "允许协助") + "（" + Math.max(0, dlgLeft) + "）";
+  if (d.kind === "pair" || d.kind === "write") {
+    const base = d.primary || (d.kind === "pair" ? "允许协助" : "允许");
+    $("dlg-yes").textContent = base + "（" + Math.max(0, dlgLeft) + "）";
   }
 }
 
