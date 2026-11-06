@@ -232,6 +232,16 @@ test("a short line stays put while the long line slides", () => {
   assert.match(css, /#result > div\.stick-x,\s*#past > div\.stick-x\s*\{[^}]*background:\s*#fbfdff/);
 });
 
+test("previous results at the first line do not scroll the page", () => {
+  assert.match(js, /if \(maxY > 1\) \{\s*past\.scrollTop = Math\.min\(maxY, Math\.max\(0, past\.scrollTop \+ event\.deltaY\)\);\s*\}/);
+  assert.match(js, /shiftShortRows\(past\);\s*event\.preventDefault\(\)/);
+});
+
+test("scrolling back keeps the long line at its tail", () => {
+  assert.match(js, /if \(movedX && !movedY\) box\.__rowTail = x/);
+  assert.match(js, /box\.scrollLeft = box\.__rowTail/);
+});
+
 test("horizontal bars sit under the text rows", () => {
   assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*height:\s*12px/);
   assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px \+ 16px/);

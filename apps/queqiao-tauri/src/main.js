@@ -232,7 +232,25 @@ function shiftShortRows(box) {
 function watchShortPin(box) {
   if (!box || box.__pin) return;
   box.__pin = true;
-  box.addEventListener("scroll", () => shiftShortRows(box));
+  box.__rowTail = box.scrollLeft || 0;
+  box.__prevX = box.scrollLeft || 0;
+  box.__prevY = box.scrollTop || 0;
+  box.addEventListener("scroll", () => {
+    if (box.__restoring) return;
+    const x = box.scrollLeft;
+    const y = box.scrollTop;
+    const movedX = Math.abs(x - box.__prevX) > 1;
+    const movedY = Math.abs(y - box.__prevY) > 1;
+    if (movedX && !movedY) box.__rowTail = x;
+    if (movedY && (box.__rowTail || 0) > 1 && Math.abs(x - box.__rowTail) > 1) {
+      box.__restoring = true;
+      box.scrollLeft = box.__rowTail;
+      box.__restoring = false;
+    }
+    box.__prevX = box.scrollLeft;
+    box.__prevY = box.scrollTop;
+    shiftShortRows(box);
+  });
 }
 
 function watchResultWheel(result) {
@@ -262,12 +280,18 @@ function watchPastSnap(past) {
     const maxY = past.scrollHeight - past.clientHeight;
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY) && maxX > 1) {
       past.scrollLeft = Math.min(maxX, Math.max(0, past.scrollLeft + event.deltaX));
+      past.__rowTail = past.scrollLeft;
       shiftShortRows(past);
       event.preventDefault();
       return;
     }
-    if (maxY <= 1) return;
-    past.scrollTop = Math.min(maxY, Math.max(0, past.scrollTop + event.deltaY));
+    if (maxY > 1) {
+      past.scrollTop = Math.min(maxY, Math.max(0, past.scrollTop + event.deltaY));
+    }
+    if ((past.__rowTail || 0) > 1 && Math.abs(past.scrollLeft - past.__rowTail) > 1) {
+      past.scrollLeft = past.__rowTail;
+    }
+    shiftShortRows(past);
     event.preventDefault();
   }, { passive: false });
 }
