@@ -258,6 +258,12 @@ test("a short previous result wheel does not scroll the page", () => {
   assert.match(js, /shiftShortRows\(past\);\s*event\.preventDefault\(\);\s*\}, \{ passive: false \}\);/);
 });
 
+test("a horizontal wheel on previous results does not move the page", () => {
+  assert.match(js, /past\.scrollLeft = Math\.min\(maxX, Math\.max\(0, past\.scrollLeft \+ event\.deltaX\)\)/);
+  assert.match(js, /past\.__rowTail = past\.scrollLeft/);
+  assert.match(js, /shiftShortRows\(past\);\s*event\.preventDefault\(\);\s*return;/);
+});
+
 test("horizontal bars sit under the text rows", () => {
   assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*height:\s*12px/);
   assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px \+ 16px/);
