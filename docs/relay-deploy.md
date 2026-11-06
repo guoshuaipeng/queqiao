@@ -14,7 +14,7 @@
 | 监听 | `RELAY_ADDR=:17891`（全网卡） |
 | 进程 | **systemd** 常驻，建议 unit 名 `remote-assist-relay` |
 | 数据 | SQLite：`RELAY_DATA=/var/lib/remote-assist-relay/relay.db`（目录属主 = 运行用户） |
-| 防火墙 / 安全组 | **仅放行 TCP 17891**（入站）；SSH 保持既有管理通道，不在本文展开 |
+| 防火墙 / 安全组 | **中继入站放行 TCP 17891**；同机官网另放行 TCP 80，见 `docs/site-deploy.md`。SSH 保持既有管理通道，不在本文展开 |
 
 中继只做 JSONL 控制 → 透明 pipe；业务 TLS 端到端，中继不解析业务帧。
 
@@ -70,7 +70,7 @@ chown -R relay:relay /var/lib/remote-assist-relay
 
 1. `systemctl enable --now remote-assist-relay` 后 `ss -lntp | grep 17891` 可见监听。
 2. 本机或外网：`go run ./cmd/smoketest -addr 121.196.45.81:17891`（或同等访客 guest_host / guest_join）通过。
-3. 安全组 / 本机 firewalld 或 nftables：**仅** TCP 17891 对公网开放（按运维习惯二选一或都配）。
+3. 安全组 / 本机 firewalld 或 nftables：中继对公网开放 **TCP 17891**（按运维习惯二选一或都配）。同机官网另放行 TCP 80，见 `docs/site-deploy.md`。
 4. 客户端 / MCP 默认中继填：`121.196.45.81:17891`（写入设置默认值；用户仍可改）。
 
 ## 明确不做（本阶段）

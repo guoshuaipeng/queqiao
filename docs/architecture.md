@@ -42,7 +42,7 @@
 ## 4. 协议分层
 
 1. **中继控制面**：单 TCP；配对前 **JSON Lines**（`signup` / `login` / `auth_token` / `device_*` / `guest_*`）；配对成功两端收到 `paired` 后切 **原始双向字节管道**。契约：`relay-protocol.md`。
-2. **业务面**：管道内业务帧（4 字节 LE 长度 + UTF-8 JSON）+ **TLS（自签 + 证书指纹钉扎）**。`--insecure` 仅调试。中继只转发，不终结业务 TLS。
+2. **业务面**：管道内业务帧（4 字节 LE 长度 + UTF-8 JSON）+ **TLS（自签 + 证书指纹钉扎）**。`--insecure` 仅显式调试。中继只转发，不终结业务 TLS。短凭证与官方/自定义中继的取指纹规则见 **`tls-trust.md`** 与本文 §15。
 3. **MCP**：stdio 工具映射到同一客户端协议；`run_command` 等写路径走本机确认。连接参数支持中继载荷（含 `via=relay&pwd=`）及 token / device-id。详见 `MCP.md`。
 
 ## 5. 鉴权与权限
@@ -75,8 +75,9 @@
 
 - 中继**不得**代执行写操作或绕过本机确认。
 - 业务 TLS 端到端；本阶段不做中继侧 TLS 终结业务流量、不做正式 CA 互认。
+- **短凭证不携带指纹**；默认公网中继靠客户端内置官方指纹钉扎；自定义中继必须完整安全载荷含指纹或显式配置；**禁止 TOFU**；**禁止**因缺指纹自动降明文 / skipTls。细则见 `tls-trust.md` / §15。
 - SSH / 密码 / 私钥不进仓库、不进聊天转发；凭据走保险箱或用户本机操作。
-- 生产防火墙 / 安全组：**仅放行 TCP 17891**（入站）。
+- 生产防火墙 / 安全组：**仅放行 TCP 17891**（入站）。官网另放行 TCP 80，见 `site-deploy.md`。
 
 ## 8. 明确不做（当前阶段）
 
@@ -98,6 +99,10 @@
 | `MCP.md` | MCP 启用与参数 |
 | `roadmap.md` | P0/P1/P2 优先级与状态 |
 | `dev-rules.md` | 开发协作约定 |
+| `tls-trust.md` | 业务 TLS 指纹与短凭证信任模型 |
+| `quality-connection-credential.md` | 连接凭证（码-8位验证码）人话形态 |
+| `site.md` | 官网与接单产品范围 |
+| `site-deploy.md` | 官网独立进程部署 |
 
 ## 10. 变更流程
 
@@ -134,6 +139,11 @@
 ### 13.1 GUI 栈
 
 - **macOS / Linux**：用 **Avalonia**（.NET）做被控端状态窗与确认窗，后续双模式 GUI 也走同一套。
+- **Linux 双形态**（2026-11-05 补充）：同时支持 **命令行** 与 **图形界面**，不是二选一。
+  - 命令行：无界面被控端 / Helper CLI，以及 MCP stdio（给协助方 Agent 用）；写操作仍须本机确认（可用终端提示或拉起确认窗）。
+  - 界面：Avalonia 被控状态与确认，以及后续对等的双模式 GUI。
+  - 两者共用同一套 `net8.0` 协议与中继对接；可只装 CLI，也可同时提供带界面的包。
+  - macOS 同样保留 CLI（含 MCP）+ Avalonia 界面，节奏与 Linux 一致：先 CLI/MCP + 确认，再补对等 GUI。
 - **Windows**：现阶段保持现有 WinForms（`net8.0-windows`），不在 P0 把 Windows 迁到 Avalonia。
 - 共享层继续是 `net8.0` 的 Protocol / Helper / MCP；平台 UI 只包确认与展示。
 - 确认窗：Mac/Linux 用 Avalonia 实现与 Windows 相同的 Assist 规则（写操作本机确认，不可由 MCP/中继绕过）。不要以 osascript / zenity 脚本作为正式方案。
@@ -169,3 +179,28 @@
 4. 不把 .NET Framework 4.8 当作跨平台缩体积方案。
 
 Windows 主线演示仍按现有安排；小体积 4.8 对比版仅 Windows。实现由「鹊桥-客户端」在平台轨道执行，不改 `relay/`，也不停 R001 / 窗口位置记忆。
+
+## 14. 官网与接单（同机独立进程，2026-11-05 拍板）
+
+产品范围见 `site.md`。部署细节见 `site-deploy.md`。
+
+- **独立 Go 小二进制** + systemd `remote-assist-site`，与 `remote-assist-relay` 分进程、分用户（`rasite`）、分 SQLite 文件。官网故障不得拖死中继。
+- 监听 **`SITE_ADDR=:80`**（MVP：`http://121.196.45.81`）。不占用 `17891`。本阶段不上 HTTPS、不放行 443。
+- 数据：`SITE_DATA=/var/lib/remote-assist-site/site.db`。
+- 运营口令：`SITE_ADMIN_PASSWORD`，仅写在服务器 `/etc/remote-assist-site.env`，不进仓库。
+- 资源：`MemoryMax=64M`、`CPUQuota=30%`；不装 Node/Java/PHP/MySQL/Docker 等重栈。
+- 安全组：在既有 TCP 17891 之外 **额外放行入站 TCP 80**。
+- 上屏文案：`docs/site-copy.md`；仓库静态页：`site/`。
+- 后台订单状态只用三档：**新留言** / **已联系** / **已结束**（不要「进行中 / 完成 / 关闭」等其它枚举）。
+- 实现：「鹊桥-服务端」；不改客户端、不改中继协议。
+
+
+## 15. 短凭证与业务 TLS 指纹（2026-11-06 拍板）
+
+产品纠错 R043 后的信任分工，全文见 **`docs/tls-trust.md`**。摘要：
+
+- **默认公网中继**：客户端内置官方业务 TLS 指纹；`{会话码}-{8位验证码}` 只做会话授权，不带指纹。
+- **自定义中继**：必须完整安全载荷含 `fp=`（或显式配置）；不得用官方内置指纹顶替。
+- **缺指纹 → 安全阻断**；禁止 TOFU；禁止自动 skipTls / Insecure 降明文。`--insecure` 仅显式调试。
+- **与现网**：不改 `relay-deploy` 拓扑与 `guest_*` 字段；指纹在客户端业务 TLS，中继仍 opaque pipe。
+- 实现：「鹊桥-客户端」；不改 `relay/` 协议字段。
