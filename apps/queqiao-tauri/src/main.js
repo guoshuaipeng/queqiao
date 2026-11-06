@@ -66,9 +66,9 @@ function render(s) {
   $("btn-copy").disabled = s.phase === "stopping";
   $("btn-stop").disabled = s.phase === "stopping";
   $("copy-hint").textContent = s.copyHint || "";
-  show($("manual-copy"), !!s.manualCopy);
-  $("manual-copy").value = s.manualCopy || "";
-  if (s.manualCopy && s.copyHint === "没能复制，请再点一次。" && window.__manualFocused !== s.manualCopy) {
+  show($("manual-copy"), !!s.manualCopy && !s.dialog);
+  $("manual-copy").value = s.dialog ? "" : (s.manualCopy || "");
+  if (s.manualCopy && !s.dialog && s.copyHint === "没能复制，请再点一次。" && window.__manualFocused !== s.manualCopy) {
     window.__manualFocused = s.manualCopy;
     const box = $("manual-copy");
     box.focus();

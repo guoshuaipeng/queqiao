@@ -37,6 +37,9 @@ pub trait Hooks: Send + Sync {
     fn generation(&self) -> u64;
     fn trust(&self) -> Trust;
     fn bind_io(&self, stream: TcpStream);
+    fn peer_gone(&self) -> bool {
+        false
+    }
     fn ask(&self, kind: AskKind) -> Decision;
     fn emit(&self, ev: Ev);
 }
@@ -115,7 +118,13 @@ pub fn run_host_once(
     });
     let paired = match wire::read_json_line(&mut tcp, &alive) {
         Ok(v) => v,
-        Err(_) => return end_io(hooks),
+        Err(_) => {
+            return if hooks.alive() {
+                HostEnd::Relisten { code }
+            } else {
+                HostEnd::Stop
+            };
+        }
     };
     if !hooks.alive() {
         return HostEnd::Stop;
@@ -238,6 +247,9 @@ fn handle_pair(tls: &mut dyn StreamRw, frame: &wire::Frame, code: &str, hooks: &
         return PairOut::Stop;
     }
     if !matches!(decision, Decision::Allow) {
+        if hooks.peer_gone() {
+            return PairOut::Reject;
+        }
         let err = if policy::write_was_timeout(decision) {
             "配对确认超时，已自动拒绝"
         } else {

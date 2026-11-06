@@ -126,6 +126,8 @@
 | 本轮完成 | 等待中点「停止接受」回到空闲，迟到的连接进不来 | 亲友能取消等待，不留下还能进入的会话 | 停止后按钮回到「开启接受协助」；没有等待文案和已连接；另一窗口用原凭证连接失败 | `acceptance/desktop-before-stop.png`、`desktop-while-waiting.png`、`desktop-after-stop.png`；迟到连接没有配对弹窗，协助端显示没能连上 |
 | 本轮完成 | 有人来连时点「拒绝」，仍停在等待，对方进不了会话 | 亲友可以拒绝一次连接，不因此被连上 | 出现「有人想协助这台电脑」后点「拒绝」；仍有「等待对方连接」和「复制连接凭证」；没有已连接。协助端显示「对方没有同意这次协助。」 | 本机 `127.0.0.1:17991` 点击断言；`acceptance/desktop-before-reject.png`、`desktop-after-reject-helper.png` |
 | 本轮完成 | 窄于 760 时滚轮把「连接」滚进视野 | 小窗口不用去拖滚动条也能点连接 | 客户区 640×360 时「连接」先在客户区下方，滚轮后进入客户区 | `acceptance/desktop-narrow-before-wheel.png`、`desktop-narrow-after-wheel.png`；按钮从客户区外移到区内 |
+| 本轮完成 | 协助端点「取消」后双方都不进会话，被协助端仍在等待 | 连到一半可以停，不会因此被连上 | 弹窗出现后点「取消」；弹窗消失；仍有「等待对方连接」；没有已连接。协助端回到「连接」，没有「取消」 | 本机 `127.0.0.1:17991`；`acceptance/desktop-before-cancel.png`、`desktop-after-cancel-helper.png` |
+| 本轮完成 | 配对弹窗不把后面的连接原文透出来 | 旁人看不到凭证 | 弹窗打开时界面树里没有凭证原文，画面是实底遮罩加弹窗 | `acceptance/desktop-cancel-dialog.png`；断言 secretDuringDialog 为假 |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

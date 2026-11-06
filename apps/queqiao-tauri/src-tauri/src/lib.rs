@@ -171,11 +171,27 @@ impl Hooks for AppHooks {
     fn bind_io(&self, stream: TcpStream) {
         *self.shared.killer.lock().expect("killer") = Some(stream);
     }
+    fn peer_gone(&self) -> bool {
+        let guard = self.shared.killer.lock().expect("killer");
+        let Some(stream) = guard.as_ref() else {
+            return false;
+        };
+        let _ = stream.set_read_timeout(Some(Duration::from_millis(1)));
+        let mut buf = [0u8; 1];
+        let gone = match stream.peek(&mut buf) {
+            Ok(0) => true,
+            Ok(_) => false,
+            Err(err) => peer_io_closed(&err),
+        };
+        let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
+        gone
+    }
     fn ask(&self, kind: AskKind) -> Decision {
         if !self.alive() {
             return Decision::Cancelled;
         }
         let id = self.shared.prompt_ids.fetch_add(1, Ordering::SeqCst);
+        let pair = matches!(kind, AskKind::Pair);
         let (tx, rx) = mpsc::channel();
         {
             let mut slot = self.shared.prompt.lock().expect("prompt");
@@ -212,6 +228,10 @@ impl Hooks for AppHooks {
             if !self.alive() {
                 self.clear_prompt(id);
                 return Decision::Cancelled;
+            }
+            if pair && self.peer_gone() {
+                self.clear_prompt(id);
+                return Decision::Deny;
             }
             match rx.recv_timeout(Duration::from_millis(200)) {
                 Ok(true) => {
@@ -489,6 +509,17 @@ impl Shared {
         model.full_gen = 0;
         model.path_open.clear();
     }
+}
+
+fn peer_io_closed(err: &std::io::Error) -> bool {
+    matches!(
+        err.kind(),
+        std::io::ErrorKind::ConnectionReset
+            | std::io::ErrorKind::ConnectionAborted
+            | std::io::ErrorKind::BrokenPipe
+            | std::io::ErrorKind::UnexpectedEof
+            | std::io::ErrorKind::NotConnected
+    ) || matches!(err.raw_os_error(), Some(10053 | 10054 | 10057 | 10058))
 }
 
 fn is_active(phase: &str) -> bool {

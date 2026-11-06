@@ -82,6 +82,12 @@ test("narrow home wheel scrolls the connect column", () => {
   assert.match(js, /innerWidth >= 760/);
 });
 
+test("pair dialog does not leave the credential readable behind it", () => {
+  assert.match(css, /\.mask\s*\{[^}]*background:\s*#e8eef6/);
+  assert.match(js, /manual-copy/);
+  assert.ok(js.includes("s.dialog ? \"\""));
+});
+
 test("older snapshots do not replace a newer one", () => {
   assert.ok(js.includes("__queqiaoSeq"));
   assert.ok(js.includes("s.seq"));
