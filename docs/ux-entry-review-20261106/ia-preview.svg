@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="972" height="868" viewBox="0 0 972 868">
+<rect width="100%" height="100%" fill="#F0F2F5"/>
+<text x="20" y="26" font-size="16" font-weight="700" fill="#202124" font-family="Microsoft YaHei UI,Noto Sans CJK SC,sans-serif">入口交互方案池 · 待团队评选 · 非实现截图</text>
+<text x="20" y="46" font-size="10" fill="#5F6368" font-family="Microsoft YaHei UI,Noto Sans CJK SC,sans-serif">用户已授权全bot选优后本地推进 · 切页不改外框·可拖拽 · 不动凭证安全/R050</text>
+
+<rect x="20" y="56" width="300" height="380" rx="8" fill="#fff" stroke="#9AA0A6"/>
+<rect x="20" y="56" width="300" height="32" fill="#0B8043"/>
+<text x="30" y="77" fill="#fff" font-size="13" font-weight="700" font-family="sans-serif">A · 一屏双区</text>
+<text x="30" y="104" fill="#5F6368" font-size="9" font-family="sans-serif">同屏凭证+连接 · 推荐优先考虑</text>
+<rect x="30" y="112" width="280" height="310" fill="#F7F8FA" stroke="#DADCE0"/>
+<rect x="36" y="120" width="128" height="200" fill="#fff" stroke="#1A73E8"/>
+<text x="42" y="136" font-size="10" fill="#1A73E8" font-family="sans-serif">我的连接凭证</text>
+<rect x="42" y="176" width="110" height="22" rx="3" fill="#1A73E8"/>
+<text x="50" y="191" font-size="10" fill="#fff" font-family="sans-serif">复制连接凭证</text>
+<rect x="170" y="120" width="128" height="200" fill="#fff" stroke="#0F9D58"/>
+<text x="176" y="136" font-size="10" fill="#0F9D58" font-family="sans-serif">连接对方</text>
+<rect x="176" y="176" width="110" height="22" rx="3" fill="#0F9D58"/>
+<text x="208" y="191" font-size="10" fill="#fff" font-family="sans-serif">连接</text>
+<text x="30" y="428" fill="#80868B" font-size="9" font-family="sans-serif">固定壳 · 可拖拽</text>
+<rect x="336" y="56" width="300" height="380" rx="8" fill="#fff" stroke="#9AA0A6"/>
+<rect x="336" y="56" width="300" height="32" fill="#1967D2"/>
+<text x="346" y="77" fill="#fff" font-size="13" font-weight="700" font-family="sans-serif">B · 顶部两标签</text>
+<text x="346" y="104" fill="#5F6368" font-size="9" font-family="sans-serif">请人帮我 | 我帮别人 · 低风险备选</text>
+<rect x="346" y="112" width="280" height="310" fill="#F7F8FA" stroke="#DADCE0"/>
+<rect x="352" y="120" width="130" height="24" fill="#1A73E8"/>
+<text x="360" y="136" font-size="10" fill="#fff" font-family="sans-serif">请人帮我</text>
+<rect x="484" y="120" width="130" height="24" fill="#E8F0FE" stroke="#1A73E8"/>
+<text x="492" y="136" font-size="10" fill="#1A73E8" font-family="sans-serif">我帮别人</text>
+<rect x="352" y="176" width="120" height="22" rx="3" fill="#1A73E8"/>
+<text x="360" y="191" font-size="10" fill="#fff" font-family="sans-serif">复制连接凭证</text>
+<text x="346" y="428" fill="#80868B" font-size="9" font-family="sans-serif">固定壳 · 可拖拽</text>
+<rect x="652" y="56" width="300" height="380" rx="8" fill="#fff" stroke="#9AA0A6"/>
+<rect x="652" y="56" width="300" height="32" fill="#5F6368"/>
+<text x="662" y="77" fill="#fff" font-size="13" font-weight="700" font-family="sans-serif">C · 任务向导</text>
+<text x="662" y="104" fill="#5F6368" font-size="9" font-family="sans-serif">有没有对方凭证？→两步</text>
+<rect x="662" y="112" width="280" height="310" fill="#F7F8FA" stroke="#DADCE0"/>
+<text x="668" y="140" font-size="11" fill="#202124" font-family="sans-serif">你手上有对方发来的连接凭证吗？</text>
+<rect x="668" y="156" width="120" height="28" rx="3" fill="#0F9D58"/>
+<text x="688" y="174" font-size="10" fill="#fff" font-family="sans-serif">有，去粘贴</text>
+<rect x="802" y="156" width="120" height="28" rx="3" fill="#1A73E8"/>
+<text x="814" y="174" font-size="10" fill="#fff" font-family="sans-serif">没有，请人帮</text>
+<text x="662" y="428" fill="#80868B" font-size="9" font-family="sans-serif">固定壳 · 可拖拽</text>
+<rect x="178" y="452" width="300" height="380" rx="8" fill="#fff" stroke="#9AA0A6"/>
+<rect x="178" y="452" width="300" height="32" fill="#5F6368"/>
+<text x="188" y="473" fill="#fff" font-size="13" font-weight="700" font-family="sans-serif">D · 侧栏工作区</text>
+<text x="188" y="500" fill="#5F6368" font-size="9" font-family="sans-serif">侧栏角色/会话 · 右侧内容</text>
+<rect x="188" y="508" width="280" height="310" fill="#F7F8FA" stroke="#DADCE0"/>
+<rect x="194" y="516" width="70" height="220" fill="#EEF0F3" stroke="#DADCE0"/>
+<rect x="196" y="524" width="66" height="28" fill="#1A73E8"/>
+<text x="200" y="542" font-size="9" fill="#fff" font-family="sans-serif">接受协助</text>
+<text x="200" y="572" font-size="9" fill="#3C4043" font-family="sans-serif">去协助</text>
+<text x="200" y="597" font-size="9" fill="#B0B3B8" font-family="sans-serif">当前会话</text>
+<rect x="270" y="516" width="186" height="220" fill="#fff" stroke="#DADCE0"/>
+<rect x="278" y="552" width="110" height="22" rx="3" fill="#1A73E8"/>
+<text x="286" y="567" font-size="10" fill="#fff" font-family="sans-serif">复制连接凭证</text>
+<text x="188" y="824" fill="#80868B" font-size="9" font-family="sans-serif">固定壳 · 可拖拽</text>
+<rect x="494" y="452" width="300" height="380" rx="8" fill="#fff" stroke="#9AA0A6"/>
+<rect x="494" y="452" width="300" height="32" fill="#5F6368"/>
+<text x="504" y="473" fill="#fff" font-size="13" font-weight="700" font-family="sans-serif">E · 会话起始页</text>
+<text x="504" y="500" fill="#5F6368" font-size="9" font-family="sans-serif">主：粘贴连接 · 次：出示凭证</text>
+<rect x="504" y="508" width="280" height="310" fill="#F7F8FA" stroke="#DADCE0"/>
+<text x="510" y="530" font-size="10" fill="#0F9D58" font-family="sans-serif">粘贴连接凭证（主）</text>
+<rect x="510" y="538" width="260" height="50" fill="#fff" stroke="#0F9D58"/>
+<rect x="510" y="598" width="72" height="22" rx="3" fill="#0F9D58"/>
+<text x="530" y="613" font-size="10" fill="#fff" font-family="sans-serif">连接</text>
+<text x="590" y="613" font-size="9" fill="#EA4335" font-family="sans-serif">须点击才连接</text>
+<rect x="510" y="632" width="260" height="40" fill="#F8F9FA" stroke="#DADCE0"/>
+<text x="516" y="656" font-size="9" fill="#1A73E8" font-family="sans-serif">▸ 请人帮我，出示我的凭证（折叠）</text>
+<text x="504" y="824" fill="#80868B" font-size="9" font-family="sans-serif">固定壳 · 可拖拽</text>
+</svg>

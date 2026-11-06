@@ -549,3 +549,16 @@ elay/internal/relay/audit_test.go
   4. 真 UI 截图 → 迭代写 status（未实测不 PASS）
 - **status 独占**：本文件仅迭代写；产品不抢写。
 
+
+### 2026-11-06 14:48 Asia/Shanghai · A 正式指针已核对（仓内 docs/ux-entry-review-20261106）
+
+- **真实指针**（本机仓已落盘并入库）：
+  - `docs/ux-entry-review-20261106/DECISION.md` — 产品收口选定 A；范围/门禁
+  - `docs/ux-entry-review-20261106/LOCAL-IMPL-AUTH.md` — **本地方向授权**（≠跳过细则全员复核）
+  - 同目录 `ia-alternatives.md` + `ia-preview.png/.svg`；`PRODUCT-VERSIONS` / 确认台账 §10 交叉引用已纳入
+- **口径核对**：840×600 / ≥760 双列仅为**建议起点**，**非**冻结验收值；票数≠视觉/安全 PASS。
+- **下一步**：等体验 **A 细则**落盘 → 全角色**增量复核** → 产品收口编码范围 → **唯一客户端执笔**正式编码。
+- **细则前**：客户端仅可做对齐方向的结构/状态机**准备**；不得把线框像素当最终视觉验收；**不按旧紧凑首页继续返工**。
+- **红线**：R049 外未授；R050 blocked；不 push/上线/换用户包；缺授权隔离环境测记 blocked；不扩大 PV-001 环境。
+- status 仍仅迭代写。
+
