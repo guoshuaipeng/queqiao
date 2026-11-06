@@ -75,6 +75,13 @@ test("hidden attribute wins over display flex", () => {
   assert.match(css, /\[hidden\]\s*\{\s*display:\s*none\s*!important;\s*\}/);
 });
 
+test("narrow home wheel scrolls the connect column", () => {
+  assert.match(css, /max-width:\s*759px/);
+  assert.match(css, /\.zones\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(js, /home\.scrollTop/);
+  assert.match(js, /innerWidth >= 760/);
+});
+
 test("older snapshots do not replace a newer one", () => {
   assert.ok(js.includes("__queqiaoSeq"));
   assert.ok(js.includes("s.seq"));

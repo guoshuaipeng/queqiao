@@ -283,6 +283,20 @@ function boot() {
   window.__TAURI__.event.listen("ui", (ev) => render(ev.payload));
 }
 
+window.addEventListener("wheel", (event) => {
+  const home = $("home");
+  if (!home || home.hidden || window.innerWidth >= 760) return;
+  const box = $("manual-copy");
+  if (box && !box.hidden && (event.target === box || box.contains(event.target))) return;
+  if (home.scrollHeight <= home.clientHeight + 1) return;
+  const line = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? home.clientHeight : 1;
+  const max = home.scrollHeight - home.clientHeight;
+  const next = Math.min(max, Math.max(0, home.scrollTop + event.deltaY * line));
+  if (next === home.scrollTop) return;
+  home.scrollTop = next;
+  event.preventDefault();
+}, { passive: false, capture: true });
+
 window.queqiaoRender = render;
 bindUi();
 

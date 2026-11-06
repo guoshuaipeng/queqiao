@@ -97,6 +97,7 @@ button, input { font-family: inherit; }
 .dlg p { margin: 0 0 18px; font-size: 14px; line-height: 1.7; color: #334155; }
 .focus { outline: 2px solid #93c5fd; outline-offset: 2px; }
 @media (max-width: 759px) {
-  .zones { flex-direction: column; overflow: auto; }
-  .client { overflow: auto; }
+  /* 只让首页这一层滚动。外层再开 overflow 时，滚轮会停在滚不动的父层上。 */
+  .zones { flex-direction: column; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+  .client { overflow: hidden; }
 }
