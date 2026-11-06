@@ -485,3 +485,12 @@ elay/internal/relay/audit_test.go
 - **并行**：PV-004 完整性核验仍由客户端进行；未真 Setup 点验前不记语言 PASS。
 - **PV-001 环境**：用户未答 A/B/C（改谈窗口图标）→ **暂搁置**；继续不扩环境；测试勿把未公网当 FAIL。
 
+
+### 2026-11-06 14:32 Asia/Shanghai · PV-004 完整性核验通过（未写运行 PASS）
+
+- **commit**：`4c795af` — `RemoteAssist-Net48.iss` + `languages/ChineseSimplified.isl` + README 出处 + 双语 `net48-runtime-note` + 向导截图。
+- **要求项（静态+短时取图）**：`LanguageDetectionMethod=uilanguage`；`ShowLanguageDialog=no`；english 第一条保底；同语种 MessagesFile/InfoBefore；官方译文（Zhenghan Yang / Inno 6.5.0+ Official）；isl SHA256 `E0B0B350E2245F3C5E65586DFE43D574F6E7F06F2261149ABA284954B3FC9A8D`。
+- **新产物**：`artifacts/installer/RemoteAssist-Net48-Setup-0.1.0.exe` mtime 14:28；SHA256 `71CE3908300A804697502D80361B4FF9476E35F0F0B04A2286E70FA58DF39239`（**非**旧 13:43 包）。
+- **截图**：`docs/shots/pv004-wizard-zh-CN-uilang.png`、`pv004-wizard-en-LANG.png`（短时启向导取图后退出；**≠完整安装点验**）。
+- **口径**：**未写运行 PASS**；未改备用 `RemoteAssist.iss`；未 push。状态 → **待验收**（完整向导/系统语言核验仍可补）。
+
