@@ -109,7 +109,8 @@ test("write confirm shows the remaining seconds", () => {
 
 test("log result scrolls to the newest line", () => {
   assert.match(js, /paintResult\(/);
-  assert.match(js, /snapEnd\(result\)/);
+  assert.match(js, /applyScroll\(result, "__resultStick"\)/);
+  assert.match(js, /if \(\(window\[key\] \|\| "end"\) === "end"\) snapEnd\(box\)/);
   assert.match(css, /#result\s*\{[^}]*overflow-y:\s*auto/);
 });
 
@@ -155,14 +156,28 @@ test("steps come back when the record is closed", () => {
 
 test("a long result stays on the newest whole line", () => {
   assert.match(js, /function paintResult/);
-  assert.match(js, /snapEnd\(result\)/);
+  assert.match(js, /applyScroll\(result, "__resultStick"\)/);
   assert.match(css, /#result > div\s*\{[^}]*height:\s*20px/);
   assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px/);
   assert.match(css, /#result\s*\{[^}]*flex:\s*0 0 auto/);
 });
 
+test("reading earlier result lines is not pulled to the end", () => {
+  assert.match(js, /if \(box\.__applying\) return/);
+  assert.match(js, /watchScroll\(result, "__resultStick"\)/);
+  assert.match(js, /const follow = \(window\.__resultStick \|\| "end"\) === "end"/);
+  assert.match(js, /const keptTop = window\.__resultStickTop \|\| 0/);
+  assert.match(js, /window\.__resultStick = follow \? "end" : "place"/);
+});
+
 test("a narrow window keeps the start button in view", () => {
   assert.match(css, /max-width:\s*759px[\s\S]*#left-actions\s*\{[^}]*position:\s*sticky/);
+});
+
+test("a narrow window can still reach connect after the record opens", () => {
+  assert.match(css, /max-width:\s*759px[\s\S]*#zone-right\s*\{[^}]*z-index:\s*3/);
+  assert.match(css, /#btn-connect\s*\{[^}]*scroll-margin-bottom:\s*16px/);
+  assert.match(js, /home\.scrollTop = next/);
 });
 
 test("the home record keeps five rows", () => {

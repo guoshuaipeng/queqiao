@@ -169,6 +169,8 @@
 | 本轮完成 | 收起记录后，三步说明重新出现 | 看完记录，首页说明还在 | 展开时没有「发给帮你的人」；收起后这句回来 | `acceptance/desktop-steps-hidden.png`、`desktop-steps-back.png` |
 | 本轮完成 | 协助端结果太多时仍停在最新一行，不切半行 | 先看到最后做了什么 | 四十行结果停在 `queqiao-line-40` 和 `exit=0`，第一行不在眼前 | 本机 `127.0.0.1:17991`；`acceptance/desktop-result-end.png` |
 | 本轮完成 | 窄于 760 时五行记录不把「开启接受协助」挤出窗口 | 窄窗口仍能点开启 | 窗口宽 680；五行记录下面，开启按钮完整落在窗口内 | `acceptance/desktop-narrow-history.png` |
+| 本轮完成 | 窄窗口展开记录后，往下滚仍能点到「连接」 | 记录展开也不会把连接挤没 | 窗口宽 680；展开前连接在窗口外；滚下来后连接完整可见，点下去出现「连接凭证格式不对」 | 本机 `127.0.0.1:17991`；`acceptance/desktop-place-before.png`、`desktop-place-after.png`、`desktop-place-click.png` |
+| 本轮完成 | 结果区正在看前面几行时，新输出不拉回最后一行 | 看旧输出不被打断 | 先停在 `queqiao-line-1`；新输出含 `queqiao-line-41` 后，眼前仍是第一行，最后一行不在眼前 | 本机 `127.0.0.1:17991`；`acceptance/desktop-hold-before.png`、`desktop-hold-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

@@ -181,8 +181,11 @@ function snapEnd(box) {
 
 function paintResult(text) {
   const result = $("result");
-  const lines = String(text).replace(/\n$/, "").split("\n");
+  watchScroll(result, "__resultStick");
+  const follow = (window.__resultStick || "end") === "end";
+  const keptTop = window.__resultStickTop || 0;
   result.__applying = true;
+  const lines = String(text).replace(/(?:\r?\n)+$/, "").split(/\r?\n/);
   result.replaceChildren();
   for (const line of lines) {
     const row = document.createElement("div");
@@ -190,14 +193,15 @@ function paintResult(text) {
     result.appendChild(row);
   }
   requestAnimationFrame(() => {
-    snapEnd(result);
+    window.__resultStick = follow ? "end" : "place";
+    window.__resultStickTop = keptTop;
+    applyScroll(result, "__resultStick");
     const scroller = $("helper-scroll");
-    if (scroller) {
+    if (follow && scroller) {
       const bottom = result.offsetTop + result.offsetHeight;
       const view = scroller.scrollTop + scroller.clientHeight;
       if (bottom > view) scroller.scrollTop = bottom - scroller.clientHeight;
     }
-    result.__applying = false;
   });
 }
 

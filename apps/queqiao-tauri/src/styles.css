@@ -144,5 +144,9 @@ button, input { font-family: inherit; }
   /* 只让首页这一层滚动。外层再开 overflow 时，滚轮会停在滚不动的父层上。 */
   .zones { flex-direction: column; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
   .client { overflow: hidden; }
+  #zone-left, #zone-right { flex: none; }
   #left-actions { position: sticky; bottom: 0; background: #fff; z-index: 2; padding-top: 8px; }
+  /* 右栏叠在粘住的开启按钮上面，往下滚时「连接」仍能点到。 */
+  #zone-right { position: relative; z-index: 3; }
+  #btn-connect { scroll-margin-bottom: 16px; }
 }
