@@ -81,7 +81,7 @@ function render(s) {
   const openingHistory = !!s.showHistory && history.hidden;
   history.innerHTML = (s.history || []).map(rowHtml).join("") || "";
   show(history, !!s.showHistory);
-  if (openingHistory) requestAnimationFrame(() => { history.scrollTop = history.scrollHeight; });
+  if (openingHistory) requestAnimationFrame(() => snapEnd(history));
 
   const cred = $("cred").value.trim();
   show($("btn-connect"), !rightBusy);
@@ -105,9 +105,17 @@ function render(s) {
   $("btn-end").textContent = ended ? "返回首页" : "结束本次协助";
   show($("trust-full"), host && s.trustEffective === "full" && !ended);
   show($("trust-loose"), host && s.trustEffective === "relaxed" && !ended);
-  $("audit").innerHTML = (s.audit || []).length
+  const audit = $("audit");
+  const nextAudit = (s.audit || []).length;
+  const grew = host && nextAudit > (window.__auditSeen || 0);
+  audit.innerHTML = nextAudit
     ? s.audit.map(rowHtml).join("")
     : '<div><span class="t"></span>对方还没有做任何操作</div>';
+  if (!host) window.__auditSeen = 0;
+  else if (grew) {
+    window.__auditSeen = nextAudit;
+    requestAnimationFrame(() => snapEnd(audit));
+  }
   show($("helper-tools"), !ended);
   document.querySelectorAll(".ops .btn").forEach((b) => {
     b.disabled = !!s.opBusy || ended;
@@ -132,6 +140,14 @@ function render(s) {
   $("settings-hint").textContent = s.settingsHint || "";
   $("version").textContent = "版本 " + (s.version || "");
   renderDialog(s.dialog);
+}
+
+function snapEnd(box) {
+  const row = box.querySelector(":scope > div");
+  const max = Math.max(0, box.scrollHeight - box.clientHeight);
+  if (!row) { box.scrollTop = max; return; }
+  const step = row.getBoundingClientRect().height + 6;
+  box.scrollTop = step > 1 ? Math.round(max / step) * step : max;
 }
 
 function rowHtml(r) {
