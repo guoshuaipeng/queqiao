@@ -364,7 +364,10 @@ function fitSpan() {
   const scroller = $("helper-scroll");
   const result = $("result");
   const section = result && result.closest("section");
-  if (!scroller || !result || !section || section.hidden) return;
+  if (!scroller || !result || !section || section.hidden) {
+    document.body.classList.remove("tight");
+    return;
+  }
   const summary = $("propose") && !$("propose").hidden ? $("summary") : null;
   const past = $("past") && !$("past").hidden && $("past").childElementCount ? $("past") : null;
   const bar = $("ops-bar");
@@ -372,7 +375,15 @@ function fitSpan() {
   const topEl = summary || result;
   const bottomEl = past || result;
   const propose = $("propose");
-  if (past) {
+  const tight = window.innerHeight <= 400;
+  document.body.classList.toggle("tight", tight);
+  if (tight) {
+    scroller.style.gap = "0px";
+    scroller.style.paddingTop = "0px";
+    scroller.style.paddingBottom = "0px";
+    if (bar) bar.style.paddingBottom = "0px";
+    if (propose && !propose.hidden) propose.style.gap = "0px";
+  } else if (past) {
     scroller.style.gap = "4px";
     scroller.style.paddingTop = "0px";
     scroller.style.paddingBottom = "16px";
@@ -402,10 +413,12 @@ function fitSpan() {
   const viewTop = view.top + barH;
   const viewBottom = view.bottom - (past ? 16 : 0);
   const room = viewBottom - viewTop;
+  const resultMin = tight ? 1 : 2;
+  const pastMin = tight ? 1 : 2;
   let guard = 0;
   while (guard < 12 && span().bottom - span().top > room - 8) {
-    if (resultRows > 2) resultRows -= 1;
-    else if (past && pastRows > 2) pastRows -= 1;
+    if (resultRows > resultMin) resultRows -= 1;
+    else if (past && pastRows > pastMin) pastRows -= 1;
     else break;
     apply();
     guard += 1;
@@ -445,7 +458,7 @@ function fitSpan() {
     scroller.style.paddingBottom = Math.max(0, pad - extra) + "px";
     extra = scroller.scrollHeight - scroller.clientHeight;
   }
-  if (extra > 1 && extra <= 40) {
+  if (!tight && extra > 1 && extra <= 40) {
     scroller.style.gap = "4px";
     extra = scroller.scrollHeight - scroller.clientHeight;
   }
@@ -453,8 +466,33 @@ function fitSpan() {
     scroller.style.paddingBottom = "0px";
     extra = scroller.scrollHeight - scroller.clientHeight;
   }
+  if (tight && extra > 4) {
+    scroller.style.paddingTop = "0px";
+    scroller.style.paddingBottom = "0px";
+    scroller.style.gap = "0px";
+    if (propose && !propose.hidden) propose.style.gap = "0px";
+    extra = scroller.scrollHeight - scroller.clientHeight;
+    const rowFloor = rowHeight(1);
+    let guard2 = 0;
+    while (extra > 4 && guard2 < 24) {
+      const rh = parseFloat(result.style.maxHeight) || 0;
+      const ph = past ? parseFloat(past.style.maxHeight) || 0 : 0;
+      if (rh <= rowFloor && (!past || ph <= rowFloor)) break;
+      if (rh >= ph && rh > rowFloor) result.style.maxHeight = Math.max(rowFloor, rh - 4) + "px";
+      else if (past && ph > rowFloor) past.style.maxHeight = Math.max(rowFloor, ph - 4) + "px";
+      else break;
+      extra = scroller.scrollHeight - scroller.clientHeight;
+      guard2 += 1;
+    }
+  }
   scroller.style.overflowY = extra <= 4 ? "hidden" : "auto";
 }
+
+window.addEventListener("resize", () => {
+  const helper = $("helper");
+  if (!helper || helper.hidden) return;
+  revealResult(true);
+});
 
 function revealResult(sync) {
   const run = () => {

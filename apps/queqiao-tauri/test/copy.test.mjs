@@ -198,7 +198,7 @@ test("the task field stays inside the window with the result", () => {
 
 test("the previous exit line and the tool row stay whole", () => {
   assert.match(js, /const bar = \$\("ops-bar"\)/);
-  assert.match(js, /else if \(past && pastRows > 2\) pastRows -= 1/);
+  assert.match(js, /else if \(past && pastRows > pastMin\) pastRows -= 1/);
   assert.match(js, /scroller\.style\.paddingBottom = "16px"/);
   assert.match(js, /else if \(past\) snapNearest\(past\)/);
   assert.match(css, /#ops-bar\s*\{[^}]*position:\s*sticky/);
@@ -302,6 +302,16 @@ test("previous lines can scroll and the page scrollbar stays away", () => {
   assert.match(js, /past\.__keepY != null/);
   assert.match(js, /snapNearest\(past\)/);
   assert.match(js, /scroller\.style\.overflowY = extra <= 4 \? "hidden" : "auto"/);
+});
+
+test("a short window keeps the task and the end button inside", () => {
+  assert.match(js, /window\.addEventListener\("resize", \(\) => \{/);
+  assert.match(js, /document\.body\.classList\.toggle\("tight", tight\)/);
+  assert.match(js, /const rowFloor = rowHeight\(1\)/);
+  assert.match(js, /scroller\.style\.gap = "0px"/);
+  assert.match(css, /body\.tight \.endbar\s*\{[^}]*height:\s*44px/);
+  assert.match(css, /body\.tight #summary\s*\{[^}]*height:\s*30px/);
+  assert.match(css, /body\.tight #command,\s*body\.tight #btn-propose\s*\{[^}]*height:\s*28px/);
 });
 
 test("a narrow window keeps the start button in view", () => {

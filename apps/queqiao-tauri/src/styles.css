@@ -77,6 +77,18 @@ button, input { font-family: inherit; }
 #past-hold:has(#past[hidden]) { display: none; }
 .rail { position: absolute; top: 1px; right: 13px; bottom: 13px; width: 24px; background: #fbfdff; pointer-events: none; z-index: 2; }
 .endbar { height: 64px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: flex-end; padding: 0 24px; }
+body.tight .top { padding-top: 4px; }
+body.tight .zones { padding-top: 4px; gap: 8px; }
+body.tight .sbar { padding: 4px 24px; }
+body.tight .endbar { height: 44px; }
+body.tight .scroll { padding: 0 16px; gap: 2px; }
+body.tight .ok { min-height: 0; }
+body.tight #ops-bar { padding-bottom: 0; }
+body.tight .ops .btn { height: 26px; }
+body.tight .sec { line-height: 18px; }
+body.tight #summary { height: 30px; }
+body.tight #command,
+body.tight #btn-propose { height: 28px; }
 .sec { font-size: 14px; font-weight: 600; }
 .log { font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
 .log div { display: flex; gap: 12px; }
