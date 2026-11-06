@@ -261,12 +261,18 @@ function watchResultWheel(result) {
     const maxY = result.scrollHeight - result.clientHeight;
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY) && maxX > 1) {
       result.scrollLeft = Math.min(maxX, Math.max(0, result.scrollLeft + event.deltaX));
+      result.__rowTail = result.scrollLeft;
       shiftShortRows(result);
       event.preventDefault();
       return;
     }
-    if (maxY <= 1) return;
-    result.scrollTop = Math.min(maxY, Math.max(0, result.scrollTop + event.deltaY));
+    if (maxY > 1) {
+      result.scrollTop = Math.min(maxY, Math.max(0, result.scrollTop + event.deltaY));
+    }
+    if ((result.__rowTail || 0) > 1 && Math.abs(result.scrollLeft - result.__rowTail) > 1) {
+      result.scrollLeft = result.__rowTail;
+    }
+    shiftShortRows(result);
     event.preventDefault();
   }, { passive: false });
 }

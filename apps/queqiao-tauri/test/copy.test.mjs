@@ -242,6 +242,12 @@ test("scrolling back keeps the long line at its tail", () => {
   assert.match(js, /box\.scrollLeft = box\.__rowTail/);
 });
 
+test("the result box at either end does not scroll the page", () => {
+  assert.match(js, /if \(maxY > 1\) \{\s*result\.scrollTop = Math\.min\(maxY, Math\.max\(0, result\.scrollTop \+ event\.deltaY\)\);\s*\}/);
+  assert.match(js, /result\.__rowTail = result\.scrollLeft/);
+  assert.match(js, /result\.scrollLeft = result\.__rowTail/);
+});
+
 test("horizontal bars sit under the text rows", () => {
   assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*height:\s*12px/);
   assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px \+ 16px/);
