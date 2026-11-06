@@ -779,3 +779,15 @@ elay/internal/relay/audit_test.go
 - 官网：已授服务端实施（废止不编码表述）。net48 暂停。Tauri wt 客户端唯一写入。
 - 例程检查提示与 agent 简介已同步；勿再派 net48/A 编码或续 PV-004 安装器。
 - commit 指针：见本轮 git log（主树）。
+
+### 2026-11-06 15:31 Asia/Shanghai · 例程检查：无待开发；跟进 tip
+
+- **触发**：例程 automation-1793943554537「鹊桥迭代检查」@every 5m（约 15:29 UTC+8）。
+- **PRODUCT-VERSIONS**：PV-001/002/003/004 均为 **待验收**；**无「待开发」**可派工。R049 未授不可验收；R050 blocked 不解。
+- **口径**：仍以 docs/CURRENT-POSTURE.md 为准——官网已授服务端实施；net48 功能暂停；不派入口 A/紧凑/续 PV-004。
+- **Tauri（只跟 tip，不抢写）**：wt `E:\IdeaProjects\remote-assist-wt-tauri` / `feat/tauri-client-migration` tip **`9341f89`** `feat(tauri-d0): add apps/queqiao-tauri empty Windows shell`（相对此前 seed `f4b6765` / handoff `b8b0041`）。工作区干净。UI 基线仍 A-480-delta-v1.1。
+- **官网**：主树 `site/index.html` + `styles.css` 工作区有大改（约 +692/−113，未提交）——视为服务端实施中；迭代**不抢 commit / 不挡**。有条件发布门禁仍见 `docs/website-refresh-20261106/IMPLEMENTATION-RELEASE-AUTH.md`。
+- **主树其它脏改**：产品/体验/质量 docs 与 website-refresh/tauri-migration 文档未提交 → **不混 commit**。
+- **未做**：net48 业务码、installer、push、上公网、验收 R049、解 R050、改 Tauri wt。
+- **待用户答复**：Q1–Q3 已有站立答复；本轮无新决策项 → **不向聊天回执**。
+
