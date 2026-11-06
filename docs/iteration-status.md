@@ -634,3 +634,8 @@ elay/internal/relay/audit_test.go
 - **红线**：现阶段只读评估/设计；**不**提前编码、不开服务、不操作真实会话；官网不混本轮。
 - 产品收齐各角色后**一次收口**。
 
+
+### 2026-11-06 14:55 Asia/Shanghai · 服务端复核材料改指 box
+
+- 服务端 Read 本机仓 details 被拒；已改指共享 box `/workspace/ux-entry-a-20261106/details.md` 并摘录协议/生命周期段落供评。
+
