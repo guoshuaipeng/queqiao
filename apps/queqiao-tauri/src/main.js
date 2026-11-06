@@ -52,7 +52,7 @@ function render(s) {
     $("session-pwd").textContent = "•".repeat(Math.max(8, s.passwordLen || 0));
     $("btn-reveal").textContent = "显示";
   }
-  $("left-note").textContent = s.leftNote || "";
+  $("left-note").textContent = waiting ? "" : (s.leftNote || "");
   const startLabel = s.phase === "open_fail" ? "重试开启" : s.phase === "stop_fail" ? "重试停止" : "开启接受协助";
   $("btn-start").textContent = startLabel;
   show($("btn-start"), !waiting && s.phase !== "stopping");
@@ -78,6 +78,8 @@ function render(s) {
     : escapeHtml(s.helperStatus || "");
   $("right-error").textContent = s.helperError || "";
   $("right-hint").textContent = waiting ? "点连接会先停止接受协助（会先问你）。" : "";
+  const rightIdle = s.phase === "idle" || s.phase === "helper_fail" || s.phase === "open_fail" || s.phase === "stop_fail";
+  show($("right-steps"), rightIdle);
   $("cred").disabled = rightBusy;
 
   const ended = !!s.peerEnded;
@@ -162,7 +164,9 @@ function paintCount(d) {
 function resolve(allow) {
   if (!state || !state.dialog) return;
   const id = state.dialog.id;
+  window.__queqiaoLastResolve = { id, allow };
   clearInterval(dlgTimer);
+  dlgTimer = null;
   invoke("resolve_dialog", { id, allow }).then(render).catch(showErr);
 }
 
@@ -171,15 +175,7 @@ function showErr(err) {
   $("banner").textContent = (err && err.message) || String(err);
 }
 
-function boot() {
-  const api = window.__TAURI__ && window.__TAURI__.core;
-  if (!api) {
-    $("banner").hidden = false;
-    $("banner").textContent = "这是桌面客户端界面。请用鹊桥程序打开，连接状态才来自真实后端。";
-    return;
-  }
-  invoke("get_state").then(render).catch(showErr);
-  window.__TAURI__.event.listen("ui", (ev) => render(ev.payload));
+function bindUi() {
   $("btn-settings").onclick = () => invoke("show_settings", { open: true }).then(render);
   $("btn-back").onclick = () => invoke("show_settings", { open: false }).then(render);
   $("btn-start").onclick = () => invoke("start_accept").then(render).catch(showErr);
@@ -243,8 +239,36 @@ function boot() {
   $("dlg-yes").onclick = () => resolve(true);
   $("dlg-detail-toggle").onclick = () => { $("dlg-detail").hidden = !$("dlg-detail").hidden; };
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state && state.dialog) resolve(false);
+    if (e.key === "Escape" && state && state.dialog) {
+      e.preventDefault();
+      resolve(false);
+    }
   });
 }
 
-boot();
+function boot() {
+  const api = window.__TAURI__ && window.__TAURI__.core;
+  if (!api) {
+    $("banner").hidden = false;
+    $("banner").textContent = "这是桌面客户端界面。请用鹊桥程序打开，连接状态才来自真实后端。";
+    return;
+  }
+  invoke("get_state").then(render).catch(showErr);
+  window.__TAURI__.event.listen("ui", (ev) => render(ev.payload));
+}
+
+window.queqiaoRender = render;
+bindUi();
+
+// 正式窗口不会走 file:。浏览器截图脚本另放在 test/fixtures.js，不打进安装包。
+const fileShot = location.protocol === "file:" ? new URLSearchParams(location.search).get("uitest") : "";
+if (!window.__QUEQIAO_SKIP_BOOT__ && !fileShot) boot();
+if (fileShot) {
+    const loader = document.createElement("script");
+    loader.src = "../test/fixtures.js";
+    loader.onload = () => {
+      const sample = window.QUEQIAO_SHOTS && window.QUEQIAO_SHOTS[fileShot];
+      if (sample) render(sample);
+    };
+    document.body.appendChild(loader);
+}

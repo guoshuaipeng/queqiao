@@ -160,6 +160,15 @@ pub fn same_generation(current: u64, task: u64) -> bool {
     current == task && task != 0
 }
 
+/// 完全信任只在「这一次被协助会话 + 这一代」里生效。结束、换代、离开会话都回到已保存的档。
+pub fn effective_trust(saved: Trust, full_gen: u64, current_gen: u64, in_host_session: bool) -> Trust {
+    if in_host_session && full_gen != 0 && same_generation(current_gen, full_gen) {
+        Trust::Full
+    } else {
+        persistable(saved)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -217,5 +226,28 @@ mod tests {
         assert!(!same_generation(2, 1));
         assert!(same_generation(3, 3));
         assert!(!same_generation(0, 0));
+    }
+
+    #[test]
+    fn timeout_cancel_and_stale_allow_do_not_execute() {
+        assert!(!may_execute(true, Some(Decision::Timeout), true));
+        assert!(!may_execute(true, Some(Decision::Cancelled), true));
+        assert!(!may_execute(true, Some(Decision::Deny), true));
+        assert!(!may_execute(true, Some(Decision::Allow), false));
+    }
+
+    #[test]
+    fn full_trust_ends_with_the_session_generation() {
+        assert_eq!(
+            effective_trust(Trust::Ask, 4, 4, true),
+            Trust::Full
+        );
+        assert_eq!(
+            effective_trust(Trust::Relaxed, 4, 5, true),
+            Trust::Relaxed
+        );
+        assert_eq!(effective_trust(Trust::Ask, 4, 4, false), Trust::Ask);
+        assert_eq!(effective_trust(Trust::Full, 4, 4, true), Trust::Full);
+        assert_eq!(effective_trust(Trust::Full, 0, 0, false), Trust::Ask);
     }
 }

@@ -70,3 +70,19 @@ test("reject stays the default dialog button", () => {
 test("desktop channel missing is not treated as connected", () => {
   assert.ok(js.includes("不能假装已连接"));
 });
+
+test("hidden attribute wins over display flex", () => {
+  assert.match(css, /\[hidden\]\s*\{\s*display:\s*none\s*!important;\s*\}/);
+});
+
+test("production boot does not render a demo connection", () => {
+  assert.ok(js.includes("__QUEQIAO_SKIP_BOOT__"));
+  assert.equal(js.includes("queqiaoRender("), false);
+  assert.equal(js.includes("界面样例"), false);
+  assert.equal(js.includes("QUEQIAO_SHOTS ="), false);
+  assert.ok(js.includes("test/fixtures.js"));
+  assert.match(html, /id="host"[^>]*hidden/);
+  assert.match(html, /id="helper"[^>]*hidden/);
+  assert.match(html, /id="settings"[^>]*hidden/);
+  assert.match(html, /id="mask"[^>]*hidden/);
+});

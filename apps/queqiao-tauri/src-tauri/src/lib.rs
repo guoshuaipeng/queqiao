@@ -158,11 +158,12 @@ impl Hooks for AppHooks {
     }
     fn trust(&self) -> Trust {
         let model = self.shared.model.lock().expect("model");
-        if model.full_gen != 0 && model.full_gen == self.my && model.phase == "host_session" {
-            Trust::Full
-        } else {
-            policy::parse_saved_trust(&model.trust_saved)
-        }
+        policy::effective_trust(
+            policy::parse_saved_trust(&model.trust_saved),
+            model.full_gen,
+            self.my,
+            model.phase == "host_session",
+        )
     }
     fn bind_io(&self, stream: TcpStream) {
         *self.shared.killer.lock().expect("killer") = Some(stream);
@@ -351,11 +352,16 @@ impl Shared {
 
     fn snapshot(&self) -> Snapshot {
         let model = self.model.lock().expect("model");
-        let full = model.full_gen != 0 && model.full_gen == self.gen.load(Ordering::SeqCst) && model.phase == "host_session";
-        let effective = if full {
-            "full"
-        } else {
-            policy::trust_token(policy::parse_saved_trust(&model.trust_saved))
+        let effective_trust = policy::effective_trust(
+            policy::parse_saved_trust(&model.trust_saved),
+            model.full_gen,
+            self.gen.load(Ordering::SeqCst),
+            model.phase == "host_session",
+        );
+        let effective = match effective_trust {
+            Trust::Full => "full",
+            Trust::Relaxed => "relaxed",
+            Trust::Ask => "ask",
         };
         Snapshot {
             phase: model.phase.clone(),
@@ -580,9 +586,31 @@ fn load_history(path: &std::path::Path) -> Vec<Row> {
         .collect()
 }
 
-fn copy_text(value: &str) -> Result<(), String> {
-    let mut clip = arboard::Clipboard::new().map_err(|_| text::COPY_FAIL.to_string())?;
-    clip.set_text(value).map_err(|_| text::COPY_FAIL.to_string())
+fn copy_text(app: &AppHandle, value: &str) -> Result<(), String> {
+    let value = value.to_string();
+    let (tx, rx) = std::sync::mpsc::channel();
+    app.run_on_main_thread(move || {
+        let res = (|| {
+            let mut clip = arboard::Clipboard::new().map_err(|_| text::COPY_FAIL.to_string())?;
+            clip.set_text(value).map_err(|_| text::COPY_FAIL.to_string())
+        })();
+        let _ = tx.send(res);
+    })
+    .map_err(|_| text::COPY_FAIL.to_string())?;
+    rx.recv().unwrap_or(Err(text::COPY_FAIL.into()))
+}
+
+fn paste_text(app: &AppHandle) -> Result<String, String> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    app.run_on_main_thread(move || {
+        let res = (|| {
+            let mut clip = arboard::Clipboard::new().map_err(|_| "没能读取剪贴板。".to_string())?;
+            clip.get_text().map_err(|_| "剪贴板里没有文本。".to_string())
+        })();
+        let _ = tx.send(res);
+    })
+    .map_err(|_| "没能读取剪贴板。".to_string())?;
+    rx.recv().unwrap_or(Err("没能读取剪贴板。".into()))
 }
 
 fn spawn_host(shared: std::sync::Arc<Shared>, my: u64) {
@@ -765,7 +793,7 @@ fn stop_accept(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, Str
 }
 
 #[tauri::command]
-fn copy_credential(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
+fn copy_credential(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
     let payload = state.secrets.lock().expect("secrets").payload.clone();
     let mut model = state.model.lock().expect("model");
     if payload.is_empty() || model.phase != "waiting" {
@@ -774,7 +802,7 @@ fn copy_credential(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot,
         state.publish();
         return Ok(state.snapshot());
     }
-    match copy_text(&payload) {
+    match copy_text(&app, &payload) {
         Ok(()) => {
             model.copy_hint = text::COPY_OK.into();
             model.manual_copy.clear();
@@ -803,9 +831,8 @@ fn reveal_password(state: State<'_, std::sync::Arc<Shared>>) -> Result<String, S
 }
 
 #[tauri::command]
-fn paste_clipboard() -> Result<String, String> {
-    let mut clip = arboard::Clipboard::new().map_err(|_| "没能读取剪贴板。".to_string())?;
-    clip.get_text().map_err(|_| "剪贴板里没有文本。".to_string())
+fn paste_clipboard(app: AppHandle) -> Result<String, String> {
+    paste_text(&app)
 }
 
 #[tauri::command]
@@ -1110,7 +1137,7 @@ fn reset_relay(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, Str
 }
 
 #[tauri::command]
-fn copy_mcp(state: State<'_, std::sync::Arc<Shared>>, draft: String) -> Result<Snapshot, String> {
+fn copy_mcp(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>, draft: String) -> Result<Snapshot, String> {
     let payload = {
         let secrets = state.secrets.lock().expect("secrets");
         if !secrets.payload.is_empty() {
@@ -1137,7 +1164,7 @@ fn copy_mcp(state: State<'_, std::sync::Arc<Shared>>, draft: String) -> Result<S
         "{{\n  \"mcpServers\": {{\n    \"remote-assist\": {{\n      \"command\": \"{exe_text}\",\n      \"args\": [],\n      \"env\": {{\n        \"REMOTE_ASSIST_PAYLOAD\": \"{}\"\n      }}\n    }}\n  }}\n}}",
         payload.replace('\\', "\\\\").replace('"', "\\\"")
     );
-    match copy_text(&body) {
+    match copy_text(&app, &body) {
         Ok(()) => {
             model.settings_hint = if exe.is_some() { text::MCP_OK.into() } else { text::MCP_PLACEHOLDER.into() };
         }
@@ -1149,9 +1176,9 @@ fn copy_mcp(state: State<'_, std::sync::Arc<Shared>>, draft: String) -> Result<S
 }
 
 #[tauri::command]
-fn copy_usage(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
+fn copy_usage(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
     let mut model = state.model.lock().expect("model");
-    model.settings_hint = match copy_text(text::usage_text()) {
+    model.settings_hint = match copy_text(&app, text::usage_text()) {
         Ok(()) => text::USAGE_OK.into(),
         Err(_) => text::COPY_FAIL.into(),
     };
@@ -1161,10 +1188,10 @@ fn copy_usage(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, Stri
 }
 
 #[tauri::command]
-fn copy_install(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
+fn copy_install(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
     let mut model = state.model.lock().expect("model");
     model.helper_error.clear();
-    model.copy_hint = match copy_text(&text::install_text()) {
+    model.copy_hint = match copy_text(&app, &text::install_text()) {
         Ok(()) => text::INSTALL_HINT.into(),
         Err(_) => text::COPY_FAIL.into(),
     };
@@ -1174,13 +1201,13 @@ fn copy_install(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, St
 }
 
 #[tauri::command]
-fn copy_result(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
+fn copy_result(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
     let result = state.model.lock().expect("model").result.clone();
     let mut model = state.model.lock().expect("model");
     if result.trim().is_empty() {
         model.op_status = text::NO_RESULT.into();
     } else {
-        model.op_status = match copy_text(&result) {
+        model.op_status = match copy_text(&app, &result) {
             Ok(()) => text::RESULT_COPIED.into(),
             Err(_) => text::COPY_FAIL.into(),
         };

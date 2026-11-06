@@ -56,7 +56,8 @@ pub fn load(path: &Path) -> Settings {
     let Ok(text) = fs::read_to_string(path) else {
         return Settings::default();
     };
-    let Ok(mut parsed) = serde_json::from_str::<Settings>(&text) else {
+    let text = text.trim_start_matches('\u{feff}');
+    let Ok(mut parsed) = serde_json::from_str::<Settings>(text) else {
         return Settings::default();
     };
     let trust = policy::trust_token(parsed.saved_trust());
