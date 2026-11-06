@@ -19,6 +19,7 @@
 1. 新 bot / 换会话：读本 README → 本角色 `*.md` → `PRODUCT.md` → 当前 `roadmap` / 相关 `round-NNN`。
 2. 拍板、默认值、暂停/授权轮次：**写入**本目录或 PRODUCT / roadmap / scene / quality，再 commit（按授权 push）。
 3. 聊天里的口头约定若未入库，视为未生效；接续者不应只靠记忆。
+4. **net48 功能对齐排期**（已排期、未授权实现）：见 [客户端.md §12](./客户端.md)。
 
 ## 交叉正文（勿在 agents 里另立冲突规格）
 
