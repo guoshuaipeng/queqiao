@@ -225,3 +225,11 @@ elay/internal/relay/audit_test.go
 - **原文**：「刚才文件中的几个任务.让他们开始吧」
 - **已催**：鹊桥-迭代、鹊桥-客户端、鹊桥-服务端 — 立刻推进 PV-001 本地 commit + PV-002/003；不 push/不上公网。
 
+
+### 2026-11-06 13:41 Asia/Shanghai · 与服务端/客户端协调（防双开）
+
+- 已告知**鹊桥-服务端**：PV-001/R046 已由迭代 commit `b964b8a` / `cc4e87f`；勿再改同批 relay/site；iteration-status 由迭代统一写。
+- 已告知**鹊桥-客户端**：PV-002/003 本轮由迭代实现中（ModeSelectForm、Helper MainForm、installer 图标）；请本轮勿并行写这些路径。
+- 已告知**日常**：可转告用户已开工；例程已启用。
+- PV-002/003 实现仍进行中。
+
