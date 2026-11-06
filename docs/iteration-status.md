@@ -313,3 +313,20 @@ elay/internal/relay/audit_test.go
 - **联合包**：等最终 UI 提交稳定后，从隔离目录生成并记源码/载荷 hash。
 - **iteration-status**：仍由迭代统一写。未改代码、未 push。
 
+
+### 2026-11-06 14:18 Asia/Shanghai · 测试环境约束 + PV-004 准则锁定 + 语言资源分析
+
+- **测试环境（产品转达）**：协助端测试优先 bot 电脑；用户允许 Linux 也可测 → 架构改派 Linux 客户端测试。**Linux 结果不可替代 net48 验收**。**禁止**借语言验收在用户机启动 Setup。
+- **主界面**：用户观感仍未过 → PV-002 继续冻结布局，等体验方案。
+- **PV-004 准则（产品已定，不再问用户）**：
+  - 跟随系统**显示语言**，在**已支持语言**中自动选择；
+  - **不新增**语言选择对话框；
+  - 未支持语言或资源缺失 → **列风险回产品**；不暗造回退、不泛称全语种。
+- **资源分析（未启 Setup / 未改 iss）**：
+  - 本机 UI 语言 zh-CN。
+  - 向导框架文案：仅挂 `english` + Default.isl → 系统按钮等预计为英文（未实测）。
+  - 自定义表面：AppName/AppComments/Tasks/Icons/Run Description、`net48-runtime-note.txt` 均为**中文硬编码**（与 Languages 脱钩）。
+  - 本机 Inno 6 Languages 共 28 个 isl，**无** ChineseSimplified / ChineseTraditional → 要实现 zh-CN 自动选中，须**另取官方简体译文**并纳入仓库或构建依赖；此为**风险**，回产品，不自行发明回退策略。
+  - 支持集建议（待产品确认清单）：至少 `chinesesimplified` + 保留 `english`；自动匹配失败时如何表现 → **只列选项/风险，不擅自定回退**。
+- **未做**：改代码、改 iss、用户机 Setup、push、动 R049/R050。
+
