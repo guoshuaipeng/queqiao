@@ -886,7 +886,7 @@ internal sealed class MainForm : Form
             _settings.Save();
             SetConnectedUi(true);
             SetStatus(HelperSessionCopy.StatusConnected);
-            AppendOutput("PAIR_OK\r\n");
+            _outputBox.Text = ProposeChangeCopy.ConnectedResultHint;
             ClearFailHint();
             _ = preview;
         }
@@ -1036,19 +1036,25 @@ internal sealed class MainForm : Form
     {
         if (_client is null || _busy) return;
         _busy = true;
-        SetStatus($"执行 {tool} …");
+        // R041：仅「提议一项改动」显示等待确认人话；只读操作不套等待句
+        if (ProposeChangeCopy.UsesWaitingStatus(tool))
+            SetStatus(ProposeChangeCopy.WaitingStatus);
+        else
+            SetStatus($"执行 {tool} …");
         try
         {
             var resp = await _client.InvokeToolAsync(tool, args).ConfigureAwait(true);
             if (!resp.Ok)
             {
-                var msg = resp.Error ?? "失败";
-                if (resp.DeniedByUser) msg = WriteConfirmCopy.DeniedMessage;
+                var msg = ProposeChangeCopy.FailureStatus(resp.DeniedByUser, resp.Error);
                 SetStatus(msg);
                 AppendOutput($"[{tool}] FAIL: {msg}\r\n");
                 return;
             }
-            SetStatus($"{tool} 成功");
+            if (tool == ToolKind.RunCommand)
+                SetStatus(ProposeChangeCopy.AllowedStatus);
+            else
+                SetStatus($"{tool} 成功");
             AppendOutput($"[{tool}] OK\r\n{resp.Result}\r\n");
         }
         catch (Exception ex)
@@ -1223,7 +1229,47 @@ internal sealed class MainForm : Form
         SetConnectedUi(true);
         SetStatus(HelperSessionCopy.StatusConnected);
         ClearFailHint();
-        _outputBox.Text = "PAIR_OK\r\n";
+        _outputBox.Text = ProposeChangeCopy.ConnectedResultHint;
+        LayoutForAdvanced();
+    }
+
+    /// <summary>UiShot R041：提议等待确认。</summary>
+    internal void PrepareProposeWaitingForShot()
+    {
+        SetConnectedUi(true);
+        SetStatus(ProposeChangeCopy.WaitingStatus);
+        ClearFailHint();
+        _outputBox.Text = ProposeChangeCopy.ConnectedResultHint;
+        LayoutForAdvanced();
+    }
+
+    /// <summary>UiShot R041：对方已允许。</summary>
+    internal void PrepareProposeAllowedForShot()
+    {
+        SetConnectedUi(true);
+        SetStatus(ProposeChangeCopy.AllowedStatus);
+        ClearFailHint();
+        _outputBox.Text = "[RunCommand] OK\r\necho r041-ok\r\n";
+        LayoutForAdvanced();
+    }
+
+    /// <summary>UiShot R041：对方拒绝。</summary>
+    internal void PrepareProposeDeniedForShot()
+    {
+        SetConnectedUi(true);
+        SetStatus(WriteConfirmCopy.DeniedMessage);
+        ClearFailHint();
+        _outputBox.Text = "[RunCommand] FAIL: " + WriteConfirmCopy.DeniedMessage + "\r\n";
+        LayoutForAdvanced();
+    }
+
+    /// <summary>UiShot R041：确认超时。</summary>
+    internal void PrepareProposeTimedOutForShot()
+    {
+        SetConnectedUi(true);
+        SetStatus(WriteConfirmCopy.TimedOutMessage);
+        ClearFailHint();
+        _outputBox.Text = "[RunCommand] FAIL: " + WriteConfirmCopy.TimedOutMessage + "\r\n";
         LayoutForAdvanced();
     }
 

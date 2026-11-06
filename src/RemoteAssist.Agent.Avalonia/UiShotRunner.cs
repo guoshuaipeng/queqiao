@@ -6,7 +6,7 @@ using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
-/// <summary>R039：Avalonia 连上后五键紧挨主状态首屏可见；结束后再隐藏（ui-shot）。</summary>
+/// <summary>R041：刚连上无 PAIR_OK；提议四态人话（ui-shot）。</summary>
 internal static class UiShotRunner
 {
     public static async Task RunAsync(HomeWindow home, string outDir)
@@ -20,20 +20,28 @@ internal static class UiShotRunner
         await Task.Delay(350).ConfigureAwait(true);
 
         helper.PreparePeerConnectedSessionForShot();
-        await Task.Delay(300).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r039-avalonia-helper-connected-tools-first-screen.png")).ConfigureAwait(true);
-
-        helper.PreparePeerEndedAssistForShot();
         await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r039-avalonia-helper-peer-ended-tools-hidden.png")).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r041-avalonia-helper-connected-no-pair-ok.png")).ConfigureAwait(true);
 
-        helper.PrepareSelfDisconnectedForShot();
-        await Task.Delay(250).ConfigureAwait(true);
-        await CaptureWindowAsync(helper, Path.Combine(outDir, "r039-avalonia-helper-self-disconnect-tools-hidden.png")).ConfigureAwait(true);
+        helper.PrepareProposeWaitingForShot();
+        await Task.Delay(220).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r041-avalonia-helper-propose-waiting.png")).ConfigureAwait(true);
+
+        helper.PrepareProposeAllowedForShot();
+        await Task.Delay(220).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r041-avalonia-helper-propose-allowed.png")).ConfigureAwait(true);
+
+        helper.PrepareProposeDeniedForShot();
+        await Task.Delay(220).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r041-avalonia-helper-propose-denied.png")).ConfigureAwait(true);
+
+        helper.PrepareProposeTimedOutForShot();
+        await Task.Delay(220).ConfigureAwait(true);
+        await CaptureWindowAsync(helper, Path.Combine(outDir, "r041-avalonia-helper-propose-timed-out.png")).ConfigureAwait(true);
 
         try { helper.Close(); } catch { /* ignore */ }
 
-        Console.WriteLine("ui-shot r039 written to " + outDir);
+        Console.WriteLine("ui-shot r041 written to " + outDir);
         await Task.CompletedTask;
         _ = home;
     }
