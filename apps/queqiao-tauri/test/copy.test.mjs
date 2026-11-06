@@ -192,7 +192,15 @@ test("previous output opens without pushing the current result away", () => {
 test("the task field stays inside the window with the result", () => {
   assert.match(js, /function fitSpan/);
   assert.match(js, /const summary = \$\("propose"\) && !\$\("propose"\)\.hidden \? \$\("summary"\) : null/);
-  assert.match(js, /if \(box\.top < view\.top - 1\) scroller\.scrollTop -= view\.top - box\.top/);
+  assert.match(js, /const viewTop = view\.top \+ barH/);
+  assert.match(js, /if \(box\.top < viewTop - 1\) scroller\.scrollTop -= viewTop - box\.top/);
+});
+
+test("the previous exit line and the tool row stay whole", () => {
+  assert.match(js, /const bar = \$\("ops-bar"\)/);
+  assert.match(js, /else if \(past && pastRows > 1\) pastRows -= 1/);
+  assert.match(js, /if \(past\) snapEnd\(past\)/);
+  assert.match(css, /#ops-bar\s*\{[^}]*position:\s*sticky/);
 });
 
 test("a narrow window keeps the start button in view", () => {

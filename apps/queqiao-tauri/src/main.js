@@ -204,6 +204,8 @@ function fitSpan() {
   if (!scroller || !result || !section || section.hidden) return;
   const summary = $("propose") && !$("propose").hidden ? $("summary") : null;
   const past = $("past") && !$("past").hidden && $("past").childElementCount ? $("past") : null;
+  const bar = $("ops-bar");
+  const barH = bar ? bar.getBoundingClientRect().height : 0;
   const topEl = summary || result;
   const bottomEl = past || result;
   const rowHeight = (n) => n * 20 + 2;
@@ -220,20 +222,24 @@ function fitSpan() {
   };
   apply();
   const view = scroller.getBoundingClientRect();
+  const viewTop = view.top + barH;
+  const viewBottom = view.bottom;
+  const room = viewBottom - viewTop;
   let guard = 0;
-  while (guard < 8 && span().bottom - span().top > view.height - 4) {
-    if (resultRows > 3) resultRows -= 1;
-    else if (past && pastRows > 2) pastRows -= 1;
+  while (guard < 12 && span().bottom - span().top > room - 8) {
+    if (resultRows > 2) resultRows -= 1;
+    else if (past && pastRows > 1) pastRows -= 1;
     else break;
     apply();
     guard += 1;
   }
   let box = span();
-  if (box.top < view.top - 1) scroller.scrollTop -= view.top - box.top;
+  if (box.top < viewTop - 1) scroller.scrollTop -= viewTop - box.top;
   box = span();
-  if (box.bottom > view.bottom + 1) scroller.scrollTop += box.bottom - view.bottom;
+  if (box.bottom > viewBottom - 1) scroller.scrollTop += box.bottom - viewBottom;
   box = span();
-  if (box.top < view.top - 1) scroller.scrollTop -= view.top - box.top;
+  if (box.top < viewTop - 1) scroller.scrollTop -= viewTop - box.top;
+  if (past) snapEnd(past);
 }
 
 function revealResult(sync) {

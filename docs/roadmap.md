@@ -175,6 +175,8 @@
 | 本轮完成 | 看前面几行时，结果框不要被窗口下沿切掉 | 整框都在窗口里，行还是前面的 | 切之前只露出前几行且第四行被切；点开提议后露出 `queqiao-line-1` 到 `queqiao-line-8` 整行，第四十行不在眼前 | 本机 `127.0.0.1:17991`；`acceptance/desktop-fit-before.png`、`desktop-fit-after.png` |
 | 本轮完成 | 点「之前的结果」能看到上一次输出，当前结果框仍留在窗口里 | 翻旧结果不把这次的结果顶走 | 当前是 `queqiao-now`；展开后还能看到 `queqiao-line-40`，`queqiao-now` 仍完整落在窗口内 | 本机 `127.0.0.1:17991`；`acceptance/desktop-past-before.png`、`desktop-past-after.png` |
 | 本轮完成 | 结果框露全时，上面的「要做什么」不要被窗口上沿切掉 | 表单和结果一起看全 | 展开后 `queqiao-task` 整段在窗口里，没有被上沿切掉 | `acceptance/desktop-past-after.png` |
+| 本轮完成 | 上一次结果的末行 `exit=0` 完整留在窗口里 | 展开后能对上这次有没有跑完 | 之前的结果底部是完整的 `exit=0`，落在窗口内 | 本机 `127.0.0.1:17991`；`acceptance/desktop-exit-before.png`、`desktop-exit-after.png` |
+| 本轮完成 | 常用操作那一排不要被窗口上沿切成半个按钮 | 五个按钮都能点 | 「查看正在运行的程序」高 34，整颗在窗口里 | `acceptance/desktop-exit-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
