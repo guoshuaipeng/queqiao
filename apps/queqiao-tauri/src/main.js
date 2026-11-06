@@ -152,9 +152,11 @@ function renderDialog(d) {
   $("dlg-title").textContent = d.title || "";
   $("dlg-body").textContent = d.body || "";
   const hasDetail = !!d.detail;
+  const detail = $("dlg-detail");
   show($("dlg-detail-toggle"), false);
-  $("dlg-detail").textContent = d.detail || "";
-  show($("dlg-detail"), hasDetail);
+  detail.textContent = d.detail || "";
+  show(detail, hasDetail);
+  if (hasDetail) requestAnimationFrame(() => { detail.scrollLeft = detail.scrollWidth; });
   $("dlg-no").textContent = d.secondary || "取消";
   $("dlg-yes").textContent = d.primary || "允许";
   $("dlg-no").classList.add("focus");

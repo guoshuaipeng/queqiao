@@ -120,12 +120,16 @@ test("path view button stays on one line", () => {
 
 test("write confirm shows the command without an extra click", () => {
   assert.match(js, /show\(\$\("dlg-detail-toggle"\), false\)/);
-  assert.match(js, /show\(\$\("dlg-detail"\), hasDetail\)/);
+  assert.match(js, /show\(detail, hasDetail\)/);
 });
 
 test("confirm command does not break in the middle of a word", () => {
   assert.match(css, /#dlg-detail\s*\{[^}]*white-space:\s*pre\b/);
   assert.match(css, /#dlg-detail\s*\{[^}]*overflow-x:\s*auto/);
+});
+
+test("a long command opens scrolled to the path", () => {
+  assert.match(js, /detail\.scrollLeft = detail\.scrollWidth/);
 });
 
 test("a finished change clears the command", () => {
