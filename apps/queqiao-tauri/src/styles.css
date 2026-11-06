@@ -103,6 +103,8 @@ button, input { font-family: inherit; }
   white-space: normal;
   scroll-snap-type: y mandatory;
 }
+#result > div.stick-x,
+#past > div.stick-x { background: #fbfdff; }
 #result > div {
   height: 20px;
   min-height: 20px;

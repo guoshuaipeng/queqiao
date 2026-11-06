@@ -193,6 +193,8 @@
 | 本轮完成 | 当前结果框的横滑条不要盖住最下面一行 | 横滑条在字下面 | `exit=0` 的字到条顶有 6px，三行都完整 | `acceptance/desktop-hbar-result.png` |
 | 本轮完成 | 点开之前的结果后停在最新两行，能看见 exit=0 | 不用再往下找末行 | 滚动停在最底 36，眼前是长行和 `exit=0`，没有第一行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-end-before-past.png`、`desktop-end-after.png` |
 | 本轮完成 | 长行右边不要贴着竖滑条 | 行尾和滚动条分开 | 长行右边到结果框右沿 39；滑到头后 `QUEEND` 仍在空白左边 | `acceptance/desktop-gap-after.png`、`desktop-end-tail.png` |
+| 本轮完成 | 横滑长行时短的 exit=0 留在框里 | 滑到行尾仍能看见有没有跑完 | 横滑 715 后 `exit=0` 在 37–77，`QUEEND` 在 727–767；改之前 `exit=0` 在 -678 | 本机 `127.0.0.1:17991`；`acceptance/desktop-stick-before.png`、`desktop-stick-after.png`、`desktop-stick-result.png` |
+| 本轮完成 | 点开之后再往上翻，仍能看到第一行，松手停在整行 | 翻旧的不切成半行 | 滚动放到 9 再松手，回到 0，第一行高 20，整行在框里 | `acceptance/desktop-line1-before.png`、`desktop-line1-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

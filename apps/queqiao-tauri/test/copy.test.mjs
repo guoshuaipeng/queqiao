@@ -224,6 +224,14 @@ test("opening previous results lands on the newest lines", () => {
   assert.match(css, /\.rail\s*\{[^}]*width:\s*24px/);
 });
 
+test("a short line stays put while the long line slides", () => {
+  assert.match(js, /function pinShortRows/);
+  assert.match(js, /row\.classList\.toggle\("stick-x", !wide\)/);
+  assert.match(js, /translateX\(/);
+  assert.match(js, /pinShortRows\(past\)/);
+  assert.match(css, /#result > div\.stick-x,\s*#past > div\.stick-x\s*\{[^}]*background:\s*#fbfdff/);
+});
+
 test("horizontal bars sit under the text rows", () => {
   assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*height:\s*12px/);
   assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px \+ 16px/);

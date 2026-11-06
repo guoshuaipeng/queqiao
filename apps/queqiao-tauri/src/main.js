@@ -204,6 +204,37 @@ function placeRail(box) {
   rail.style.bottom = (barY + 1) + "px";
 }
 
+function pinShortRows(box) {
+  if (!box) return;
+  const limit = box.clientWidth;
+  const x = box.scrollLeft;
+  for (const row of box.children) {
+    const text = row.firstChild;
+    let wide = false;
+    if (text && text.nodeType === Node.TEXT_NODE && text.length) {
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      wide = range.getBoundingClientRect().width > limit - 24;
+    }
+    row.classList.toggle("stick-x", !wide);
+    row.style.transform = wide ? "" : "translateX(" + x + "px)";
+  }
+}
+
+function shiftShortRows(box) {
+  const x = box.scrollLeft;
+  for (const row of box.children) {
+    if (!row.classList.contains("stick-x")) continue;
+    row.style.transform = "translateX(" + x + "px)";
+  }
+}
+
+function watchShortPin(box) {
+  if (!box || box.__pin) return;
+  box.__pin = true;
+  box.addEventListener("scroll", () => shiftShortRows(box));
+}
+
 function watchResultWheel(result) {
   if (!result || result.__wheel) return;
   result.__wheel = true;
@@ -212,6 +243,7 @@ function watchResultWheel(result) {
     const maxY = result.scrollHeight - result.clientHeight;
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY) && maxX > 1) {
       result.scrollLeft = Math.min(maxX, Math.max(0, result.scrollLeft + event.deltaX));
+      shiftShortRows(result);
       event.preventDefault();
       return;
     }
@@ -230,6 +262,7 @@ function watchPastSnap(past) {
     const maxY = past.scrollHeight - past.clientHeight;
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY) && maxX > 1) {
       past.scrollLeft = Math.min(maxX, Math.max(0, past.scrollLeft + event.deltaX));
+      shiftShortRows(past);
       event.preventDefault();
       return;
     }
@@ -254,6 +287,8 @@ function paintPast(items) {
     past.appendChild(row);
   }
   watchPastSnap(past);
+  watchShortPin(past);
+  pinShortRows(past);
 }
 
 function fitSpan() {
@@ -317,7 +352,11 @@ function fitSpan() {
     past.__openEnd = false;
   } else if (past) snapNearest(past);
   placeRail(result);
-  if (past) placeRail(past);
+  pinShortRows(result);
+  if (past) {
+    placeRail(past);
+    pinShortRows(past);
+  }
   let extra = scroller.scrollHeight - scroller.clientHeight;
   if (extra > 1 && bar) {
     bar.style.paddingBottom = "0px";
@@ -385,6 +424,8 @@ function paintResult(text) {
     row.textContent = line.length ? line : " ";
     result.appendChild(row);
   }
+  watchShortPin(result);
+  pinShortRows(result);
   requestAnimationFrame(() => {
     window.__resultStick = follow ? "end" : "place";
     window.__resultStickTop = keptTop;
