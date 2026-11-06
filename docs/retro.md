@@ -446,3 +446,13 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - 缺口：地址栏仍显示「不安全」；macOS 仍未正式可下。
 
 已开 R041（S004「提议一项改动」等待/结果四态人话 + 连上后去掉 PAIR_OK；交给鹊桥-客户端；不改中继/官网/AI-SSH-Pro）。
+
+
+## R041 产品验收（2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r041-*` 与源码验收通过（`aeafeeb`）：
+
+- 去协助端提议改动四态人话到位；超时与拒绝可区分；刚连上结果区不再显示 PAIR_OK。Windows 与 Avalonia 都接上。
+- 缺口：ui-shot；结果区仍有 `[RunCommand]` 日志前缀；Windows 只读等待态仍可能偏控制台。
+
+已开 R042（官网安装包跟上含 R041；用户强调稳定与体验，优先上架人话改动）。

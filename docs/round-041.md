@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端
-> 状态：**delivered**
+> 状态：**done（产品已验收）**
 > 依据：R040 产品已验收。场景 S004（`docs/scene-s004-propose-wait.md`）与体验质感续篇（`docs/quality-after-connect-status.md`）已收口。官网包已含 R039；本轮修连上之后协助方仍像控制台的两处人话。
 
 ## 本轮目标
@@ -73,3 +73,29 @@
 ### 缺口 / 披露
 - 十张均为 ui-shot 注入状态，非真实中继配对与对方点允许/拒绝/超时的实拍。
 - Windows 超时帧控件校验确认主状态为超时句且不含拒绝句。
+
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照 `docs/screenshots/r041-*` 与源码独立验收通过（功能 `aeafeeb`，文档 `b3c4b88`）。Protocol.Tests 196 通过（含 ProposeChangeCopyTests）。
+
+- `ProposeChangeCopy`：WaitingStatus / AllowedStatus / ConnectedResultHint；FailureStatus 在 DeniedByUser 时优先非空 Error。
+- Windows MainForm 与 Avalonia HelperWindow 已接上；刚连上结果区无 PAIR_OK。
+- 拒绝/超时原文仍是 WriteConfirmCopy；未改五键、R035–R037、R031、EndAssistCopy / InstallInstructions / Skill / 「才问你」。
+
+| 截图 | MD5 | 产品看到的 |
+|------|-----|------------|
+| `r041-helper-connected-no-pair-ok.png` | 8864575CA5A6FFDD25866232074BC8DF | 结果区「已连上。建议先点「查看正在运行的程序」。」 |
+| `r041-helper-propose-waiting.png` | 916D886955AE1027404EDEB8817E261E | 「正在等对方在本机确认…」 |
+| `r041-helper-propose-allowed.png` | 02F7F002A4AE399427F972AE5A805458 | 「对方已允许，改动已执行」 |
+| `r041-helper-propose-denied.png` | 5745D7D30CC5DEF7394EB4C238C582A5 | 「已拒绝，未做任何改动」 |
+| `r041-helper-propose-timed-out.png` | DCDBDC3D1FA2EEC280607931F72877A5 | 「确认超时，未做任何改动」（与拒绝区分） |
+| `r041-avalonia-helper-connected-no-pair-ok.png` | A515E08D22ED7940EA2FBCE7728223B3 | Avalonia 刚连上人话，无 PAIR_OK |
+| `r041-avalonia-helper-propose-waiting.png` | 40FB1E4E57CA616E5F2804F6286FCF47 | Avalonia 等待句 |
+| `r041-avalonia-helper-propose-allowed.png` | FD2C5579A3910AC1F3E846C2B74F2B27 | Avalonia 允许成功句 |
+| `r041-avalonia-helper-propose-denied.png` | 1E369647C6E3457E60538AB3FD938638 | Avalonia 拒绝句 |
+| `r041-avalonia-helper-propose-timed-out.png` | 29B20F0C7B95BFD6E985D5BAF0DC1D24 | Avalonia 超时句 |
+
+缺口：十张均为 ui-shot；结果区仍可见 `[RunCommand]` 日志前缀（主状态已人话）；Windows 只读操作等待态仍可能显示「执行 ListProcesses …」类控制台词（本轮范围外，记后续）。
+
+已开 R042（官网安装包跟上含 R041 的客户端；客户端出包、服务端替换上架）。
