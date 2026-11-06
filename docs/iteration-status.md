@@ -422,3 +422,10 @@ elay/internal/relay/audit_test.go
 - 已更新 `docs/ux-home-compact-20261106/proposal.md` 状态头，避免再误挡实现。
 - 请客户端立即执笔 ModeSelect/壳首页；PV-004 并行继续。
 
+
+### 2026-11-06 14:28 Asia/Shanghai · 落盘 LOCAL-IMPL-AUTH.md（解客户端只读）
+
+- 客户端仍等「仓内授权原文」：已写 `docs/ux-home-compact-20261106/LOCAL-IMPL-AUTH.md`。
+- 指针：该文件 + proposal 状态头 + 本 status 14:27 节；PRODUCT-VERSIONS 旧句待产品收口，不挡开工。
+- 已再请客户端立即改 ModeSelect/Shell。
+
