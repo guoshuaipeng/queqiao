@@ -365,7 +365,7 @@ elay/internal/relay/audit_test.go
 - 本侧已在 `docs/agents/迭代.md` §7 与例程 prompt 固化同分界；待 `dev-iteration.md` 落盘后以该文为出入口径权威，有差异则改职责/例程对齐正文。
 
 
-### 2026-11-06 14:21 A44ia/S2an公元2ai · 例程检查：无待开发；dev-iteration.md 已落盘
+### 2026-11-06 14:21 Asia/Shanghai · 例程检查：无待开发；dev-iteration.md 已落盘
 
 - **队列**：无「待开发」。PV-001/002/003 均为 **待验收**；PV-004 仍为 **草稿**（未放行实现）。
 - **PV-002**：观感未过 → 布局冻结，等体验修订方案 + 用户确认；本侧不改代码。
@@ -387,4 +387,11 @@ elay/internal/relay/audit_test.go
 - **验收**：Windows 向导语言/混搭验收 **不能**用 Linux 替代；不在用户机启动 Setup。
 - **待产品正式指针**：PRODUCT-VERSIONS 现仍草稿且与 status 拟定范围不完全一致；指针落定前不实现。
 - **待产品明确**：正式指针是否**同时覆盖备用 net8** `RemoteAssist.iss`（客户端提问；迭代不擅自定）。
+
+
+### 2026-11-06 14:22 Asia/Shanghai · 二次对齐 dev-iteration.md + PV-004 仅 Net48
+
+- **规范**：`docs/dev-iteration.md` 已落盘（`cb6b71c`）。职责/例程已二次对齐；推进以该文为准。
+- **PV-004 产品拍板**：本轮**只修** Windows 主路径 `installer/RemoteAssist-Net48.iss`（含必需共享语言资源 / 同语种安装前说明）。备用 net8 `RemoteAssist.iss` **本轮不改**，登记后续对齐项；不阻挡 net48 交付；**不得**把 net48 结果泛称所有安装器满足。正式 docs 指针产品收口后即给；此前不新增前置问题。
+- 已通知客户端按 Net48-only 准备；仍等正式指针后再改 iss。未 push。
 
