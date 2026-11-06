@@ -514,3 +514,11 @@ elay/internal/relay/audit_test.go
 
 - 产品 FYI：R050 评估 docs 已收口；节奏直冲 S2、**仍 blocked 不实现**。与 PV-004/首页尺寸无关；**勿开 R050 码**。
 
+### 2026-11-06 14:34 Asia/Shanghai · PV-002 执行器复核（ModeSelect 抛光）
+
+- **发现**：主落地已在 `aa72bd8`（ModeSelect + Shell 分设客户区）；随后 `6573454` 记录用户确认 **尺寸策略暂停**（壳固定同尺寸、切页不改窗）→ **本轮未再改 Shell 尺寸策略**。
+- **本轮改动**（仅首页布局抛光，不碰尺寸策略）：
+  - `src-net48/RemoteAssist.App/ModeSelectForm.cs`：按 `_scrollBody` 实际客户区 Relayout；去掉强制 min 480×280；清理 `LayoutCardInner` 重复循环；`_scrollBody.Resize` 挂钩。
+- **验证**：`dotnet build src-net48/RemoteAssist.App/RemoteAssist.App.csproj -c Release -o artifacts/pv002-build-check` → **PASS**（0 error）。GUI 未启 → 运行未测。
+- **Git**：仅拟本地 commit ModeSelect；**不 push**；不改 installer/产品脏文档；**不继续**首页小窗/业务大窗分设迭代（等新草案+授权）。
+- **未做**：GUI 点验；push；回滚 `aa72bd8` 尺寸分设；新尺寸策略。
