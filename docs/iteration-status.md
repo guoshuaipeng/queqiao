@@ -415,3 +415,10 @@ elay/internal/relay/audit_test.go
 - **并行**：PV-004 安装语言继续由客户端执笔（installer）；本项客户端另改 ModeSelect/Shell 首页——文件隔离可并行。
 - **分工**：客户端执笔；体验方案作验收对照；迭代写本 status。
 
+
+### 2026-11-06 14:27 Asia/Shanghai · 澄清：首页紧凑已授权（proposal 头已改）
+
+- 客户端读到旧提案头「待用户确认/≠实现授权」而继续只读 → **已澄清**：用户已认可范围 + 产品明确本地实现授权（产品会话转达）。
+- 已更新 `docs/ux-home-compact-20261106/proposal.md` 状态头，避免再误挡实现。
+- 请客户端立即执笔 ModeSelect/壳首页；PV-004 并行继续。
+
