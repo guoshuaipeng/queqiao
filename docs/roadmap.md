@@ -53,7 +53,7 @@
 | R042 | 高频：官网安装包跟上含 R041 的客户端；打磨：首页旁注不改、补公网下载截图 | 鹊桥-客户端出包 / 鹊桥-服务端上架 | **done（产品已验收）** | `docs/round-042.md` |
 | R043 | 高频：Windows net48 主路径对齐（会话码+公网中继、去局域网主表单、品牌鹊桥、被控首启人话、**连接凭证一次粘贴/8位验证码**）；打磨：Avalonia/CLI 凭证同步或 S005，产能紧则 R044 | 鹊桥-客户端 | **client-done** | `docs/round-043.md`、`docs/quality-connection-credential.md` |
 
-> **当前**：R043 blocked（完整安全载荷已接线；tls-trust 官方指纹文冲突待架构改；不验收真连）——**Windows net48 主路径对齐产品**（稳定性 + 体验 + **连接凭证一次复制/粘贴**；不包装）。Windows 主路径 = Framework 4.8 / `src-net48`；net8 自包含为兼容备用。见 `docs/round-043.md`、`docs/quality-connection-credential.md`。S005 见 `docs/scene-s005-mid-session-drop.md`（同轮打磨或 R044）。R042 已产品验收（出包 `8d61398`，上架 `f90bd8f`，2026-11-06）。
+> **当前**：R043 blocked（完整安全载荷已接线 `2a3e618`；信任模型文 `2d6c0b2` 已对齐；不验收真连）——**Windows net48 主路径对齐产品**（稳定性 + 体验 + **连接凭证一次复制/粘贴**；不包装）。Windows 主路径 = Framework 4.8 / `src-net48`；net8 自包含为兼容备用。见 `docs/round-043.md`、`docs/quality-connection-credential.md`。S005 见 `docs/scene-s005-mid-session-drop.md`（同轮打磨或 R044）。R042 已产品验收（出包 `8d61398`，上架 `f90bd8f`，2026-11-06）。
 
 > R041 已产品验收（`aeafeeb`，2026-11-06）；R042 已产品验收（公网 Win 75,587,213 / Linux 8,005,849）。
 
