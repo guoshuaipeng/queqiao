@@ -88,6 +88,11 @@ test("pair dialog does not leave the credential readable behind it", () => {
   assert.ok(js.includes("s.dialog ? \"\""));
 });
 
+test("absent peer is not told to check the network", () => {
+  assert.ok(blob.includes("对方现在没有在等待协助。请让对方重新开启，再发一次连接凭证。"));
+  assert.ok(blob.includes("没能连上，请检查网络后重试。"));
+});
+
 test("cancel tells the helper it did not connect", () => {
   assert.ok(blob.includes("已取消，没有连上。"));
 });

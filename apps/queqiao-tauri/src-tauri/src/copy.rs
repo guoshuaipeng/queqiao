@@ -21,6 +21,7 @@ pub const CONNECTING: &str = "正在连接对方…";
 pub const WAIT_ALLOW: &str = "已找到对方，等对方点「允许协助」…";
 pub const PEER_DENIED: &str = "对方没有同意这次协助。";
 pub const CONNECT_FAIL: &str = "没能连上，请检查网络后重试。";
+pub const NOT_WAITING: &str = "对方现在没有在等待协助。请让对方重新开启，再发一次连接凭证。";
 pub const PAIR_TITLE: &str = "有人想协助这台电脑";
 pub const PAIR_BODY: &str =
     "对方可以查看进程、日志和文件，不能直接改你的电脑。真正要改动时，还会再问你。";

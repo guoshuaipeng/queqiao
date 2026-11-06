@@ -433,7 +433,13 @@ pub fn run_helper(via: Via, jobs: &Receiver<Job>, hooks: &dyn Hooks) {
             return;
         }
         if reply.get("ok") != Some(&Value::Bool(true)) || reply.get("op").and_then(|v| v.as_str()) != Some("paired") {
-            hooks.emit(Ev::Fail(copy::CONNECT_FAIL.into()));
+            let err = reply.get("error").and_then(|v| v.as_str()).unwrap_or("");
+            let msg = if join_means_not_waiting(err) {
+                copy::NOT_WAITING
+            } else {
+                copy::CONNECT_FAIL
+            };
+            hooks.emit(Ev::Fail(msg.into()));
             return;
         }
     }
@@ -585,6 +591,14 @@ fn end_io(hooks: &dyn Hooks) -> HostEnd {
     } else {
         HostEnd::Stop
     }
+}
+
+fn join_means_not_waiting(err: &str) -> bool {
+    let err = err.to_ascii_lowercase();
+    err.contains("peer not online")
+        || err.contains("invalid code")
+        || err.contains("password")
+        || err.contains("helper already connected")
 }
 
 fn fail_or_cancel(hooks: &dyn Hooks) {
@@ -827,5 +841,13 @@ mod tests {
         assert!(helper_hooks.events.lock().unwrap().iter().any(|e| e.starts_with("fail:")));
         host_hooks.alive.store(false, std::sync::atomic::Ordering::SeqCst);
         let _ = host_thread.join();
+    }
+
+    #[test]
+    fn absent_peer_is_not_a_network_error() {
+        assert!(join_means_not_waiting("peer not online"));
+        assert!(join_means_not_waiting("invalid code or password"));
+        assert!(!join_means_not_waiting(""));
+        assert!(!join_means_not_waiting("connection reset"));
     }
 }
