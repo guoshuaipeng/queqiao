@@ -563,3 +563,11 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 ## 严格唯一凭证拍板（2026-11-06 10:35 Asia/Shanghai）
 
 - **拍板**：用户选严格只认 code+8位密码；自有设备也输入；取消账号免密与设备密钥快捷连；三档写确认正交；R049 可独立授权；R050 决策锁定仍 blocked（等 PAKE，未授权实现，勿称现网已满足）。
+
+## Windows 主维护锁定（2026-11-06 Asia/Shanghai）
+
+- **触发**：用户比对 net48 / net8 后明确——主做依赖 Framework 4.8 的小体积包；net8 不再当 Windows 功能主维护。
+- **拍板**：Windows 亲友主路径 = **net48 Framework 4.8 依赖小包**；**冻结 `src/` net8 WinForms 功能迭代**（仅安全/协议关键回补）；功能缺口迁入 net48，**不为对等回填 net8**；**Avalonia = Mac/Linux**，不是 Windows 亲友主路径。
+- **R047**：出 net48 小 Setup；安装文案须写 Framework 4.8。**跟进**：`WriteConfirmCopy` 仍写「.NET 8 运行时」——实现时改文案，本轮未改 C#（须客户端授权）。
+- **预防**：官网/复制安装说明勿再把几十兆 .NET 8 自包含当 Windows 主推；发错包视为产品事故。
+

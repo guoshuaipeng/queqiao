@@ -79,11 +79,11 @@
 
 ## 产品形态与安装
 
-- **同一安装包、双模式**：接受协助 / 去协助别人；可返回首页。视觉质感以首页和配对确认为标杆，协助端向它们看齐；原则见 docs/quality.md（Windows 主路径为 net48 WinForms，不换框架；net8 自包含安装包为兼容备用）。
+- **同一安装包、双模式**：接受协助 / 去协助别人；可返回首页。视觉质感以首页和配对确认为标杆，协助端向它们看齐；原则见 docs/quality.md（**Windows 主维护 = net48 WinForms**，不换框架；**冻结 net8 WinForms 功能**；net8 自包含仅为兼容备用；Avalonia 只管 Mac/Linux）。
 - **可选 MCP**：安装或设置里启用 stdio，供协助方 Agent 使用；与 UI 控制端共用同一连接与确认流程。MCP **默认不在「仅接受协助」场景自动对外监听**，避免误暴露。协助端 / 设置里须能看到怎么安装 MCP（复制配置并贴进 Cursor 等工具的 MCP 设置），不用另翻仓库文档。**Windows 主路径 net48「去协助」缺 MCP/安装说明入口**已由 **R048** 从 net8/Avalonia 迁入（编译/文档 PASS_WITH_NOTES `2d427d4`；运行未验收；Agent 侧已有复制配置不代替 Helper）。
 - 被控：主界面展示 code、验证密码、二维码/载荷、TLS 指纹、配对与审计；可登录绑定账号以上线设备。
 - 控制：code+密码或完整连接凭证经中继连接；设置里填中继地址（目标：默认内置、仅高级可改）；可注册/登录、刷设备列表作发现用途——**连接控制须 code+密码**，不再免密连。
-- 安装包：现有 `installer/RemoteAssist.iss` → `RemoteAssist-Setup-*.exe` 面向 **.NET 8 自包含**（兼容备用）。**Windows 亲友主路径分发**开 **R047**：打 **net48** 单文件 Setup（Inno 优先，或 MSI），内容来自 `artifacts/app-net48-fd`，依赖系统 **.NET Framework 4.8**；默认仍装到 `%LOCALAPPDATA%\Programs\RemoteAssist`（与 net8 并存策略见 `docs/round-047.md`）。官网上传可选另轮。
+- 安装包：现有 `installer/RemoteAssist.iss` → `RemoteAssist-Setup-*.exe` 面向 **.NET 8 自包含**（兼容备用，**功能冻结**）。**Windows 亲友主维护分发**开 **R047**：打 **net48** Framework 4.8 依赖小 Setup（Inno 优先，或 MSI），内容来自 `artifacts/app-net48-fd`；默认仍装到 `%LOCALAPPDATA%\Programs\RemoteAssist`（与 net8 并存策略见 `docs/round-047.md`）。官网上传可选另轮。
 - 兼容：独立 Agent / Helper.UI / Helper CLI / MCP。
 
 ## 支持平台（2026-11-05）
@@ -97,7 +97,7 @@
   2. 再出与 Windows 对等的双模式 GUI（接受协助 / 去协助）。macOS / Linux 都要命令行（CLI/MCP）和 Avalonia 界面，不是二选一；出货仍按上面两步，不挡 Windows 的 P0。
 - 不拆成三套互不相干的原生客户端；Protocol / Helper / MCP 已是 net8.0。细节见 docs/architecture.md 第 13 节。
 - **GUI**：Windows 现阶段保持 WinForms；macOS / Linux 用 Avalonia。确认规则与 Windows 相同（写操作本机确认）。
-- **分发**：Windows **主路径**走 **R047 net48** Setup（框架依赖；Inno 优先）；现有 net8 自包含 Inno 为兼容备用；macOS 为 .app + .dmg；Linux 先便携 .tar.gz，随后可选 .deb。
+- **分发**：Windows **主维护**走 **R047 net48** Setup（Framework 4.8 依赖小包；Inno 优先）；现有 net8 自包含 Inno 冻结功能、仅兼容备用；macOS 为 .app + .dmg；Linux 先便携 .tar.gz，随后可选 .deb。
 
 ## 协助闭环（管理端 / Agent）
 
@@ -118,7 +118,7 @@ Skill 仅作「如何安装 MCP / 如何填参数」的薄封装；**控制面�
 
 **中继会话码审计（R046）**：中继 SQLite 另表记录会话码生成、join 成功/失败、会话结束，供鉴权后的管理台只读列表（created_at / code / status）；**不**存不展验证码、password_hash、fp、完整连接凭证；**不**改 guest_* 协议字段；与官网接单 /admin 分离。见 docs/relay-audit.md。
 
-**net48 安装包（R047）**：把 `app-net48-fd` 打成单个 Setup 发给别人安装；须写明 .NET Framework 4.8 前提；与 R046 并行、互不阻塞。见 docs/round-047.md。
+**net48 安装包（R047）**：把 `app-net48-fd` 打成单个 **Framework 4.8 依赖**小 Setup 发给别人安装（几兆档，非几十兆自包含）；安装说明/旁注须写 **.NET Framework 4.8**，**不得**再写缺「.NET 8 运行时」。**跟进（未改代码）**：`src-net48`/`src` 的 `WriteConfirmCopy` 协助端「复制安装说明」仍含「先安装 .NET 8 运行时」——须在 R047 实现时改成 Framework 4.8（Windows 行）并保留 Linux 的 .NET 8 表述；改代码前须客户端授权。与 R046 并行、互不阻塞。见 docs/round-047.md。
 
 **net48 协助端 MCP（R048）**：去协助界面须有「复制安装说明」与「复制 MCP 配置」（可贴进 Cursor 等的 JSON，载荷为完整连接凭证）；对齐 net8 Helper / Avalonia；缺完整凭证阻断，禁止明文降级。编译/文档 **PASS_WITH_NOTES**（`2d427d4`）；运行未验收。见 docs/round-048.md。
 
@@ -153,7 +153,10 @@ Skill 仅作「如何安装 MCP / 如何填参数」的薄封装；**控制面�
 
 ## 技术选型
 
-- 客户端：**Windows 主路径 = .NET Framework 4.8（`src-net48/` + `scripts/build-net48.ps1`）**，WinForms；演示与验收优先开 net48 产物。**.NET 8 自包含安装包仅作兼容/出包备用**，不是 Windows 亲友主路径。macOS / Linux 仍用 .NET 8 + Avalonia（见 architecture.md 第 13 节）；src-net48 不上 Mac/Linux。
+- 客户端：**Windows 主维护路径 = .NET Framework 4.8（`src-net48/` + `scripts/build-net48.ps1`）**，WinForms；官网/亲友下载与演示验收均优先 **net48 框架依赖小包**（约 1.4 MB 档，非几十兆自包含）。
+- **冻结 `src/` net8 WinForms 功能迭代**：不再为功能对等向 net8 WinForms 补齐；仅接受安全/协议关键回补。功能缺口（如信任三档等）**迁入 net48**，不为对等去回填 net8。
+- **Avalonia** = **Mac/Linux** 轨道，**不是** Windows 亲友主路径。
+- **.NET 8 自包含 Windows 安装包**仅历史/兼容备用（约 72 MB），不作为主维护与官网主推。macOS / Linux 仍用 .NET 8 + Avalonia（见 architecture.md 第 13 节）；src-net48 不上 Mac/Linux。
 - 公网中继：**Go** + SQLite（`relay/`）
 - 二维码：QRCoder
 - 帧：业务侧 4 字节 LE 长度 + UTF-8 JSON；中继透明 pipe；控制面 JSONL
@@ -162,7 +165,7 @@ Skill 仅作「如何安装 MCP / 如何填参数」的薄封装；**控制面�
 
 - 小体积是跨平台一等约束。实测基线（2026-11-05，本机 artifacts/）：Windows **主路径** `src-net48` 依赖系统 **.NET Framework 4.8** 约 **1.4 MB**；.NET 8 自包含安装包约 **72 MB**（**兼容备用**，非 Windows 主路径）。演示与验收优先开 net48 产物（`scripts/build-net48.ps1`）。
 - **macOS / Linux 默认发依赖运行时的小包**，目标尽量接近上述 1.4 MB 这一档（应力争个位数 MB，而不是默认 72 MB）；对方需已装 .NET 8 桌面方向运行时，首次使用提供简短安装说明。
-- **.NET 8 自包含包保留为兼容备用**（不愿或不能先装 Framework 4.8 / 过渡官网大包），体积上限不差于当前约 72 MB；手段为 PublishTrimmed + 单文件，Native AOT 作后续试验。官网若仍挂 net8 大包，视为过渡/备用，产品叙事以 net48 小包为准。
+- **.NET 8 自包含包保留为兼容备用**（不愿或不能先装 Framework 4.8 / 过渡官网大包），体积上限不差于当前约 72 MB；**不再为功能对等维护**。官网若仍挂 net8 大包，视为过渡/备用，产品叙事与主维护以 net48 小包为准。
 - src-net48 / .NET Framework 4.8 仅适用于 Windows，不能作为 Mac/Linux 的缩体积方案。
 
 ## 持续迭代
