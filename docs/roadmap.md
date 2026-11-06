@@ -179,6 +179,8 @@
 | 本轮完成 | 常用操作那一排不要被窗口上沿切成半个按钮 | 五个按钮都能点 | 「查看正在运行的程序」高 34，整颗在窗口里 | `acceptance/desktop-exit-after.png` |
 | 本轮完成 | 之前的结果同时露出 `queqiao-line-40` 和 `exit=0` | 末两行一起看全 | 展开后这两行都是整行，都在窗口里 | 本机 `127.0.0.1:17991`；`acceptance/desktop-twoline-before.png`、`desktop-twoline-after.png` |
 | 本轮完成 | 末行不要贴着「结束本次协助」 | 结果和结束按钮分开 | `exit=0` 底部距结束按钮顶部 21 | `acceptance/desktop-twoline-after.png` |
+| 本轮完成 | 之前的结果往上翻能看到 `queqiao-line-1`，松手后 `exit=0` 仍是整行 | 翻旧的不把末行切半 | 翻到第一行能看见 `queqiao-line-1`；滚回末尾后 `queqiao-line-40` 和 `exit=0` 仍是整行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-flip-before.png`、`desktop-flip-after.png` |
+| 本轮完成 | 内容已经放下时，整页不要再多出一条滚动条 | 只有结果框自己的滚动条 | 协助页 `scrollHeight` 不大于可视高度，整页滚动是 hidden | `acceptance/desktop-flip-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

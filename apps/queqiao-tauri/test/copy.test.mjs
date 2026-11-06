@@ -184,7 +184,7 @@ test("an early result box is not cut by the window", () => {
 
 test("previous output opens without pushing the current result away", () => {
   assert.match(js, /function paintPast/);
-  assert.match(js, /snapEnd\(past\)/);
+  assert.match(js, /snapEnd\(\$\("past"\)\)/);
   assert.match(css, /#past\s*\{[^}]*max-height:\s*calc\(4 \* 20px \+ 2px\)/);
   assert.match(css, /#past > div\s*\{[^}]*height:\s*20px/);
 });
@@ -200,8 +200,14 @@ test("the previous exit line and the tool row stay whole", () => {
   assert.match(js, /const bar = \$\("ops-bar"\)/);
   assert.match(js, /else if \(past && pastRows > 2\) pastRows -= 1/);
   assert.match(js, /scroller\.style\.paddingBottom = "16px"/);
-  assert.match(js, /if \(past\) snapEnd\(past\)/);
+  assert.match(js, /if \(past\) snapNearest\(past\)/);
   assert.match(css, /#ops-bar\s*\{[^}]*position:\s*sticky/);
+});
+
+test("previous lines can scroll and the page scrollbar stays away", () => {
+  assert.match(js, /function snapNearest/);
+  assert.match(js, /past\.addEventListener\("scrollend", \(\) => snapNearest\(past\)\)/);
+  assert.match(js, /scroller\.style\.overflowY = extra <= 1 \? "hidden" : "auto"/);
 });
 
 test("a narrow window keeps the start button in view", () => {

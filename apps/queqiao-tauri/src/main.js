@@ -170,14 +170,41 @@ function applyScroll(box, key) {
   box.__applying = false;
 }
 
-function snapEnd(box) {
+function rowStep(box) {
   const row = box.querySelector(":scope > div");
-  const max = Math.max(0, box.scrollHeight - box.clientHeight);
-  if (!row) { box.scrollTop = max; return; }
+  if (!row) return 0;
   const raw = getComputedStyle(box).rowGap;
   const gap = raw && raw.endsWith("px") ? parseFloat(raw) : 0;
-  const step = row.getBoundingClientRect().height + gap;
+  return row.getBoundingClientRect().height + gap;
+}
+
+function snapEnd(box) {
+  const max = Math.max(0, box.scrollHeight - box.clientHeight);
+  const step = rowStep(box);
   box.scrollTop = step > 1 ? Math.min(max, Math.round(max / step) * step) : max;
+}
+
+function snapNearest(box) {
+  const max = Math.max(0, box.scrollHeight - box.clientHeight);
+  const step = rowStep(box);
+  if (step <= 1) return;
+  const snapped = Math.min(max, Math.round(box.scrollTop / step) * step);
+  if (Math.abs(snapped - box.scrollTop) < 1) return;
+  box.scrollTop = snapped;
+}
+
+function watchPastSnap(past) {
+  if (!past || past.__snap) return;
+  past.__snap = true;
+  past.addEventListener("scrollend", () => snapNearest(past));
+  past.addEventListener("wheel", (event) => {
+    const max = past.scrollHeight - past.clientHeight;
+    if (max <= 1) return;
+    const next = Math.min(max, Math.max(0, past.scrollTop + event.deltaY));
+    if (next === past.scrollTop) return;
+    past.scrollTop = next;
+    event.preventDefault();
+  }, { passive: false });
 }
 
 function rowBox(text) {
@@ -194,7 +221,7 @@ function paintPast(items) {
     row.textContent = line.length ? line : " ";
     past.appendChild(row);
   }
-  if (!past.hidden && lines.length) requestAnimationFrame(() => snapEnd(past));
+  watchPastSnap(past);
 }
 
 function fitSpan() {
@@ -211,11 +238,15 @@ function fitSpan() {
   const propose = $("propose");
   if (past) {
     scroller.style.gap = "4px";
+    scroller.style.paddingTop = "0px";
     scroller.style.paddingBottom = "16px";
+    if (bar) bar.style.paddingBottom = "0px";
     if (propose && !propose.hidden) propose.style.gap = "4px";
   } else {
     scroller.style.gap = "";
+    scroller.style.paddingTop = "";
     scroller.style.paddingBottom = "";
+    if (bar) bar.style.paddingBottom = "";
     if (propose) propose.style.gap = "";
   }
   const rowHeight = (n) => n * 20 + 2;
@@ -249,7 +280,22 @@ function fitSpan() {
   if (box.bottom > viewBottom - 1) scroller.scrollTop += box.bottom - viewBottom;
   box = span();
   if (box.top < viewTop - 1) scroller.scrollTop -= viewTop - box.top;
-  if (past) snapEnd(past);
+  if (past) snapNearest(past);
+  let extra = scroller.scrollHeight - scroller.clientHeight;
+  if (extra > 1 && bar) {
+    bar.style.paddingBottom = "0px";
+    extra = scroller.scrollHeight - scroller.clientHeight;
+  }
+  if (extra > 1) {
+    scroller.style.paddingTop = "0px";
+    extra = scroller.scrollHeight - scroller.clientHeight;
+  }
+  if (extra > 1 && extra <= 12) {
+    const pad = parseFloat(scroller.style.paddingBottom) || 0;
+    scroller.style.paddingBottom = Math.max(12, pad - extra) + "px";
+    extra = scroller.scrollHeight - scroller.clientHeight;
+  }
+  scroller.style.overflowY = extra <= 1 ? "hidden" : "auto";
 }
 
 function revealResult(sync) {
