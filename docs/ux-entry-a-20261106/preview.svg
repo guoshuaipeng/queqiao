@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1100" viewBox="0 0 1680 1100">
+  <rect width="100%" height="100%" fill="#ECEFF3"/>
+  <text x="24" y="28" font-size="16" font-weight="700" fill="#202124" font-family="Segoe UI, Microsoft YaHei, sans-serif">入口 A · 一屏双区（设计示意 · 非真实截图）</text>
+  <text x="24" y="48" font-size="12" fill="#B06000" font-family="Segoe UI, Microsoft YaHei, sans-serif">A 已选 · 待增量复核 · 无真实凭证 · 切页不改外框 · 禁止左活监听与右连接中同屏并行</text>
+
+  <!-- ========== 1 默认初始 840×280 ========== -->
+  <text x="24" y="78" font-size="13" font-weight="700" fill="#1967D2" font-family="Segoe UI, Microsoft YaHei, sans-serif">① 默认初始 · 客户区 840×280 DIP</text>
+  <!-- window chrome -->
+  <rect x="24" y="86" width="840" height="308" rx="6" fill="#D3D7DE" stroke="#9AA0A6"/>
+  <rect x="24" y="86" width="840" height="28" rx="6" fill="#5F6368"/>
+  <rect x="24" y="100" width="840" height="14" fill="#5F6368"/>
+  <text x="36" y="106" font-size="12" fill="#fff" font-family="Segoe UI, Microsoft YaHei, sans-serif">鹊桥</text>
+  <!-- client -->
+  <rect x="24" y="114" width="840" height="280" fill="#F5F6F8"/>
+  <!-- left idle -->
+  <rect x="36" y="126" width="404" height="166" rx="4" fill="#fff" stroke="#1A73E8" stroke-width="1.5"/>
+  <text x="48" y="150" font-size="14" font-weight="700" fill="#1A73E8" font-family="Segoe UI, Microsoft YaHei, sans-serif">请人帮我</text>
+  <text x="48" y="172" font-size="12" fill="#5F6368" font-family="Segoe UI, Microsoft YaHei, sans-serif">先开启后，才能复制连接凭证发给来帮你的人。</text>
+  <rect x="48" y="186" width="128" height="28" rx="4" fill="#1A73E8"/>
+  <text x="60" y="205" font-size="12" fill="#fff" font-family="Segoe UI, Microsoft YaHei, sans-serif">开启接受协助</text>
+  <text x="48" y="236" font-size="11" fill="#80868B" font-family="Segoe UI, Microsoft YaHei, sans-serif">默认通过中继连接</text>
+  <!-- right idle -->
+  <rect x="448" y="126" width="404" height="166" rx="4" fill="#fff" stroke="#0F9D58" stroke-width="1.5"/>
+  <text x="460" y="150" font-size="14" font-weight="700" fill="#0F9D58" font-family="Segoe UI, Microsoft YaHei, sans-serif">我帮别人</text>
+  <text x="460" y="172" font-size="12" fill="#5F6368" font-family="Segoe UI, Microsoft YaHei, sans-serif">粘贴连接凭证 · 一次粘贴完整内容，再点连接。</text>
+  <rect x="460" y="182" width="380" height="48" rx="3" fill="#F8F9FA" stroke="#DADCE0"/>
+  <text x="470" y="210" font-size="12" fill="#9AA0A6" font-family="Segoe UI, Microsoft YaHei, sans-serif">（空，不自动读剪贴板）</text>
+  <rect x="460" y="240" width="72" height="28" rx="4" fill="#DADCE0"/>
+  <text x="478" y="259" font-size="12" fill="#80868B" font-family="Segoe UI, Microsoft YaHei, sans-serif">连接</text>
+  <text x="36" y="312" font-size="11" fill="#B06000" font-family="Segoe UI, Microsoft YaHei, sans-serif">底空目标 &lt; 80 DIP · 禁止巨卡填白 · 内容顶对齐</text>
+
+  <!-- ========== 2 左凭证就绪（右空闲） ========== -->
+  <text x="24" y="430" font-size="13" font-weight="700" fill="#1967D2" font-family="Segoe UI, Microsoft YaHei, sans-serif">② 左凭证就绪 / 中继 Waiting（仍留双区入口条）· 右空闲 · 840×280</text>
+  <rect x="24" y="438" width="840" height="308" rx="6" fill="#D3D7DE" stroke="#9AA0A6"/>
+  <rect x="24" y="438" width="840" height="28" rx="6" fill="#5F6368"/>
+  <rect x="24" y="452" width="840" height="14" fill="#5F6368"/>
+  <text x="36" y="458" font-size="12" fill="#fff" font-family="Segoe UI, Microsoft YaHei, sans-serif">鹊桥</text>
+  <rect x="24" y="466" width="840" height="280" fill="#F5F6F8"/>
+  <!-- left ready -->
+  <rect x="36" y="478" width="404" height="166" rx="4" fill="#fff" stroke="#1A73E8" stroke-width="1.5"/>
+  <text x="48" y="502" font-size="14" font-weight="700" fill="#1A73E8" font-family="Segoe UI, Microsoft YaHei, sans-serif">请人帮我 · 凭证就绪</text>
+  <text x="48" y="524" font-size="12" fill="#5F6368" font-family="Segoe UI, Microsoft YaHei, sans-serif">把连接凭证发给来帮你的人。</text>
+  <rect x="48" y="534" width="380" height="36" rx="3" fill="#E8F0FE" stroke="#AECBFA"/>
+  <text x="58" y="556" font-size="12" fill="#174EA6" font-family="Segoe UI, Microsoft YaHei, sans-serif">示意：会话号 ··· / 密码 ···（非真实 pair/fp）</text>
+  <rect x="48" y="580" width="128" height="28" rx="4" fill="#1A73E8"/>
+  <text x="60" y="599" font-size="12" fill="#fff" font-family="Segoe UI, Microsoft YaHei, sans-serif">复制连接凭证</text>
+  <text x="188" y="599" font-size="11" fill="#80868B" font-family="Segoe UI, Microsoft YaHei, sans-serif">已监听 · Waiting ≠ Connected</text>
+  <!-- right still idle -->
+  <rect x="448" y="478" width="404" height="166" rx="4" fill="#fff" stroke="#0F9D58" stroke-width="1.5"/>
+  <text x="460" y="502" font-size="14" font-weight="700" fill="#0F9D58" font-family="Segoe UI, Microsoft YaHei, sans-serif">我帮别人</text>
+  <text x="460" y="524" font-size="12" fill="#5F6368" font-family="Segoe UI, Microsoft YaHei, sans-serif">可查看；未点连接 = 不活动。查看不暗断左侧。</text>
+  <rect x="460" y="534" width="380" height="48" rx="3" fill="#F8F9FA" stroke="#DADCE0"/>
+  <text x="470" y="562" font-size="12" fill="#9AA0A6" font-family="Segoe UI, Microsoft YaHei, sans-serif">（空）</text>
+  <rect x="460" y="592" width="72" height="28" rx="4" fill="#DADCE0"/>
+  <text x="478" y="611" font-size="12" fill="#80868B" font-family="Segoe UI, Microsoft YaHei, sans-serif">连接</text>
+  <text x="36" y="664" font-size="11" fill="#B06000" font-family="Segoe UI, Microsoft YaHei, sans-serif">互斥：若此时右点「连接」→ 先确认（默认取消）。确认并成功停用左侧后，才进入右连接中。</text>
+
+  <!-- ========== 3 窄堆叠 ========== -->
+  <text x="900" y="78" font-size="13" font-weight="700" fill="#1967D2" font-family="Segoe UI, Microsoft YaHei, sans-serif">③ 窄堆叠 · 宽 720（&lt;760）· 高保持 280 · 页级单滚</text>
+  <rect x="900" y="86" width="720" height="308" rx="6" fill="#D3D7DE" stroke="#9AA0A6"/>
+  <rect x="900" y="86" width="720" height="28" rx="6" fill="#5F6368"/>
+  <rect x="900" y="100" width="720" height="14" fill="#5F6368"/>
+  <text x="912" y="106" font-size="12" fill="#fff" font-family="Segoe UI, Microsoft YaHei, sans-serif">鹊桥</text>
+  <rect x="900" y="114" width="720" height="280" fill="#F5F6F8"/>
+  <!-- clip-like stacked content taller than 280 -->
+  <rect x="912" y="126" width="680" height="130" rx="4" fill="#fff" stroke="#1A73E8" stroke-width="1.5"/>
+  <text x="924" y="150" font-size="14" font-weight="700" fill="#1A73E8" font-family="Segoe UI, Microsoft YaHei, sans-serif">请人帮我</text>
+  <text x="924" y="172" font-size="12" fill="#5F6368" font-family="Segoe UI, Microsoft YaHei, sans-serif">先开启后，才能复制连接凭证发给来帮你的人。</text>
+  <rect x="924" y="186" width="128" height="28" rx="4" fill="#1A73E8"/>
+  <text x="936" y="205" font-size="12" fill="#fff" font-family="Segoe UI, Microsoft YaHei, sans-serif">开启接受协助</text>
+  <text x="924" y="236" font-size="11" fill="#80868B" font-family="Segoe UI, Microsoft YaHei, sans-serif">默认通过中继连接</text>
+  <rect x="912" y="266" width="680" height="110" rx="4" fill="#fff" stroke="#0F9D58" stroke-width="1.5"/>
+  <text x="924" y="290" font-size="14" font-weight="700" fill="#0F9D58" font-family="Segoe UI, Microsoft YaHei, sans-serif">我帮别人</text>
+  <text x="924" y="312" font-size="12" fill="#5F6368" font-family="Segoe UI, Microsoft YaHei, sans-serif">粘贴连接凭证（下方内容需滚动查看）</text>
+  <rect x="924" y="322" width="200" height="28" rx="3" fill="#F8F9FA" stroke="#DADCE0"/>
+  <!-- scrollbar hint -->
+  <rect x="1600" y="126" width="8" height="250" rx="2" fill="#DADCE0"/>
+  <rect x="1600" y="126" width="8" height="90" rx="2" fill="#9AA0A6"/>
+  <text x="912" y="390" font-size="11" fill="#B06000" font-family="Segoe UI, Microsoft YaHei, sans-serif">同高不足 → 壳 host 单滚；禁止双区再套滚动。用户可手动加高。</text>
+
+  <!-- ========== 互斥切换后示意（小卡，非并行活动） ========== -->
+  <text x="900" y="430" font-size="13" font-weight="700" fill="#1967D2" font-family="Segoe UI, Microsoft YaHei, sans-serif">④ 确认切换成功后（非并行）· 左已停用 + 右连接中</text>
+  <rect x="900" y="438" width="720" height="308" rx="6" fill="#D3D7DE" stroke="#9AA0A6"/>
+  <rect x="900" y="438" width="720" height="28" rx="6" fill="#5F6368"/>
+  <rect x="900" y="452" width="720" height="14" fill="#5F6368"/>
+  <text x="912" y="458" font-size="12" fill="#fff" font-family="Segoe UI, Microsoft YaHei, sans-serif">鹊桥</text>
+  <rect x="900" y="466" width="720" height="280" fill="#F5F6F8"/>
+  <rect x="912" y="478" width="340" height="166" rx="4" fill="#fff" stroke="#9AA0A6" stroke-width="1.5"/>
+  <text x="924" y="502" font-size="14" font-weight="700" fill="#80868B" font-family="Segoe UI, Microsoft YaHei, sans-serif">请人帮我 · 已停用</text>
+  <text x="924" y="524" font-size="12" fill="#5F6368" font-family="Segoe UI, Microsoft YaHei, sans-serif">无活凭证 · 无监听</text>
+  <rect x="924" y="540" width="128" height="28" rx="4" fill="#1A73E8"/>
+  <text x="936" y="559" font-size="12" fill="#fff" font-family="Segoe UI, Microsoft YaHei, sans-serif">开启接受协助</text>
+  <text x="924" y="590" font-size="11" fill="#B06000" font-family="Segoe UI, Microsoft YaHei, sans-serif">停用失败则不会进入右侧连接</text>
+  <rect x="1264" y="478" width="340" height="166" rx="4" fill="#fff" stroke="#0F9D58" stroke-width="1.5"/>
+  <text x="1276" y="502" font-size="14" font-weight="700" fill="#0F9D58" font-family="Segoe UI, Microsoft YaHei, sans-serif">我帮别人 · 连接中</text>
+  <rect x="1276" y="514" width="312" height="40" rx="3" fill="#E6F4EA" stroke="#A8DAB5"/>
+  <text x="1286" y="538" font-size="12" fill="#0D652D" font-family="Segoe UI, Microsoft YaHei, sans-serif">示意凭证已粘贴（非真实）</text>
+  <rect x="1276" y="568" width="96" height="28" rx="4" fill="#0F9D58"/>
+  <text x="1286" y="587" font-size="12" fill="#fff" font-family="Segoe UI, Microsoft YaHei, sans-serif">正在连接…</text>
+  <rect x="1382" y="568" width="64" height="28" rx="4" fill="#fff" stroke="#5F6368"/>
+  <text x="1396" y="587" font-size="12" fill="#3C4043" font-family="Segoe UI, Microsoft YaHei, sans-serif">取消</text>
+  <text x="1276" y="620" font-size="11" fill="#80868B" font-family="Segoe UI, Microsoft YaHei, sans-serif">client 可能 null · 取消从尝试起生效 · Disable≠取消</text>
+  <text x="912" y="664" font-size="11" fill="#B06000" font-family="Segoe UI, Microsoft YaHei, sans-serif">Connected 会话态另用会话布局（外框同尺寸）；本图不画假会话占位。</text>
+
+  <!-- footer -->
+  <text x="24" y="780" font-size="12" font-weight="700" fill="#202124" font-family="Segoe UI, Microsoft YaHei, sans-serif">共用约束</text>
+  <text x="24" y="802" font-size="12" fill="#3C4043" font-family="Segoe UI, Microsoft YaHei, sans-serif">• 完整 pair（含 fp）显式点击才联网 · 空禁连接 · 本地格式/缺 fp 先于网络</text>
+  <text x="24" y="822" font-size="12" fill="#3C4043" font-family="Segoe UI, Microsoft YaHei, sans-serif">• 确认框默认取消 · Esc 取消 · Enter 不结束 · 结束只沿现行有效性（不承诺永久作废）</text>
+  <text x="24" y="842" font-size="12" fill="#3C4043" font-family="Segoe UI, Microsoft YaHei, sans-serif">• 固定外框验收：ShowHome / Accept / Control / Helper 自动改 ClientSize 均不得绕过</text>
+  <text x="24" y="862" font-size="12" fill="#3C4043" font-family="Segoe UI, Microsoft YaHei, sans-serif">• 复制三秒反馈非本项必做 · 标题栏/任务栏图标一致性须证据 · 不扩安装器</text>
+  <text x="24" y="890" font-size="11" fill="#80868B" font-family="Segoe UI, Microsoft YaHei, sans-serif">字体尺度统一 · 设计示意 · 详见同目录 details.md</text>
+</svg>
