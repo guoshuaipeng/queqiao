@@ -330,3 +330,15 @@ elay/internal/relay/audit_test.go
   - 支持集建议（待产品确认清单）：至少 `chinesesimplified` + 保留 `english`；自动匹配失败时如何表现 → **只列选项/风险，不擅自定回退**。
 - **未做**：改代码、改 iss、用户机 Setup、push、动 R049/R050。
 
+
+### 2026-11-06 14:18 Asia/Shanghai · PV-004 范围产品拍板（等 docs 指针再实现）
+
+- **支持集**：本轮 **简体中文 + 英文**；按系统显示语言在已支持集内自动匹配；**不弹**选语言框。
+- **未支持语种**：保留 **English 默认作兼容保底**（产品兼容范围决定，不再问用户回退）。
+- **宣称边界**：不宣称全语种跟随。
+- **中文资源**：只从 Inno 官方可信译文源取，注明出处/版本/许可；不可用则报阻塞。
+  - 官方目录页：https://jrsoftware.org/files/istrans/（Chinese Simplified · Maintainer Zhenghan Yang · 标注 6.5.0+ Official）
+  - 本机 Inno（此前 ISCC 6.6.1）`Languages` **仍无** `ChineseSimplified.isl` → 实现前须从上述官方源取入仓库或补齐本机，并记许可/版本；取不到则 **阻塞**。
+- **同语种**：CustomMessages + 安装前说明须与向导同语种；禁止框架英 + 自定义中混搭。
+- **红线**：不装用户机；未实测不得验收；等产品 docs 指针后再让客户端改 iss。已转发客户端。
+
