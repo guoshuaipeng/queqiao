@@ -177,6 +177,7 @@ mod tests {
     fn default_ask_confirms_every_write() {
         assert!(needs_local_confirm(Trust::Ask, Tool::RunCommand, "echo hi"));
         assert!(!needs_local_confirm(Trust::Ask, Tool::ListProcesses, ""));
+        assert!(!needs_local_confirm(Trust::Ask, Tool::ListDir, "C:\\Windows"));
     }
 
     #[test]

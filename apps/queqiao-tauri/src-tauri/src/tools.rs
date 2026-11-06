@@ -48,16 +48,35 @@ fn list_processes() -> Result<String, String> {
         return Err("没能查看正在运行的程序。".into());
     }
     let text = String::from_utf8_lossy(&out.stdout);
-    let mut lines = Vec::new();
-    for line in text.lines().take(200) {
-        if line.trim().is_empty() {
-            continue;
-        }
-        lines.push(line.trim().to_string());
+    format_process_names(&text)
+}
+
+fn process_name(line: &str) -> Option<String> {
+    let line = line.trim();
+    let rest = line.strip_prefix('"')?;
+    let end = rest.find('"')?;
+    let name = rest[..end].trim();
+    if name.is_empty() {
+        None
+    } else {
+        Some(name.to_string())
     }
-    if lines.is_empty() {
+}
+
+fn format_process_names(csv: &str) -> Result<String, String> {
+    let mut counts = std::collections::BTreeMap::<String, usize>::new();
+    for line in csv.lines().take(400) {
+        if let Some(name) = process_name(line) {
+            *counts.entry(name).or_insert(0) += 1;
+        }
+    }
+    if counts.is_empty() {
         return Err("没有读到正在运行的程序。".into());
     }
+    let lines: Vec<String> = counts
+        .into_iter()
+        .map(|(name, n)| if n == 1 { name } else { format!("{name}（{n}）") })
+        .collect();
     Ok(lines.join("\n"))
 }
 
@@ -184,7 +203,17 @@ fn is_delete(command: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::format_command_result;
+    use super::{format_command_result, format_process_names};
+
+    #[test]
+    fn process_list_uses_names_not_the_raw_table() {
+        let csv = "\"svchost.exe\",\"100\",\"Services\",\"0\",\"1 K\"\n\"svchost.exe\",\"200\",\"Services\",\"0\",\"2 K\"\n\"notepad.exe\",\"300\",\"Console\",\"1\",\"3 K\"\n";
+        let text = format_process_names(csv).unwrap();
+        assert!(text.contains("svchost.exe（2）"));
+        assert!(text.contains("notepad.exe"));
+        assert!(!text.contains("Services"));
+        assert!(!text.contains("\",\""));
+    }
 
     #[test]
     fn command_output_comes_before_the_exit_line() {
