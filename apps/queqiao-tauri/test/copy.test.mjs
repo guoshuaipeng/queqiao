@@ -217,6 +217,12 @@ test("the result wheel does not scroll the page", () => {
   assert.match(css, /#result\s*\{[^}]*overscroll-behavior:\s*contain/);
 });
 
+test("horizontal bars sit under the text rows", () => {
+  assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*height:\s*12px/);
+  assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px \+ 16px/);
+  assert.match(css, /#past\s*\{[^}]*4 \* 20px \+ 2px \+ 16px/);
+});
+
 test("a long result line stays clear of its scrollbar", () => {
   assert.match(css, /#result\s*\{[^}]*scrollbar-gutter:\s*stable/);
   assert.match(css, /#result\s*\{[^}]*padding:\s*0 20px 0 12px/);

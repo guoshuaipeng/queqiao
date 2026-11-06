@@ -189,6 +189,8 @@
 | 本轮完成 | 横滑时不要把整页左右带动 | 只动结果框 | 结果横滑了 600，整页和文档的横向位置仍是 0 | `acceptance/desktop-slide-after.png` |
 | 本轮完成 | 之前的结果里的长行也能横着滑到行尾 | 旧结果的行尾也能看见 | 滑之前行尾在框外；滑到头能看见 `queqiao-wide-QUEEND`，整页没有左右挪动 | 本机 `127.0.0.1:17991`；`acceptance/desktop-past-slide-before.png`、`desktop-past-slide-after.png` |
 | 本轮完成 | 结果框出现横滑条后，整页不要再多出竖向滚动条 | 只有结果框自己的横滑条 | 长行出现后协助页高度不超出窗口，滚动是 hidden | `acceptance/desktop-pagebar.png` |
+| 本轮完成 | 之前的结果出现横滑条时，两行文字仍完整 | 横滑条不切字 | 两行都完整，长行的字到条顶有 10px | 本机 `127.0.0.1:17991`；`acceptance/desktop-hbar-past.png` |
+| 本轮完成 | 当前结果框的横滑条不要盖住最下面一行 | 横滑条在字下面 | `exit=0` 的字到条顶有 6px，三行都完整 | `acceptance/desktop-hbar-result.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
