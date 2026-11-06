@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>需要帮忙？留下联系方式 · 鹊桥</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="/"><strong>鹊桥</strong><span>远程协助 · 智能体</span></a>
+      <nav>
+        <a href="/">介绍</a>
+        <a href="/ask">留下联系方式</a>
+      </nav>
+    </header>
+
+    <section class="hero" style="padding-bottom:12px">
+      <h1>需要帮忙？留下联系方式</h1>
+      <p class="lead">不用注册。我们会通过你留下的方式回你。</p>
+    </section>
+
+    <form class="ask" id="ask-form" action="/api/ask" method="post" novalidate>
+      <div class="alert err" id="err"></div>
+      <label>怎么称呼你
+        <input name="name" required maxlength="40" placeholder="例如：小王" autocomplete="name">
+      </label>
+      <p class="hint">联系方式：微信、电话或邮箱，方便我们回你（至少填一项）</p>
+      <div class="row">
+        <label>微信
+          <input name="wechat" maxlength="64" placeholder="微信号" autocomplete="off">
+        </label>
+        <label>手机
+          <input name="phone" maxlength="32" placeholder="手机号" inputmode="tel" autocomplete="tel">
+        </label>
+      </div>
+      <label>邮箱
+        <input name="email" type="email" maxlength="120" placeholder="name@example.com" autocomplete="email">
+      </label>
+      <label>这台电脑是
+        <select name="os" required>
+          <option value="Windows">Windows</option>
+          <option value="macOS">macOS</option>
+          <option value="Linux">Linux</option>
+          <option value="不确定">不确定</option>
+        </select>
+      </label>
+      <label>需要什么帮助
+        <textarea name="problem" required maxlength="2000" placeholder="简单说说遇到什么问题"></textarea>
+      </label>
+      <button class="btn primary" type="submit">发给我们</button>
+    </form>
+  </div>
+  <footer>
+    <div class="wrap">不用注册，也不用记住单号。</div>
+  </footer>
+  <script>
+    const form = document.getElementById("ask-form");
+    const err = document.getElementById("err");
+    form.addEventListener("submit", function (e) {
+      err.classList.remove("show");
+      const name = form.name.value.trim();
+      const wechat = form.wechat.value.trim();
+      const phone = form.phone.value.trim();
+      const email = form.email.value.trim();
+      const problem = form.problem.value.trim();
+      let msg = "";
+      if (!name || !problem) msg = "请填完后再发送。";
+      else if (!wechat && !phone && !email) msg = "请留下能联系到你的微信、电话或邮箱。";
+      if (msg) {
+        e.preventDefault();
+        err.textContent = msg;
+        err.classList.add("show");
+      }
+    });
+  </script>
+</body>
+</html>

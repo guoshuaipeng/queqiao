@@ -1,3 +1,5 @@
+> **迁移正式 docs**：`docs/tauri-migration/`（`feat/tauri-client-migration`；迭代回报 tip `f4b6765` / 基点 `7d7178c`；**未独立核实**）。主树 `docs/tauri-migration-20261106/` 仅为镜像。
+
 # docs/ux-entry-review-20261106
 
 入口信息架构 **A–E 评审收口**（2026-11-06 Asia/Shanghai）。

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>鹊桥客户端 · 效果图（对应 CLIENT-UI.md）</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-d:#1d4ed8; --green:#16a34a; --orange:#ea580c;
+    --red:#dc2626; --ink:#0f172a; --sub:#64748b; --line:#e2e8f0; --bg:#f8fafc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px;background:#e5e7eb;font-family:"Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;color:var(--ink)}
+  h1{font-size:22px;margin:0 0 4px}
+  .lead{color:var(--sub);margin:0 0 28px;font-size:14px}
+  .grid{display:flex;flex-wrap:wrap;gap:36px}
+  .shot{display:flex;flex-direction:column;gap:8px}
+  .cap{font-size:14px;font-weight:600}
+  .cap span{font-weight:400;color:var(--sub);margin-left:6px}
+
+  /* 窗口 */
+  .win{width:840px;border-radius:10px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.18);background:#fff;position:relative}
+  .titlebar{height:32px;background:#f1f5f9;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--sub);border-bottom:1px solid var(--line)}
+  .titlebar .dots{margin-left:auto;letter-spacing:14px}
+  .client{height:480px;display:flex;flex-direction:column;position:relative}
+  .top{display:flex;align-items:center;padding:14px 24px 0}
+  .logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700}
+  .logo i{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#06b6d4);display:inline-block}
+  .gear{margin-left:auto;font-size:14px;color:var(--sub);cursor:pointer}
+  .tagline{padding:4px 24px 0;color:var(--sub);font-size:14px}
+
+  /* 首页两区 */
+  .zones{display:flex;gap:16px;padding:16px 24px 0;flex:1;min-height:0}
+  .zone{flex:1;border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px}
+  .zone h2{font-size:18px;margin:0}
+  .zone p{margin:0;color:var(--sub);font-size:14px}
+  .zone.active{border-color:#93c5fd;box-shadow:0 0 0 3px #dbeafe}
+  .zone.dim{opacity:.55}
+  .foot{padding:14px 24px;color:var(--sub);font-size:13px}
+
+  .btn{height:38px;border-radius:8px;border:1px solid var(--line);background:#fff;padding:0 16px;font-size:14px;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+  .btn.primary:disabled{background:#cbd5e1;border-color:#cbd5e1}
+  .btn.danger{color:var(--red);border-color:#fecaca}
+  .btn.block{width:100%}
+  .row{display:flex;gap:10px;align-items:center}
+  .link{color:var(--blue);font-size:13px;cursor:pointer}
+  .hint{font-size:13px;color:var(--sub)}
+  .ok{font-size:13px;color:var(--green)}
+
+  .input{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 12px;display:flex;align-items:center;font-size:14px;color:#94a3b8;position:relative}
+  .input.filled{color:var(--ink);font-family:Consolas,monospace;font-size:12px;overflow:hidden;white-space:nowrap}
+  .input .paste{position:absolute;right:10px;color:var(--blue);font-size:13px;font-family:inherit}
+
+  .code{font-family:Consolas,"Cascadia Mono",monospace;font-size:30px;font-weight:700;letter-spacing:3px}
+  .pwd{font-family:Consolas,monospace;font-size:16px;color:var(--sub)}
+  .status{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green)}
+  .dot.wait{background:#f59e0b;animation:pulse 1.4s infinite}
+  .dot.gray{background:#94a3b8}
+  @keyframes pulse{50%{opacity:.3}}
+  .spin{width:14px;height:14px;border:2px solid #bfdbfe;border-top-color:var(--blue);border-radius:50%;animation:sp 1s linear infinite;display:inline-block}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* 会话页 */
+  .sbar{padding:10px 24px;border-bottom:1px solid var(--line)}
+  .sbar .status{font-size:15px}
+  .trust{margin:8px 24px 0;padding:8px 12px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:13px;display:flex;align-items:center}
+  .trust .btn{height:28px;margin-left:auto;font-size:12px;border-color:#fdba74;color:#9a3412}
+  .scroll{flex:1;overflow:hidden;padding:12px 24px;display:flex;flex-direction:column;gap:10px}
+  .endbar{height:64px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:flex-end;padding:0 24px;gap:12px;background:#fff}
+  .note{background:#f1f5f9;border-radius:8px;padding:10px 12px;font-size:13px}
+  .sec{font-size:14px;font-weight:600;margin-top:2px}
+  .log{font-size:13px;display:flex;flex-direction:column;gap:6px}
+  .log div{display:flex;gap:12px}
+  .log .t{color:var(--sub);font-family:Consolas,monospace;width:44px}
+  .log .y{color:var(--green)} .log .n{color:var(--red)}
+  .ops{display:flex;flex-wrap:wrap;gap:8px}
+  .ops .btn{height:34px}
+  .ops .btn.sel{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+  .result{border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:Consolas,monospace;font-size:12px;line-height:1.6;color:#334155;background:#fbfdff}
+
+  /* 弹窗 */
+  .mask{position:absolute;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center}
+  .dlg{width:420px;background:#fff;border-radius:12px;padding:22px 24px;box-shadow:0 20px 40px rgba(0,0,0,.25)}
+  .dlg h3{margin:0 0 10px;font-size:17px}
+  .dlg p{margin:0 0 18px;font-size:14px;line-height:1.7;color:#334155}
+  .dlg .row{justify-content:flex-end}
+  .focus{outline:2px solid #93c5fd;outline-offset:2px}
+
+  /* 设置 */
+  .set{padding:6px 24px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+  .grp h4{margin:0 0 8px;font-size:15px}
+  .radio{display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-size:14px}
+  .radio b{font-weight:600;width:72px}
+  .radio .r{width:16px;height:16px;border-radius:50%;border:2px solid #94a3b8;margin-top:2px;flex:none}
+  .radio .r.on{border-color:var(--blue);box-shadow:inset 0 0 0 3px #fff;background:var(--blue)}
+  .radio span{color:var(--sub)}
+  .back{font-size:14px;color:var(--blue)}
+  .steps{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .step{display:flex;align-items:center;gap:10px;font-size:14px;color:#334155}
+  .step b{width:22px;height:22px;border-radius:50%;background:#eff6ff;color:var(--blue);font-size:12px;display:flex;align-items:center;justify-content:center;flex:none}
+  pre.result{margin:0;white-space:pre}
+</style>
+</head>
+<body>
+<h1>鹊桥客户端 · 效果图</h1>
+<p class="lead">对应 docs/CLIENT-UI.md 设计稿 v1（待用户确认）。窗口客户区均为 840×480；凭证为演示占位，非真实连接凭证。</p>
+
+<div class="grid">
+
+<!-- 1 首页空闲 -->
+<div class="shot">
+  <div class="cap">① 首页 · 空闲<span>打开就能看到两件事，不需要先选模式</span></div>
+  <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+  <div class="client">
+    <div class="top"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="tagline">亲友之间，发凭证或粘贴连接。</div>
+    <div class="zones">
+      <div class="zone">
+        <h2>请人帮我</h2>
+        <p>让你信任的人帮你查电脑。对方要改动时会先问你。</p>
+        <div class="steps">
+          <div class="step"><b>1</b>点「开启接受协助」</div>
+          <div class="step"><b>2</b>复制连接凭证，发给帮你的人</div>
+          <div class="step"><b>3</b>对方连上时，点「允许协助」</div>
+        </div>
+        <div style="flex:1"></div>
+        <button class="btn primary block">开启接受协助</button>
+      </div>
+      <div class="zone">
+        <h2>我帮别人</h2>
+        <p>粘贴对方发来的连接凭证，点连接。</p>
+        <div class="input">粘贴连接凭证<span class="paste">粘贴</span></div>
+        <div class="steps">
+          <div class="step"><b>1</b>让对方发来连接凭证</div>
+          <div class="step"><b>2</b>粘贴到上面，点「连接」</div>
+        </div>
+        <div style="flex:1"></div>
+        <button class="btn primary block" disabled>连接</button>
+        <div class="link">对方还没装鹊桥？复制安装说明</div>
+      </div>
+    </div>
+    <div class="foot">🔒 只把连接凭证私下发给你信任的人。</div>
+  </div></div>
+</div>
+
+<!-- 2 左区等待 -->
+<div class="shot">
+  <div class="cap">② 请人帮我 · 等待对方连接<span>一个主按钮：复制连接凭证</span></div>
+  <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+  <div class="client">
+    <div class="top"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="tagline">亲友之间，发凭证或粘贴连接。</div>
+    <div class="zones">
+      <div class="zone active">
+        <div class="status"><span class="dot wait"></span>等待对方连接</div>
+        <div><div class="hint">会话码</div><div class="code">482 913 075</div></div>
+        <div class="row"><span class="hint">密码</span><span class="pwd">••••••••</span><span class="link">👁 显示</span></div>
+        <div class="note" style="margin-top:4px">对方连上时会先弹窗问你，你点「允许协助」才算连上。</div>
+        <div style="flex:1"></div>
+        <div class="row"><button class="btn primary" style="flex:1">复制连接凭证</button><button class="btn">停止接受</button></div>
+        <div class="ok">✔ 已复制，请完整发给对方。</div>
+      </div>
+      <div class="zone dim">
+        <h2>我帮别人</h2>
+        <p>粘贴对方发来的连接凭证，点连接。</p>
+        <div class="input">粘贴连接凭证<span class="paste">粘贴</span></div>
+        <div style="flex:1"></div>
+        <button class="btn primary block" disabled>连接</button>
+        <div class="hint">点连接会先停止接受协助（会先问你）。</div>
+      </div>
+    </div>
+    <div class="foot">🔒 只把连接凭证私下发给你信任的人。</div>
+  </div></div>
+</div>
+
+<!-- 3 右区连接中 -->
+<div class="shot">
+  <div class="cap">③ 我帮别人 · 等对方允许<span>可随时取消，迟到结果会被丢弃</span></div>
+  <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+  <div class="client">
+    <div class="top"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="tagline">亲友之间，发凭证或粘贴连接。</div>
+    <div class="zones">
+      <div class="zone dim">
+        <h2>请人帮我</h2>
+        <p>让你信任的人帮你查电脑。对方要改动时会先问你。</p>
+        <div style="flex:1"></div>
+        <button class="btn primary block" disabled>开启接受协助</button>
+        <div class="hint">开启后，把连接凭证发给来帮你的人。</div>
+      </div>
+      <div class="zone active">
+        <h2>我帮别人</h2>
+        <div class="input filled">remoteassist:pair?code=482913075&amp;…（演示占位）</div>
+        <div class="status" style="font-weight:400"><span class="spin"></span>已找到对方，等对方点「允许协助」…</div>
+        <div style="flex:1"></div>
+        <button class="btn block">取消</button>
+      </div>
+    </div>
+    <div class="foot">🔒 只把连接凭证私下发给你信任的人。</div>
+  </div></div>
+</div>
+
+<!-- 4 配对确认 -->
+<div class="shot">
+  <div class="cap">④ 被协助端 · 配对确认弹窗<span>默认焦点在「拒绝」，倒计时到 0 自动拒绝</span></div>
+  <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+  <div class="client">
+    <div class="top"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="tagline">亲友之间，发凭证或粘贴连接。</div>
+    <div class="zones">
+      <div class="zone active"><div class="status"><span class="dot wait"></span>等待对方连接</div></div>
+      <div class="zone dim"><h2>我帮别人</h2></div>
+    </div>
+    <div class="mask"><div class="dlg">
+      <h3>有人想协助这台电脑</h3>
+      <p>对方可以查看进程、日志和文件，不能直接改你的电脑。真正要改动时，还会再问你。</p>
+      <div class="row"><button class="btn focus">拒绝</button><button class="btn primary">允许协助（52）</button></div>
+    </div></div>
+  </div></div>
+</div>
+
+<!-- 5 接受协助会话 -->
+<div class="shot">
+  <div class="cap">⑤ 接受协助会话页<span>完全信任时出现橙色提示条；记录实时显示</span></div>
+  <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+  <div class="client">
+    <div class="top" style="padding-bottom:10px"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="sbar"><div class="status"><span class="dot"></span>正在接受协助 · 已连接</div></div>
+    <div class="trust">⚠ 当前是「完全信任」：这次协助的改动不会再问你。<button class="btn">结束完全信任</button></div>
+    <div class="scroll">
+      <div class="note">对方已连接。请核对对方身份，不要随便信任陌生人。</div>
+      <div class="sec">对方做过的事</div>
+      <div class="log">
+        <div><span class="t">16:32</span>查看正在运行的程序</div>
+        <div><span class="t">16:33</span>查看日志　C:\ProgramData\App\app.log</div>
+        <div><span class="t">16:35</span><span class="y">✔ 已允许</span>重启服务 Spooler</div>
+        <div><span class="t">16:36</span><span class="n">✖ 已拒绝</span>删除文件 C:\temp\a.txt（未做任何改动）</div>
+      </div>
+    </div>
+    <div class="endbar"><button class="btn danger">结束本次协助</button></div>
+  </div></div>
+</div>
+
+<!-- 6 协助会话 -->
+<div class="shot">
+  <div class="cap">⑥ 协助会话页<span>五个常用操作 + 结果，结束按钮固定在底部</span></div>
+  <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+  <div class="client">
+    <div class="top" style="padding-bottom:10px"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="sbar"><div class="status"><span class="dot"></span>正在协助对方 · 已连接</div></div>
+    <div class="scroll">
+      <div class="sec">常用操作</div>
+      <div class="ops">
+        <button class="btn sel">查看正在运行的程序</button><button class="btn">查看文件夹</button>
+        <button class="btn">查看日志</button><button class="btn">查看文件</button><button class="btn">提议一项改动</button>
+      </div>
+      <div class="row"><span class="sec">结果</span><span class="link" style="margin-left:auto">复制结果</span></div>
+<pre class="result">程序名            PID      内存
+chrome.exe      10244    412 MB
+explorer.exe     6120     96 MB
+spoolsv.exe      2876     18 MB
+…共 128 个</pre>
+      <div class="hint">▸ 之前的结果（2）</div>
+    </div>
+    <div class="endbar"><button class="btn danger">结束本次协助</button></div>
+  </div></div>
+</div>
+
+<!-- 7 提议改动 + 确认 -->
+<div class="shot">
+  <div class="cap">⑦ 被协助端 · 改动确认弹窗<span>白话在前，命令原文折叠</span></div>
+  <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+  <div class="client">
+    <div class="top" style="padding-bottom:10px"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="sbar"><div class="status"><span class="dot"></span>正在接受协助 · 已连接</div></div>
+    <div class="scroll"><div class="note">对方已连接。请核对对方身份，不要随便信任陌生人。</div></div>
+    <div class="endbar"><button class="btn danger">结束本次协助</button></div>
+    <div class="mask"><div class="dlg">
+      <h3>对方想在这台电脑执行操作</h3>
+      <p><b>重启打印服务（Spooler）</b><br><span class="link">▸ 查看详细</span></p>
+      <div class="row"><button class="btn focus">拒绝</button><button class="btn primary">允许</button></div>
+    </div></div>
+  </div></div>
+</div>
+
+<!-- 8 设置 -->
+<div class="shot">
+  <div class="cap">⑧ 设置页（同窗）<span>只有四组</span></div>
+  <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+  <div class="client">
+    <div class="top" style="padding-bottom:6px"><span class="back">← 返回</span><span style="margin-left:14px;font-size:18px;font-weight:700">设置</span></div>
+    <div class="set">
+      <div class="grp"><h4>对方要改这台电脑时</h4>
+        <div class="radio"><i class="r on"></i><b>每次询问</b><span>对方改动前都会问你（推荐）</span></div>
+        <div class="radio"><i class="r"></i><b>宽松</b><span>只有高风险改动才问你，其余会记下但不再打扰</span></div>
+        <div class="radio"><i class="r"></i><b>完全信任</b><span>仅这次不再询问，但会记下</span></div>
+        <div class="hint">高风险包括删除文件、关机、改权限等。</div>
+      </div>
+      <div class="grp"><h4>连接服务器</h4>
+        <div class="hint" style="margin-bottom:6px">一般不用改。只有对方或管理员告诉你换服务器时才改这里。</div>
+        <div class="row"><div class="input filled" style="width:300px">121.196.45.81:17891</div><button class="btn">保存</button><span class="link">恢复默认</span></div>
+      </div>
+      <div class="grp"><h4>给 AI 助手用（MCP）</h4>
+        <div class="row"><button class="btn">复制 MCP 配置</button><button class="btn">复制使用说明</button><span class="hint">关于 · 版本 0.2.0</span></div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+</div>
+<script>
+  // ?only=N 只显示第 N 张，便于逐张导出截图
+  var n = new URLSearchParams(location.search).get('only');
+  if (n) {
+    document.querySelectorAll('h1,.lead').forEach(function(e){ e.style.display='none'; });
+    document.querySelectorAll('.shot').forEach(function(s, i){ if (i + 1 != n) s.style.display='none'; });
+    document.body.style.padding = '16px';
+  }
+</script>
+</body>
+</html>

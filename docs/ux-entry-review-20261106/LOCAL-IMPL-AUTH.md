@@ -1,9 +1,13 @@
-# 入口方案 A · 本地实现授权（方向）
+# 入口方案 A · 本地实现授权（方向）· **旧 .NET 执行已暂停**
 
-> **用途**：给迭代 / 客户端核对「用户选 A + 产品本地推进授权」。  
-> **时间**：2026-11-06 Asia/Shanghai  
-> **对照**：[DECISION.md](DECISION.md) · [ia-alternatives.md](ia-alternatives.md)  
-> **仍禁止**：push、上线、公网换包、装用户现用环境；未实测不 PASS；R050 仍 blocked。
+> ## ⛔ 旧 .NET / net48 执行已于 2026-11-06 **15:05** 暂停；**15:09** 起 Tauri 迁移另案授权
+> 迭代回报（**未独立核实**）：分支 `feat/tauri-client-migration` tip `f4b6765` 基点 `7d7178c`；worktree `E:\IdeaProjects\remote-assist-wt-tauri`；正式 docs=`docs/tauri-migration/`；主树 `docs/tauri-migration-20261106/` 仅为镜像（MIRROR.md）。
+>
+> 本文件旧「A 方向 net48 本地实现授权」**对 net48 编码不再有效**。  
+> **15:09 用户 t118u**：主仓专用分支 **Tauri 迁移**开发获准（产品已立项）——详见分支正式 `docs/tauri-migration/IMPLEMENTATION-AUTH.md`（镜像目录见 `docs/tauri-migration-20261106/MIRROR.md`）。  
+> **不得**写成所有客户端永远禁止或仅文档评估；亦**不得**用本文件复活 net48 编码。  
+> A 方案文档保留为产品设计 / 跨技术评估（含状态机意图可迁入新栈）；**无真实 UI PASS**；R050 blocked。  
+> 官网独立：`docs/website-refresh-20261106/`。
 
 ---
 

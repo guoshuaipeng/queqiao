@@ -1,5 +1,19 @@
 # 入口方案收口 · 选定 A（一屏双区）
 
+> ## ⛔ 旧 .NET / net48 客户端实现已于 2026-11-06 **15:05** Asia/Shanghai 被用户暂停
+>
+> **15:05 指令（仍有效）**：用户 **t113u**「官网可以去做. 客户端的开发先停了吧. 产品设计不要中断. 我打算换技术方案. 已经和架构沟通过了」；**t114u**「访问做好之后就发布到线上吧」（官网验收后发**现有站点**公众页，非整仓未发功能）。
+>
+> **15:09 补充授权（用户 t118u · 产品已立项）**：**主仓专用分支 Tauri 迁移开发获准**（正式 `docs/tauri-migration/` on `feat/tauri-client-migration`；主树带日期目录为镜像）。  
+> 迭代回报（**未独立核实**）：分支 `feat/tauri-client-migration` tip `f4b6765` 基点 `7d7178c`；worktree `E:\IdeaProjects\remote-assist-wt-tauri`；正式 docs=`docs/tauri-migration/`；主树 `docs/tauri-migration-20261106/` 仅为镜像（MIRROR.md）。
+> - **旧 .NET / net48 开发仍冻结**——不得再凭本目录旧 A 本地授权开 net48 编码/出包/安装/运行测试。  
+> - **≠**「所有客户端永远禁止 / 仅文档评估」：新产品栈（Tauri）按迁移授权推进。  
+> - 旧 .NET 代码在迁移完成并验收前**保留**；「做完之后可全部删除」为**条件授权**，未验收不得删。  
+> - 官网独立、不与客户端混发；**R050 与凭证安全门槛不解除**。  
+> 官网：`docs/website-refresh-20261106/` · Tauri 正式：`docs/tauri-migration/`（分支）；镜像：`docs/tauri-migration-20261106/MIRROR.md`。
+
+---
+
 > **产品收口** · 2026-11-06 Asia/Shanghai  
 > **选定**：方案 **A · 一屏双区**  
 > **状态**：方向已收口；**本地实现授权见 [LOCAL-IMPL-AUTH.md](LOCAL-IMPL-AUTH.md)**。体验须另写 **A 细则**（全员复核 + 产品收口）后方可按细则正式编码；本文件**不**替代细则，**不**把建议像素写成已验收。  

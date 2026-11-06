@@ -76,7 +76,7 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 - **产品判定（2026-11-06）**：用户反馈主界面仍大量留白（截图）；**不可视为验收完成**。紧凑方案：**用户已确认 + 产品已授权本地紧凑改版**（[docs/ux-home-compact-20261106/LOCAL-IMPL-AUTH.md](ux-home-compact-20261106/LOCAL-IMPL-AUTH.md)）；**不扩大 R049**。见 docs/ux-user-confirmations-2026-11-06.md §7。
 - **返工说明**：首页紧凑 `aa72bd8` **不记观感 PASS**。用户确认：**壳固定同尺寸、切页不改窗**；暂停「首页小窗/业务大窗」；等体验草案确认 + 产品本地授权后再动尺寸。随后用户要求体验**大胆重提**出口/入口方案（不限首页跳转）；首页紧凑观感仍不 PASS；壳尺寸/入口改版须**新确认 + 本地授权**（详见补充约定 §14 / 确认台账 §9）。协助端既有改动仍待真 UI 验收。
 - **联合包**：与 PV-003/004 联合验收须隔离 publish + 产物 hash；旧 Setup 不可替代。
-- **入口方案 A（2026-11-06）**：全员评审后产品收口 **A（一屏双区）**；用户本人确认选 A 并授权细化→迭代。本地方向授权见 [docs/ux-entry-review-20261106/LOCAL-IMPL-AUTH.md](ux-entry-review-20261106/LOCAL-IMPL-AUTH.md)；收口见 [DECISION.md](ux-entry-review-20261106/DECISION.md)。**体验另写 A 细则**（全员复核）后再按收口范围正式编码；建议像素≠已验收。首页紧凑观感仍不 PASS；本条限 PV-002 入口+固定壳适配，**不**全面解除 R049。
+- **入口方案 A（2026-11-06）**：全员评审后产品收口 **A（一屏双区）**；用户本人确认选 A 并授权细化→迭代。本地方向授权见 [docs/ux-entry-review-20261106/LOCAL-IMPL-AUTH.md](ux-entry-review-20261106/LOCAL-IMPL-AUTH.md)；收口见 [DECISION.md](ux-entry-review-20261106/DECISION.md)。**体验另写 A 细则**（全员复核）后再按收口范围正式编码；建议像素≠已验收。首页紧凑观感仍不 PASS；本条限 PV-002 入口+固定壳适配，**不**全面解除 R049。 **（15:05 net48 暂停；15:09 Tauri 另案授权，见 tauri-migration / website-refresh）**
 
 ### PV-003 · 打包下载的安装包缺少图标
 
@@ -137,6 +137,12 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 
 15. **入口方案 A（2026-11-06）**：产品收口选定 A；用户 t76u 本人「按照A…细化A…迭代」；本地方向授权 `docs/ux-entry-review-20261106/`；体验另写细则全员复核后正式编码；≠ push/R049 全面解除/R050。
+
+
+16. **客户端暂停 / 官网改版（2026-11-06 15:05）**：用户 t113u 暂停**旧客户端**开发、产品设计继续、官网可做；t114u 官网访问做好后可发**现有站点**公众页（非整仓未发功能）。入口 A 的 net48 本地授权**暂停执行**。官网见 `docs/website-refresh-20261106/`。
+17. **官网静态改版工作流（未占 PV 编号）**：独立工作流；执笔服务端；仅 `site/index.html`+`styles.css`；三下载 href 原样保留；有条件发布门禁见 `website-refresh-20261106/IMPLEMENTATION-RELEASE-AUTH.md`。
+
+18. **Tauri 迁移立项（2026-11-06 15:09 · t118u）**：主仓**专用分支** Tauri 迁移开发获准；旧 .NET 开发仍冻结、验收前保留；「做完后可删旧.NET」为条件授权、未验收不得删；无客户端生产发布授权；官网授权不扩至客户端；R050/凭证安全不解除。正式权威 `docs/tauri-migration/`（`feat/tauri-client-migration`）；迭代回报 tip `f4b6765` / 基点 `7d7178c` / worktree `E:\IdeaProjects\remote-assist-wt-tauri`（**未独立核实**）；主树 `docs/tauri-migration-20261106/` 为镜像见 MIRROR.md。
 
 
 ## 机器人记录（请勿当需求原文改；可浏览）
