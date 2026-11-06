@@ -569,6 +569,9 @@ fn helper_jobs(tls: &mut dyn StreamRw, token: &str, jobs: &Receiver<Job>, hooks:
             let result = frame.payload.get("result").and_then(|v| v.as_str()).unwrap_or("").to_string();
             hooks.emit(Ev::Result(result));
             hooks.emit(Ev::Status(copy::DONE.into()));
+            if !job.tool.is_read() {
+                hooks.emit(Ev::ClearPropose);
+            }
         } else {
             let err = frame.payload.get("error").and_then(|v| v.as_str()).unwrap_or("");
             if err.contains("超时") {

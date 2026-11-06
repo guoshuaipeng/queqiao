@@ -123,6 +123,16 @@ test("write confirm shows the command without an extra click", () => {
   assert.match(js, /show\(\$\("dlg-detail"\), hasDetail\)/);
 });
 
+test("a finished change clears the command", () => {
+  const link = fs.readFileSync(new URL("../src-tauri/src/link.rs", import.meta.url), "utf8");
+  const doneAt = link.indexOf("copy::DONE");
+  const next = link.slice(doneAt, doneAt + 180);
+  assert.ok(doneAt > 0);
+  assert.ok(next.includes("is_read"));
+  assert.ok(next.includes("ClearPropose"));
+  assert.ok(js.includes('$("command").value = ""'));
+});
+
 test("cancel tells the helper it did not connect", () => {
   assert.ok(blob.includes("已取消，没有连上。"));
 });

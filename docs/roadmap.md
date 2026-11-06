@@ -149,6 +149,8 @@
 | 本轮完成 | 路径旁的「查看」保持横排 | 按钮不会被挤成两行字 | 按钮宽 62、高 38 | `acceptance/desktop-log-button.png` |
 | 本轮完成 | 完全信任只在这次协助里生效，结束后改动重新要确认 | 这次可以少问，结束就回到要问 | 横幅在时改动直接执行；点「结束完全信任」后横幅消失，下一次改动弹出确认，拒绝后没有执行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-full-before.png`、`desktop-full-ran.png`、`desktop-full-ended.png`、`desktop-full-ask.png` |
 | 本轮完成 | 确认框直接写出命令 | 不用再点开才知道要跑什么 | 确认框里能看见命令原文，没有「查看详细」 | `acceptance/desktop-full-ask.png` |
+| 本轮完成 | 结束这次协助后再连上，完全信任不会还在 | 下一次改动重新要问 | 结束后回到首页；新凭证再连上没有完全信任横幅；下一次改动弹出确认，拒绝后没有执行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-again-full.png`、`desktop-again-home.png`、`desktop-again-rejoined.png`、`desktop-again-ask.png` |
+| 本轮完成 | 改动执行完后清掉命令 | 不会再点一次又执行 | 结果仍在，要做什么和命令都回到占位 | `acceptance/desktop-cleared.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
