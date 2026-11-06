@@ -20,6 +20,10 @@ function show(el, on) {
 }
 
 function render(s) {
+  if (s && typeof s.seq === "number") {
+    if (window.__queqiaoSeq > s.seq) return;
+    window.__queqiaoSeq = s.seq;
+  }
   state = s;
   const home = s.view === "home" || (s.view !== "settings" && s.view !== "host" && s.view !== "helper");
   const settings = s.view === "settings";

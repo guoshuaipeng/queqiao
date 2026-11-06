@@ -88,6 +88,7 @@ struct Shared {
     killer: Mutex<Option<TcpStream>>,
     jobs: Mutex<Option<Sender<Job>>>,
     gen: AtomicU64,
+    seq: AtomicU64,
     prompt_ids: AtomicU64,
     worker: AtomicBool,
     app: Mutex<Option<AppHandle>>,
@@ -136,6 +137,7 @@ impl Shared {
             killer: Mutex::new(None),
             jobs: Mutex::new(None),
             gen: AtomicU64::new(1),
+            seq: AtomicU64::new(1),
             prompt_ids: AtomicU64::new(1),
             worker: AtomicBool::new(false),
             app: Mutex::new(None),
@@ -238,6 +240,9 @@ impl Hooks for AppHooks {
             return;
         }
         let mut model = self.shared.model.lock().expect("model");
+        if !self.alive() {
+            return;
+        }
         match ev {
             Ev::Waiting { code, payload } => {
                 let mut secrets = self.shared.secrets.lock().expect("secrets");
@@ -319,7 +324,9 @@ impl Hooks for AppHooks {
             Ev::Busy(b) => model.op_busy = b,
         }
         drop(model);
-        self.shared.publish();
+        if self.alive() {
+            self.shared.publish();
+        }
     }
 }
 
@@ -405,19 +412,20 @@ impl Shared {
             version: env!("CARGO_PKG_VERSION").into(),
             path_open: model.path_open.clone(),
             active: is_active(&model.phase),
+            generation: self.gen.load(Ordering::SeqCst),
+            seq: self.seq.fetch_add(1, Ordering::SeqCst) + 1,
         }
     }
 
     fn bump(&self) -> u64 {
-        self.shutdown_io();
+        // 先作废这一代，读循环下一次超时就会退出。关套接字放在后台，避免 shutdown 卡住界面。
+        let next = self.gen.fetch_add(1, Ordering::SeqCst) + 1;
+        let stream = self.killer.lock().expect("killer").take();
         *self.jobs.lock().expect("jobs") = None;
-        self.gen.fetch_add(1, Ordering::SeqCst) + 1
-    }
-
-    fn shutdown_io(&self) {
-        if let Some(stream) = self.killer.lock().expect("killer").take() {
-            let _ = stream.shutdown(std::net::Shutdown::Both);
+        if let Some(stream) = stream {
+            thread::spawn(move || abort_io(stream));
         }
+        next
     }
 
     fn wait_worker(&self) -> bool {
@@ -548,6 +556,8 @@ struct Snapshot {
     #[serde(rename = "pathOpen")]
     path_open: String,
     active: bool,
+    generation: u64,
+    seq: u64,
 }
 
 #[derive(Clone, Serialize)]
@@ -686,7 +696,9 @@ fn spawn_host(shared: std::sync::Arc<Shared>, my: u64) {
             }
         }
         shared.worker.store(false, Ordering::SeqCst);
-        shared.publish();
+        if shared.gen.load(Ordering::SeqCst) == my {
+            shared.publish();
+        }
     });
 }
 
@@ -701,8 +713,32 @@ fn spawn_helper(shared: std::sync::Arc<Shared>, my: u64, via: Via) {
         };
         link::run_helper(via, &rx, &hooks);
         shared.worker.store(false, Ordering::SeqCst);
-        shared.publish();
+        if shared.gen.load(Ordering::SeqCst) == my {
+            shared.publish();
+        }
     });
+}
+
+fn abort_io(stream: TcpStream) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::io::AsRawSocket;
+        #[repr(C)]
+        struct Linger {
+            onoff: u16,
+            linger: u16,
+        }
+        #[link(name = "ws2_32")]
+        extern "system" {
+            fn setsockopt(s: usize, level: i32, opt: i32, val: *const u8, len: i32) -> i32;
+        }
+        let linger = Linger { onoff: 1, linger: 0 };
+        let sock = stream.as_raw_socket() as usize;
+        unsafe {
+            setsockopt(sock, 0xffff, 0x0080, &linger as *const Linger as *const u8, 4);
+        }
+    }
+    drop(stream);
 }
 
 #[tauri::command]
@@ -786,9 +822,14 @@ fn stop_accept(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, Str
         model.phase = "stopping".into();
         model.left_note = text::STOPPING.into();
         model.dialog = None;
+        model.copy_hint.clear();
+        model.manual_copy.clear();
+        model.code.clear();
+        model.password_len = 0;
     }
     state.publish();
-    if !stop_worker(state.inner()) {
+    let _ = state.bump();
+    if !state.wait_worker() {
         let mut model = state.model.lock().expect("model");
         model.phase = "stop_fail".into();
         model.left_note = text::STOP_FAIL.into();
@@ -812,10 +853,16 @@ fn copy_credential(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>) -> 
         return Ok(state.snapshot());
     }
     match copy_text(&app, &payload) {
-        Ok(()) => {
-            model.copy_hint = text::COPY_OK.into();
-            model.manual_copy.clear();
-        }
+        Ok(()) => match paste_text(&app) {
+            Ok(got) if got == payload => {
+                model.copy_hint = text::COPY_OK.into();
+                model.manual_copy.clear();
+            }
+            _ => {
+                model.copy_hint = text::COPY_FAIL.into();
+                model.manual_copy = payload;
+            }
+        },
         Err(_) => {
             model.copy_hint = text::COPY_FAIL.into();
             model.manual_copy = payload;

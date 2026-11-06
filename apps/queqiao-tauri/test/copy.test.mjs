@@ -75,6 +75,11 @@ test("hidden attribute wins over display flex", () => {
   assert.match(css, /\[hidden\]\s*\{\s*display:\s*none\s*!important;\s*\}/);
 });
 
+test("older snapshots do not replace a newer one", () => {
+  assert.ok(js.includes("__queqiaoSeq"));
+  assert.ok(js.includes("s.seq"));
+});
+
 test("production boot does not render a demo connection", () => {
   assert.ok(js.includes("__QUEQIAO_SKIP_BOOT__"));
   assert.equal(js.includes("queqiaoRender("), false);
