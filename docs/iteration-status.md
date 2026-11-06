@@ -520,5 +520,5 @@ elay/internal/relay/audit_test.go
 - **本轮改动**（仅首页布局抛光，不碰尺寸策略）：
   - `src-net48/RemoteAssist.App/ModeSelectForm.cs`：按 `_scrollBody` 实际客户区 Relayout；去掉强制 min 480×280；清理 `LayoutCardInner` 重复循环；`_scrollBody.Resize` 挂钩。
 - **验证**：`dotnet build src-net48/RemoteAssist.App/RemoteAssist.App.csproj -c Release -o artifacts/pv002-build-check` → **PASS**（0 error）。GUI 未启 → 运行未测。
-- **Git**：仅拟本地 commit ModeSelect；**不 push**；不改 installer/产品脏文档；**不继续**首页小窗/业务大窗分设迭代（等新草案+授权）。
+- **Git**：本地 commit `8a52ba4`（仅 ModeSelect）；**不 push**；不改 installer/产品脏文档；**不继续**首页小窗/业务大窗分设迭代（等新草案+授权）。
 - **未做**：GUI 点验；push；回滚 `aa72bd8` 尺寸分设；新尺寸策略。
