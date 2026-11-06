@@ -219,6 +219,8 @@
 | 本轮完成 | 滚回后 exit=0 是整行，QUEEND 在框里 | 末行和行尾一起看全 | `exit=0` 是整行，`QUEEND` 在 727–767 | `acceptance/desktop-back-before.png`、`desktop-back-after.png` |
 | 本轮完成 | 之前的结果翻到第一行后再滚回最底下，横向仍停在行尾 | 滚回去不丢掉行尾 | 松手后竖向回到 96，横向 715，和尽头一致 | 本机 `127.0.0.1:17991`；`acceptance/desktop-pback-before.png`、`desktop-pback-after.png` |
 | 本轮完成 | 之前的结果滚回后 exit=0 是整行，QUEEND 在框里 | 末行和行尾一起看全 | `exit=0` 是整行，`QUEEND` 在 727–767 | `acceptance/desktop-pback-after.png` |
+| 本轮完成 | 翻回最底下后协助页不要多出竖向滚动条 | 正常高度只有结果框自己的滚动条 | 多出来的高度是 4，滚动是 hidden，页顶是 0 | 本机 `127.0.0.1:17991`；`acceptance/desktop-fitback-after.png` |
+| 本轮完成 | 「要做什么」和「结束本次协助」仍完整留在窗口里 | 翻回去不把这两处顶出窗口 | 「要做什么」高 38，在 131–169；「结束本次协助」高 38，在 430–468，窗口高 480 | `acceptance/desktop-fitback-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
