@@ -250,6 +250,17 @@ mod tests {
             Trust::Relaxed
         );
         assert_eq!(effective_trust(Trust::Ask, 4, 4, false), Trust::Ask);
+        assert_eq!(effective_trust(Trust::Ask, 0, 4, true), Trust::Ask);
+        assert!(needs_local_confirm(
+            effective_trust(Trust::Ask, 0, 4, true),
+            Tool::RunCommand,
+            "echo hi"
+        ));
+        assert!(!needs_local_confirm(
+            effective_trust(Trust::Ask, 4, 4, true),
+            Tool::RunCommand,
+            "echo hi"
+        ));
         assert_eq!(effective_trust(Trust::Full, 4, 4, true), Trust::Full);
         assert_eq!(effective_trust(Trust::Full, 0, 0, false), Trust::Ask);
     }

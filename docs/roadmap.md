@@ -147,6 +147,8 @@
 | 本轮完成 | 宽松时普通改动不再弹确认，删除仍要确认 | 少打扰，但删文件、关机仍要问 | 普通 echo 没有确认弹窗，结果回来，记下「已执行」；`del` 仍弹出确认，拒绝后没有执行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-relaxed-host.png`、`desktop-relaxed-before.png`、`desktop-relaxed-ok.png`、`desktop-relaxed-risk.png` |
 | 本轮完成 | 查看日志滚到末尾，并写明只显示了末尾多少行 | 最新一行不用再往下翻 | 结果框露出 `queqiao-log-tail` 和「只显示了末尾 80 行。」 | `acceptance/desktop-log-tail.png` |
 | 本轮完成 | 路径旁的「查看」保持横排 | 按钮不会被挤成两行字 | 按钮宽 62、高 38 | `acceptance/desktop-log-button.png` |
+| 本轮完成 | 完全信任只在这次协助里生效，结束后改动重新要确认 | 这次可以少问，结束就回到要问 | 横幅在时改动直接执行；点「结束完全信任」后横幅消失，下一次改动弹出确认，拒绝后没有执行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-full-before.png`、`desktop-full-ran.png`、`desktop-full-ended.png`、`desktop-full-ask.png` |
+| 本轮完成 | 确认框直接写出命令 | 不用再点开才知道要跑什么 | 确认框里能看见命令原文，没有「查看详细」 | `acceptance/desktop-full-ask.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

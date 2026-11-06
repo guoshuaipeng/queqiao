@@ -118,6 +118,11 @@ test("path view button stays on one line", () => {
   assert.match(css, /\.path-row #path\s*\{[^}]*min-width:\s*0/);
 });
 
+test("write confirm shows the command without an extra click", () => {
+  assert.match(js, /show\(\$\("dlg-detail-toggle"\), false\)/);
+  assert.match(js, /show\(\$\("dlg-detail"\), hasDetail\)/);
+});
+
 test("cancel tells the helper it did not connect", () => {
   assert.ok(blob.includes("已取消，没有连上。"));
 });

@@ -152,9 +152,9 @@ function renderDialog(d) {
   $("dlg-title").textContent = d.title || "";
   $("dlg-body").textContent = d.body || "";
   const hasDetail = !!d.detail;
-  show($("dlg-detail-toggle"), hasDetail);
+  show($("dlg-detail-toggle"), false);
   $("dlg-detail").textContent = d.detail || "";
-  if (!hasDetail) show($("dlg-detail"), false);
+  show($("dlg-detail"), hasDetail);
   $("dlg-no").textContent = d.secondary || "取消";
   $("dlg-yes").textContent = d.primary || "允许";
   $("dlg-no").classList.add("focus");
