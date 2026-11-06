@@ -248,6 +248,11 @@ test("the result box at either end does not scroll the page", () => {
   assert.match(js, /result\.scrollLeft = result\.__rowTail/);
 });
 
+test("a short result wheel does not scroll the page", () => {
+  assert.match(js, /if \(maxY > 1\) \{\s*result\.scrollTop = Math\.min\(maxY, Math\.max\(0, result\.scrollTop \+ event\.deltaY\)\);\s*\}\s*if \(\(result\.__rowTail \|\| 0\) > 1/);
+  assert.match(js, /shiftShortRows\(result\);\s*event\.preventDefault\(\);\s*\}, \{ passive: false \}\);/);
+});
+
 test("horizontal bars sit under the text rows", () => {
   assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*height:\s*12px/);
   assert.match(css, /#result\s*\{[^}]*8 \* 20px \+ 2px \+ 16px/);
