@@ -304,3 +304,12 @@ elay/internal/relay/audit_test.go
 - **准备方案（待产品指针 + 客户端执笔，先不改 iss）**：zh-CN 机上优先纳入 Inno `ChineseSimplified.isl`（或等价），自定义字符串进 `[CustomMessages]`/按语言 Messages；是否跟随系统自动选语言 vs 对话框，等产品验收口径；真机装向导点验后才可验收。
 - **未做**：改布局、改 installer、commit 产品脏文档、push、上公网。
 
+
+### 2026-11-06 14:17 Asia/Shanghai · 客户端确认：唯一 installer 写入者
+
+- **鹊桥-客户端**回执：接受 `installer/` 与出包脚本由客户端集中提交；现不抢写 iss。
+- **PV-002**：客户端保持只读，等体验修订方案 + 用户确认；不扩 R049。
+- **PV-004**：方案边界确认——仅安装向导随系统语言选择/回退，不擅自扩大客户端国际化；产品文档指针落定后核授权与 Inno 语言配置再实现。
+- **联合包**：等最终 UI 提交稳定后，从隔离目录生成并记源码/载荷 hash。
+- **iteration-status**：仍由迭代统一写。未改代码、未 push。
+
