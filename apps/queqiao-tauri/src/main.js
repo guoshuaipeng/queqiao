@@ -133,8 +133,9 @@ function render(s) {
     $("summary").value = "";
     $("command").value = "";
   }
-  $("btn-past").textContent = "▸ 之前的结果" + ((s.past || []).length ? "（" + s.past.length + "）" : "");
-  $("past").innerHTML = (s.past || []).map((p) => "<pre class='result'>" + escapeHtml(p) + "</pre>").join("");
+  const pastCount = (s.past || []).length;
+  $("btn-past").textContent = ($("past").hidden ? "▸ " : "▾ ") + "之前的结果" + (pastCount ? "（" + pastCount + "）" : "");
+  paintPast(s.past || []);
 
   $("relay").value = s.relay || "";
   document.querySelectorAll('input[name="trust"]').forEach((el) => {
@@ -179,6 +180,62 @@ function snapEnd(box) {
   box.scrollTop = step > 1 ? Math.min(max, Math.round(max / step) * step) : max;
 }
 
+function rowBox(text) {
+  const lines = String(text || "").replace(/(?:\r?\n)+$/, "").split(/\r?\n/);
+  return lines.length ? lines : [];
+}
+
+function paintPast(items) {
+  const past = $("past");
+  const lines = rowBox(items && items[0]);
+  past.replaceChildren();
+  for (const line of lines) {
+    const row = document.createElement("div");
+    row.textContent = line.length ? line : " ";
+    past.appendChild(row);
+  }
+  if (!past.hidden && lines.length) requestAnimationFrame(() => snapEnd(past));
+}
+
+function fitSpan() {
+  const scroller = $("helper-scroll");
+  const result = $("result");
+  const section = result && result.closest("section");
+  if (!scroller || !result || !section || section.hidden) return;
+  const summary = $("propose") && !$("propose").hidden ? $("summary") : null;
+  const past = $("past") && !$("past").hidden && $("past").childElementCount ? $("past") : null;
+  const topEl = summary || result;
+  const bottomEl = past || result;
+  const rowHeight = (n) => n * 20 + 2;
+  let resultRows = 8;
+  let pastRows = 4;
+  const apply = () => {
+    result.style.maxHeight = rowHeight(resultRows) + "px";
+    if (past) past.style.maxHeight = rowHeight(pastRows) + "px";
+  };
+  const span = () => {
+    const top = topEl.getBoundingClientRect();
+    const bottom = bottomEl.getBoundingClientRect();
+    return { top: top.top, bottom: bottom.bottom };
+  };
+  apply();
+  const view = scroller.getBoundingClientRect();
+  let guard = 0;
+  while (guard < 8 && span().bottom - span().top > view.height - 4) {
+    if (resultRows > 3) resultRows -= 1;
+    else if (past && pastRows > 2) pastRows -= 1;
+    else break;
+    apply();
+    guard += 1;
+  }
+  let box = span();
+  if (box.top < view.top - 1) scroller.scrollTop -= view.top - box.top;
+  box = span();
+  if (box.bottom > view.bottom + 1) scroller.scrollTop += box.bottom - view.bottom;
+  box = span();
+  if (box.top < view.top - 1) scroller.scrollTop -= view.top - box.top;
+}
+
 function revealResult(sync) {
   const run = () => {
     const scroller = $("helper-scroll");
@@ -187,15 +244,12 @@ function revealResult(sync) {
     if (!scroller || !box || !section || section.hidden) return;
     const view = scroller.getBoundingClientRect();
     const rect = box.getBoundingClientRect();
-    if (rect.height < 8 || view.height < 8) return;
+    const pastOpen = $("past") && !$("past").hidden;
     const place = (window.__resultStick || "end") !== "end";
-    const clipped = rect.top < view.top - 1 || rect.bottom > view.bottom + 1;
-    if (!clipped) return;
     const outside = rect.bottom <= view.top + 8 || rect.top >= view.bottom - 8;
-    if (place && outside) return;
-    const fits = rect.height <= view.height + 1;
-    const delta = !fits && place ? rect.top - view.top : (rect.bottom > view.bottom + 1 ? rect.bottom - view.bottom : rect.top - view.top);
-    scroller.scrollTop += delta;
+    if (place && outside && !pastOpen) return;
+    if (rect.height < 8 || view.height < 8) return;
+    fitSpan();
   };
   if (sync) run();
   else requestAnimationFrame(run);
@@ -354,7 +408,13 @@ function bindUi() {
     name: "RunCommand", path: "", summary: $("summary").value, command: $("command").value
   }).then(render).catch(showErr);
   $("btn-copy-result").onclick = () => invoke("copy_result").then(render).catch(showErr);
-  $("btn-past").onclick = () => { $("past").hidden = !$("past").hidden; };
+  $("btn-past").onclick = () => {
+    $("past").hidden = !$("past").hidden;
+    const n = state && state.past ? state.past.length : 0;
+    $("btn-past").textContent = ($("past").hidden ? "▸ " : "▾ ") + "之前的结果" + (n ? "（" + n + "）" : "");
+    if (!$("past").hidden) snapEnd($("past"));
+    revealResult(false);
+  };
   document.querySelectorAll('input[name="trust"]').forEach((el) => {
     el.onchange = () => { if (el.checked) invoke("set_trust", { trust: el.value }).then(render).catch(showErr); };
   });

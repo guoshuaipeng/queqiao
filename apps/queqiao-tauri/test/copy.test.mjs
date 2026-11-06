@@ -177,9 +177,22 @@ test("scrolling back to the end follows the next result", () => {
 
 test("an early result box is not cut by the window", () => {
   assert.match(js, /function revealResult/);
-  assert.match(js, /if \(place && outside\) return/);
+  assert.match(js, /if \(place && outside && !pastOpen\) return/);
   assert.match(js, /revealResult\(true\)/);
   assert.match(js, /revealResult\(false\)/);
+});
+
+test("previous output opens without pushing the current result away", () => {
+  assert.match(js, /function paintPast/);
+  assert.match(js, /snapEnd\(past\)/);
+  assert.match(css, /#past\s*\{[^}]*max-height:\s*calc\(4 \* 20px \+ 2px\)/);
+  assert.match(css, /#past > div\s*\{[^}]*height:\s*20px/);
+});
+
+test("the task field stays inside the window with the result", () => {
+  assert.match(js, /function fitSpan/);
+  assert.match(js, /const summary = \$\("propose"\) && !\$\("propose"\)\.hidden \? \$\("summary"\) : null/);
+  assert.match(js, /if \(box\.top < view\.top - 1\) scroller\.scrollTop -= view\.top - box\.top/);
 });
 
 test("a narrow window keeps the start button in view", () => {

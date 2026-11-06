@@ -106,6 +106,30 @@ button, input { font-family: inherit; }
   flex: none;
   scroll-snap-align: start;
 }
+#past {
+  max-height: calc(4 * 20px + 2px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 0 12px;
+  flex: 0 0 auto;
+  font-family: Consolas, monospace;
+  font-size: 12px;
+  line-height: 20px;
+  color: #334155;
+}
+#past > div {
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  overflow: hidden;
+  white-space: pre;
+  flex: none;
+  scroll-snap-align: start;
+}
 #dlg-detail { white-space: pre; overflow-x: auto; overflow-y: hidden; }
 #history, #audit {
   max-height: calc(5 * 24px + 4 * 6px);
