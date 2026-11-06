@@ -108,9 +108,9 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 > 更新：2026-11-06 13:46 Asia/Shanghai
 > 最近检查：2026-11-06 13:46 Asia/Shanghai
 > 当前项：PV-002 待验收；PV-003 待验收；PV-001 待验收
-> 本轮结果：PV-002 UI 布局落地（ModeSelectForm + Helper MainForm）；commit 94e41f2；见 iteration-status
+> 本轮结果：PV-002 UI 布局落地（ModeSelectForm + Helper MainForm）；commit ab27691；见 iteration-status
 > 测试：net48 App+Helper.UI build PASS；UI 截图 docs/shots
-> 提交：94e41f2（本地；未 push）
+> 提交：ab27691（本地；未 push）
 > 阻塞：无（公网上机仍未授权）
 
 ### 检查日志（新在上）

@@ -271,6 +271,6 @@ elay/internal/relay/audit_test.go
   | UI 启动截图（首页 / `--control` 协助端） | 已跑；见 docs/shots |
   | 人工像素级验收 | **待用户**（编译≠验收） |
 - **业务逻辑**：未改连接/排障/中继行为；仅布局与字号。
-- **commit**：`27175fc`（本地；未 push）。
+- **commit**：`ab27691`（本地；未 push；docs 指针 ad8879c）。
 - **红线**：未 push、未上公网、未动 relay/site/AI-SSH-Pro。
-- **并行**：PV-003 仍可并行（installer/icon，文件隔离）。
+- **并行**：PV-003 已由并行提交标待验收（本项未改其实现）。
