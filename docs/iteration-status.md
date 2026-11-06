@@ -285,3 +285,22 @@ elay/internal/relay/audit_test.go
 - **其他待验点**：脚注高 DPI 裁切；多行粘贴路径/凭证；快捷方式及卸载图标。
 - **迭代动作**：已记入本文件；不因本次复审把 PV-002/003 标完成；未 push。
 
+
+### 2026-11-06 14:17 Asia/Shanghai · 产品协调接续（观感不通过 / 语言核查 / 分工）
+
+- **触发**：用户经产品要求持续完善；产品转达本轮协调口径。
+- **例程**：automation-1793943554537「鹊桥迭代检查」@every 5m 已启用（无待办/无变化安静）。
+- **分工（本轮确认）**：
+  1. **体验**：出 PV-002 修订方案（右侧/下半屏空白、脚注裁切）；**确认前迭代/客户端不改布局**；不扩大 R049。
+  2. **产品**：落定 PV-004 docs（拟改待开发 + 仅本地实现/构建测试授权）；**迭代不抢写产品文档**。
+  3. **客户端**：拟认领 **唯一 installer 写入者**（已发协调；等回执）；PV-003 联合包须含最终 UI 提交 + hash。
+  4. **迭代**：统一写 `iteration-status`；协调与语言**核查/方案准备**；未实测不 PASS；不 push / 不上公网；不改 R049 未授权、R050 blocked。
+- **PV-002**：用户真实截图观感 **不通过** → 维持待验收；等体验方案；**不改代码**。
+- **PV-004**：PRODUCT-VERSIONS 现仍为 **草稿**（产品侧文档改动可能在工作区未落定）；**未放行实现**。
+- **语言核查（本机事实，非向导实测）**：
+  - 系统 WinSystemLocale / Culture / UICulture / InstalledUICulture：**zh-CN**。
+  - iss：`ShowLanguageDialog=no`；`[Languages]` 仅 `english` + Default.isl；Tasks 中文硬编码；`InfoBeforeFile=net48-runtime-note.txt`。
+  - **未**启动 Setup 向导核验实际显示语言 → **不记 PASS**。
+- **准备方案（待产品指针 + 客户端执笔，先不改 iss）**：zh-CN 机上优先纳入 Inno `ChineseSimplified.isl`（或等价），自定义字符串进 `[CustomMessages]`/按语言 Messages；是否跟随系统自动选语言 vs 对话框，等产品验收口径；真机装向导点验后才可验收。
+- **未做**：改布局、改 installer、commit 产品脏文档、push、上公网。
+
