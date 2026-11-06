@@ -8,6 +8,7 @@ namespace RemoteAssist.App;
 /// <summary>
 /// 启动首页：接受协助 / 去协助别人。
 /// PV-002 紧凑方案：两卡等分可用高度，卡底→脚注约 20，短文案，无 CLI 脚注。
+/// 布局按父客户区实际尺寸重算（Resize/Layout），不钉死自身 ClientSize。
 /// </summary>
 internal sealed class ModeSelectForm : Form
 {
@@ -105,24 +106,28 @@ internal sealed class ModeSelectForm : Form
         _scrollBody.Controls.Add(_footer);
 
         Resize += (_, _) => Relayout();
+        _scrollBody.Resize += (_, _) => Relayout();
         Relayout();
     }
 
     private void Relayout()
     {
-        var w = Math.Max(_scrollBody.ClientSize.Width, 480);
-        var h = Math.Max(_scrollBody.ClientSize.Height, 280);
+        // 以嵌入后的实际客户区为准（壳 Dock=Fill），不要依赖自身设计时 ClientSize
+        var w = Math.Max(1, _scrollBody.ClientSize.Width);
+        var h = Math.Max(1, _scrollBody.ClientSize.Height);
+        if (w < 40 || h < 40)
+            return;
 
         _header.SetBounds(0, 0, w, HeaderH);
-        _titleLabel.SetBounds(SidePad, 10, Math.Max(80, w - SidePad * 2), 26);
-        _subtitleLabel.SetBounds(SidePad, 36, Math.Max(80, w - SidePad * 2), 20);
+        _titleLabel.SetBounds(SidePad, 10, Math.Max(40, w - SidePad * 2), 26);
+        _subtitleLabel.SetBounds(SidePad, 36, Math.Max(40, w - SidePad * 2), 20);
 
         var contentTop = HeaderH + TopPad;
         var availableForCards = h - contentTop - CardToFoot - FootH - CardGap;
         var rawCardH = availableForCards / 2;
         var cardH = Math.Max(MinCardH, Math.Min(MaxCardH, rawCardH));
 
-        // 卡高封顶后剩余高度：整体内容块垂直居中，不堆成卡脚空灰
+        // 卡高封顶后：内容块垂直居中，不把多余高度堆成卡脚空灰
         var cardsBlockH = cardH + CardGap + cardH;
         var belowHeaderH = cardsBlockH + CardToFoot + FootH;
         var freeBelowHeader = h - HeaderH - TopPad - belowHeaderH;
@@ -130,7 +135,7 @@ internal sealed class ModeSelectForm : Form
         if (rawCardH > MaxCardH && freeBelowHeader > 0)
             blockTop = HeaderH + TopPad + freeBelowHeader / 2;
 
-        var cardW = Math.Max(200, w - SidePad * 2);
+        var cardW = Math.Max(120, w - SidePad * 2);
         _btnAccept.SetBounds(SidePad, blockTop, cardW, cardH);
         LayoutCardInner(_btnAccept, cardW, cardH);
         _btnControl.SetBounds(SidePad, blockTop + cardH + CardGap, cardW, cardH);
@@ -139,33 +144,13 @@ internal sealed class ModeSelectForm : Form
         var footY = blockTop + cardH + CardGap + cardH + CardToFoot;
         _footer.SetBounds(SidePad, footY, cardW, FootH);
 
-        // 内容高于可视区时靠 AutoScroll 保可达
+        // 工作区不足时纵滚保入口可达
         var needH = footY + FootH + 8;
-        _scrollBody.AutoScrollMinSize = new Size(0, Math.Max(needH, h));
+        _scrollBody.AutoScrollMinSize = new Size(0, needH > h ? needH : 0);
     }
 
     private static void LayoutCardInner(Button btn, int cardW, int cardH)
     {
-        foreach (Control c in btn.Controls)
-        {
-            if (c is Panel bar && bar.Width <= 8)
-            {
-                bar.SetBounds(0, 0, 6, cardH);
-                continue;
-            }
-            if (c is Label lbl)
-            {
-                if (lbl.Text == "›")
-                {
-                    lbl.SetBounds(cardW - 44, Math.Max(0, (cardH - 40) / 2), 36, 40);
-                }
-                else if (ReferenceEquals(lbl.Tag, "title"))
-                {
-                    // title+sub as a group vertically centered
-                }
-            }
-        }
-
         Label? title = null;
         Label? sub = null;
         Label? chevron = null;
@@ -185,11 +170,11 @@ internal sealed class ModeSelectForm : Form
         chevron?.SetBounds(cardW - 44, Math.Max(0, (cardH - 40) / 2), 36, 40);
 
         const int textLeft = 20;
-        var textW = Math.Max(80, cardW - 68);
+        var textW = Math.Max(40, cardW - 68);
         var titleH = 28;
         var subH = Math.Min(44, Math.Max(20, cardH / 3));
         var groupH = titleH + 4 + subH;
-        var groupTop = Math.Max(10, (cardH - groupH) / 2);
+        var groupTop = Math.Max(8, (cardH - groupH) / 2);
         if (title is not null)
             title.SetBounds(textLeft, groupTop, textW, titleH);
         if (sub is not null)
@@ -287,4 +272,3 @@ internal sealed class ModeSelectForm : Form
         return (Icon)tmp.Clone();
     }
 }
-
