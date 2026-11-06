@@ -494,3 +494,14 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 
 已开 R044（体验规格已定；客户端实现逐字文案；不改格式/信任模型）。
 
+## R044 产品验收复盘（2026-11-06 Asia/Shanghai）
+
+编译/文档核对 **PASS_WITH_NOTES**（证据 `7cad0ab`）；真实连接 / 运行 **仍 blocked**。
+
+- **做对的**：net48 七句逐字权威文案落地；默认亲友路径去掉指纹/TLS/fp/安全载荷技术词；复制失败可手选完整串；范围自觉收窄为仅 net48（Avalonia 未接完整载荷，避免文实不符）；无 UI 编译、不打断用户本机。
+- **NOTES → R045**：`FailWrongPassword` / `FailPeerNotAccepting` 仍「码+密码」；Helper catch 一律追加缺失安全验证句（过宽）；文档状态行曾混用 compiled/待实现；AgentHost 控制台技术词备忘。
+- **规则候选**：缺失安全验证提示只绑缺 fp/短凭证分支；其他失败各自人话，禁止一律追加。
+
+已开 R045（稳定性/UX：失败文案残留 + 提示收窄 + 文档状态清理；仅 net48；不扩功能；Avalonia/CLI 完整载荷另轮）。
+
+
