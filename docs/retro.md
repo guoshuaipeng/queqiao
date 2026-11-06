@@ -572,3 +572,12 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - **R047**：出 net48 小 Setup；安装文案须写 Framework 4.8。**跟进**：`WriteConfirmCopy` 仍写「.NET 8 运行时」——实现时改文案，本轮未改 C#（须客户端授权）。
 - **预防**：官网/复制安装说明勿再把几十兆 .NET 8 自包含当 Windows 主推；发错包视为产品事故。
 
+## Tauri 页面叠加（2026-11-06）
+
+- **触发**：用户运行 `queqiao-tauri.exe`，首页、双方会话、设置和只有「拒绝 / 允许」的空窗叠在一起。
+- **原因**：`hidden` 被 `display: flex` 盖掉。那些「已连接」「完全信任」是被画出来的，不是当时的连接。
+- **修复**：`[hidden]` 强制不显示。提交 `31db0f9` 之后又补了窄窗口验收和待办，见 `docs/tauri-migration/ROUND-STACK.md`。
+- **验收**：浏览器 840×480 互斥检查无失败；桌面 PrintWindow 见 `acceptance/desktop-idle.png`、`desktop-settings.png`；本机 DPI 96；640×360 两栏上下排，滚 `#home` 后「连接」进入视口。
+- **未做**：没改系统缩放；没验深色；自动化复制仍是「没能复制」；没有两台电脑打生产中继。
+- **下一轮只留两项**：中继不可达时的重试点击；复制按钮在用户点击时写入剪贴板。
+
