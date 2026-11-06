@@ -1,6 +1,6 @@
 //! 被协助端本机工具。只由会话循环在确认通过后调用，不暴露给界面命令。
 
-use std::io::Read;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Duration;
@@ -90,6 +90,9 @@ fn list_dir(path: &str) -> Result<String, String> {
         names.push(format!("{kind}\t{name}"));
     }
     names.sort();
+    if names.is_empty() {
+        return Ok("这个文件夹是空的。".into());
+    }
     Ok(names.join("\n"))
 }
 
@@ -98,10 +101,26 @@ fn read_file(path: &str) -> Result<String, String> {
 }
 
 fn read_log(path: &str, lines: usize) -> Result<String, String> {
-    let text = read_limited(path, 256 * 1024, true)?;
+    let full = allowed_path(path)?;
+    let mut file = std::fs::File::open(&full).map_err(|_| "没能读取这个文件。".to_string())?;
+    let len = file.metadata().map(|m| m.len()).unwrap_or(0);
+    let max = 256 * 1024u64;
+    let start = len.saturating_sub(max);
+    file.seek(SeekFrom::Start(start)).map_err(|_| "没能读取这个文件。".to_string())?;
+    let mut buf = Vec::new();
+    file.read_to_end(&mut buf).map_err(|_| "没能读取这个文件。".to_string())?;
+    let text = String::from_utf8_lossy(&buf);
+    let text = if start > 0 {
+        text.split_once('\n').map(|(_, rest)| rest).unwrap_or("")
+    } else {
+        text.as_ref()
+    };
     let all: Vec<&str> = text.lines().collect();
-    let start = all.len().saturating_sub(lines);
-    Ok(all[start..].join("\n"))
+    if all.is_empty() {
+        return Ok("这个日志是空的。".into());
+    }
+    let from = all.len().saturating_sub(lines.max(1));
+    Ok(all[from..].join("\n"))
 }
 
 fn read_limited(path: &str, max: usize, raw_ok: bool) -> Result<String, String> {
@@ -203,7 +222,7 @@ fn is_delete(command: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{format_command_result, format_process_names, list_dir, read_file};
+    use super::{format_command_result, format_process_names, list_dir, read_file, read_log};
 
     #[test]
     fn directory_entries_say_file_and_folder() {
@@ -217,6 +236,31 @@ mod tests {
         assert!(!listed.contains("DIR"));
         let body = read_file(dir.join("note.txt").to_str().unwrap()).unwrap();
         assert!(body.contains("queqiao-file-body"));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn log_tail_is_the_end_and_empty_dir_is_not_blank() {
+        let dir = std::env::temp_dir().join(format!("queqiao-log-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let empty = dir.join("empty");
+        std::fs::create_dir_all(&empty).unwrap();
+        assert_eq!(list_dir(empty.to_str().unwrap()).unwrap(), "这个文件夹是空的。");
+        let log = dir.join("app.log");
+        let mut body = String::new();
+        for i in 1..=100 {
+            if i == 1 {
+                body.push_str("queqiao-log-head\n");
+            } else if i == 100 {
+                body.push_str("queqiao-log-tail\n");
+            } else {
+                body.push_str(&format!("line-{i}\n"));
+            }
+        }
+        std::fs::write(&log, body).unwrap();
+        let tail = read_log(log.to_str().unwrap(), 80).unwrap();
+        assert!(tail.contains("queqiao-log-tail"));
+        assert!(!tail.contains("queqiao-log-head"));
         std::fs::remove_dir_all(&dir).ok();
     }
 
