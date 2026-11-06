@@ -526,3 +526,11 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - **边界**：不改连接格式/信任模型；不把现有 net8 自包含 Setup 冒充主路径；不强制本轮上架官网。
 - **预防**：Setup 文件名/文档必须标明 net48，避免与 `RemoteAssist-Setup-*.exe`（net8 SC）发错包。
 
+
+## R048 开轮 — net48 协助端补 MCP 复制安装说明（2026-11-06 Asia/Shanghai）
+
+- **触发**：用户在 net48 控制端（去协助）界面找不到可贴给智能体的 MCP 安装 JSON。
+- **事实**：net48 Helper 从未迁 MCP「复制安装说明 / 复制 MCP 配置」；net48 Agent 已有「复制 MCP 配置」；net8 Helper.UI 与 Avalonia（R017）已有完整入口。
+- **决策**：开 **R048**（客户端：迁 `McpInstallGuide` + 亲友「复制安装说明」+ 智能体可贴 JSON；Helper 主屏常显轻按钮；完整载荷、禁缺指纹降明文）。与 **R046** / **R047** 并行。
+- **边界**：不改协议/信任模型；不改 Avalonia/CLI；不把 Agent 托盘入口当成 Helper 已交付。
+- **预防**：勿移植 net8 Helper「缺指纹则 Insecure 生成明文 MCP」退路；安装说明口径对齐「复制连接凭证」。
