@@ -1,23 +1,29 @@
+using System;
+using System.IO;
 using System.Text.Json;
 
 namespace RemoteAssist.Protocol;
 
 /// <summary>
-/// 协助端 GUI 本地设置。中继字段为产品化占位，v1 不启用连接。
+/// 协助端 GUI 本地设置。默认公网中继（R043）。
 /// </summary>
 public sealed class HelperUiSettings
 {
-    public string? RelayEndpoint { get; set; }
+    public string? RelayEndpoint { get; set; } = Protocol.RelayEndpoint.DefaultEndpoint;
 
-    /// <summary>最近一次成功连接的主机（方便回填）。</summary>
+    public bool PreferRelay { get; set; } = true;
+
+    /// <summary>最近一次成功连接的主机（局域网高级回填）。</summary>
     public string? LastHost { get; set; }
 
     public int? LastPort { get; set; }
 
+    public string? LastFingerprint { get; set; }
+
     public static string SettingsDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RemoteAssist");
 
-    public static string SettingsPath => Path.Combine(SettingsDirectory, "helper-ui.json");
+    public static string SettingsPath => Path.Combine(SettingsDirectory, "helper-ui-net48.json");
 
     public static HelperUiSettings Load()
     {
@@ -26,7 +32,10 @@ public sealed class HelperUiSettings
             if (!File.Exists(SettingsPath))
                 return new HelperUiSettings();
             var json = File.ReadAllText(SettingsPath);
-            return JsonSerializer.Deserialize<HelperUiSettings>(json) ?? new HelperUiSettings();
+            var s = JsonSerializer.Deserialize<HelperUiSettings>(json) ?? new HelperUiSettings();
+            if (string.IsNullOrWhiteSpace(s.RelayEndpoint))
+                s.RelayEndpoint = Protocol.RelayEndpoint.DefaultEndpoint;
+            return s;
         }
         catch
         {

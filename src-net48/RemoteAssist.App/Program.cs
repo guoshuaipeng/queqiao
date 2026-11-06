@@ -34,7 +34,7 @@ internal static class Program
             return;
         }
 
-                Application.EnableVisualStyles();
+        Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
         AppMode? initial = null;

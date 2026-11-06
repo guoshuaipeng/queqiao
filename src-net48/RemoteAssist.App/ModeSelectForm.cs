@@ -53,7 +53,7 @@ internal sealed class ModeSelectForm : Form
 
         var btnAccept = MakeModeButton(
             "接受协助（被控）",
-            "生成本机会话码 / 二维码，让亲友或同事连过来帮你排查。危险操作需你本机确认。",
+            "生成连接凭证发给亲友，对方粘贴即可经公网中继连过来帮你。危险操作需你本机确认。",
             Color.FromArgb(0x1A, 0x73, 0xE8),
             24, 112);
         btnAccept.Click += (_, _) => AcceptClicked?.Invoke();
@@ -61,7 +61,7 @@ internal sealed class ModeSelectForm : Form
 
         var btnControl = MakeModeButton(
             "去协助别人（控制）",
-            "粘贴对方会话载荷或会话码，连接后查看进程 / 日志 / 文件，或提议执行命令。",
+            "粘贴对方发来的连接凭证或会话载荷，连接后查看进程 / 日志 / 文件，或提议执行命令。",
             Color.FromArgb(0x0F, 0x9D, 0x58),
             24, 230);
         btnControl.Click += (_, _) => ControlClicked?.Invoke();
@@ -73,7 +73,7 @@ internal sealed class ModeSelectForm : Form
             Location = new Point(24, 360),
             Size = new Size(512, 40),
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "v1 默认局域网直连（可 TLS）。公网中继后续版本启用；也可用命令行参数 --accept / --control 直达对应模式。"
+            Text = "默认经公网中继连接。局域网 Host/端口仅在协助端「高级」里。也可用 --accept / --control 直达对应模式。"
         });
     }
 

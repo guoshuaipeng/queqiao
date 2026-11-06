@@ -1,18 +1,23 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 using RemoteAssist.Protocol.Messages;
 
 namespace RemoteAssist.Protocol;
 
 public sealed class AssistClient : IDisposable
 {
-    private readonly TcpClient _tcp;
+    private readonly IDisposable _transport;
     private readonly Stream _stream;
     private string? _token;
     private PermissionLevel _permission;
 
-    private AssistClient(TcpClient tcp, Stream stream, string token, PermissionLevel permission)
+    private AssistClient(IDisposable transport, Stream stream, string token, PermissionLevel permission)
     {
-        _tcp = tcp;
+        _transport = transport;
         _stream = stream;
         _token = token;
         _permission = permission;
@@ -22,88 +27,105 @@ public sealed class AssistClient : IDisposable
     public PermissionLevel Permission => _permission;
 
     public static Task<AssistClient> PairAsync(
-        string host,
-        int port,
-        string sessionCode,
-        PermissionLevel requested = PermissionLevel.Assist,
-        string clientName = "helper",
-        CancellationToken ct = default) =>
-        PairAsync(host, port, sessionCode, requested, clientName, expectedFingerprint: null, useTls: true, ct);
-
-    public static async Task<AssistClient> PairAsync(
-        string host,
-        int port,
-        string sessionCode,
-        PermissionLevel requested,
-        string clientName,
-        string? expectedFingerprint,
-        bool useTls,
-        CancellationToken ct = default)
-    {
-        if (useTls && string.IsNullOrWhiteSpace(TlsCertUtil.NormalizeFingerprint(expectedFingerprint)))
-        {
-            throw new InvalidOperationException(
-                "默认启用 TLS，需要证书指纹：请使用含 fp= 的会话载荷，或传 --fp / REMOTE_ASSIST_FP；调试明文请用 --insecure。");
-        }
-
-        var tcp = new TcpClient();
-        await Net48Sockets.ConnectAsync(tcp, host, port, ct).ConfigureAwait(false);
-        Stream stream = tcp.GetStream();
-        try
-        {
-            if (useTls)
-            {
-                stream = await TlsTransport.AuthenticateAsClientAsync(stream, expectedFingerprint!, ct)
-                    .ConfigureAwait(false);
-            }
-
-            await FrameIo.WriteAsync(stream, "pair", new PairRequest
-            {
-                SessionCode = SessionCodeGenerator.Normalize(sessionCode),
-                RequestedPermission = requested.ToString(),
-                ClientName = clientName
-            }, ct: ct).ConfigureAwait(false);
-
-            var response = await FrameIo.ReadAsync(stream, ct).ConfigureAwait(false)
-                ?? throw new InvalidOperationException("Connection closed during pair.");
-            if (!string.Equals(response.Type, "pair_result", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException($"Unexpected response type: {response.Type}");
-
-            var payload = FrameIo.DeserializePayload<PairResponse>(response)
-                ?? throw new InvalidOperationException("Empty pair response.");
-            if (!payload.Ok || string.IsNullOrWhiteSpace(payload.Token))
-                throw new InvalidOperationException(payload.Error ?? "Pairing failed.");
-
-            var level = Enum.TryParse<PermissionLevel>(payload.Permission, true, out var p)
-                ? p
-                : PermissionLevel.Guest;
-
-            return new AssistClient(tcp, stream, payload.Token, level);
-        }
-        catch
-        {
-            try { stream.Dispose(); } catch { /* ignore */ }
-            try { tcp.Dispose(); } catch { /* ignore */ }
-            throw;
-        }
-    }
-
-    /// <summary>从 AssistConnectOptions 配对。</summary>
-    public static Task<AssistClient> PairAsync(
         AssistConnectOptions opts,
         string clientName = "helper",
         CancellationToken ct = default)
     {
         Net48Guard.ThrowIfNull(opts);
-        return PairAsync(
-            opts.Host,
-            opts.Port,
-            opts.Code,
-            opts.Permission,
-            clientName,
-            opts.Fingerprint,
-            useTls: !opts.Insecure,
-            ct);
+        if (opts.ViaRelay)
+            return PairViaRelayGuestAsync(opts, clientName, ct);
+        return PairLanAsync(opts, clientName, ct);
+    }
+
+    private static async Task<AssistClient> PairLanAsync(AssistConnectOptions opts, string clientName, CancellationToken ct)
+    {
+        var useTls = !opts.Insecure;
+        if (useTls && string.IsNullOrWhiteSpace(TlsCertUtil.NormalizeFingerprint(opts.Fingerprint)))
+        {
+            throw new InvalidOperationException(
+                "局域网 TLS 需要证书指纹：请展开「高级」填写，或勾选明文调试。");
+        }
+
+        var tcp = new TcpClient();
+        await Net48Sockets.ConnectAsync(tcp, opts.Host, opts.Port, ct).ConfigureAwait(false);
+        Stream stream = tcp.GetStream();
+        try
+        {
+            if (useTls)
+                stream = await TlsTransport.AuthenticateAsClientAsync(stream, opts.Fingerprint!, ct).ConfigureAwait(false);
+            return await FinishPairAsync(tcp, stream, opts.Code, opts.Permission, clientName, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            try { stream.Dispose(); } catch { }
+            try { tcp.Dispose(); } catch { }
+            throw;
+        }
+    }
+
+    private static async Task<AssistClient> PairViaRelayGuestAsync(AssistConnectOptions opts, string clientName, CancellationToken ct)
+    {
+        var endpoint = opts.RelayEndpoint ?? RelayEndpoint.DefaultEndpoint;
+        if (!RelayEndpoint.TryParse(endpoint, out var rh, out var rp, out var err))
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(err) ? "中继地址无效" : err);
+
+        var password = SessionPasswordGenerator.Normalize(opts.Password ?? "");
+        if (string.IsNullOrWhiteSpace(password))
+            throw new InvalidOperationException("中继连接需要验证密码");
+
+        var useTls = !opts.Insecure;
+        var relay = await RelayClient.GuestJoinAsync(rh, rp, opts.Code, password, ct).ConfigureAwait(false);
+        Stream stream = relay.Stream;
+        try
+        {
+            if (useTls)
+            {
+                var fp = TlsCertUtil.NormalizeFingerprint(opts.Fingerprint);
+                if (string.IsNullOrWhiteSpace(fp))
+                    throw new InvalidOperationException(
+                        "局域网 TLS 需要证书指纹：请展开「高级」填写，或使用默认中继连接（将自动用安全通道）。");
+                stream = await TlsTransport.AuthenticateAsClientAsync(stream, fp!, ct).ConfigureAwait(false);
+            }
+            return await FinishPairAsync(relay, stream, opts.Code, opts.Permission, clientName, ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            try { stream.Dispose(); } catch { }
+            try { relay.Dispose(); } catch { }
+            throw;
+        }
+    }
+
+    private static async Task<AssistClient> FinishPairAsync(
+        IDisposable transport,
+        Stream stream,
+        string sessionCode,
+        PermissionLevel requested,
+        string clientName,
+        CancellationToken ct)
+    {
+        await FrameIo.WriteAsync(stream, "pair", new PairRequest
+        {
+            SessionCode = SessionCodeGenerator.Normalize(sessionCode),
+            RequestedPermission = requested.ToString(),
+            ClientName = clientName
+        }, ct: ct).ConfigureAwait(false);
+
+        var response = await FrameIo.ReadAsync(stream, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Connection closed during pair.");
+        if (!string.Equals(response.Type, "pair_result", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Unexpected response type: " + response.Type);
+
+        var payload = FrameIo.DeserializePayload<PairResponse>(response)
+            ?? throw new InvalidOperationException("Empty pair response.");
+        if (!payload.Ok || string.IsNullOrWhiteSpace(payload.Token))
+            throw new InvalidOperationException(payload.Error ?? "Pairing failed.");
+
+        var level = Enum.TryParse<PermissionLevel>(payload.Permission, true, out var p)
+            ? p
+            : PermissionLevel.Guest;
+
+        return new AssistClient(transport, stream, payload.Token!, level);
     }
 
     public async Task<ToolResponse> InvokeToolAsync(ToolKind tool, Dictionary<string, string?>? args = null, CancellationToken ct = default)
@@ -127,7 +149,7 @@ public sealed class AssistClient : IDisposable
         }
 
         if (!string.Equals(response.Type, "tool_result", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"Unexpected response type: {response.Type}");
+            throw new InvalidOperationException("Unexpected response type: " + response.Type);
 
         return FrameIo.DeserializePayload<ToolResponse>(response)
             ?? new ToolResponse { Ok = false, Error = "Empty tool response." };
@@ -135,7 +157,7 @@ public sealed class AssistClient : IDisposable
 
     public void Dispose()
     {
-        _stream.Dispose();
-        _tcp.Dispose();
+        try { _stream.Dispose(); } catch { }
+        try { _transport.Dispose(); } catch { }
     }
 }

@@ -3,6 +3,7 @@ using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using QRCoder;
+using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
@@ -14,6 +15,8 @@ internal sealed class MainForm : Form
 {
     private readonly AgentHost _host;
     private readonly Label _codeLabel;
+    private readonly Label _credentialLabel;
+    private readonly Label _relayStatusLabel;
     private readonly ComboBox _hostCombo;
     private readonly Label _portValue;
     private readonly Label _tlsValue;
@@ -72,7 +75,7 @@ internal sealed class MainForm : Form
             Size = new Size(_enableReturnHome ? 600 : 700, 22),
             ForeColor = Color.FromArgb(0xE3, 0xF0, 0xFF),
             Font = new Font(Font.FontFamily, 9F),
-            Text = "被协助端 · 局域网会话码配对 · 危险操作需本机确认",
+            Text = "接受协助 · 把连接凭证发给对方 · 危险操作需本机确认",
             BackColor = Color.Transparent
         };
         header.Controls.Add(_headerSubtitle);
@@ -102,7 +105,7 @@ internal sealed class MainForm : Form
             AutoSize = false,
             Location = new Point(16, 12),
             Size = new Size(328, 22),
-            Text = "把会话码告诉协助方，或让对方扫二维码",
+            Text = "把连接凭证发给协助方（对方粘贴后点连接）",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
         sessionCard.Controls.Add(new Label
@@ -146,27 +149,66 @@ internal sealed class MainForm : Form
             AutoSize = false,
             Location = new Point(16, 78),
             Size = new Size(328, 20),
-            Text = "会话码",
+            Text = "连接凭证",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
 
-        _codeLabel = new Label
+        _credentialLabel = new Label
         {
             AutoSize = false,
             Location = new Point(16, 100),
-            Size = new Size(328, 52),
-            Font = new Font("Consolas", 32F, FontStyle.Bold),
+            Size = new Size(328, 40),
+            Font = new Font("Consolas", 18F, FontStyle.Bold),
             TextAlign = ContentAlignment.MiddleCenter,
             ForeColor = Color.FromArgb(0x20, 0x24, 0x27),
             BackColor = Color.FromArgb(0xEE, 0xF3, 0xFF),
             Text = ""
         };
+        sessionCard.Controls.Add(_credentialLabel);
+
+        _codeLabel = new Label
+        {
+            AutoSize = false,
+            Location = new Point(16, 142),
+            Size = new Size(160, 22),
+            Font = new Font("Consolas", 10F, FontStyle.Bold),
+            TextAlign = ContentAlignment.MiddleLeft,
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = ""
+        };
         sessionCard.Controls.Add(_codeLabel);
+
+        _relayStatusLabel = new Label
+        {
+            AutoSize = false,
+            Location = new Point(180, 142),
+            Size = new Size(164, 22),
+            Font = new Font(Font.FontFamily, 8.5F),
+            TextAlign = ContentAlignment.MiddleRight,
+            ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
+            Text = ""
+        };
+        sessionCard.Controls.Add(_relayStatusLabel);
+
+        var btnCopyCredential = MakeButton("复制连接凭证", 16, 168, 160);
+        btnCopyCredential.BackColor = Color.FromArgb(0x1A, 0x73, 0xE8);
+        btnCopyCredential.ForeColor = Color.White;
+        btnCopyCredential.FlatStyle = FlatStyle.Flat;
+        btnCopyCredential.Click += (_, _) =>
+        {
+            try
+            {
+                Clipboard.SetText(FriendConnectGuide.FormatShareClipboard(_host.SessionCode, _host.SessionPassword));
+                SetStatus("已复制连接凭证。");
+            }
+            catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
+        };
+        sessionCard.Controls.Add(btnCopyCredential);
 
         _qrBox = new PictureBox
         {
-            Location = new Point(70, 164),
-            Size = new Size(220, 220),
+            Location = new Point(70, 200),
+            Size = new Size(200, 180),
             SizeMode = PictureBoxSizeMode.Zoom,
             BorderStyle = BorderStyle.FixedSingle,
             BackColor = Color.White
@@ -277,13 +319,13 @@ internal sealed class MainForm : Form
             var outcome = McpConfigCopyHelper.Copy(_host.QrPayload, this);
             SetStatus(outcome.Message);
         };
-        var btnCopyCode = MakeButton("复制会话码", 252, 48, 84);
+        var btnCopyCode = MakeButton("复制连接凭证", 252, 48, 100);
         btnCopyCode.Click += (_, _) =>
         {
             try
             {
-                Clipboard.SetText(_host.SessionCode);
-                SetStatus("已复制会话码。");
+                Clipboard.SetText(FriendConnectGuide.FormatShareClipboard(_host.SessionCode, _host.SessionPassword));
+                SetStatus("已复制连接凭证。");
             }
             catch (Exception ex) { SetStatus("复制失败：" + ex.Message); }
         };
@@ -368,6 +410,7 @@ internal sealed class MainForm : Form
         Controls.Add(_statusLabel);
 
         FormClosing += OnFormClosing;
+        _host.RelayStatusChanged += OnSessionChanged;
         _host.SessionChanged += OnSessionChanged;
         _host.PairedClientsChanged += OnPairedClientsChanged;
         _host.Audit.EntryWritten += OnAuditWritten;
@@ -480,10 +523,33 @@ internal sealed class MainForm : Form
         finally { _suppressHostChange = false; }
 
         _portValue.Text = $":{_host.Port}";
-        _codeLabel.Text = _host.SessionCode;
+        _codeLabel.Text = "码 " + _host.SessionCode;
+        if (_credentialLabel is not null)
+            _credentialLabel.Text = FriendConnectGuide.FormatShareClipboard(_host.SessionCode, _host.SessionPassword);
+        if (_relayStatusLabel is not null && _host.PreferRelay)
+        {
+            var phase = _host.RelayPhase;
+            _relayStatusLabel.Text = phase switch
+            {
+                "dialing" => "正在连接中继…",
+                "ready" or "waiting" => "等待对方连接",
+                "paired" => "对方已连上",
+                "error" => "中继异常",
+                _ => "中继准备中"
+            };
+        }
+        if (_host.PreferRelay)
+            _listenValue.Text = "中继 " + _host.RelayEndpointAddress + " · " + _host.RelayPhase;
+
         var payload = _host.QrPayload;
 
-        if (_host.UseTls && _host.CertificateFingerprint is { } fp)
+        if (_host.PreferRelay)
+        {
+            _tlsValue.Text = "公网中继（码+密码）";
+            _tlsValue.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+            Tip().SetToolTip(_tlsValue, _host.RelayEndpointAddress);
+        }
+        else if (_host.UseTls && _host.CertificateFingerprint is { } fp)
         {
             var shortFp = fp.Length > 23 ? fp[..10] + "…" + fp[^8..] : fp;
             _tlsValue.Text = shortFp;
@@ -519,11 +585,26 @@ internal sealed class MainForm : Form
 
     private void UpdateListenLabel()
     {
-        var tls = _host.UseTls ? "TLS 开" : "明文";
         var n = _host.ListPairedClients().Count;
-        _listenValue.Text = $"监听 {_host.Port} · {tls} · 已配对 {n} 个";
+        if (_host.PreferRelay)
+        {
+            var phase = _host.RelayPhase switch
+            {
+                "dialing" => "正在连接中继",
+                "ready" or "waiting" => "等待对方连接",
+                "paired" => "对方已连上",
+                "error" => "中继异常（将自动重试）",
+                _ => "中继准备中"
+            };
+            _listenValue.Text = phase + " · 已配对 " + n + " 个";
+        }
+        else
+        {
+            var tls = _host.UseTls ? "TLS 开" : "明文";
+            _listenValue.Text = $"监听 {_host.Port} · {tls} · 已配对 {n} 个";
+        }
         _headerSubtitle.Text = n == 0
-            ? "被协助端 · 局域网会话码配对 · 危险操作需本机确认"
+            ? "接受协助 · 把连接凭证发给对方 · 危险操作需本机确认"
             : $"被协助端 · 已有 {n} 个协助方连接 · 可随时断开";
     }
 
@@ -573,6 +654,7 @@ internal sealed class MainForm : Form
     {
         if (disposing)
         {
+            _host.RelayStatusChanged -= OnSessionChanged;
             _host.SessionChanged -= OnSessionChanged;
             _host.PairedClientsChanged -= OnPairedClientsChanged;
             _host.Audit.EntryWritten -= OnAuditWritten;

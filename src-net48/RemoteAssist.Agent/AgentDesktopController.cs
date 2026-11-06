@@ -1,4 +1,5 @@
 using System.Windows.Forms;
+using RemoteAssist.Protocol;
 
 namespace RemoteAssist.Agent;
 
@@ -22,14 +23,28 @@ public sealed class AgentDesktopController : IDisposable
         bool headless = false,
         int confirmTimeoutSeconds = 60,
         bool insecure = false,
-        bool enableReturnHome = true)
+        bool enableReturnHome = true,
+        bool? preferRelay = null,
+        bool? enableLanListen = null,
+        string? relayEndpoint = null)
     {
         _enableReturnHome = enableReturnHome;
         var auditPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RemoteAssist", "audit.log");
         var audit = new AuditLog(auditPath);
-        _host = new AgentHost(port, autoYes, headless, confirmTimeoutSeconds, audit, auditPath, insecure);
+        var settings = HelperUiSettings.Load();
+        _host = new AgentHost(
+            port,
+            autoYes,
+            headless,
+            confirmTimeoutSeconds,
+            audit,
+            auditPath,
+            insecure,
+            preferRelay: preferRelay ?? settings.PreferRelay,
+            enableLanListen: enableLanListen ?? false,
+            relayEndpoint: relayEndpoint ?? settings.RelayEndpoint);
     }
 
     public void Start()

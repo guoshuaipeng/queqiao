@@ -96,8 +96,15 @@ internal static class ConfirmPrompt
     {
         if (Interlocked.Exchange(ref _winFormsInit, 1) == 0)
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            try
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+            }
+            catch (InvalidOperationException)
+            {
+                // 已由宿主 Program / 首页 Form 初始化过 WinForms（R043 实测根因）。
+            }
         }
     }
 

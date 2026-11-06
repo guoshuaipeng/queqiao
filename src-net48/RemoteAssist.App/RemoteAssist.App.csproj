@@ -8,7 +8,9 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>RemoteAssist.App</RootNamespace>
     <AssemblyName>RemoteAssist.Net48</AssemblyName>
-    <Product>RemoteAssist (.NET Framework 4.8)</Product>
+    <Product>鹊桥</Product>
+    <AssemblyTitle>鹊桥</AssemblyTitle>
+    <Description>鹊桥远程协助</Description>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>

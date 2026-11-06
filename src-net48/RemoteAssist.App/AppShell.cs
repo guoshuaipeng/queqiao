@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using RemoteAssist.Agent;
 using RemoteAssist.Helper.UI;
+using RemoteAssist.Protocol;
 
 namespace RemoteAssist.App;
 
@@ -68,7 +69,39 @@ internal sealed class AppShell : ApplicationContext
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.ToString(), "启动被控模式失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            try
+            {
+                var auditDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "RemoteAssist");
+                Directory.CreateDirectory(auditDir);
+                File.AppendAllText(
+                    Path.Combine(auditDir, "ui-errors.log"),
+                    DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz") + "\taccept_start\t" + ex + Environment.NewLine);
+            }
+            catch { /* ignore */ }
+
+            var human = FriendConnectGuide.FriendlyOrRaw(ex);
+            if (ex is System.Net.Sockets.SocketException ||
+                (ex.InnerException is System.Net.Sockets.SocketException) ||
+                (ex.Message?.IndexOf("address already in use", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (ex.Message?.IndexOf("通常每个套接字地址", StringComparison.Ordinal) >= 0))
+            {
+                human = "本机协助端口已被占用。请关掉其他鹊桥窗口后再试；或在高级里改用默认公网中继（不必开局域网端口）。";
+            }
+            else if (string.IsNullOrWhiteSpace(human) || human == ex.Message)
+            {
+                human = "无法开始接受协助。" + Environment.NewLine + Environment.NewLine +
+                        FriendConnectGuide.FriendlyOrRaw(ex) + Environment.NewLine + Environment.NewLine +
+                        "下一步：确认网络可用后重试；若反复失败，把日志目录 %LocalAppData%\\RemoteAssist 发给协助方。";
+            }
+            else
+            {
+                human = human + Environment.NewLine + Environment.NewLine +
+                        "下一步：确认网络可用后重试；仍不行时查看 %LocalAppData%\\RemoteAssist\\ui-errors.log。";
+            }
+
+            MessageBox.Show(human, "鹊桥", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             _agent?.Dispose();
             _agent = null;
             _home.Show();
@@ -78,7 +111,6 @@ internal sealed class AppShell : ApplicationContext
 
     private void EnterControlMode()
     {
-        // 进入控制前若被控在跑，先干净退出被控
         LeaveAcceptMode();
         _home.Hide();
 
@@ -96,7 +128,24 @@ internal sealed class AppShell : ApplicationContext
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.ToString(), "启动控制模式失败", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            try
+            {
+                var auditDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "RemoteAssist");
+                Directory.CreateDirectory(auditDir);
+                File.AppendAllText(
+                    Path.Combine(auditDir, "ui-errors.log"),
+                    DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz") + "\tcontrol_start\t" + ex + Environment.NewLine);
+            }
+            catch { /* ignore */ }
+
+            var human = FriendConnectGuide.FriendlyOrRaw(ex);
+            MessageBox.Show(
+                human + Environment.NewLine + Environment.NewLine + "下一步：关闭后重试；仍失败请查看 %LocalAppData%\\RemoteAssist\\ui-errors.log。",
+                "鹊桥",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
             _helper?.Dispose();
             _helper = null;
             _home.Show();
