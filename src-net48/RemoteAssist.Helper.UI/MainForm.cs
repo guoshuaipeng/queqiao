@@ -37,9 +37,10 @@ internal sealed class MainForm : Form
     private bool _busy;
     private readonly bool _enableReturnHome;
     private bool _returningHome;
+    private bool _selfDisconnect;
+    private bool _embeddedInShell;
 
     public event Action? HomeRequested;
-    private bool _embeddedInShell;
 
     public MainForm(bool enableReturnHome = false)
     {
@@ -188,7 +189,7 @@ internal sealed class MainForm : Form
             Size = new Size(590, 24),
             TextAlign = ContentAlignment.MiddleLeft,
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "状态：未连接 · 经默认中继"
+            Text = HelperSessionCopy.StatusDisconnectedSelf
         };
         pairCard.Controls.Add(_statusLabel);
         Controls.Add(pairCard);
@@ -641,21 +642,22 @@ internal sealed class MainForm : Form
             }
 
             var client = await AssistClient.PairAsync(opts, "helper-ui").ConfigureAwait(true);
-            _client = client;
             _settings.LastHost = opts.Host;
             _settings.LastPort = opts.Port;
             _settings.PreferRelay = true;
             if (!string.IsNullOrWhiteSpace(opts.Fingerprint))
                 _settings.LastFingerprint = opts.Fingerprint;
             _settings.Save();
+            AttachClient(client);
             SetConnectedUi(true);
-            SetStatus("已连接 · " + preview);
-            AppendOutput("PAIR_OK perm=" + client.Permission + "\r\n");
+            SetStatus(HelperSessionCopy.StatusConnected);
+            _outputBox.Text = ProposeChangeCopy.ConnectedResultHint;
+            ClearFailHint();
         }
         catch (Exception ex)
         {
             var friendly = FriendConnectGuide.FriendlyOrRaw(ex);
-            SetStatus("连接失败");
+            SetStatus(HelperSessionCopy.StatusConnectFailed);
             SetFailHint(FriendConnectGuide.RedactSecureMaterial(friendly));
             SetConnectedUi(false);
         }
@@ -669,10 +671,48 @@ internal sealed class MainForm : Form
 
     private void Disconnect()
     {
-        try { _client?.Dispose(); } catch { /* ignore */ }
+        _selfDisconnect = true;
+        try
+        {
+            if (_client is not null)
+                _client.ConnectionLost -= OnClientConnectionLost;
+            _client?.Dispose();
+        }
+        catch { /* ignore */ }
+        _client = null;
+        _selfDisconnect = false;
+        SetConnectedUi(false);
+        SetStatus(HelperSessionCopy.StatusDisconnectedSelf);
+        ClearFailHint();
+    }
+
+    private void AttachClient(AssistClient client)
+    {
+        if (_client is not null)
+        {
+            try { _client.ConnectionLost -= OnClientConnectionLost; } catch { /* ignore */ }
+            try { _client.Dispose(); } catch { /* ignore */ }
+        }
+        _client = client;
+        _client.ConnectionLost += OnClientConnectionLost;
+    }
+
+    private void OnClientConnectionLost()
+    {
+        if (IsDisposed) return;
+        if (InvokeRequired)
+        {
+            try { BeginInvoke(OnClientConnectionLost); } catch { /* closing */ }
+            return;
+        }
+        if (_selfDisconnect) return;
+        if (_client is null) return;
+        try { _client.ConnectionLost -= OnClientConnectionLost; } catch { /* ignore */ }
+        try { _client.Dispose(); } catch { /* ignore */ }
         _client = null;
         SetConnectedUi(false);
-        SetStatus("状态：未连接 · 经默认中继");
+        // 对端结束或对等断链；本机点「断开」走 Disconnect（_selfDisconnect）
+        SetStatus(HelperSessionCopy.StatusPeerEndedAssist);
         ClearFailHint();
     }
 
@@ -682,6 +722,20 @@ internal sealed class MainForm : Form
     private void SetConnectedUi(bool connected)
     {
         _btnConnect.Enabled = !connected;
+        _btnConnect.Text = HelperSessionCopy.SessionConnectButtonLabel(connected);
+        if (connected)
+        {
+            // R036：已连上 → 不可点「已连接」，非实心绿
+            _btnConnect.BackColor = Color.FromArgb(0xE8, 0xEA, 0xED);
+            _btnConnect.ForeColor = Color.FromArgb(0x9A, 0xA0, 0xA6);
+            _btnConnect.Cursor = Cursors.Default;
+        }
+        else
+        {
+            _btnConnect.BackColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+            _btnConnect.ForeColor = Color.White;
+            _btnConnect.Cursor = Cursors.Hand;
+        }
         _btnDisconnect.Enabled = connected;
         foreach (var b in _toolButtons)
             b.Enabled = connected;
@@ -692,6 +746,25 @@ internal sealed class MainForm : Form
         _permBox.Enabled = !connected;
         _insecureBox.Enabled = !connected;
         _relayBox.Enabled = !connected;
+        UpdatePasteThenConnectHintVisibility(connected);
+    }
+
+    /// <summary>R037：已连上隐藏粘贴操作提示；未连上再显示。</summary>
+    private void UpdatePasteThenConnectHintVisibility(bool connected)
+    {
+        var show = HelperSessionCopy.ShowPasteThenConnectHint(connected);
+        if (!show)
+        {
+            if (_previewLabel.Text == FriendConnectGuide.PasteCredentialHint ||
+                _previewLabel.Text == HelperSessionCopy.PasteThenConnectHint)
+                _previewLabel.Visible = false;
+            return;
+        }
+
+        _previewLabel.Visible = true;
+        if (string.IsNullOrWhiteSpace(_previewLabel.Text) ||
+            _previewLabel.Text == HelperSessionCopy.PasteThenConnectHint)
+            RefreshPreview();
     }
 
     private string? RequireArg(string key)
@@ -710,20 +783,22 @@ internal sealed class MainForm : Form
     {
         if (_client is null || _busy) return;
         _busy = true;
-        SetStatus("执行 " + tool + " …");
+        // R041：仅「提议一项改动」显示等待确认人话；只读操作不套等待句
+        if (ProposeChangeCopy.UsesWaitingStatus(tool))
+            SetStatus(ProposeChangeCopy.WaitingStatus);
+        else
+            SetStatus("执行 " + tool + " …");
         try
         {
             var resp = await _client.InvokeToolAsync(tool, args).ConfigureAwait(true);
             if (!resp.Ok)
             {
-                var msg = resp.Error ?? "失败";
-                if (resp.DeniedByUser)
-                    msg = "对方拒绝：" + msg;
+                var msg = ProposeChangeCopy.FailureStatus(resp.DeniedByUser, resp.Error);
                 SetStatus(msg);
-                AppendOutput("[" + tool + "] FAIL: " + msg + "\r\n");
+                AppendOutput("[" + tool + "] FAIL: " + FriendConnectGuide.RedactSecureMaterial(msg) + "\r\n");
                 return;
             }
-            SetStatus(tool + " 成功");
+            SetStatus(ProposeChangeCopy.AllowedStatusFor(tool));
             AppendOutput("[" + tool + "] OK\r\n" + resp.Result + "\r\n");
         }
         catch (Exception ex)
@@ -776,5 +851,23 @@ internal sealed class MainForm : Form
             // 独立 Helper 关闭即退出
         }
         try { _client?.Dispose(); } catch { /* ignore */ }
+    }
+
+    // R049 WIP（本地未推）：供外壳嵌入
+    internal void SetEmbeddedInShell(bool embedded) => _embeddedInShell = embedded;
+
+    internal bool ConfirmEndSessionOrCancel(IWin32Window? owner)
+    {
+        if (_client is null) return true;
+        var r = MessageBox.Show(
+            owner ?? this,
+            "当前已连接。返回首页将断开连接。是否继续？",
+            "鹊桥",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question,
+            MessageBoxDefaultButton.Button2);
+        if (r != DialogResult.Yes) return false;
+        Disconnect();
+        return true;
     }
 }

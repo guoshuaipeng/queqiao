@@ -14,6 +14,9 @@ public sealed class AssistClient : IDisposable
     private readonly Stream _stream;
     private string? _token;
     private PermissionLevel _permission;
+    private readonly CancellationTokenSource _watchCts = new();
+    private int _connectionLostRaised;
+    private int _disposed;
 
     private AssistClient(IDisposable transport, Stream stream, string token, PermissionLevel permission)
     {
@@ -21,10 +24,14 @@ public sealed class AssistClient : IDisposable
         _stream = stream;
         _token = token;
         _permission = permission;
+        _ = Task.Run(() => WatchTransportAsync(_watchCts.Token));
     }
 
     public string? Token => _token;
     public PermissionLevel Permission => _permission;
+
+    /// <summary>已配对后底层传输被对端关掉（对方结束协助 / 连接中断）。自己 Dispose 不会触发。</summary>
+    public event Action? ConnectionLost;
 
     public static Task<AssistClient> PairAsync(
         AssistConnectOptions opts,
@@ -139,8 +146,21 @@ public sealed class AssistClient : IDisposable
             Arguments = args ?? new Dictionary<string, string?>()
         }, token: _token, ct: ct).ConfigureAwait(false);
 
-        var response = await FrameIo.ReadAsync(_stream, ct).ConfigureAwait(false)
-            ?? throw new InvalidOperationException("Connection closed during tool call.");
+        WireEnvelope? response;
+        try
+        {
+            response = await FrameIo.ReadAsync(_stream, ct).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            RaiseConnectionLost();
+            throw;
+        }
+        if (response is null)
+        {
+            RaiseConnectionLost();
+            throw new InvalidOperationException("Connection closed during tool call.");
+        }
 
         if (string.Equals(response.Type, "error", StringComparison.OrdinalIgnoreCase))
         {
@@ -157,7 +177,74 @@ public sealed class AssistClient : IDisposable
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+        try { _watchCts.Cancel(); } catch { /* ignore */ }
+        try { _watchCts.Dispose(); } catch { /* ignore */ }
         try { _stream.Dispose(); } catch { }
         try { _transport.Dispose(); } catch { }
+    }
+
+    private async Task WatchTransportAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(400, ct).ConfigureAwait(false);
+                if (IsTransportClosed())
+                {
+                    RaiseConnectionLost();
+                    return;
+                }
+            }
+        }
+        catch (OperationCanceledException) { /* dispose */ }
+        catch
+        {
+            RaiseConnectionLost();
+        }
+    }
+
+    private bool IsTransportClosed()
+    {
+        try
+        {
+            var sock = TryGetSocket();
+            if (sock is null)
+                return false;
+            if (!sock.Connected)
+                return true;
+            return sock.Poll(0, SelectMode.SelectRead) && sock.Available == 0;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private Socket? TryGetSocket()
+    {
+        try
+        {
+            if (_transport is TcpClient tcp)
+                return tcp.Client;
+            if (_transport is RelayClient relay)
+                return relay.TcpSocket;
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void RaiseConnectionLost()
+    {
+        if (Volatile.Read(ref _disposed) != 0)
+            return;
+        if (Interlocked.Exchange(ref _connectionLostRaised, 1) != 0)
+            return;
+        try { ConnectionLost?.Invoke(); } catch { /* UI */ }
     }
 }
