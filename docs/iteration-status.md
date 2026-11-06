@@ -442,3 +442,12 @@ elay/internal/relay/audit_test.go
 - 按产品要求：将「须用户确认后再交实现」改为「用户已确认 + 产品已授权本地紧凑改版（LOCAL-IMPL-AUTH.md）」。
 - 同提交纳入工作区已有的 PV-004 待开发条文（产品先前未 commit 的落盘）。
 
+
+### 2026-11-06 14:30 Asia/Shanghai · PV-001 点验环境缺口（服务端问询）
+
+- **事实**：迭代可读写用户机仓 `E:\IdeaProjects\remote-assist`（本机）；**无**已授权、正在跑的 bot 侧 site+/admin 点验实例。
+- box 上仅有历史拷贝 `/workspace/site-build`、`/workspace/relay-build`（约 11-05），**非**运行中实例，**未**获用户授权用作 QA 环境；不据此起服务。
+- 用户机当前未见常见 site/relay 监听端口占用。
+- **产品采纳「本地点验」≠** 迁移源码到 bot / 起服务 / 扩环境授权。
+- **待产品问用户选环境**：（A）用户机已有本地 site 起法上由测试点验；（B）另授 bot 箱构建+起 site 供测试；（C）其他。未选前：服务端保持只复核既有起法；测试勿把未公网部署当 FAIL。
+
