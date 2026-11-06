@@ -265,6 +265,8 @@
 | 本轮完成 | 之前的结果里看得见的行仍是整行 | 滚这一下不切掉之前的结果 | `queqiao-old-line` 在 375–395，`exit=0` 在 395–415，行高都是 20。撤掉临时撑高后多出来的高度是 0，滚动是 hidden | `acceptance/desktop-growpwheel-after.png` |
 | 本轮完成 | 在之前的结果里滚过之后，当前结果的 exit=0 仍留在左边，这一行仍是整行 | 滚之前的结果不把当前末行带走 | 竖向 100，和尽头一致。横向 715，和尽头一致。`exit=0` 仍是整行、留在框左，并且是最下一行。横滑条占 12 | 本机 `127.0.0.1:17991`；`acceptance/desktop-growptail-before.png`、`desktop-growptail-after.png` |
 | 本轮完成 | 横滑条仍坐在这行下面，QUEEND 仍在框里 | 横滑条不压住 exit=0，行尾没有滑出框外 | `QUEEND` 在 727–767，顶 299、底 313。墨水到画面 360，横滑条从 367 开始。多出来的高度是 0，滚动是 hidden | `acceptance/desktop-growptail-after.png` |
+| 本轮完成 | 滚过之后，之前的结果里的 exit=0 仍留在左边，这一行仍是整行 | 滚这一下不把上一次的末行带走 | 字从 37 到 77，框左是 24。行高 20，在 395–415，是看得见的最下一行 | 本机 `127.0.0.1:17991`；`acceptance/desktop-growpold-before.png`、`desktop-growpold-after.png` |
+| 本轮完成 | 这一行下面没有横滑条压住它 | 短的之前结果不另加横滑条 | 横滑条占 2，只是边框。墨水到画面 439，下面没有横滑条 | `acceptance/desktop-growpold-after.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
