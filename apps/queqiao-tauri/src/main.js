@@ -221,6 +221,15 @@ function pinShortRows(box) {
   }
 }
 
+function slideBy(box, delta) {
+  const max = Math.max(0, box.scrollWidth - box.clientWidth);
+  const next = box.scrollLeft + delta;
+  if (next >= max - 1) box.scrollLeft = box.scrollWidth;
+  else box.scrollLeft = Math.max(0, next);
+  box.__rowTail = box.scrollLeft;
+  shiftShortRows(box);
+}
+
 function shiftShortRows(box) {
   const x = box.scrollLeft;
   for (const row of box.children) {
@@ -260,9 +269,7 @@ function watchResultWheel(result) {
     const maxX = result.scrollWidth - result.clientWidth;
     const maxY = result.scrollHeight - result.clientHeight;
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY) && maxX > 1) {
-      result.scrollLeft = Math.min(maxX, Math.max(0, result.scrollLeft + event.deltaX));
-      result.__rowTail = result.scrollLeft;
-      shiftShortRows(result);
+      slideBy(result, event.deltaX);
       event.preventDefault();
       return;
     }
@@ -285,9 +292,7 @@ function watchPastSnap(past) {
     const maxX = past.scrollWidth - past.clientWidth;
     const maxY = past.scrollHeight - past.clientHeight;
     if (Math.abs(event.deltaX) > Math.abs(event.deltaY) && maxX > 1) {
-      past.scrollLeft = Math.min(maxX, Math.max(0, past.scrollLeft + event.deltaX));
-      past.__rowTail = past.scrollLeft;
-      shiftShortRows(past);
+      slideBy(past, event.deltaX);
       event.preventDefault();
       return;
     }

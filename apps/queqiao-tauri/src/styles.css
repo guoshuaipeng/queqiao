@@ -99,7 +99,6 @@ button, input { font-family: inherit; }
   overflow-x: auto;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
   white-space: normal;
   scroll-snap-type: y mandatory;
 }
@@ -127,7 +126,6 @@ button, input { font-family: inherit; }
   overflow-x: auto;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
   scroll-snap-type: y mandatory;
   border: 1px solid var(--line);
   border-radius: 8px;

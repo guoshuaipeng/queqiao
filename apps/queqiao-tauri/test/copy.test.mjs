@@ -205,8 +205,8 @@ test("the previous exit line and the tool row stay whole", () => {
 });
 
 test("a long previous line stays clear of the scrollbar", () => {
-  assert.match(css, /#past\s*\{[^}]*scrollbar-gutter:\s*stable/);
   assert.match(css, /#past\s*\{[^}]*padding:\s*0 36px 0 12px/);
+  assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*width:\s*12px/);
 });
 
 test("the result wheel does not scroll the page", () => {
@@ -244,8 +244,8 @@ test("scrolling back keeps the long line at its tail", () => {
 
 test("the result box at either end does not scroll the page", () => {
   assert.match(js, /if \(maxY > 1\) \{\s*result\.scrollTop = Math\.min\(maxY, Math\.max\(0, result\.scrollTop \+ event\.deltaY\)\);\s*\}/);
-  assert.match(js, /result\.__rowTail = result\.scrollLeft/);
-  assert.match(js, /result\.scrollLeft = result\.__rowTail/);
+  assert.match(js, /slideBy\(result, event\.deltaX\)/);
+  assert.match(js, /box\.__rowTail = box\.scrollLeft/);
 });
 
 test("a short result wheel does not scroll the page", () => {
@@ -259,9 +259,9 @@ test("a short previous result wheel does not scroll the page", () => {
 });
 
 test("a horizontal wheel on previous results does not move the page", () => {
-  assert.match(js, /past\.scrollLeft = Math\.min\(maxX, Math\.max\(0, past\.scrollLeft \+ event\.deltaX\)\)/);
-  assert.match(js, /past\.__rowTail = past\.scrollLeft/);
-  assert.match(js, /shiftShortRows\(past\);\s*event\.preventDefault\(\);\s*return;/);
+  assert.match(js, /function slideBy/);
+  assert.match(js, /if \(next >= max - 1\) box\.scrollLeft = box\.scrollWidth/);
+  assert.match(js, /slideBy\(past, event\.deltaX\)/);
 });
 
 test("horizontal bars sit under the text rows", () => {
@@ -271,8 +271,8 @@ test("horizontal bars sit under the text rows", () => {
 });
 
 test("a long result line stays clear of its scrollbar", () => {
-  assert.match(css, /#result\s*\{[^}]*scrollbar-gutter:\s*stable/);
   assert.match(css, /#result\s*\{[^}]*padding:\s*0 36px 0 12px/);
+  assert.match(css, /#result::-webkit-scrollbar,\s*#past::-webkit-scrollbar\s*\{[^}]*width:\s*12px/);
 });
 
 test("a wide result does not bring back the page scrollbar", () => {
@@ -285,7 +285,7 @@ test("a long line can slide sideways without sliding the page", () => {
   assert.match(css, /#result > div\s*\{[^}]*width:\s*max-content/);
   assert.match(css, /\.scroll\s*\{[^}]*overflow-x:\s*hidden/);
   assert.match(js, /Math\.abs\(event\.deltaX\) > Math\.abs\(event\.deltaY\)/);
-  assert.match(js, /result\.scrollLeft = Math\.min\(maxX, Math\.max\(0, result\.scrollLeft \+ event\.deltaX\)\)/);
+  assert.match(js, /slideBy\(result, event\.deltaX\)/);
 });
 
 test("previous lines can scroll and the page scrollbar stays away", () => {
