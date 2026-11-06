@@ -90,7 +90,9 @@ button, input { font-family: inherit; }
   overflow-y: auto;
   scroll-snap-type: y mandatory;
 }
-#history { flex: 0 1 auto; min-height: 24px; }
+#history { flex: 0 0 auto; min-height: 0; }
+#zone-left:has(#history:not([hidden])) #left-idle p,
+#zone-left:has(#history:not([hidden])) #left-idle .steps { display: none; }
 #audit { min-height: 24px; }
 #history > div, #audit > div {
   height: 24px;

@@ -78,10 +78,24 @@ function render(s) {
   show($("btn-history"), (s.history || []).length > 0 && !waiting);
   $("btn-history").textContent = s.showHistory ? "收起" : "查看上次协助记录";
   const history = $("history");
-  const openingHistory = !!s.showHistory && history.hidden;
+  const historyOpen = !!s.showHistory && !history.hidden;
+  if (s.showHistory && !historyOpen) window.__historyStick = "end";
+  if (!s.showHistory) window.__historyStick = "";
+  const historyFollow = historyOpen && pinnedToEnd(history);
+  const historyTop = history.scrollTop;
   history.innerHTML = (s.history || []).map(rowHtml).join("") || "";
   show(history, !!s.showHistory);
-  if (openingHistory) requestAnimationFrame(() => snapEnd(history));
+  if (s.showHistory) {
+    const token = (window.__historyToken || 0) + 1;
+    window.__historyToken = token;
+    requestAnimationFrame(() => {
+      if (window.__historyToken !== token) return;
+      if (window.__historyStick === "end" || historyFollow) {
+        snapEnd(history);
+        window.__historyStick = "";
+      } else history.scrollTop = historyTop;
+    });
+  }
 
   const cred = $("cred").value.trim();
   show($("btn-connect"), !rightBusy);
@@ -106,15 +120,20 @@ function render(s) {
   show($("trust-full"), host && s.trustEffective === "full" && !ended);
   show($("trust-loose"), host && s.trustEffective === "relaxed" && !ended);
   const audit = $("audit");
+  const auditFollow = pinnedToEnd(audit);
+  const auditTop = audit.scrollTop;
   const nextAudit = (s.audit || []).length;
   const grew = host && nextAudit > (window.__auditSeen || 0);
   audit.innerHTML = nextAudit
     ? s.audit.map(rowHtml).join("")
     : '<div><span class="t"></span>对方还没有做任何操作</div>';
   if (!host) window.__auditSeen = 0;
-  else if (grew) {
-    window.__auditSeen = nextAudit;
-    requestAnimationFrame(() => snapEnd(audit));
+  else {
+    if (grew) window.__auditSeen = nextAudit;
+    requestAnimationFrame(() => {
+      if (auditFollow) snapEnd(audit);
+      else audit.scrollTop = auditTop;
+    });
   }
   show($("helper-tools"), !ended);
   document.querySelectorAll(".ops .btn").forEach((b) => {
@@ -140,6 +159,11 @@ function render(s) {
   $("settings-hint").textContent = s.settingsHint || "";
   $("version").textContent = "版本 " + (s.version || "");
   renderDialog(s.dialog);
+}
+
+function pinnedToEnd(box) {
+  const max = box.scrollHeight - box.clientHeight;
+  return max <= 1 || max - box.scrollTop < 8;
 }
 
 function snapEnd(box) {

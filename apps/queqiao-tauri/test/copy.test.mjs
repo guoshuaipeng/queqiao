@@ -137,15 +137,22 @@ test("an open record button says collapse", () => {
 });
 
 test("a long record opens at the newest line", () => {
-  assert.match(js, /openingHistory/);
+  assert.match(js, /historyOpen/);
   assert.match(js, /snapEnd\(history\)/);
   assert.match(css, /#history, #audit\s*\{[^}]*overflow-y:\s*auto/);
 });
 
 test("the live audit can scroll and lines stay whole", () => {
   assert.match(js, /snapEnd\(audit\)/);
+  assert.match(js, /pinnedToEnd\(audit\)/);
+  assert.match(js, /else audit\.scrollTop = auditTop/);
   assert.match(css, /scroll-snap-align:\s*start/);
   assert.match(css, /#history > div, #audit > div\s*\{[^}]*height:\s*24px/);
+});
+
+test("the home record keeps five rows", () => {
+  assert.match(css, /#history, #audit\s*\{[^}]*5 \* 24px \+ 4 \* 6px/);
+  assert.match(css, /#history\s*\{[^}]*flex:\s*0 0 auto/);
 });
 
 test("a finished change clears the command", () => {

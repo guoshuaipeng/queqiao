@@ -163,6 +163,8 @@
 | 本轮完成 | 记录太多时能往上翻到更早的一条 | 最新的在眼前，早的还能找到 | 打开时先看到最近的查看；往上翻能看到「已拒绝这次协助」 | `acceptance/desktop-scroll-before.png`、`desktop-scroll-after.png` |
 | 本轮完成 | 进行中的「对方做过的事」太多时能往上翻到最早那条 | 最新的在眼前，最早的拒绝还在 | 先看到最近的查看；往上翻能看到「已拒绝这次协助」 | 本机 `127.0.0.1:17991`；`acceptance/desktop-audit-bottom.png`、`desktop-audit-top.png` |
 | 本轮完成 | 记录滚动时不切掉半行 | 每一行都是完整的 | 进行中和首页记录的可见行都是整句 | `acceptance/desktop-audit-bottom.png`、`desktop-row-bottom.png`、`desktop-row-top.png` |
+| 本轮完成 | 正在看最早那条时，新来的一条不把列表拉回最底下 | 看旧记录不被打断 | 停在「已拒绝这次协助」后新来一条，最早那条仍在眼前 | 本机 `127.0.0.1:17991`；`acceptance/desktop-stay-before.png`、`desktop-stay-after.png` |
+| 本轮完成 | 首页记录框留下五行整行，开启按钮仍在下面 | 和进行中一样能看五行，按钮不被挡住 | 展开后看见五行整句，「开启接受协助」完整且在列表下面 | `acceptance/desktop-five-rows.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
