@@ -213,3 +213,5 @@ Windows 主线演示仍按现有安排；小体积 4.8 对比版仅 Windows。�
 
 | [short-credential-trust.md](short-credential-trust.md) | 短凭证 S0/S1 信任模型（密封指纹过渡）与不可降级底线 |
 | [pake-unique-credential-eval.md](pake-unique-credential-eval.md) | PAKE 唯一凭证正式评估（不信任中继；与账号免密冲突待产品拍板） |
+
+> 2026-11-06：用户拍板严格唯一凭证（仅 code+密码；取消免密/设备密钥快捷连）。S1 仅过渡。详见 `pake-unique-credential-eval.md`。
