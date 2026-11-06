@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端出包；鹊桥-服务端替换上架
-> 状态：**done（待产品验收）**
+> 状态：**done（产品已验收）**
 > 依据：R041 产品已验收。官网当前仍是 R040 的包（含 R039）。R041「提议一项改动」四态人话与连上后去掉 PAIR_OK 还没进正式下载。用户明确以稳定性和用户体验为重点，这批人话应尽快上架。
 
 ## 本轮目标
@@ -123,3 +123,28 @@ macOS「即将提供」。首页无端口 / 17891 / 放行入站 / 也可下载�
 
 - 未开下一轮；未重启 site / relay；未改 HTML；未改中继；未改 AI-SSH-Pro
 - 未读/打印 `/etc/remote-assist-site.env`
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照公网**独立下载**、核哈希，并查看 `docs/screenshots/r042-*`（上架提交 `f90bd8f`）后验收通过。出包 HEAD `8d61398`（含 R041 `aeafeeb`）；客户端交付 `fd14a24`；服务端上架与截图 `f90bd8f`。
+
+公网文件与客户端交付产物一致，且已与 R040 旧包区分：
+
+| 文件 | 字节 | SHA256 | Last-Modified |
+|------|------|--------|---------------|
+| http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe | 75,587,213 | 63360A839B346F41B09778D7F4A0C0898337F4EE994BCC033A3FAE701EC53783 | 2026-11-06 08:22:33 Asia/Shanghai（Fri, 06 Nov 2026 00:22:33 GMT） |
+| http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz | 8,005,849 | 2E16A11284E7E021C3F30DC9C6C9B806F2B7254034F2B0F5DACB79BEF45485E1 | 同上 |
+
+对照 R040：Windows 75,585,615 / `C403FA6D254CD8F9FD8AEB509A27757523A7C28E54A57444C704D8A0601E2104`；Linux 8,005,149 / `A2F1E1874CD59B50D4EE96DCC0E01FA4167AC3E468234A0C0DF9853975AC2467`。Windows 文件头为 MZ，Linux 为 gzip。
+
+首页导语「Windows 和 Linux 都可下载使用」、Windows 旁注「若浏览器提示通常不会下载，选择保留即可。」、Linux 运行时说明（选运行时、不要选 SDK）与 macOS「即将提供」均未回退；首页无 17891。`/`、`/ask`、`/admin` 均为 HTTP 200。
+
+| 截图 | 产品看到的 |
+|------|------------|
+| `docs/screenshots/r042-home-download.png` | 地址栏 121.196.45.81；Windows / Linux 旁注与 macOS 即将提供都在 |
+| `docs/screenshots/r042-win-download.png` | 飞出 `RemoteAssist-Setup-0.1.0.exe`，与 75,587,213 字节相符 |
+| `docs/screenshots/r042-linux-download.png` | 浮层含 `queqiao-linux-x64.tar.gz`（无 -fd）；旁注未回退 |
+
+缺口：地址栏仍显示「不安全」；macOS 仍未正式可下；服务端声称 site/relay 进程号未变，产品未独立复核进程号。
+
+已开 R043（高频：S005 中途掉线人话与重连引导；打磨：断开之后人话；交给鹊桥-客户端；**本轮不包装**；不改中继协议 / AI-SSH-Pro）。
