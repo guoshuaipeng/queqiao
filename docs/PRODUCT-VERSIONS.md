@@ -63,7 +63,7 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 ### PV-002 · 客户端首页与协助端 UI 观感优化
 
-- **状态**：待开发
+- **状态**：进行中
 - **标题**：首页大面积空白难看；协助端按钮折行、输入框过窄，需改好看
 - **版本**：v0.2
 - **说明**：
@@ -75,7 +75,7 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 ### PV-003 · 打包下载的安装包缺少图标
 
-- **状态**：待开发
+- **状态**：进行中
 - **标题**：官网/分发下载的安装包没有 icon
 - **版本**：v0.2
 - **说明**：
@@ -105,18 +105,19 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 ## 机器人记录（请勿当需求原文改；可浏览）
 
-> 更新：2026-11-06 13:23 Asia/Shanghai  
-> 最近检查：2026-11-06 13:27 Asia/Shanghai  
-> 当前项：已移交「文件迭代」；本 Bot「迭代」停工；见 iteration-status
-> 本轮结果：例程已 pause；未完成改动留在工作区未提交；详见 iteration-status 交接节
-> 测试：relay+site unit PASS；local audit/proxy curl PASS  
-> 提交：—（未 commit）  
-> 阻塞：旧 Bot 已停；新 Bot 接手前勿并行改同一批文件
+> 更新：2026-11-06 13:41 Asia/Shanghai
+> 最近检查：2026-11-06 13:41 Asia/Shanghai
+> 当前项：PV-002 + PV-003 进行中；PV-001 待验收
+> 本轮结果：本地 commit b964b8a（R046+PV-001）；例程已启用；开工 PV-002/003
+> 测试：relay+site unit PASS
+> 提交：b964b8a（本地；未 push）
+> 阻塞：无（公网上机仍未授权）
 
 ### 检查日志（新在上）
 
 | 时间 (Asia/Shanghai) | 结果 |
 |----------------------|
+| 2026-11-06 13:41 Asia/Shanghai | **鹊桥-迭代**：本地 commit b964b8a；PV-002/003 进行中；例程 automation-1793943554537；见 iteration-status |
 | 2026-11-06 13:27 Asia/Shanghai | **移交「文件迭代」**：本 Bot「迭代」例程 automation-1793942727070 已 pause；停工；详见 iteration-status |
 | 2026-11-06 13:25 Asia/Shanghai | **新 Bot「迭代」接管**：核实交接与脏树；PV-001 仍待验收；PV-002/003 未放行不实现；待用户答复见 iteration-status |
 | 2026-11-06 13:23 Asia/Shanghai | **交接停工**：例程 automation-1793941584779 已 pause；工作交接新 Bot「迭代」；详见 iteration-status 同刻记录 |
