@@ -534,3 +534,13 @@ Windows P0 可演示闭环已收口。已开 R009（Mac/Linux 被控 CLI + MCP +
 - **决策**：开 **R048**（客户端：迁 `McpInstallGuide` + 亲友「复制安装说明」+ 智能体可贴 JSON；Helper 主屏常显轻按钮；完整载荷、禁缺指纹降明文）。与 **R046** / **R047** 并行。
 - **边界**：不改协议/信任模型；不改 Avalonia/CLI；不把 Agent 托盘入口当成 Helper 已交付。
 - **预防**：勿移植 net8 Helper「缺指纹则 Insecure 生成明文 MCP」退路；安装说明口径对齐「复制连接凭证」。
+
+
+## R048 产品验收复盘（2026-11-06 Asia/Shanghai）
+
+编译/文档核对 **PASS_WITH_NOTES**（证据 `2d427d4`）；真实连接 / 运行 **仍 blocked**。
+
+- **做对的**：net48 Helper 主屏补齐「复制安装说明」+ MCP 三步 +「复制 MCP 配置」+「复制 Skill 说明」；`TryBuildOptions` 后强制合法 fp 且非 Insecure，再生成 TLS 完整凭证载荷；未改接受协助逻辑、未新增 MCP 监听；交付产物哈希与声明一致；另目录 verify publish 0 错误；不杀用户进程、不启 UI。
+- **NOTES**：默认 `app-net48-fd` 被已运行进程占锁；无 UI/剪贴板/Cursor/真连验证；包装不在范围（R047）；verify 重编同尺寸但 SHA 因 PE 时间戳不同。
+- **并行**：R046 / R047 仍 open。
+

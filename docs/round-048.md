@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai  
 > 实现：鹊桥-客户端（仅 **src-net48** Helper / 去协助 UI；可迁 Protocol 常量和 snippet 辅助类）  
-> 状态：**compiled（net48 Helper MCP/安装说明已接线；编译通过；运行未验收；默认产物目录曾被本机已运行进程占用，publish 至 app-net48-fd-r048）** — 代码已接线（见交付）  
+> 状态：**编译/文档核对 = PASS_WITH_NOTES（`2d427d4`）；运行验收仍 blocked（未验收）**  
 > 依据：用户在 net48「去协助」界面找不到可贴给智能体的 MCP 安装 JSON；只读核对结论——**不是藏起来了，是 net48 Helper 从未迁过** MCP「复制安装说明 / 复制 MCP 配置」；net48 **Agent（接受协助）** 已有「复制 MCP 配置」，**Helper 没有**。  
 > **并行说明**：**R046**（会话码审计）/ **R047**（net48 安装包）仍 open，互不阻塞。本轮只补 net48 协助端 MCP / 安装说明入口。
 
@@ -96,13 +96,43 @@ emoteassist:pair（含 fp）；短码/缺 fp **不能**生成「可连」的降�
 ### 编译产物
 
 - 路径：`artifacts/app-net48-fd-r048/RemoteAssist.Net48.exe`（因 `artifacts/app-net48-fd` 被已运行的 RemoteAssist.Net48 占用未能覆盖；**本轮未启动/未结束用户进程**）
-- 元数据见 commit 说明
+- **19968** 字节 · **2026-11-06 10:25:51 Asia/Shanghai**
+- SHA256 `53974730E878F07C031212CC20338945E5C4B898FDE6C7B201A35D0AA5F4A20D`
 
 ### 未做 / 未验证
 
 - 用户本机 UI 运行、联调、截图、剪贴板实贴 Cursor
 - Avalonia/CLI；R046/R047；包装部署；真连 PASS
 
+
+
+## 产品验收 · 编译/文档核对（2026-11-06 Asia/Shanghai）
+
+**结论：编译/文档核对 = PASS_WITH_NOTES；真实连接 / 运行验收 = 仍 blocked（未验收）。**  
+**不是**可公网使用的已验证客户端。
+
+| 项 | 结果 |
+|----|------|
+| 证据 commit | `2d427d4c6eaa8ce0b5b699cc3cf43bc41b3700ac`（短 `2d427d4`） |
+| 范围 | 只读源码 + 文档 + 产物元数据核对；**未**在用户本机启动 UI / 联调 / 截图 / 剪贴板实贴 Cursor |
+| 改动范围 | Helper.UI + Protocol（`McpInstallGuide` / `WriteConfirmCopy` / `McpExeLocator`）；**未**改 Agent / 接受协助逻辑；无 MCP 监听/启动 |
+| net48 无 UI 编译 | 客户端交付产物存在；产品另目录 `artifacts/app-net48-fd-r048-verify` publish **0 错误**（默认 `app-net48-fd` 仍可能被已运行进程占锁，**未杀进程**） |
+| 交付产物 | `artifacts/app-net48-fd-r048/RemoteAssist.Net48.exe`，**19968** 字节，**2026-11-06 10:25:51 Asia/Shanghai**，SHA256 `53974730E878F07C031212CC20338945E5C4B898FDE6C7B201A35D0AA5F4A20D`（与客户端声明一致） |
+| 核对重编产物 | `artifacts/app-net48-fd-r048-verify/RemoteAssist.Net48.exe`，**19968** 字节，**2026-11-06 10:29:01 Asia/Shanghai**，SHA256 `A4409597AC3892F2AD40FCCB63E0024D600B61272641A8E65BDB672BF1460DFB`（同尺寸；PE 时间戳导致哈希与交付物不同，属预期） |
+| 界面入口（源码） | 主屏「复制安装说明」+ MCP 卡三步 +「复制 MCP 配置」+「复制 Skill 说明」；「连接」仍为主按钮 |
+| 复制 MCP 配置 | `TryBuildOptions` → 要求合法 fp 且 **非** Insecure → `PairQrPayload.BuildRelay/Lan(..., useTls:true)` → `McpConfigSnippet.BuildClipboardBundle`；缺凭证用人话 `NeedCredentialHint` |
+| 复制安装说明 | `WriteConfirmCopy.InstallInstructions` 含「复制连接凭证」口径；成功 `InstallCopiedHint` |
+| 凭证格式 / 信任模型 / guest_* | **未改**；禁缺指纹降明文 MCP |
+| Avalonia / CLI / R046 / R047 | **本轮未改** |
+| 真实连接 / UI 运行 | **blocked / 未验收** |
+| 包装部署 | **未做**（不在范围） |
+
+### NOTES
+
+1. 默认 `artifacts/app-net48-fd` 曾被本机已运行 `RemoteAssist.Net48` 占锁，交付改发 `app-net48-fd-r048`；产品核对未杀进程。
+2. **未**做 UI/剪贴板/Cursor 连通/真连验收；本结论仅为编译/文档核对。
+3. 包装部署不在本轮范围（见 R047）。
+4. R046 / R047 仍并行 open，互不阻塞。
 
 ## 参考
 
