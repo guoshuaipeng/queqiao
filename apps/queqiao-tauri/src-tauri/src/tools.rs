@@ -127,16 +127,7 @@ pub fn run_command(command: &str) -> Result<String, String> {
             if let Some(mut err) = child.stderr.take() {
                 let _ = err.read_to_string(&mut stderr);
             }
-            let mut body = format!("exit={}", status.code().unwrap_or(-1));
-            if !stdout.trim().is_empty() {
-                body.push_str("\n--- stdout ---\n");
-                body.push_str(stdout.trim_end());
-            }
-            if !stderr.trim().is_empty() {
-                body.push_str("\n--- stderr ---\n");
-                body.push_str(stderr.trim_end());
-            }
-            return Ok(body);
+            return Ok(format_command_result(status.code().unwrap_or(-1), &stdout, &stderr));
         }
         if start.elapsed() > limit {
             let _ = child.kill();
@@ -144,6 +135,20 @@ pub fn run_command(command: &str) -> Result<String, String> {
         }
         std::thread::sleep(Duration::from_millis(30));
     }
+}
+
+fn format_command_result(code: i32, stdout: &str, stderr: &str) -> String {
+    let mut body = String::new();
+    if !stdout.trim().is_empty() {
+        body.push_str(stdout.trim());
+        body.push('\n');
+    }
+    if !stderr.trim().is_empty() {
+        body.push_str(stderr.trim());
+        body.push('\n');
+    }
+    body.push_str(&format!("exit={code}"));
+    body
 }
 
 fn allowed_path(path: &str) -> Result<PathBuf, String> {
@@ -175,4 +180,23 @@ pub fn describe_write(summary: &str, command: &str) -> (String, String) {
 fn is_delete(command: &str) -> bool {
     let c = command.to_ascii_lowercase();
     c.contains("del ") || c.contains("rmdir") || c.contains("remove-item") || c.contains("rm -")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_command_result;
+
+    #[test]
+    fn command_output_comes_before_the_exit_line() {
+        let text = format_command_result(0, "queqiao-body\n", "");
+        assert!(text.starts_with("queqiao-body\n"));
+        assert!(text.ends_with("exit=0"));
+        assert!(!text.contains("--- stdout ---"));
+        assert!(text.find("queqiao-body").unwrap() < text.find("exit=").unwrap());
+    }
+
+    #[test]
+    fn empty_output_is_only_the_exit_line() {
+        assert_eq!(format_command_result(1, "  \n", ""), "exit=1");
+    }
 }

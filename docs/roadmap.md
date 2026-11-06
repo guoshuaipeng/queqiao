@@ -134,6 +134,8 @@
 | 本轮完成 | 对方不在等待时不要只提示检查网络 | 亲友知道该让对方重新开启 | 结束后用原凭证再连，出现「对方现在没有在等待协助」，没有「请检查网络」 | `acceptance/desktop-not-waiting.png` |
 | 本轮完成 | 点「允许」后改动才执行，协助端看得到结果 | 同意的改动才会发生，对方能核对 | 点允许后协助端结果含输出；标记文件生成；被协助端记录「已允许」 | 本机 `127.0.0.1:17991`；`acceptance/desktop-allow-host.png`、`desktop-allow-result.png` |
 | 本轮完成 | 拒绝之后协助端不再留着刚才的命令 | 下一次不会误发上一条 | 拒绝后「要做什么」和「命令」都空 | `acceptance/desktop-after-clear.png` |
+| 本轮完成 | 确认超时后不执行这项改动 | 没人点允许就不会改电脑 | 等到超时；双方都出现「确认超时，未做任何改动」；标记文件没有生成 | 本机 `127.0.0.1:17991`，真实等满确认时间；`acceptance/desktop-timeout-dialog.png`、`desktop-timeout-host.png`、`desktop-timeout-helper.png` |
+| 本轮完成 | 允许后的结果先显示输出正文 | 亲友先看到做了什么，而不是退出码 | 结果第一行是输出，exit 在后面，没有 stdout 分隔线 | `acceptance/desktop-result-body.png` |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。

@@ -98,6 +98,11 @@ test("denied propose clears the command fields", () => {
   assert.ok(js.includes('$("command").value = ""'));
 });
 
+test("countdown does not pretend to be a click on reject", () => {
+  assert.match(js, /if \(dlgLeft <= 0\) clearInterval\(dlgTimer\);/);
+  assert.ok(!js.includes("dlgLeft <= 0) {"));
+});
+
 test("cancel tells the helper it did not connect", () => {
   assert.ok(blob.includes("已取消，没有连上。"));
 });

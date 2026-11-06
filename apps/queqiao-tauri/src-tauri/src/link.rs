@@ -572,8 +572,9 @@ fn helper_jobs(tls: &mut dyn StreamRw, token: &str, jobs: &Receiver<Job>, hooks:
         } else {
             let err = frame.payload.get("error").and_then(|v| v.as_str()).unwrap_or("");
             if err.contains("超时") {
-                hooks.emit(Ev::Status(copy::HELPER_TIMEOUT.into()));
-                hooks.emit(Ev::Result(copy::HELPER_TIMEOUT.into()));
+                hooks.emit(Ev::Status(copy::TIMED_OUT.into()));
+                hooks.emit(Ev::Result(copy::TIMED_OUT.into()));
+                hooks.emit(Ev::ClearPropose);
             } else if err.contains("拒绝") || frame.payload.get("deniedByUser") == Some(&Value::Bool(true)) {
                 hooks.emit(Ev::Status(copy::DENIED.into()));
                 hooks.emit(Ev::Result(copy::DENIED.into()));

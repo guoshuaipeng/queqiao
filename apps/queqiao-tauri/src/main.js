@@ -163,10 +163,7 @@ function renderDialog(d) {
   dlgTimer = setInterval(() => {
     dlgLeft -= 1;
     paintCount(d);
-    if (dlgLeft <= 0) {
-      clearInterval(dlgTimer);
-      resolve(false);
-    }
+    if (dlgLeft <= 0) clearInterval(dlgTimer);
   }, 1000);
   setTimeout(() => $("dlg-no").focus(), 0);
 }
