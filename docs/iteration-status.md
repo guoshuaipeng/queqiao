@@ -11,12 +11,12 @@
 
 见 [docs/CURRENT-POSTURE.md](CURRENT-POSTURE.md)。摘要：
 
-- **官网静态改版：已授权服务端实施**（主树 site/index.html + styles.css，有条件发布）。**废止**「官网不编码」。
+- **官网静态改版：本侧暂停（用户 2026-11-06 15:30）**——不设计/不实现/不验收/不发布；文件保留不回滚；不撤销 Tauri 立项；本侧服务端/迭代不得继续官网实施。历史授权见 website-refresh-20261106（已标注暂停/收回）。
 - **旧 net48 功能开发：暂停**。不派紧凑/入口 A 编码；不续 PV-004 安装器。
 - **Tauri**：E:\IdeaProjects\remote-assist-wt-tauri / feat/tauri-client-migration，客户端唯一写入；UI=A-480-delta-v1.1。
 - **R049** 未授不可验收；**R050** blocked。
 
-> 下方历史记录中凡写「官网不编码 / A 等 net48 放编码」等，**以本节与 CURRENT-POSTURE 覆盖**。
+> 下方历史记录中凡写「官网不编码 / 官网已授服务端实施 / 视为服务端实施中 / 有条件发布仍有效 / A 等 net48 放编码」等，**以本节与 CURRENT-POSTURE 覆盖**（本侧官网已于 15:30 暂停）。
 
 ---
 
@@ -70,6 +70,18 @@
 
 ---
 ## 记录
+
+### 2026-11-06 16:16 Asia/Shanghai · 产品决策落库：官网本侧暂停
+
+- **产品收口**（用户 2026-11-06 15:30 Asia/Shanghai 明确，现已写入 docs）：
+  - **本侧暂停**鹊桥官网工作：不设计 / 不实现 / 不验收 / 不发布；官网交由其他人制作。
+  - 现有相关文件**保留**，**不**自动回滚删除。
+  - 停止**不**代表撤销此前 Tauri 迁移立项。
+- **口径纠正**：取消「官网已授权服务端实施 / 视为服务端实施中 / 有条件发布仍有效」作为**现行派工**口径；本侧服务端/迭代**不得**继续官网实施。
+- **已改文件**：docs/CURRENT-POSTURE.md；docs/website-refresh-20261106/DECISION.md、IMPLEMENTATION-RELEASE-AUTH.md、README.md 顶部标注暂停/收回（原授权留档不可执行）；本条。
+- **未做**：不改代码、不删 website/site 文件、不 push、不动 R049/R050、不恢复 net48 紧凑/PV-004 编码。
+- **历史流水**（如 15:31「视为服务端实施中」）保留作当时记录；现行以 CURRENT-POSTURE 与本条为准。
+
 
 ### 2026-11-06 13:29 Asia/Shanghai · 用户侧答复 Q1–Q3（经日常 bot 代写）
 
@@ -790,4 +802,16 @@ elay/internal/relay/audit_test.go
 - **主树其它脏改**：产品/体验/质量 docs 与 website-refresh/tauri-migration 文档未提交 → **不混 commit**。
 - **未做**：net48 业务码、installer、push、上公网、验收 R049、解 R050、改 Tauri wt。
 - **待用户答复**：Q1–Q3 已有站立答复；本轮无新决策项 → **不向聊天回执**。
+
+
+### 2026-11-06 16:19 Asia/Shanghai · 例程检查：无待开发；例程/简介已跟 CURRENT-POSTURE
+
+- **触发**：例程 automation-1793943554537「鹊桥迭代检查」@every 5m（约 16:19 UTC+8）。
+- **PRODUCT-VERSIONS**：PV-001/002/003/004 均为 **待验收**；**无「待开发」**可派工。R049 未授不可验收；R050 blocked 不解。
+- **口径**：以 docs/CURRENT-POSTURE.md（16:16）为准——**官网本侧暂停**；net48 功能暂停；不派入口 A/紧凑/续 PV-004。
+- **Tauri（只跟 tip，不抢写）**：wt tip 仍 **`9341f89`** `feat(tauri-d0): add apps/queqiao-tauri empty Windows shell`；工作区干净。UI=A-480-delta-v1.1。
+- **例程/简介**：已把过时「官网已授服务端实施」改为「本侧暂停」；与 CURRENT-POSTURE 对齐。
+- **主树**：不抢 site/ 脏改；本轮仅口径相关 docs 本地 commit（若成功见 git log）；**不 push**。
+- **未做**：官网实施、net48 业务码、installer、验收 R049、解 R050、改 Tauri wt、上公网。
+- **通知**：无新用户决策项 → **安静**。
 
