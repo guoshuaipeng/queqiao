@@ -214,6 +214,12 @@ test("the result wheel does not scroll the page", () => {
   assert.match(js, /result\.addEventListener\("wheel"/);
   assert.match(js, /event\.preventDefault\(\)/);
   assert.match(js, /watchResultWheel\(result\)/);
+  assert.match(css, /#result\s*\{[^}]*overscroll-behavior:\s*contain/);
+});
+
+test("a long result line stays clear of its scrollbar", () => {
+  assert.match(css, /#result\s*\{[^}]*scrollbar-gutter:\s*stable/);
+  assert.match(css, /#result\s*\{[^}]*padding:\s*0 20px 0 12px/);
 });
 
 test("previous lines can scroll and the page scrollbar stays away", () => {

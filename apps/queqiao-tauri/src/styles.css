@@ -91,10 +91,12 @@ button, input { font-family: inherit; }
   flex: 0 0 auto;
   gap: 0;
   line-height: 20px;
-  padding: 0 12px;
+  padding: 0 20px 0 12px;
   max-height: calc(8 * 20px + 2px);
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   white-space: normal;
   scroll-snap-type: y mandatory;
 }
