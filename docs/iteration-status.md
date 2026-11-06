@@ -715,3 +715,13 @@ elay/internal/relay/audit_test.go
 - **优先级**：**入口 A 修订（480）仍优先**；官网评审并行但不抢编码。
 - 已组织全角色评审；意见回产品独立收口。
 
+
+
+### 2026-11-06 15:02 Asia/Shanghai · A 480 修订已同步 · 组织差量快审
+
+- **材料**：体验交付 /workspace/ux-entry-a-20261106/ → 已同步仓 docs/ux-entry-a-20261106/（details/README/preview + entry-idle/waiting、helper-connecting、accept/helper-session、narrow 的 png/svg）。
+- **要点（体验）**：撤销 280 与空白填充；全态默认 **840×480**；顶状态 + 单页滚 + 滚外固定结束；Waiting **必须**「停止接受」、成功才 Idle；Helper/Accept 图内为**待客户端映射槽位**（无源码证据）。
+- **迭代差量意见**：见 docs/ux-entry-a-20261106/ITERATION-DELTA-REVIEW.md — 设计层同意 480/布局/停止硬项；**仍 ≠ 编码放行 / ≠ UI PASS**；不重选 A。
+- **下一拍**：全角色**仅**审尺寸/布局/停止按钮 + 客户端真实控件预算核对；缺口回产品统一收口 → 产品**一次正式放编码**。客户端零改码等待。
+- **官网（并行 FYI）**：管理端测 / 架构 / 场景 / 被控端意见已陆续回产品；无硬阻塞；诚实占位与结束≠废码；**官网不编码**。A 480 仍优先。
+- **队列**：无新「待开发」；PV-001–004 待验收；不 push/上公网；R049/R050 不动。
