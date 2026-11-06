@@ -245,3 +245,6 @@ elay/internal/relay/audit_test.go
 - **PV-003**：→ **待验收**。
 - **聊天**：不对用户发消息（本条仅写文件）。
 
+
+- **commit**：`63cf098`（本地；未 push）。
+
