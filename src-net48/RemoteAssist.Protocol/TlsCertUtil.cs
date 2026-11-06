@@ -64,4 +64,18 @@ public static class TlsCertUtil
 
     public static bool FingerprintsEqual(string? a, string? b) =>
         string.Equals(NormalizeFingerprint(a), NormalizeFingerprint(b), StringComparison.Ordinal);
+
+    /// <summary>SHA-256 指纹：规范化后须为 64 位十六进制（与 Sha256Fingerprint 输出一致）。</summary>
+    public static bool IsWellFormedFingerprint(string? fingerprint)
+    {
+        var n = NormalizeFingerprint(fingerprint);
+        if (n.Length != 64) return false;
+        for (var i = 0; i < n.Length; i++)
+        {
+            var c = n[i];
+            var hex = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F');
+            if (!hex) return false;
+        }
+        return true;
+    }
 }

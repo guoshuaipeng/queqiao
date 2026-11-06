@@ -152,16 +152,47 @@ public static class FriendConnectGuide
         return ownerLink ? "账号免密 · " + name : name;
     }
 
-    /// <summary>R043 主路径：单行连接凭证 {会话码}-{验证码}。</summary>
-    public static string FormatShareClipboard(string code, string password) =>
-        FormatConnectionCredential(code, password);
+    /// <summary>
+    /// R043 主路径「复制连接凭证」：完整安全载荷（PairQrPayload.BuildRelay，含业务 fp）。
+    /// 短串 FormatConnectionCredential 仅供口述展示，不可作为默认可连主路径。
+    /// </summary>
+    public static string FormatShareClipboard(
+        string relayEndpoint,
+        string code,
+        string password,
+        string fingerprint) =>
+        PairQrPayload.BuildRelay(relayEndpoint, code, password, fingerprint, useTls: true);
 
+    /// <summary>口述用短形态 {会话码}-{验证码}（不含指纹，不能单独加密连接）。</summary>
     public static string FormatConnectionCredential(string code, string password) =>
         SessionCodeGenerator.Normalize(code) + "-" + SessionPasswordGenerator.Normalize(password);
 
-    /// <summary>旧两行格式（兼容期仍可解析，不再作为新复制默认）。</summary>
+    /// <summary>旧两行格式（兼容期）；无 fp，协助端须另有指纹或改用完整载荷）。</summary>
     public static string FormatShareClipboardLegacy(string code, string password) =>
         "会话码：" + code + Environment.NewLine + "验证密码：" + password;
+
+    public const string NeedSecurePayloadHint =
+        "请粘贴对方「复制连接凭证」得到的完整安全载荷（remoteassist:pair…，含指纹），不要只粘贴口述短码。";
+
+    public const string NeedFingerprintHint =
+        "还缺少安全校验（证书指纹）。下一步：请对方重新点「复制连接凭证」发来完整载荷；或展开「高级」填写 TLS 指纹。";
+
+    /// <summary>日志/异常展示用：掩码载荷中的 pwd 与 fp，避免完整凭证回显。</summary>
+    public static string RedactSecureMaterial(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+        var s = text;
+        try
+        {
+            s = System.Text.RegularExpressions.Regex.Replace(
+                s, @"(?i)([?&]pwd=)[^&\s]+", "$1***");
+            s = System.Text.RegularExpressions.Regex.Replace(
+                s, @"(?i)([?&]fp=)[^&\s]+", "$1***");
+        }
+        catch { /* ignore */ }
+        if (s.Length > 160) s = s.Substring(0, 160) + "…";
+        return s;
+    }
 
     /// <summary>
     /// 解析 R001「会话码：… / 验证密码：…」两行分享文本（也可接受同段粘贴）。

@@ -80,7 +80,7 @@ internal sealed class MainForm : Form
             Size = new Size(_enableReturnHome ? 620 : 720, 22),
             ForeColor = Color.FromArgb(0xE8, 0xF5, 0xE9),
             Font = new Font(Font.FontFamily, 9F),
-            Text = "粘贴对方发来的连接凭证或会话载荷，点「连接」",
+            Text = "粘贴对方「复制连接凭证」的完整安全载荷，点「连接」",
             BackColor = Color.Transparent
         });
         Controls.Add(header);
@@ -114,7 +114,7 @@ internal sealed class MainForm : Form
             AutoSize = false,
             Location = new Point(16, 40),
             Size = new Size(520, 20),
-            Text = "连接凭证（会话码-8位验证码）或 remoteassist:pair 载荷",
+            Text = "完整安全载荷（remoteassist:pair…，含指纹；不要只贴口述短码）",
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68)
         });
 
@@ -138,7 +138,7 @@ internal sealed class MainForm : Form
             Size = new Size(540, 28),
             Font = new Font("Consolas", 9F),
             ForeColor = Color.FromArgb(0x20, 0x24, 0x27),
-            Text = "将通过默认中继连接"
+            Text = "请粘贴完整安全载荷后连接"
         };
         pairCard.Controls.Add(_previewLabel);
 
@@ -435,7 +435,7 @@ internal sealed class MainForm : Form
     {
         if (!TryBuildOptions(out _, out var preview, out var err))
         {
-            _previewLabel.Text = string.IsNullOrEmpty(err) ? "将通过默认中继连接" : err;
+            _previewLabel.Text = string.IsNullOrEmpty(err) ? "请粘贴完整安全载荷后连接" : err;
             _previewLabel.ForeColor = string.IsNullOrEmpty(err)
                 ? Color.FromArgb(0x5F, 0x63, 0x68)
                 : Color.FromArgb(0xC5, 0x22, 0x1F);
@@ -474,7 +474,7 @@ internal sealed class MainForm : Form
         if (!TryBuildOptions(out var opts, out var preview, out var err))
         {
             SetFailHint(string.IsNullOrEmpty(err)
-                ? "连接凭证不完整，请复制完整的「会话码-8位验证码」"
+                ? FriendConnectGuide.NeedSecurePayloadHint
                 : err);
             SetStatus("无法连接");
             return;
@@ -488,13 +488,11 @@ internal sealed class MainForm : Form
         {
             // R043 安全纠错：禁止公网主路径无指纹时静默降明文。须载荷含 fp= 或高级填写指纹；
             // 显式勾选「明文调试」才走 --insecure。短凭证 {码}-{验证码} 不含指纹 → 安全阻断并人话引导。
-            if (opts.ViaRelay && !opts.Insecure && string.IsNullOrWhiteSpace(opts.Fingerprint))
+            if (opts.ViaRelay && !opts.Insecure && !TlsCertUtil.IsWellFormedFingerprint(opts.Fingerprint))
             {
                 SetStatus("无法安全连接");
                 SetFailHint(
-                    "还缺少安全校验（证书指纹）。「连接凭证」只有会话码和验证码，不能单独走加密通道。"
-                    + Environment.NewLine
-                    + "下一步：请对方用「复制载荷」发来含指纹的完整连接信息并粘贴；或展开「高级」填写 TLS 指纹后再连接。"
+                    FriendConnectGuide.NeedFingerprintHint
                     + Environment.NewLine
                     + "（仅本机调试可勾选「明文调试」，公网请勿使用。）");
                 return;
@@ -516,7 +514,7 @@ internal sealed class MainForm : Form
         {
             var friendly = FriendConnectGuide.FriendlyOrRaw(ex);
             SetStatus("连接失败");
-            SetFailHint(friendly + "\r\n下一步：确认对方已点「接受协助」且凭证未刷新，然后重试。");
+            SetFailHint(FriendConnectGuide.RedactSecureMaterial(friendly) + "\r\n下一步：请对方重新「复制连接凭证」发完整安全载荷后重试。");
             SetConnectedUi(false);
         }
         finally

@@ -37,9 +37,18 @@ public static class PairQrPayload
             .Append("&code=").Append(Uri.EscapeDataString(SessionCodeGenerator.Normalize(code)))
             .Append("&pwd=").Append(Uri.EscapeDataString(pwd))
             .Append("&tls=").Append(useTls ? "1" : "0");
-        var fp = TlsCertUtil.NormalizeFingerprint(fingerprint);
-        if (!string.IsNullOrEmpty(fp))
-            sb.Append("&fp=").Append(Uri.EscapeDataString(fp));
+        if (useTls)
+        {
+            if (!TlsCertUtil.IsWellFormedFingerprint(fingerprint))
+                throw new ArgumentException("TLS relay payload requires well-formed certificate fingerprint", nameof(fingerprint));
+            sb.Append("&fp=").Append(Uri.EscapeDataString(TlsCertUtil.NormalizeFingerprint(fingerprint)));
+        }
+        else
+        {
+            var fpOpt = TlsCertUtil.NormalizeFingerprint(fingerprint);
+            if (!string.IsNullOrEmpty(fpOpt))
+                sb.Append("&fp=").Append(Uri.EscapeDataString(fpOpt));
+        }
         return sb.ToString();
     }
 

@@ -2,7 +2,7 @@ using System;
 
 namespace RemoteAssist.Protocol;
 
-/// <summary>协助端粘贴草稿：分享两行 / remoteassist:pair 载荷 /（高级）主机+码。</summary>
+/// <summary>协助端粘贴草稿：完整安全载荷为主；短码/旧两行须另有合法指纹或显式明文调试。</summary>
 public static class ConnectDraftParser
 {
     public const int DefaultPort = AssistConnectOptions.DefaultPort;
@@ -31,52 +31,83 @@ public static class ConnectDraftParser
             return false;
         }
 
-        // 载荷
+        var advancedFp = fingerprint;
+        var advancedFpOk = TlsCertUtil.IsWellFormedFingerprint(advancedFp);
+
+        // 完整安全载荷 remoteassist:pair…
         if (raw.StartsWith(PairQrPayload.SchemePrefix, StringComparison.OrdinalIgnoreCase))
         {
             if (!PairQrPayload.TryParseFull(raw, out var host, out var port, out var code, out var fp, out var useTls,
                     out var viaRelay, out var relay, out var pwd))
             {
-                error = "粘贴的会话载荷不完整，请让对方重新复制码和密码。";
+                error = FriendConnectGuide.NeedSecurePayloadHint;
                 return false;
             }
+
+            var resolvedFp = TlsCertUtil.IsWellFormedFingerprint(fp) ? TlsCertUtil.NormalizeFingerprint(fp)
+                : (advancedFpOk ? TlsCertUtil.NormalizeFingerprint(advancedFp) : "");
+            var wantTls = !insecure && useTls;
+
             options = new AssistConnectOptions
             {
                 Host = host,
                 Port = port,
                 Code = code,
-                Fingerprint = fp ?? fingerprint,
+                Fingerprint = string.IsNullOrEmpty(resolvedFp) ? null : resolvedFp,
                 Insecure = insecure || !useTls,
                 ViaRelay = viaRelay || preferRelay,
                 RelayEndpoint = viaRelay ? relay : (relayEndpoint ?? RelayEndpoint.DefaultEndpoint),
                 Password = pwd ?? SessionPasswordGenerator.Normalize(passwordBox)
             };
+
             if (options.ViaRelay && string.IsNullOrWhiteSpace(options.Password))
             {
-                error = "连接凭证不完整，请复制完整的「会话码-8位验证码」";
+                error = FriendConnectGuide.NeedSecurePayloadHint;
                 return false;
             }
+
+            if (wantTls && !TlsCertUtil.IsWellFormedFingerprint(options.Fingerprint))
+            {
+                error = FriendConnectGuide.NeedFingerprintHint;
+                return false;
+            }
+
+            // 显式 tls=0 且未勾选明文调试 → 仍按安全默认要求指纹或阻断
+            if (!insecure && !useTls)
+            {
+                error = "载荷标明非加密通道。公网请让对方重新「复制连接凭证」（加密载荷）；本机调试请勾选「明文调试」。";
+                return false;
+            }
+
             preview = options.ViaRelay
                 ? FriendConnectGuide.FriendConnectionPreview(options.Code)
                 : ("将连接：" + host + ":" + port);
             return true;
         }
 
-        // 会话码：… / 验证密码：…
+        // 旧两行 / 短串 {码}-{验证码}：须高级合法指纹或显式明文；否则引导完整载荷
         if (FriendConnectGuide.TryParseShareText(raw, out var shareCode, out var sharePwd))
         {
             var pwd = sharePwd ?? SessionPasswordGenerator.Normalize(passwordBox);
             if (string.IsNullOrWhiteSpace(pwd))
             {
-                error = "连接凭证不完整，请复制完整的「会话码-8位验证码」";
+                error = FriendConnectGuide.NeedSecurePayloadHint;
                 return false;
             }
+
+            if (!insecure && !advancedFpOk)
+            {
+                error = FriendConnectGuide.NeedSecurePayloadHint;
+                return false;
+            }
+
             var ep = string.IsNullOrWhiteSpace(relayEndpoint) ? RelayEndpoint.DefaultEndpoint : relayEndpoint!.Trim();
             if (!RelayEndpoint.TryParse(ep, out var rh, out var rp, out _))
             {
                 error = "中继地址无效";
                 return false;
             }
+
             options = new AssistConnectOptions
             {
                 Host = rh,
@@ -85,18 +116,22 @@ public static class ConnectDraftParser
                 Password = pwd,
                 ViaRelay = true,
                 RelayEndpoint = ep,
-                Fingerprint = fingerprint,
+                Fingerprint = insecure ? null : TlsCertUtil.NormalizeFingerprint(advancedFp),
                 Insecure = insecure
             };
             preview = FriendConnectGuide.FriendConnectionPreview(shareCode);
             return true;
         }
 
-        // 纯会话码 + 密码框
         var codeOnly = SessionCodeGenerator.Normalize(raw);
         var pwdOnly = SessionPasswordGenerator.Normalize(passwordBox);
         if (codeOnly.Length >= 4 && !string.IsNullOrWhiteSpace(pwdOnly) && preferRelay)
         {
+            if (!insecure && !advancedFpOk)
+            {
+                error = FriendConnectGuide.NeedSecurePayloadHint;
+                return false;
+            }
             var ep = string.IsNullOrWhiteSpace(relayEndpoint) ? RelayEndpoint.DefaultEndpoint : relayEndpoint!.Trim();
             if (!RelayEndpoint.TryParse(ep, out var rh, out var rp, out _))
             {
@@ -111,19 +146,19 @@ public static class ConnectDraftParser
                 Password = pwdOnly,
                 ViaRelay = true,
                 RelayEndpoint = ep,
-                Fingerprint = fingerprint,
+                Fingerprint = insecure ? null : TlsCertUtil.NormalizeFingerprint(advancedFp),
                 Insecure = insecure
             };
             preview = FriendConnectGuide.FriendConnectionPreview(codeOnly);
             return true;
         }
 
-        // 高级局域网：主机+端口+码
+        // 高级局域网
         if (!preferRelay || (!string.IsNullOrWhiteSpace(lanHost) && !string.IsNullOrWhiteSpace(lanPortText)))
         {
             if (string.IsNullOrWhiteSpace(lanHost) || string.IsNullOrWhiteSpace(lanPortText) || codeOnly.Length < 4)
             {
-                error = "连接凭证不完整，请复制完整的「会话码-8位验证码」";
+                error = FriendConnectGuide.NeedSecurePayloadHint;
                 return false;
             }
             if (!int.TryParse(lanPortText.Trim(), out var lp) || lp < 1 || lp > 65535)
@@ -131,12 +166,17 @@ public static class ConnectDraftParser
                 error = "端口无效";
                 return false;
             }
+            if (!insecure && !advancedFpOk)
+            {
+                error = FriendConnectGuide.NeedFingerprintHint;
+                return false;
+            }
             options = new AssistConnectOptions
             {
                 Host = lanHost!.Trim(),
                 Port = lp,
                 Code = codeOnly,
-                Fingerprint = fingerprint,
+                Fingerprint = insecure ? null : TlsCertUtil.NormalizeFingerprint(advancedFp),
                 Insecure = insecure,
                 ViaRelay = false
             };
@@ -144,7 +184,7 @@ public static class ConnectDraftParser
             return true;
         }
 
-        error = "连接凭证不完整，请复制完整的「会话码-8位验证码」";
+        error = FriendConnectGuide.NeedSecurePayloadHint;
         return false;
     }
 }
