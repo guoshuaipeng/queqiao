@@ -1,3 +1,4 @@
+using System;
 using System.Windows.Forms;
 using RemoteAssist.Protocol;
 
@@ -61,6 +62,14 @@ public sealed class AgentDesktopController : IDisposable
     }
 
     public void ShowMain() => _ui?.ShowMain();
+
+    public Form? MainFormControl => _ui?.MainFormControl;
+
+    public void AttachToShell(Control hostPanel, Action activateShell) =>
+        _ui?.AttachToShell(hostPanel, activateShell);
+
+    public bool ConfirmEndSessionOrCancel(IWin32Window? owner) =>
+        _ui is null || _ui.ConfirmEndSessionOrCancel(owner);
 
     public void Dispose()
     {

@@ -1,3 +1,4 @@
+using System;
 using System.Windows.Forms;
 
 namespace RemoteAssist.Helper.UI;
@@ -28,6 +29,19 @@ public sealed class HelperDesktopController : IDisposable
         _form.Activate();
         _form.BringToFront();
     }
+
+    public Form MainFormControl => _form;
+
+    public void AttachToShell(Control hostPanel, Action activateShell)
+    {
+        _form.SetEmbeddedInShell(true);
+        // 可见性由外壳页切换控制
+        _ = hostPanel;
+        _ = activateShell;
+    }
+
+    public bool ConfirmEndSessionOrCancel(IWin32Window? owner) =>
+        _form.ConfirmEndSessionOrCancel(owner);
 
     public void Dispose()
     {

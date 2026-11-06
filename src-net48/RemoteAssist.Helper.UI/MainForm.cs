@@ -39,6 +39,7 @@ internal sealed class MainForm : Form
     private bool _returningHome;
 
     public event Action? HomeRequested;
+    private bool _embeddedInShell;
 
     public MainForm(bool enableReturnHome = false)
     {
@@ -102,6 +103,8 @@ internal sealed class MainForm : Form
             btnHome.FlatAppearance.BorderColor = Color.White;
             btnHome.Click += (_, _) =>
             {
+                if (!ConfirmEndSessionOrCancel(this))
+                    return; // 取消：保持原会话原页
                 _returningHome = true;
                 HomeRequested?.Invoke();
             };
@@ -185,7 +188,7 @@ internal sealed class MainForm : Form
             Size = new Size(590, 24),
             TextAlign = ContentAlignment.MiddleLeft,
             ForeColor = Color.FromArgb(0x5F, 0x63, 0x68),
-            Text = "状态：未连接 · 默认中继 " + RelayEndpoint.DefaultEndpoint
+            Text = "状态：未连接 · 经默认中继"
         };
         pairCard.Controls.Add(_statusLabel);
         Controls.Add(pairCard);
@@ -669,7 +672,7 @@ internal sealed class MainForm : Form
         try { _client?.Dispose(); } catch { /* ignore */ }
         _client = null;
         SetConnectedUi(false);
-        SetStatus("状态：未连接 · 默认中继 " + RelayEndpoint.DefaultEndpoint);
+        SetStatus("状态：未连接 · 经默认中继");
         ClearFailHint();
     }
 
@@ -762,9 +765,15 @@ internal sealed class MainForm : Form
     {
         if (_returningHome)
             return;
+        if (_embeddedInShell && e.CloseReason == CloseReason.UserClosing)
+        {
+            // 嵌入单主窗口：不关会话；由外壳「返回首页」确认
+            e.Cancel = true;
+            return;
+        }
         if (e.CloseReason == CloseReason.UserClosing)
         {
-            // 独立 Helper 关闭即退出；统一 App 由外壳处理
+            // 独立 Helper 关闭即退出
         }
         try { _client?.Dispose(); } catch { /* ignore */ }
     }

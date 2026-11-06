@@ -35,6 +35,7 @@ internal sealed class MainForm : Form
 
     /// <summary>统一 App 中请求返回模式选择页。</summary>
     public event Action? HomeRequested;
+    private bool _embeddedInShell;
 
     public MainForm(AgentHost host, bool enableReturnHome = false)
     {
@@ -433,6 +434,16 @@ internal sealed class MainForm : Form
         Close();
     }
 
+    public void SetEmbeddedInShell(bool embedded)
+    {
+        _embeddedInShell = embedded;
+        if (embedded)
+        {
+            // 关闭按钮由外壳统一处理，避免藏起第二窗体
+            ControlBox = false;
+        }
+    }
+
     public void ShowAndActivate()
     {
         Show();
@@ -460,6 +471,11 @@ internal sealed class MainForm : Form
         if (_exitApp || e.CloseReason != CloseReason.UserClosing)
             return;
         e.Cancel = true;
+        if (_embeddedInShell)
+        {
+            // 嵌入单主窗口：不 Hide 成第二窗；请用「返回首页」（含会话确认）
+            return;
+        }
         Hide();
         SetStatus("已隐藏到托盘。双击托盘图标可重新打开。");
     }
@@ -526,7 +542,7 @@ internal sealed class MainForm : Form
             };
         }
         if (_host.PreferRelay)
-            _listenValue.Text = "中继 " + _host.RelayEndpointAddress + " · " + _host.RelayPhase;
+            _listenValue.Text = "经默认中继 · " + _host.RelayPhase; // R049：主路径不展示服务器地址
 
         var payload = _host.QrPayload;
 
@@ -535,13 +551,13 @@ internal sealed class MainForm : Form
             var shortFp = fpRelay.Length > 23 ? fpRelay[..10] + "…" + fpRelay[^8..] : fpRelay;
             _tlsValue.Text = "已加密 · " + shortFp;
             _tlsValue.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
-            Tip().SetToolTip(_tlsValue, "安全验证信息已就绪 · 中继 " + _host.RelayEndpointAddress);
+            Tip().SetToolTip(_tlsValue, "安全验证信息已就绪");
         }
         else if (_host.PreferRelay && !_host.UseTls)
         {
             _tlsValue.Text = "中继明文（--insecure 调试）";
             _tlsValue.ForeColor = Color.DarkOrange;
-            Tip().SetToolTip(_tlsValue, _host.RelayEndpointAddress);
+            Tip().SetToolTip(_tlsValue, "明文调试模式");
         }
         else if (_host.UseTls && _host.CertificateFingerprint is { } fp)
         {
