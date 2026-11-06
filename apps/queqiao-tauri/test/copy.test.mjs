@@ -198,7 +198,8 @@ test("the task field stays inside the window with the result", () => {
 
 test("the previous exit line and the tool row stay whole", () => {
   assert.match(js, /const bar = \$\("ops-bar"\)/);
-  assert.match(js, /else if \(past && pastRows > 1\) pastRows -= 1/);
+  assert.match(js, /else if \(past && pastRows > 2\) pastRows -= 1/);
+  assert.match(js, /scroller\.style\.paddingBottom = "16px"/);
   assert.match(js, /if \(past\) snapEnd\(past\)/);
   assert.match(css, /#ops-bar\s*\{[^}]*position:\s*sticky/);
 });

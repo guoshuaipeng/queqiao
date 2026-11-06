@@ -208,6 +208,16 @@ function fitSpan() {
   const barH = bar ? bar.getBoundingClientRect().height : 0;
   const topEl = summary || result;
   const bottomEl = past || result;
+  const propose = $("propose");
+  if (past) {
+    scroller.style.gap = "4px";
+    scroller.style.paddingBottom = "16px";
+    if (propose && !propose.hidden) propose.style.gap = "4px";
+  } else {
+    scroller.style.gap = "";
+    scroller.style.paddingBottom = "";
+    if (propose) propose.style.gap = "";
+  }
   const rowHeight = (n) => n * 20 + 2;
   let resultRows = 8;
   let pastRows = 4;
@@ -223,12 +233,12 @@ function fitSpan() {
   apply();
   const view = scroller.getBoundingClientRect();
   const viewTop = view.top + barH;
-  const viewBottom = view.bottom;
+  const viewBottom = view.bottom - (past ? 16 : 0);
   const room = viewBottom - viewTop;
   let guard = 0;
   while (guard < 12 && span().bottom - span().top > room - 8) {
     if (resultRows > 2) resultRows -= 1;
-    else if (past && pastRows > 1) pastRows -= 1;
+    else if (past && pastRows > 2) pastRows -= 1;
     else break;
     apply();
     guard += 1;
