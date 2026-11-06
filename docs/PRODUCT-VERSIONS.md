@@ -117,6 +117,7 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 | 时间 (Asia/Shanghai) | 结果 |
 |----------------------|
+| 2026-11-06 13:49 Asia/Shanghai | **客户端只读复审**：PV-002/003 静态未见阻断；现 Setup≠PV-002 最终包；真 UI/安装仍待验；见 iteration-status |
 | 2026-11-06 13:44 Asia/Shanghai | **鹊桥-迭代 PV-003**：安装包/快捷方式图标落地 → **待验收**；本地产物 RemoteAssist-Net48-Setup-0.1.0.exe；未 push |
 | 2026-11-06 13:41 Asia/Shanghai | **鹊桥-迭代**：本地 commit b964b8a；PV-002/003 进行中；例程 automation-1793943554537；见 iteration-status |
 | 2026-11-06 13:27 Asia/Shanghai | **移交「文件迭代」**：本 Bot「迭代」例程 automation-1793942727070 已 pause；停工；详见 iteration-status |
