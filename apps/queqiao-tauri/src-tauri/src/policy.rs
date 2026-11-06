@@ -178,6 +178,7 @@ mod tests {
         assert!(needs_local_confirm(Trust::Ask, Tool::RunCommand, "echo hi"));
         assert!(!needs_local_confirm(Trust::Ask, Tool::ListProcesses, ""));
         assert!(!needs_local_confirm(Trust::Ask, Tool::ListDir, "C:\\Windows"));
+        assert!(!needs_local_confirm(Trust::Ask, Tool::ReadFile, "C:\\Windows\\win.ini"));
     }
 
     #[test]

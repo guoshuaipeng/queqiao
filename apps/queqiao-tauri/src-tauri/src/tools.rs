@@ -86,7 +86,7 @@ fn list_dir(path: &str) -> Result<String, String> {
     let mut names = Vec::new();
     for ent in dir.flatten().take(500) {
         let name = ent.file_name().to_string_lossy().to_string();
-        let kind = if ent.path().is_dir() { "DIR" } else { "FILE" };
+        let kind = if ent.path().is_dir() { "文件夹" } else { "文件" };
         names.push(format!("{kind}\t{name}"));
     }
     names.sort();
@@ -203,7 +203,22 @@ fn is_delete(command: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{format_command_result, format_process_names};
+    use super::{format_command_result, format_process_names, list_dir, read_file};
+
+    #[test]
+    fn directory_entries_say_file_and_folder() {
+        let dir = std::env::temp_dir().join(format!("queqiao-kind-{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("sub")).unwrap();
+        std::fs::write(dir.join("note.txt"), b"queqiao-file-body").unwrap();
+        let listed = list_dir(dir.to_str().unwrap()).unwrap();
+        assert!(listed.contains("文件\tnote.txt"));
+        assert!(listed.contains("文件夹\tsub"));
+        assert!(!listed.contains("FILE"));
+        assert!(!listed.contains("DIR"));
+        let body = read_file(dir.join("note.txt").to_str().unwrap()).unwrap();
+        assert!(body.contains("queqiao-file-body"));
+        std::fs::remove_dir_all(&dir).ok();
+    }
 
     #[test]
     fn process_list_uses_names_not_the_raw_table() {
