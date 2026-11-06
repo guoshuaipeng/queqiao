@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai
 > 实现：鹊桥-客户端出包；鹊桥-服务端替换上架
-> 状态：**done（待产品验收）**
+> 状态：**done（产品已验收）**
 > 依据：R039 产品已验收。官网当前仍是 R038 的包（含 R035–R037）。R039 Avalonia 去协助端连上后五键出现在首屏，还没进正式下载。该让官网跟上。
 
 用户从官网下载到的 Linux Avalonia 包，连上之后仍会把五个常用操作挤到账号和 MCP 后面。R039 已经修好，包要换新的。
@@ -126,3 +126,29 @@ macOS「即将提供」。首页无端口 / 17891 / 放行入站 / 也可下载�
 
 - 未开下一轮；未重启 site / relay；未改 HTML；未改中继；未改 AI-SSH-Pro
 - 未读/打印 `/etc/remote-assist-site.env`
+
+
+## 产品验收（鹊桥-产品 · 2026-11-06 Asia/Shanghai）
+
+产品对照公网独立下载、核哈希，并查看 `docs/screenshots/r040-*` 后验收通过。出包 HEAD `49a4292`（含 R039 `5c276ec`）；客户端交付 `26b639d`；服务端上架 `2e51cea`。
+
+公网文件与本机产物一致，且已与 R038 旧包区分：
+
+| 文件 | 字节 | SHA256 | Last-Modified |
+|------|------|--------|---------------|
+| http://121.196.45.81/downloads/RemoteAssist-Setup-0.1.0.exe | 75,585,615 | C403FA6D254CD8F9FD8AEB509A27757523A7C28E54A57444C704D8A0601E2104 | 2026-11-06 07:58:31 Asia/Shanghai（Thu, 05 Nov 2026 23:58:31 GMT） |
+| http://121.196.45.81/downloads/queqiao-linux-x64.tar.gz | 8,005,149 | A2F1E1874CD59B50D4EE96DCC0E01FA4167AC3E468234A0C0DF9853975AC2467 | 同上 |
+
+对照 R038：Windows 75,585,944 / `8B777AE324AB2528A434BB407018A6048708F10BF5E9220F2C5281B1E6866416`；Linux 8,005,019 / `AB2DF29FE1606D94A270D98D358B11F086B636BD649E47BDE5C6999D81C2ABD2`。Windows 文件头为 MZ，Linux 为 gzip。
+
+首页导语「Windows 和 Linux 都可下载使用」、Windows 旁注「若浏览器提示通常不会下载，选择保留即可。」、Linux 运行时说明（选运行时、不要选 SDK）与 macOS「即将提供」均未回退；首页无 17891。`/`、`/ask`、`/admin` 均为 HTTP 200。
+
+| 截图 | MD5 | 产品看到的 |
+|------|-----|------------|
+| `docs/screenshots/r040-home-download.png` | 457B2FC7D6EC20C0A9485C1B1306722C | 地址栏 121.196.45.81；Windows / Linux 旁注与 macOS 即将提供都在 |
+| `docs/screenshots/r040-win-download.png` | 97FAF2C7A1A47BF8893AD739E1455839 | 飞出 `RemoteAssist-Setup-0.1.0.exe` … 72.1 MB，与 75,585,615 字节相符 |
+| `docs/screenshots/r040-linux-download.png` | DCDB029A0FDDC873022534BB91FFF741 | 同页可见 Linux 旁注；浮层含 `queqiao-linux-x64`（无 -fd）；亦可见 Windows「通常不会下载」提示 |
+
+缺口：地址栏仍显示「不安全」；macOS 仍未正式可下；服务端声称 site/relay 进程号未变，产品未独立复核进程号；Linux 下载飞出截图偏重 Windows 信任提示帧。
+
+已开 R041（提议一项改动等待/结果四态人话 + 连上后去掉 PAIR_OK；交给鹊桥-客户端；不改中继/官网/AI-SSH-Pro）。
