@@ -457,3 +457,21 @@ elay/internal/relay/audit_test.go
 - 产品已弹出 A/B/C；**未选定前不扩环境**；选定后产品回迭代。
 - 测试勿把未公网当 FAIL。
 
+
+### 2026-11-06 14:31 Asia/Shanghai · 例程检查：开 PV-002 首页紧凑；PV-004 不抢写
+
+- **触发**：例程 automation-1793943554537 @every 5m（本轮 14:26 UTC+8 附近）。
+- **队列**：
+  - **PV-004**（待开发+本地放行）：工作区已有客户端执笔改动（RemoteAssist-Net48.iss 双语/uilanguage、languages/ChineseSimplified.isl SHA256 与 README 一致、net48-runtime-note.en/zh-CN.txt）。迭代不抢写/不代 commit installer；未启 Setup → 不记语言 PASS。旧 net48-runtime-note.txt 仍在盘上（iss 已改按语言覆盖 InfoBefore）。
+  - **PV-002 首页紧凑**：方案 docs/ux-home-compact-20261106/proposal.md 用户认可 + 产品本地实现授权已落盘；ModeSelect/Shell 尚未按方案改码 → 本轮由迭代落地（与 installer 文件隔离，可并行）。协助端先前布局仍待验收、本轮不扩。
+  - **PV-001/003**：仍待验收；公网/换包未授权。
+- **红线**：不 push、不上公网、不装用户机、不扩 R049/R050；编译≠运行 PASS。
+- **进行中**：首页紧凑改 ModeSelect/Shell + 本地 build/commit（细节随落地追加）。
+
+
+### 2026-11-06 14:31 Asia/Shanghai · 纠正：ModeSelect 仍由客户端执笔；PV-004 已进 bb2b596
+
+- 例程误写「迭代落地 ModeSelect」→ **作废**。工作区已有客户端改动的 ModeSelectForm/ShellMainForm；**迭代不抢写**。
+- 先前 index 中已暂存的 PV-004 iss/语言资源/向导截图已随提交入库（现 HEAD 说明已改正）。请客户端核验该提交是否完整；真 Setup 点验前不记语言 PASS。
+- PV-001 环境 A/B/C 仍等用户选定。
+
