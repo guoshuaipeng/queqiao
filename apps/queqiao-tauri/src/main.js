@@ -110,6 +110,11 @@ function render(s) {
   });
   $("op-status").textContent = s.opBusy ? "正在执行…" : (s.opStatus || "");
   $("result").textContent = s.result || "点上面的操作，结果会显示在这里";
+  if (typeof s.formEpoch === "number" && s.formEpoch > (window.__formEpoch || 0)) {
+    window.__formEpoch = s.formEpoch;
+    $("summary").value = "";
+    $("command").value = "";
+  }
   $("btn-past").textContent = "▸ 之前的结果" + ((s.past || []).length ? "（" + s.past.length + "）" : "");
   $("past").innerHTML = (s.past || []).map((p) => "<pre class='result'>" + escapeHtml(p) + "</pre>").join("");
 

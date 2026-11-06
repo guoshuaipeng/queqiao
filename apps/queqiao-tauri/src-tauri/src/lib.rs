@@ -79,6 +79,7 @@ struct Model {
     settings_hint: String,
     full_gen: u64,
     path_open: String,
+    form_epoch: u64,
 }
 
 struct Shared {
@@ -126,6 +127,7 @@ impl Shared {
                 settings_hint: String::new(),
                 full_gen: 0,
                 path_open: String::new(),
+                form_epoch: 0,
             }),
             secrets: Mutex::new(Secrets {
                 password: String::new(),
@@ -360,6 +362,7 @@ impl Hooks for AppHooks {
                 }
             }
             Ev::Busy(b) => model.op_busy = b,
+            Ev::ClearPropose => model.form_epoch = model.form_epoch.saturating_add(1),
         }
         drop(model);
         if clear_secrets {
@@ -456,6 +459,7 @@ impl Shared {
             settings_hint: model.settings_hint.clone(),
             version: env!("CARGO_PKG_VERSION").into(),
             path_open: model.path_open.clone(),
+            form_epoch: model.form_epoch,
             active: is_active(&model.phase),
             generation: self.gen.load(Ordering::SeqCst),
             seq: self.seq.fetch_add(1, Ordering::SeqCst) + 1,
@@ -611,6 +615,8 @@ struct Snapshot {
     version: String,
     #[serde(rename = "pathOpen")]
     path_open: String,
+    #[serde(rename = "formEpoch")]
+    form_epoch: u64,
     active: bool,
     generation: u64,
     seq: u64,

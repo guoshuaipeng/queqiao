@@ -30,6 +30,7 @@ pub enum Ev {
     Fail(String),
     PeerEnded,
     Busy(bool),
+    ClearPropose,
 }
 
 pub trait Hooks: Send + Sync {
@@ -576,6 +577,7 @@ fn helper_jobs(tls: &mut dyn StreamRw, token: &str, jobs: &Receiver<Job>, hooks:
             } else if err.contains("拒绝") || frame.payload.get("deniedByUser") == Some(&Value::Bool(true)) {
                 hooks.emit(Ev::Status(copy::DENIED.into()));
                 hooks.emit(Ev::Result(copy::DENIED.into()));
+                hooks.emit(Ev::ClearPropose);
             } else if err.is_empty() {
                 hooks.emit(Ev::Result(copy::CONNECT_FAIL.into()));
             } else {
@@ -675,6 +677,7 @@ mod tests {
                 Ev::Status(s) => format!("status:{s}"),
                 Ev::Audit { text, .. } => format!("audit:{text}"),
                 Ev::Busy(_) => "busy".into(),
+                Ev::ClearPropose => "clear-propose".into(),
             };
             self.events.lock().unwrap().push(label);
         }

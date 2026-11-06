@@ -93,6 +93,11 @@ test("absent peer is not told to check the network", () => {
   assert.ok(blob.includes("没能连上，请检查网络后重试。"));
 });
 
+test("denied propose clears the command fields", () => {
+  assert.ok(js.includes("formEpoch"));
+  assert.ok(js.includes('$("command").value = ""'));
+});
+
 test("cancel tells the helper it did not connect", () => {
   assert.ok(blob.includes("已取消，没有连上。"));
 });
