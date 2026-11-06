@@ -543,10 +543,17 @@ internal sealed class MainForm : Form
 
         var payload = _host.QrPayload;
 
-        if (_host.PreferRelay)
+        if (_host.PreferRelay && _host.UseTls && _host.CertificateFingerprint is { } fpRelay)
         {
-            _tlsValue.Text = "公网中继（码+密码）";
+            var shortFp = fpRelay.Length > 23 ? fpRelay[..10] + "…" + fpRelay[^8..] : fpRelay;
+            _tlsValue.Text = "中继 TLS · " + shortFp;
             _tlsValue.ForeColor = Color.FromArgb(0x0F, 0x9D, 0x58);
+            Tip().SetToolTip(_tlsValue, "业务 TLS 指纹（完整载荷含 fp=）：" + fpRelay + " · 中继 " + _host.RelayEndpointAddress);
+        }
+        else if (_host.PreferRelay && !_host.UseTls)
+        {
+            _tlsValue.Text = "中继明文（--insecure 调试）";
+            _tlsValue.ForeColor = Color.DarkOrange;
             Tip().SetToolTip(_tlsValue, _host.RelayEndpointAddress);
         }
         else if (_host.UseTls && _host.CertificateFingerprint is { } fp)

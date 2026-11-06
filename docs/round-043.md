@@ -2,7 +2,7 @@
 
 > 产品负责人：鹊桥-产品 · 2026-11-06 Asia/Shanghai  
 > 实现：鹊桥-客户端  
-> 状态：**blocked（安全闸门未通过 — 公网中继业务明文；暂不验收）**  
+> 状态：**blocked（P0 明文回退已移除；短凭证无业务指纹 → 安全主路径未闭环；产品「内置官方指纹」前提不成立；暂不验收）**  
 > 依据：R042 产品已验收。用户对照 net48 协助端截图拍板：当前仍是填 IP/主机/端口/TLS 指纹，且中继写「即将支持·仍走局域网」——**不可接受**。稳定性与体验优先；**Windows 亲友/客户主路径 = `src-net48` + 本机 .NET Framework 4.8**。演示与验收优先开 net48 产物。用户经由体验提出：会话码与验证码合成一次复制/粘贴（`docs/quality-connection-credential.md`），**并入本轮验收**。  
 > **本轮不做出包、不上架官网安装包。**
 
@@ -114,8 +114,8 @@
 
 | 项 | 结论 |
 |----|------|
-| 闸门 | **未通过** — 不得请本轮产品验收 |
-| 公网中继配对后业务流 | **明文**（本轮 net48 主动跳过业务 TLS） |
+| 闸门 | **曾未通过（明文）**；P0 已纠错移除明文回退；**短凭证闭环未完成 → 仍 blocked，不验收** |
+| 公网中继配对后业务流 | P0 后：非 `--insecure` 时恢复业务 TLS；短凭证无 fp 则协助端**安全阻断**（非明文放行） |
 | 密码 guest_host/join | 仅控制面配对鉴权；**不能替代**业务 TLS |
 | 是否本轮引入 | **本轮引入于被控/载荷侧**；协助端「无指纹则 force Insecure」在 **net8 已有同类逻辑**（既有 UX 妥协），本轮 **移植并与 agent `skipTls` 对齐成双端明文** |
 | 是否仍请验收 | **否** |
@@ -173,6 +173,61 @@
 ### 本轮验收
 
 **不提请验收。** 实现中的凭证/UI/首启人话可保留为后续修补基线，但 **5996705 含公网业务明文，安全闸门未通过。**
+
+## P0 安全纠错（2026-11-06 Asia/Shanghai，同轮授权）
+
+已按安全核查 P0 **仅改 `src-net48/`**（未动 net8 既有 Helper force-Insecure 问题）：
+
+1. `AgentHost.RelayGuestLoopAsync`：`skipTls: false`，非 `--insecure` 时对中继 pipe `AuthenticateAsServerAsync`。
+2. `AgentHost.QrPayload`（preferRelay）：恢复 `useTls: true` + 证书指纹；仅显式 `_insecure` 才 `useTls: false`。
+3. `Helper.UI/MainForm.ConnectAsync`：**删除**无指纹自动 `Insecure=true`；公网/中继无指纹时**安全阻断**并人话引导「复制载荷」(含 fp) 或高级填指纹；明文仅当用户勾选「明文调试」。
+4. **未**改中继 JSONL、未自创 TOFU/证书分发、**未**把主分享「连接凭证」`{码}-{8位}` 改成另一格式。
+
+### 仍 blocked 的原因（产品需后续拍板）
+
+- 短连接凭证**不携带指纹** → 协助端默认无法在无高级/无载荷情况下完成 **architecture 要求的业务 TLS**。
+- 因此「只粘贴短凭证即公网加密连上」**尚未闭环**；当前安全默认是**阻断**而非明文连通。
+- **不提请验收。**
+
+### 后续（非本提交）
+
+- 产品选：主路径是否改为一次粘贴含 `fp=` 的载荷，或架构书面同意的其它不降明文方案。
+- net8 Helper 仍存在「无指纹 force Insecure」既有问题，本轮**未改**，单列跟进。
+- S005 / Avalonia·CLI 凭证 UI → R044。
+
+
+
+
+
+
+## 信任模型核实（只读，2026-11-06 Asia/Shanghai）
+
+产品设想：默认公网中继可「客户端内置/随版本发布官方 TLS 指纹」，短码+8 位仅会话授权。
+
+**核实结论：该前提对「业务握手钉扎」不成立，禁止按「官方中继指纹」接线。**
+
+| 问题 | 证据 |
+|------|------|
+| 仓库有无已发布、可内置的官方业务指纹常量？ | **无**（检索 `OfficialFp`/`TrustedFp`/官方指纹等无命中；`relay-deploy.md` 只给地址 `121.196.45.81:17891`，无证书指纹表） |
+| 中继控制面是否 TLS？ | **否**。`relay/internal/relay/server.go`：`net.Listen("tcp", ...)` 明文 JSONL；部署文档写明「中继只做 JSONL → 透明 pipe」「本阶段不做中继侧 TLS 终结业务流量」 |
+| 载荷 `fp=` / 钉扎对象是谁？ | **被控 Agent 进程内临时自签业务证书**，非中继证书。`AgentHost` 构造：`TlsCertUtil.CreateEphemeralServerCert()` → `Sha256Fingerprint`；`PairQrPayload.BuildRelay(..., fp, useTls:true)`；`TlsTransport.AuthenticateAsClientAsync` 校验对端业务证 |
+| 能否用「中继官方证书指纹」钉扎业务 TLS？ | **不能**。中继无业务 TLS 终结；每台/每次启动 Agent 证书不同；钉错身份等于不安全或必失败 |
+
+因此：**短连接凭证（无 fp）不能靠「内置中继指纹」完成 architecture 要求的业务 TLS。** 自定义中继同样需要完整含 `fp=` 的安全载荷或显式高级指纹。无指纹 → **阻断**；无 TOFU、无明文静默降级。
+
+
+
+## P0 安全纠错落地（同轮授权 · 仅 src-net48）
+
+已移除本轮引入的明文回退（未改 net8 Helper 既有 force-Insecure 债）：
+
+1. `AgentHost.RelayGuestLoopAsync`：`skipTls: false`；非 `--insecure` 时业务 `AuthenticateAsServerAsync`。
+2. `QrPayload` preferRelay：非 insecure 时 `useTls: true` + **本机 Agent 业务证书指纹**（非中继指纹）。
+3. `Helper.UI/MainForm.ConnectAsync`：删除无指纹自动 `Insecure=true`；无指纹 → 「无法安全连接」人话，引导「复制载荷」或高级填指纹；明文仅显式「明文调试」。
+4. 主分享仍为短凭证 `{码}-{8位}`（**未**擅自改成另一主格式）；并写明短凭证**不携带**业务指纹 → 默认协助主路径仍 **blocked**（安全默认，非明文放行）。
+5. 未发明指纹/共享私钥/新协议字段。
+
+**状态仍 blocked，不提请「真实连接」验收。** 产品可做文档/编译核对；真实联调须隔离环境且须完整安全载荷。
 
 
 ## 参考

@@ -131,10 +131,16 @@ internal sealed class AgentHost
             {
                 if (_preferRelay)
                 {
-                    // 亲友主路径：码+密码；业务管道在中继上走明文（与协助端无指纹时一致）
+                    // R043 安全纠错：中继 pipe 上仍须业务 TLS + 指纹（architecture）；短凭证不含 fp
+                    if (_insecure)
+                        return PairQrPayload.BuildRelay(
+                            _relayEndpoint, _sessionCode, _sessionPassword,
+                            fingerprint: null, useTls: false);
+                    var fpR = _certFingerprint
+                        ?? throw new InvalidOperationException("TLS 证书尚未生成，请先 Start()");
                     return PairQrPayload.BuildRelay(
                         _relayEndpoint, _sessionCode, _sessionPassword,
-                        fingerprint: null, useTls: false);
+                        fingerprint: fpR, useTls: true);
                 }
 
                 if (_insecure)
@@ -388,8 +394,8 @@ internal sealed class AgentHost
                 try { SessionChanged?.Invoke(); } catch { /* UI */ }
                 _audit.Write("relay_guest_paired", $"code={code}");
                 SetRelayPhase("paired", null);
-                // 亲友主路径：中继业务管道明文（协助端无指纹时同样明文），TLS 仅局域网高级
-                await HandleStreamAsync(relay, relay.Stream, $"relay-guest/{host}:{port}", skipTls: true, ct)
+                // R043 安全纠错：与 net8 / architecture 一致 — 中继 pipe 内业务 TLS（非 --insecure）
+                await HandleStreamAsync(relay, relay.Stream, $"relay-guest/{host}:{port}", skipTls: false, ct)
                     .ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)

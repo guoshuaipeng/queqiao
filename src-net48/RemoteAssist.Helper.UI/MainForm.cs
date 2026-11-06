@@ -486,21 +486,18 @@ internal sealed class MainForm : Form
         SetStatus("正在连接… " + preview);
         try
         {
-            // 中继访客默认允许明文业务管道（指纹可在高级补）
+            // R043 安全纠错：禁止公网主路径无指纹时静默降明文。须载荷含 fp= 或高级填写指纹；
+            // 显式勾选「明文调试」才走 --insecure。短凭证 {码}-{验证码} 不含指纹 → 安全阻断并人话引导。
             if (opts.ViaRelay && !opts.Insecure && string.IsNullOrWhiteSpace(opts.Fingerprint))
             {
-                opts = new AssistConnectOptions
-                {
-                    Host = opts.Host,
-                    Port = opts.Port,
-                    Code = opts.Code,
-                    Permission = opts.Permission,
-                    Fingerprint = null,
-                    Insecure = true,
-                    ViaRelay = true,
-                    RelayEndpoint = opts.RelayEndpoint,
-                    Password = opts.Password
-                };
+                SetStatus("无法安全连接");
+                SetFailHint(
+                    "还缺少安全校验（证书指纹）。「连接凭证」只有会话码和验证码，不能单独走加密通道。"
+                    + Environment.NewLine
+                    + "下一步：请对方用「复制载荷」发来含指纹的完整连接信息并粘贴；或展开「高级」填写 TLS 指纹后再连接。"
+                    + Environment.NewLine
+                    + "（仅本机调试可勾选「明文调试」，公网请勿使用。）");
+                return;
             }
 
             var client = await AssistClient.PairAsync(opts, "helper-ui").ConfigureAwait(true);

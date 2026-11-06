@@ -83,7 +83,7 @@ public sealed class AssistClient : IDisposable
                 var fp = TlsCertUtil.NormalizeFingerprint(opts.Fingerprint);
                 if (string.IsNullOrWhiteSpace(fp))
                     throw new InvalidOperationException(
-                        "局域网 TLS 需要证书指纹：请展开「高级」填写，或使用默认中继连接（将自动用安全通道）。");
+                        "加密连接需要证书指纹：请粘贴含 fp= 的完整载荷，或展开「高级」填写 TLS 指纹（短连接凭证不含指纹）。");
                 stream = await TlsTransport.AuthenticateAsClientAsync(stream, fp!, ct).ConfigureAwait(false);
             }
             return await FinishPairAsync(relay, stream, opts.Code, opts.Permission, clientName, ct).ConfigureAwait(false);
