@@ -82,6 +82,20 @@
 ---
 ## 记录
 
+### 2026-11-07 08:24 Asia/Shanghai · PV-001 本地验收 PASS → 完成（仅本地）
+
+- **派工**：产品收口 · 派验收 PV-001（官网 /admin 会话码只读列表+按码过滤）；公网/生产仍未授权。
+- **实现锚点**：commit `b964b8a`（已在 HEAD 祖先）；R046 `guest_audit` + site 代理 + `admin.html`。
+- **验证**：
+  - `relay`: `go test -count=1 ./internal/relay/` → PASS（含 `TestGuestAuditLifecycleAndHTTP`）
+  - `site`: `go test -count=1 ./internal/site/` → PASS（含 `TestSessionCodesRequiresAuthAndProxies`）
+  - 隔离本机进程冒烟：临时 TOKEN/随机 loopback；audit 无 token→401；guest 生命周期入审计；`/admin/api/session-codes` 列表+按码过滤；敏感字段未泄漏；未登录 401；`admin` HTML 含「会话码」。
+- **文档**：新建 `docs/acceptance/pv-001-session-codes-20261107.md`；PRODUCT-VERSIONS PV-001 → **完成**（注明公网未授）；更新 `round-051`。
+- **未做**：公网点验、上生产、push、新功能。
+- **git**：本轮仅 docs；本地 commit（不 push）。
+
+---
+
 ### 2026-11-06 16:16 Asia/Shanghai · 产品决策落库：官网本侧暂停
 
 - **产品收口**（用户 2026-11-06 15:30 Asia/Shanghai 明确，现已写入 docs）：

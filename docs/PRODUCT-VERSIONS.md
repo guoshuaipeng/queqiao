@@ -47,7 +47,7 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 ### PV-001 · 官网 /admin 管理客户端会话码
 
-- **状态**：待验收
+- **状态**：完成
 - **标题**：`http://121.196.45.81/admin` 增加对客户端会话码（code）的管理能力
 - **版本**：v0.2
 - **说明**：
@@ -61,6 +61,7 @@ v0.2 — 官网管理台可管理客户端会话码（code）
   - 未另说前：本条仅写入队列；上生产/改公网机须对话另行授权。
 - **优先级**：高
 - **验收边界（2026-11-06）**：**本地验收**即可收口本条实现轮；**公网/生产**部署或替换须**另行授权**（本地 PASS ≠ 公网已放行）。
+- **本地验收收口（2026-11-07）**：证据见 `docs/acceptance/pv-001-session-codes-20261107.md`（go test + 隔离本机冒烟 PASS）。**公网仍未授权 / 未部署**。状态「完成」= 仅本地验收完成语义。
 
 ### PV-002 · 客户端首页与协助端 UI 观感优化
 
@@ -149,7 +150,7 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 > 更新：2026-11-06 13:46 Asia/Shanghai
 > 最近检查：2026-11-06 13:46 Asia/Shanghai
-> 当前项：PV-002 待验收；PV-003 待验收；PV-001 待验收
+> 当前项：PV-001 完成（本地）；PV-002 待验收；PV-003 待验收
 > 本轮结果：PV-002 UI 布局落地（ModeSelectForm + Helper MainForm）；commit ab27691；见 iteration-status
 > 测试：net48 App+Helper.UI build PASS；UI 截图 docs/shots
 > 提交：ab27691（本地；未 push）
@@ -159,6 +160,7 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 
 | 时间 (Asia/Shanghai) | 结果 |
 |----------------------|
+| 2026-11-07 08:24 Asia/Shanghai | **PV-001 本地验收 PASS** → **完成**（仅本地）；证据 docs/acceptance/pv-001-session-codes-20261107.md；公网未授 |
 | 2026-11-06 13:49 Asia/Shanghai | **客户端只读复审**：PV-002/003 静态未见阻断；现 Setup≠PV-002 最终包；真 UI/安装仍待验；见 iteration-status |
 | 2026-11-06 13:44 Asia/Shanghai | **鹊桥-迭代 PV-003**：安装包/快捷方式图标落地 → **待验收**；本地产物 RemoteAssist-Net48-Setup-0.1.0.exe；未 push |
 | 2026-11-06 13:41 Asia/Shanghai | **鹊桥-迭代**：本地 commit b964b8a；PV-002/003 进行中；例程 automation-1793943554537；见 iteration-status |

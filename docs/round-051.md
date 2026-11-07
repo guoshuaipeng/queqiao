@@ -1,7 +1,7 @@
 # 第 51 轮 — PV-001 官网 /admin 会话码只读管理（最小闭环）
 
 > 产品/实现：鹊桥-持续迭代 · 2026-11-06 13:14 Asia/Shanghai  
-> 状态：**待验收**（本地 API/单测已过；浏览器体验与公网未做）
+> 状态：**完成（本地验收）**（2026-11-07；证据 docs/acceptance/pv-001-session-codes-20261107.md；**公网未做/未授**）
 > 实现记录更新：2026-11-06 13:23 Asia/Shanghai  
 > 依据：docs/PRODUCT-VERSIONS.md **PV-001**（用户原文不改）；对接 docs/round-046.md / docs/relay-audit.md  
 > **不上生产**；无单独对话授权不 push / 不改公网机。
@@ -47,3 +47,9 @@
 - R046 MVP：`guest_audit` 表；generated/paired/join_failed/wait_timeout/ended/abandoned；`RELAY_AUDIT_ADDR`/`RELAY_AUDIT_TOKEN`；`GET /audit/events`。
 - site：`GET /admin/api/session-codes` HTTP 代理；`admin.html` 会话码只读区 + code 过滤。
 - 验证：`go test` relay+site PASS；本机起 relay+site curl 列表/过滤 PASS；**未**浏览器手工点验；**未**上生产。
+
+## 本地验收收口（2026-11-07）
+
+- 证据：`docs/acceptance/pv-001-session-codes-20261107.md`。
+- go test relay+site PASS；隔离本机进程冒烟 PASS。
+- **公网未验收、未部署**。
