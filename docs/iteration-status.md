@@ -926,3 +926,16 @@ elay/internal/relay/audit_test.go
 - **云端改码**：仍听产品；当前「下一 CloudAgent 编码轮暂无立项」+ Gitee/Origin SCM 未通 → **不开 bc-**。
 - **剪贴板**：维持收口（跳过成功路径；失败可验收；错误5环境阻塞）。
 
+
+---
+
+## 当前口径（置顶 · 2026-11-07 测试复验矩阵交回）
+
+- 证据（wt）：`docs/tauri-migration/acceptance/ACCEPTANCE-REVERIFY-20261107.md`（commit 见下）。
+- Soft QA **PASS**；Tauri 会话对抗复验 **PASS**；无功能回归拦回。
+- **PV-002**：留白仍缺口 → 维持待验收（不开 net48 编码）。
+- **PV-003**：图标 + 开始菜单 .lnk +（勾选 desktopicon 后）桌面 .lnk **PASS** → 测试建议可升完成。
+- **PV-004**：语言 UIA **PASS**；可视像素截图技术缺口 → 是否收口由产品定。
+- 剪贴板 err5 / 重试开启→等待：**不派编码**（维持收口）。
+- **待产品正式收口** PV-002～004 状态；协调已送产品，未自行改 PRODUCT-VERSIONS。
+
