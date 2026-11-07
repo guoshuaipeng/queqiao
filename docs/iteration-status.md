@@ -822,3 +822,13 @@ elay/internal/relay/audit_test.go
 - 口径与已执行派工一致；客户端待命；体验不开工。
 - 未 push。
 
+
+---
+
+## 当前口径（置顶 · 2026-11-07 CloudAgent 优先）
+
+- 主人经日常2定：编码一律 CloudAgent；本机仅真 UI 验收/取证。
+- 产品权威：docs/round-product-auth-20261107-cloudagent-process.md（主仓）；下一 CloudAgent 编码轮=暂无立项。
+- SCM 阻塞：远程 Gitee，CloudAgent 尚不可直连；未开 bc- 任务。
+- 剪贴板：维持产品收口（失败可验收；错误5环境阻塞）。
+
