@@ -787,3 +787,15 @@ elay/internal/relay/audit_test.go
 - **完成**：剪贴板写入关闭前读回；错误 5 失败不报成功并留复现；真点击开启→等待（本机 17991）
 - **证据**：`docs/tauri-migration/acceptance/clipboard-error5-repro.txt`、`desktop-waiting-after-open.png`、`desktop-after-copy-fail.png`
 - **未做**：生产中继；复制成功写入（本机仍错误 5）
+
+### 2026-11-07 2026-11-07 08:27 Asia/Shanghai · 客户端验收取证（PV-002/003/004 + Tauri 会话）
+
+- **授权**：主仓产品收口 ound-product-auth-20261107-clipboard-session.md（82bb337）；不放行剪贴板成功写入与「重试开启」编码；本轮只取证。
+- **测了什么**：
+  - Tauri 会话主路径本机 17991：ound-stop.ps1 **PASS**（Idle→Waiting→停止→Idle）；ound-both.ps1 **PASS**（完整 pair/确认/结束）。
+  - PV-002：补拍 net48 首页、Tauri Idle；标注 docs/shots/pv002-mode-select|helper 为 IDE 误拍无效。
+  - PV-003：本机 Setup/已装 exe 提取关联图标（品牌标可见）；开始菜单快捷方式未找到。
+  - PV-004：本机 UICulture=zh-CN；iss 双语+uilanguage 静态核对；既有 wizard 截图为聊天误拍 → 真实向导仍缺口。
+- **结果**：会话主路径 PASS；PV-003 包图标 PASS、快捷方式缺口；PV-002/004 缺口见清单。未改 PRODUCT-VERSIONS 状态。
+- **证据**：docs/tauri-migration/acceptance/ACCEPTANCE-20261107.md 及同目录新截图。
+- **提交**：见本轮 docs commit；**未 push**；**未改业务码**；中继已停。
