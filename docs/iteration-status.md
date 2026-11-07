@@ -990,5 +990,16 @@ PRODUCT-VERSIONS / docs/acceptance 收口文以产品随后 commit 为准；本�
 - **复盘**：已追加 `docs/retro.md`（本节对应条目）。
 - **并行**：A 测试补 PV-004 可视像素（不改码）；B 体验出「重试开启→等待」方案草稿（非编码、待用户确认）；C SCM/CloudAgent 仍等 Origin 通畅，**不开 bc-**、无具体功能编码立项。
 - PV-002 留白：**不**开 net48 编码。剪贴板成功 / R050：**仍不派**。
-- 客户端/服务端：**待命不改码**。产品授权文落盘后补 SHA 指针。
+- 客户端/服务端：**待命不改码**。产品授权文：[docs/round-product-auth-20261107-next-iteration.md](round-product-auth-20261107-next-iteration.md)（本 commit）。
+
+
+---
+
+## 轨 A 进度（2026-11-07 21:35 · PV-004 像素）
+
+- 证据 wt：`docs/tauri-migration/acceptance/PV004-WIZARD-PIXEL-20261107.md`（commit 见下）。
+- **结果：缺口** — 会话锁屏（LogonUI+LockApp）；**未**启动 Setup、**未**交 PNG；禁止冒充。
+- Setup SHA 前缀仍 `71CE3908300A8046`（仅复核）。
+- **阻塞**：需主人在 DESKTOP-J9F0EKT **解锁跟屏**后测试重跑。不改码；不硬扛截屏。
+- 轨 B 体验方案草稿仍并行；C 不开 CloudAgent。
 
