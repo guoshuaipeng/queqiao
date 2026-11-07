@@ -57,3 +57,10 @@
 - 不删旧 .NET；Tauri 写入仅 wt `remote-assist-wt-tauri`（且本阶段无编码立项）。
 - 重大方向 / 推送先问主人。
 - 写文件 ≠ 授权（推送、上生产、发消息、删除、绕过安全底线仍须明确授权）。
+
+## 产品落仓确认
+
+- 本文件由 **鹊桥-产品** 落仓（2026-11-07 Asia/Shanghai）。
+- 迭代协调须按本节：**下一 CloudAgent 编码轮暂无立项**；本机继续真实验收；剪贴板维持收口。
+- CURRENT-POSTURE / iteration-status 已同步置顶；**未 push**。
+
