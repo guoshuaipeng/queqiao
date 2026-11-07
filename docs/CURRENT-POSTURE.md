@@ -1,9 +1,22 @@
 # 迭代当前口径（产品收口 · 2026-11-07 Asia/Shanghai）
 
+> **权威增量（继续迭代·并行轨）**：见 [docs/round-product-auth-20261107-next-iteration.md](round-product-auth-20261107-next-iteration.md)（A 验收补证 + B 体验方案；编码等 Origin；**不**死磕 PV-002/剪贴板成功路径）。  
 > **权威增量（流程）**：见 [docs/round-product-auth-20261107-cloudagent-process.md](round-product-auth-20261107-cloudagent-process.md)。  
 > **权威增量（剪贴板/会话）**：见 [docs/round-product-auth-20261107-clipboard-session.md](round-product-auth-20261107-clipboard-session.md)。下列覆盖此前「本机主编码 / 继续派剪贴板成功路径」等表述。
 
 
+## 2026-11-07 继续迭代（复盘·不卡死）
+
+| 项 | 口径 |
+|---|---|
+| 主推进 | **并行 A+B**；编码等 C（Origin） |
+| A | 测试可选补 PV-004 可视像素（不改码） |
+| B | 体验出「重试开启→等待」方案草稿（非编码；待用户确认） |
+| C | SCM/CloudAgent 等主人导入 Origin；不开 bc- |
+| D | 不派 PV-002 net48 留白编码、不派剪贴板成功路径 |
+| 复盘 | 见 `docs/retro.md`「2026-11-07 收口后继续迭代复盘」 |
+
+---
 ## 2026-11-07 产品正式收口（复验矩阵 4dbfe52）
 
 | 项 | 口径 |
