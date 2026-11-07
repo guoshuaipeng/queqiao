@@ -915,3 +915,14 @@ elay/internal/relay/audit_test.go
 - **阻塞（迭代协调记）**：仓远程为 Gitee `https://gitee.com/CodeYG/remote-assist.git`；当前 Cursor CloudAgent 仅连 Origin，**尚不可对 Gitee 开云端任务**。待主人选定：镜像到 GitHub/GitLab/Bitbucket/Azure DevOps，或导入 Cursor Origin 后再开 `bc-` 任务。
 - **队列**：PRODUCT-VERSIONS 仍无「待开发」；PV-001 本地完成；PV-002/003/004 按收口待命验收/取证。**未开**云端编码任务。
 
+
+---
+
+## 当前口径（置顶 · 2026-11-07 验收主责 → 鹊桥-测试）
+
+- **主人经日常2**：补「鹊桥-测试」；**PV-001～004 + 会话功能**的验收/取证改由**测试角色主责**。
+- **客户端**：停刷验收轮，**只配合复现**；不以本机改码为主路径。
+- **FAIL 必须拦回**，不得留给主人发现；协调串节奏，产品授权仍管编码轮。
+- **云端改码**：仍听产品；当前「下一 CloudAgent 编码轮暂无立项」+ Gitee/Origin SCM 未通 → **不开 bc-**。
+- **剪贴板**：维持收口（跳过成功路径；失败可验收；错误5环境阻塞）。
+

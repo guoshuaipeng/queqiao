@@ -3,6 +3,16 @@
 > **权威增量（流程）**：见 [docs/round-product-auth-20261107-cloudagent-process.md](round-product-auth-20261107-cloudagent-process.md)。  
 > **权威增量（剪贴板/会话）**：见 [docs/round-product-auth-20261107-clipboard-session.md](round-product-auth-20261107-clipboard-session.md)。下列覆盖此前「本机主编码 / 继续派剪贴板成功路径」等表述。
 
+
+## 2026-11-07 验收主责（鹊桥-测试）
+
+| 项 | 口径 |
+|---|---|
+| PV-001～004 + 会话功能验收/取证 | **鹊桥-测试主责**（Soft QA + 对抗真 UI；FAIL 拦回） |
+| 客户端 | 停刷验收轮；只配合复现；不本机改功能码 |
+| 迭代协调 | 串产品→测试验收节奏；有产品授权后再启 CloudAgent |
+| 剪贴板 / 下一编码轮 | 维持产品收口；暂无立项；SCM 未通不开 bc- |
+
 ## 2026-11-07 流程变更（CloudAgent · 摘要）
 
 | 项 | 口径 |
