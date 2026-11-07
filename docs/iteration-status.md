@@ -1014,3 +1014,13 @@ PRODUCT-VERSIONS / docs/acceptance 收口文以产品随后 commit 为准；本�
 - 轨 A：仍等主人解锁/跳过决定；锁屏缺口 `ee5bbc7`。
 - C：Origin 未通不开 bc-。
 
+
+---
+
+## 轨 B 路径对齐（2026-11-07）
+
+- **主路径**：`docs/ux-retry-open-waiting-draft-20261107.md`
+- 同文副本：`docs/quality-retry-open-waiting-draft-20261107.md`
+- 产品正在问主人确认 §1–§7；**未确认 / 未另授前不派重试编码**。
+- 产品授权并行轨：`fb041ca`。
+
