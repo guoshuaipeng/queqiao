@@ -799,3 +799,9 @@ elay/internal/relay/audit_test.go
 - **结果**：会话主路径 PASS；PV-003 包图标 PASS、快捷方式缺口；PV-002/004 缺口见清单。未改 PRODUCT-VERSIONS 状态。
 - **证据**：docs/tauri-migration/acceptance/ACCEPTANCE-20261107.md 及同目录新截图。
 - **提交**：见本轮 docs commit；**未 push**；**未改业务码**；中继已停。
+
+### 2026-11-07 Asia/Shanghai · 迭代协调：主仓 PV-001 产品收口
+
+- 主仓 da9f763：PV-001 → 完成（仅本地验收）；见 docs/acceptance/pv-001-product-closeout-20261107.md。
+- 本 wt 继续待命：等产品对 ACCEPTANCE-20261107（cc8ed45）收口 PV-002～004；不派剪贴板成功/重试编码。
+
