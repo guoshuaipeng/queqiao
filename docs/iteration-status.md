@@ -861,3 +861,13 @@ elay/internal/relay/audit_test.go
 
 PRODUCT-VERSIONS / docs/acceptance 收口文以产品随后 commit 为准；本文件先对齐正式口径。
 
+
+---
+
+## 当前口径（置顶 · 指针 · 复验收口 e005c3d）
+
+- **权威收口文**：`docs/acceptance/pv-reverify-product-closeout-20261107.md` · 主仓 commit **`e005c3d`**（未 push）。
+- 复验证据 wt：`ACCEPTANCE-REVERIFY-20261107.md` / **`4dbfe52`**。
+- 口径锁定：PV-001 完成仅本地；PV-002 待验收；PV-003 完成仅本地；PV-004 部分完成；会话 PASS；**不启 CloudAgent、不派编码**。
+- 全员按收口待命；无待开发不发明编码轮。
+
