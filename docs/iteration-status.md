@@ -1003,3 +1003,14 @@ PRODUCT-VERSIONS / docs/acceptance 收口文以产品随后 commit 为准；本�
 - **阻塞**：需主人在 DESKTOP-J9F0EKT **解锁跟屏**后测试重跑。不改码；不硬扛截屏。
 - 轨 B 体验方案草稿仍并行；C 不开 CloudAgent。
 
+
+---
+
+## 轨 B 进度（2026-11-07 · 重试开启方案草稿）
+
+- 草稿：`docs/quality-retry-open-waiting-draft-20261107.md`（体验落盘；**待用户确认**；确认≠实现授权）。
+- 产品并行授权文：`docs/round-product-auth-20261107-next-iteration.md` · commit **`fb041ca`**。
+- **不派**「重试开启→等待」编码，直至产品明示用户已确认并另授。
+- 轨 A：仍等主人解锁/跳过决定；锁屏缺口 `ee5bbc7`。
+- C：Origin 未通不开 bc-。
+
