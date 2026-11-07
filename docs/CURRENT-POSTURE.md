@@ -4,6 +4,20 @@
 > **权威增量（剪贴板/会话）**：见 [docs/round-product-auth-20261107-clipboard-session.md](round-product-auth-20261107-clipboard-session.md)。下列覆盖此前「本机主编码 / 继续派剪贴板成功路径」等表述。
 
 
+## 2026-11-07 产品正式收口（复验矩阵 4dbfe52）
+
+| 项 | 口径 |
+|---|---|
+| PV-001 | 完成（仅本地）；公网未授 |
+| PV-002 | 维持待验收（留白缺口）；不开编码/体验填留白 |
+| PV-003 | **完成（仅本地）**（图标+.lnk 补证）；不上公网换包 |
+| PV-004 | **部分完成**（语言 UIA PASS；可视像素缺口禁止冒充）；不派安装器编码 |
+| Tauri 会话 | Soft QA + 对抗 PASS；无回归拦回 |
+| 编码禁区 | 剪贴板成功路径 / 重试→等待 / R050 不派；不启 CloudAgent |
+
+证据：wt `docs/tauri-migration/acceptance/ACCEPTANCE-REVERIFY-20261107.md`（`4dbfe52`）。
+
+---
 ## 2026-11-07 验收主责（鹊桥-测试）
 
 | 项 | 口径 |
