@@ -886,3 +886,10 @@ elay/internal/relay/audit_test.go
 - Tauri：允许本机取证但不滚动刷轮；会话主路径旁证已够。
 - 未 push。
 
+
+### 2026-11-07 Asia/Shanghai · 迭代协调：对齐 PV-002～004 收口文 e794827
+
+- 已核对主仓 docs/acceptance/pv-002-004-product-closeout-20261107.md（commit e794827，未 push）。
+- 口径与已执行派工一致；客户端待命；体验不开工。
+- 未 push。
+
