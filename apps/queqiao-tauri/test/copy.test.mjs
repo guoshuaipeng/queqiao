@@ -6,7 +6,9 @@ const html = fs.readFileSync(new URL("../src/index.html", import.meta.url), "utf
 const js = fs.readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const rust = fs.readFileSync(new URL("../src-tauri/src/copy.rs", import.meta.url), "utf8");
-const blob = html + js + css + rust;
+const clipboardRs = fs.readFileSync(new URL("../src-tauri/src/clipboard.rs", import.meta.url), "utf8");
+const libRs = fs.readFileSync(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
+const blob = html + js + css + rust + clipboardRs + libRs;
 
 const required = [
   "亲友之间，发凭证或粘贴连接。",
@@ -360,4 +362,20 @@ test("production boot does not render a demo connection", () => {
   assert.match(html, /id="helper"[^>]*hidden/);
   assert.match(html, /id="settings"[^>]*hidden/);
   assert.match(html, /id="mask"[^>]*hidden/);
+});
+
+test("copy success hint only follows a verified write path", () => {
+  assert.ok(blob.includes("已复制，请完整发给对方。"));
+  assert.ok(blob.includes("没能复制，请再点一次。"));
+  assert.match(js, /confirm_copy/);
+  assert.match(js, /copyHint === "没能复制，请再点一次。"/);
+  assert.match(clipboardRs, /GetClipboardData/);
+  assert.match(libRs, /got == payload/);
+  assert.equal(/copyHint\s*=\s*"已复制/.test(js), false);
+});
+
+test("failed copy focuses the manual credential box", () => {
+  assert.match(js, /manual-copy/);
+  assert.match(js, /box\.focus\(\)/);
+  assert.match(js, /box\.select\(\)/);
 });

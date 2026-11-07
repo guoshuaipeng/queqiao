@@ -645,10 +645,12 @@ function bindUi() {
     try {
       const snap = await invoke("copy_credential");
       render(snap);
-      if (snap && snap.manualCopy && navigator.clipboard && navigator.clipboard.writeText) {
+      // 原生已成功则不会带 manualCopy。失败时再试浏览器剪贴板，仍以读回为准。
+      if (snap && snap.manualCopy && snap.copyHint === "没能复制，请再点一次。" && navigator.clipboard && navigator.clipboard.writeText) {
         try {
           await navigator.clipboard.writeText(snap.manualCopy);
           const checked = await invoke("confirm_copy");
+          // confirm_copy 读回不一致时仍是失败文案，不得在前端改成成功
           render(checked);
         } catch (err) {
           const box = $("manual-copy");

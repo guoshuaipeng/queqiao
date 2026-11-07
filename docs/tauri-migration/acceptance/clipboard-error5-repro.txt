@@ -1,0 +1,5 @@
+﻿time=2026-11-07 08:17:35 Asia/Shanghai
+OpenClipboard(NULL)= 0
+GetLastError= 5
+GetOpenClipboardWindow= 0
+note= error 5 means ACCESS_DENIED; app must not show copy success
