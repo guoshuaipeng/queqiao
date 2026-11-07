@@ -764,3 +764,10 @@ elay/internal/relay/audit_test.go
 - **唯一写入**：鹊桥-客户端 → E:\IdeaProjects\remote-assist-wt-tauri @ feat/tauri-client-migration
 - 迭代释放该 wt 编码权；不另开第二同分支 worktree。
 - tip 见本提交；仍未 push。
+
+### 2026-11-07 Asia/Shanghai · Tauri 复制失败路径 + 开启等待回归
+
+- **分支**：feat/tauri-client-migration（仅本地 commit，未 push）
+- **完成**：剪贴板写入关闭前读回；错误 5 失败不报成功并留复现；真点击开启→等待（本机 17991）
+- **证据**：`docs/tauri-migration/acceptance/clipboard-error5-repro.txt`、`desktop-waiting-after-open.png`、`desktop-after-copy-fail.png`
+- **未做**：生产中继；复制成功写入（本机仍错误 5）

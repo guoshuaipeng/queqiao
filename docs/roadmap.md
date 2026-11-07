@@ -379,6 +379,8 @@
 | 本轮完成 | 当前结果仍停在最底下，看得见的行仍是整行；这一屏变成 queqiao-old-6 和长行，QUEEND 仍在框里，横向仍停在行尾 | 翻走一行后行尾和当前结果还在 | 当前结果 `queqiao-now-8` 在 288–308，`exit=0` 在 308–328，都是整行。`queqiao-old-6` 字从 37 到 129，框左是 24，行在 347–367。长行在 367–387。横向 715，和尽头一致。`QUEEND` 在 727–767，顶 370、底 384 | `acceptance/desktop-oldupagain-after.png` |
 | 本轮完成 | 再滚回最底下，不要带动整页，也不带动当前结果 | 滚到真正最底时整页和当前结果不动，行尾还在 | 整页先放在纵向 40、横向 40，下面还能滚 337、左右还能滑 1023。落点纵向 314，在当前结果下沿 289 的下面。滚完仍是 40 和 40，文档横向仍是 0。之前的结果竖向从 100 回到 120，和可滚尽头一致。横向仍是 715。当前结果竖向仍是 140 | 本机 `127.0.0.1:17991`；`acceptance/desktop-olddownagain-before.png`、`desktop-olddownagain-after.png` |
 | 本轮完成 | 之前的结果里的 exit=0 重新出现并留在左边，QUEEND 仍在框里，横向仍停在行尾；当前结果仍停在最底下，看得见的行仍是整行 | 滚回最底不露出半行，行尾还在 | 当前结果 `queqiao-now-8` 在 288–308，`exit=0` 在 308–328，都是整行。横向 715，和尽头一致。`QUEEND` 在 727–767，顶 350、底 364。之前的结果 `exit=0` 字从 37 到 77，框左是 24，行在 367–387。`queqiao-old-6` 已经离开这一屏 | `acceptance/desktop-olddownagain-after.png` |
+| 本轮完成 | 复制失败不报成功，并留下错误 5 最小复现 | 失败只提示「没能复制，请再点一次。」，原文框获焦 | OpenClipboard=0 GetLastError=5；连点/切设置后再点仍失败；关闭前读回校验已加 | cceptance/clipboard-error5-repro.txt、desktop-after-copy-fail.png |
+| 本轮完成 | 本机中继下点「开启接受协助」进入等待 | 出现「等待对方连接」和「复制连接凭证」，没有已连接 | waiting/copyBtn/noConnected 均为真；全屏与窄窗 | cceptance/desktop-waiting-after-open.png、desktop-waiting-narrow.png |
 | 未完成 | 复制连接凭证写入剪贴板 | 亲友能把整段发给对方 | 成功提示「已复制，请完整发给对方。」且读回内容一致；失败不报成功，原文框获焦 | 失败路径已验。成功写入未出现。本机 `OpenClipboard` 错误 5，本轮未当作已修好 |
 
 深色主题：样式没有 `prefers-color-scheme`，本轮不验、不加。系统缩放：当时窗口 DPI=96（100%），未改系统缩放。
