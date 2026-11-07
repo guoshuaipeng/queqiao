@@ -7,6 +7,18 @@
 
 ---
 
+## 当前口径（置顶 · 2026-11-07 CloudAgent 流程）
+
+- 权威：docs/round-product-auth-20261107-cloudagent-process.md；摘要见 CURRENT-POSTURE。
+- **开发编码 → CloudAgent**；**本机 → 真实验收**（角色 bot 不以本机功能编码为主路径）。
+- **剪贴板维持收口**：跳过成功路径继续修；失败可验收；成功路径环境阻塞。
+- **下一 CloudAgent 编码轮：暂无立项**（无待开发；重试开启须体验+用户确认；R050 blocked）。
+- **产品授权仍必需**：A-480 ≠ 编码放行；无 docs 授权文不得启 CloudAgent 改码。
+- 本机下一动作：继续真实验收；可选 `.lnk` / 安装向导补证（不改码）。未来有授权后由**迭代协调启 CloudAgent**。
+
+> 与下方各「当前口径」并存时，**流程/派工以本节为准**；PV 收口细节仍以下方 PV 专节为准。
+
+---
 ## 当前口径（置顶 · 2026-11-07 PV-002/003/004 产品收口）
 
 - 权威：docs/acceptance/pv-002-004-product-closeout-20261107.md；证据 Tauri wt **cc8ed45** → docs/tauri-migration/acceptance/ACCEPTANCE-20261107.md。
