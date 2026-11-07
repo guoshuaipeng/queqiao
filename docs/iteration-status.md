@@ -7,6 +7,22 @@
 
 ---
 
+---
+
+## 当前口径（置顶 · 2026-11-07 对齐主仓产品收口）
+
+权威在主仓 E:\IdeaProjects\remote-assist（commit 82bb337，未 push）：
+- docs/round-product-auth-20261107-clipboard-session.md
+- docs/CURRENT-POSTURE.md
+- docs/iteration-status.md 置顶节
+
+摘要：本阶段不放行剪贴板成功写入与「重试开启」编码；接受失败提示+手填；先验收 PV-001～004 + 功能测试；无待开发不派新实现。本 wt 仅客户端取证（PV-002/003/004 + 会话主路径），不改那两项实现。
+
+### 2026-11-07 Asia/Shanghai · 迭代协调对齐
+
+- 已核对主仓 82bb337 与派工一致；客户端取证进行中；服务端 PV-001 核对已派。
+- 不 push。
+
 ## 使用说明（bot）
 
 1. 先读 PRODUCT-VERSIONS.md：仅处理 **待开发**；草稿 / 暂停 不实现。  
