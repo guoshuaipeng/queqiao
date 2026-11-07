@@ -7,6 +7,20 @@
 
 ---
 
+## 当前口径（置顶 · 2026-11-07 复验产品收口）
+
+- 权威：docs/acceptance/pv-reverify-product-closeout-20261107.md；证据 Tauri wt **4dbfe52** → ACCEPTANCE-REVERIFY-20261107.md；主仓指针 **69892c6**。
+- Soft QA：node 53/53 + cargo 25/25 PASS。
+- **PV-001**：保持完成（仅本地）。
+- **PV-002**：维持**待验收**（留白缺口；不开体验/不授 net48 编码）。
+- **PV-003**：**完成（仅本地验收）**（图标 + 开始菜单/桌面 .lnk PASS；桌面默认未勾选无项属预期；≠公网换包）。
+- **PV-004**：**部分完成**（语言 UIA PASS；可视像素截图缺口；不派安装器编码）。
+- **Tauri 会话**：Soft QA + 对抗主路径 **PASS**；无功能回归拦回；重试→等待未实现（未授）；剪贴板失败路径 PASS / 成功路径环境阻塞。
+- **编码边界不变**：不放行剪贴板成功路径 / 重试开启；R050 blocked；**不启**本轮 CloudAgent；下一编码轮仍暂无立项。
+
+> 与下方各「当前口径」并存时，**PV 状态以本节为准**；CloudAgent 流程仍以上一节为准。
+
+---
 ## 当前口径（置顶 · 2026-11-07 CloudAgent 流程）
 
 - 权威：docs/round-product-auth-20261107-cloudagent-process.md；摘要见 CURRENT-POSTURE。
