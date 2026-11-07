@@ -7,6 +7,15 @@
 
 ---
 
+## 当前口径（置顶 · 2026-11-07 PV-001 产品收口）
+
+- **PV-001**：产品正式收口为 **完成（仅本地验收）**。证据 `docs/acceptance/pv-001-session-codes-20261107.md`（commit `ec80b6b`）；产品收口文 `docs/acceptance/pv-001-product-closeout-20261107.md`。公网/生产**未授、未部署**；「完成」≠ 公网放行。接单不破坏以 site go test 回归为准（未单独冒烟点验三态）。
+- **PV-002～004**：仍**待验收**/取证。
+- **编码**：仍**不放行**剪贴板成功路径 / 「重试开启」；下一项正式放编码=**暂无**。
+
+> 与下方「2026-11-07 产品收口」并存时，PV-001 状态以本节为准。
+
+---
 ## 当前口径（置顶 · 2026-11-07 产品收口）
 
 权威全文：[docs/round-product-auth-20261107-clipboard-session.md](round-product-auth-20261107-clipboard-session.md) · 摘要见 [docs/CURRENT-POSTURE.md](CURRENT-POSTURE.md)。
