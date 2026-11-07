@@ -857,3 +857,10 @@ elay/internal/relay/audit_test.go
 - Tauri wt docs/iteration-status.md 已加指向主仓权威的置顶指针。
 - 未 push。
 
+
+### 2026-11-07 Asia/Shanghai · 迭代协调：对齐 PV-001 产品收口 da9f763
+
+- 已核对 docs/acceptance/pv-001-product-closeout-20261107.md：完成（仅本地验收）；公网未授。
+- PV-002～004 仍待产品对照客户端 cc8ed45 / ACCEPTANCE-20261107 收口；其间不派剪贴板成功/重试编码。
+- 未 push。
+
