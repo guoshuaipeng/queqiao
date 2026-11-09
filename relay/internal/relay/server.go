@@ -48,7 +48,11 @@ type Server struct {
 	wg        sync.WaitGroup
 	ownStore  bool
 	auditHTTP *AuditHTTP
+	joinMu    sync.Mutex
+	joinFails map[string]int
 }
+
+const maxGuestJoinFails = 5
 
 type pairSlot struct {
 	key     string
@@ -86,9 +90,10 @@ func NewServer(cfg Config) (*Server, error) {
 		cfg.Addr = ":17891"
 	}
 	srv := &Server{
-		cfg:     cfg,
-		guests:  make(map[string]*pairSlot),
-		devices: make(map[string]*pairSlot),
+		cfg:       cfg,
+		guests:    make(map[string]*pairSlot),
+		devices:   make(map[string]*pairSlot),
+		joinFails: make(map[string]int),
 	}
 	if cfg.Store != nil {
 		srv.store = cfg.Store
@@ -410,8 +415,9 @@ func (c *clientConn) opConnectDevice(req map[string]any) (bool, error) {
 }
 
 func (c *clientConn) opGuestHost(req map[string]any) (bool, error) {
+	pake := asString(req["auth"]) == "pake"
 	password := asString(req["password"])
-	if len(password) < minPasswordLen {
+	if !pake && len(password) < minPasswordLen {
 		return false, fmt.Errorf("password too short (min %d)", minPasswordLen)
 	}
 	code := normalizeCode(asString(req["code"]))
@@ -426,7 +432,13 @@ func (c *clientConn) opGuestHost(req map[string]any) (bool, error) {
 		return false, fmt.Errorf("invalid code")
 	}
 	exp := time.Now().Add(guestTTL)
-	if err := c.s.store.SaveGuest(code, password, exp); err != nil {
+	var err error
+	if pake {
+		err = c.s.store.SaveGuestPake(code, exp)
+	} else {
+		err = c.s.store.SaveGuest(code, password, exp)
+	}
+	if err != nil {
 		return false, err
 	}
 	c.s.safeAppendAudit(AuditInsert{Event: AuditGenerated, Code: code, OK: intPtr(1)})
@@ -446,6 +458,7 @@ func (c *clientConn) opGuestHost(req map[string]any) (bool, error) {
 func (c *clientConn) opGuestJoin(req map[string]any) (bool, error) {
 	code := normalizeCode(asString(req["code"]))
 	password := asString(req["password"])
+	pake := asString(req["auth"]) == "pake"
 	fail := func(err error) (bool, error) {
 		reason := classifyJoinFail(err)
 		c.s.safeAppendAudit(AuditInsert{
@@ -456,15 +469,41 @@ func (c *clientConn) opGuestJoin(req map[string]any) (bool, error) {
 	if code == "" {
 		return fail(fmt.Errorf("missing field code"))
 	}
-	if len(password) < minPasswordLen {
-		return fail(fmt.Errorf("password too short (min %d)", minPasswordLen))
-	}
-	ok, err := c.s.store.GuestPasswordOK(code, password)
-	if err != nil {
-		return fail(err)
-	}
-	if !ok {
-		return fail(fmt.Errorf("invalid code or password"))
+	if pake {
+		ok, err := c.s.store.GuestPakeOK(code)
+		if err != nil {
+			return fail(err)
+		}
+		if !ok {
+			return fail(fmt.Errorf("invalid code or password"))
+		}
+	} else {
+		mode, err := c.s.store.GuestAuthMode(code)
+		if err != nil {
+			return fail(err)
+		}
+		if mode == "pake" {
+			return fail(fmt.Errorf("invalid code or password"))
+		}
+		if c.s.joinBlocked(code) {
+			c.s.lockGuest(code)
+			return fail(fmt.Errorf("too many attempts"))
+		}
+		if len(password) < minPasswordLen {
+			return fail(fmt.Errorf("password too short (min %d)", minPasswordLen))
+		}
+		ok, err := c.s.store.GuestPasswordOK(code, password)
+		if err != nil {
+			return fail(err)
+		}
+		if !ok {
+			if c.s.noteJoinFail(code) {
+				c.s.lockGuest(code)
+				return fail(fmt.Errorf("too many attempts"))
+			}
+			return fail(fmt.Errorf("invalid code or password"))
+		}
+		c.s.clearJoinFail(code)
 	}
 	slot, peer, err := c.s.registerHelper("guest", code, c.conn)
 	if err != nil {
@@ -481,6 +520,40 @@ func (c *clientConn) opGuestJoin(req map[string]any) (bool, error) {
 	_ = writeJSONLine(peer, map[string]any{"ok": true, "op": "paired", "mode": "guest", "code": code})
 	c.s.runPipe(slot, peer, c.conn, slot.agentBr, c.br)
 	return true, nil
+}
+
+func (s *Server) joinBlocked(code string) bool {
+	s.joinMu.Lock()
+	defer s.joinMu.Unlock()
+	return s.joinFails[code] >= maxGuestJoinFails
+}
+
+func (s *Server) noteJoinFail(code string) bool {
+	s.joinMu.Lock()
+	defer s.joinMu.Unlock()
+	s.joinFails[code]++
+	return s.joinFails[code] >= maxGuestJoinFails
+}
+
+func (s *Server) clearJoinFail(code string) {
+	s.joinMu.Lock()
+	defer s.joinMu.Unlock()
+	delete(s.joinFails, code)
+}
+
+func (s *Server) lockGuest(code string) {
+	s.mu.Lock()
+	slot := s.guests[code]
+	var agent net.Conn
+	if slot != nil {
+		agent = slot.agent
+	}
+	s.mu.Unlock()
+	if agent != nil {
+		_ = writeJSONLine(agent, map[string]any{"ok": false, "op": "guest_host", "error": "too many attempts"})
+		s.abandonAgent(slot, agent)
+	}
+	_ = s.store.DeleteGuest(code)
 }
 
 func writeJSONLine(w io.Writer, v map[string]any) error {

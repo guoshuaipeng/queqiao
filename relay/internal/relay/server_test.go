@@ -269,6 +269,76 @@ func TestMaxSessions(t *testing.T) {
 	}
 }
 
+func TestPakeJoinDoesNotNeedPassword(t *testing.T) {
+	_, addr := startTestServer(t, 8)
+	agent := dial(t, addr)
+	defer agent.Close()
+	writeJSON(t, agent, map[string]any{"op": "guest_host", "auth": "pake"})
+	am := readJSON(t, agent)
+	assertOK(t, am, "guest_host")
+	code, _ := am["code"].(string)
+	if code == "" {
+		t.Fatal("missing code")
+	}
+	helper := dial(t, addr)
+	defer helper.Close()
+	writeJSON(t, helper, map[string]any{"op": "guest_join", "auth": "pake", "code": code})
+	hm := readJSON(t, helper)
+	assertOK(t, hm, "paired")
+	pm := readJSON(t, agent)
+	assertOK(t, pm, "paired")
+}
+
+func TestPasswordJoinDoesNotLockPakeCode(t *testing.T) {
+	_, addr := startTestServer(t, 8)
+	agent := dial(t, addr)
+	defer agent.Close()
+	writeJSON(t, agent, map[string]any{"op": "guest_host", "auth": "pake", "code": "PAKE01"})
+	assertOK(t, readJSON(t, agent), "guest_host")
+	for i := 0; i < 5; i++ {
+		helper := dial(t, addr)
+		writeJSON(t, helper, map[string]any{"op": "guest_join", "code": "PAKE01", "password": "wrong"})
+		m := readJSON(t, helper)
+		helper.Close()
+		if m["ok"] != false || asString(m["error"]) == "too many attempts" {
+			t.Fatalf("attempt %d: %#v", i, m)
+		}
+	}
+	helper := dial(t, addr)
+	defer helper.Close()
+	writeJSON(t, helper, map[string]any{"op": "guest_join", "auth": "pake", "code": "PAKE01"})
+	assertOK(t, readJSON(t, helper), "paired")
+	assertOK(t, readJSON(t, agent), "paired")
+}
+
+func TestPasswordJoinLocksAfterRepeatedFailures(t *testing.T) {
+	_, addr := startTestServer(t, 8)
+	agent := dial(t, addr)
+	defer agent.Close()
+	writeJSON(t, agent, map[string]any{"op": "guest_host", "code": "LOCK01", "password": "right"})
+	assertOK(t, readJSON(t, agent), "guest_host")
+	for i := 0; i < 5; i++ {
+		helper := dial(t, addr)
+		writeJSON(t, helper, map[string]any{"op": "guest_join", "code": "LOCK01", "password": "wrong"})
+		m := readJSON(t, helper)
+		helper.Close()
+		if m["ok"] != false {
+			t.Fatalf("attempt %d: %#v", i, m)
+		}
+	}
+	notice := readJSON(t, agent)
+	if notice["error"] != "too many attempts" {
+		t.Fatalf("agent notice %#v", notice)
+	}
+	helper := dial(t, addr)
+	defer helper.Close()
+	writeJSON(t, helper, map[string]any{"op": "guest_join", "code": "LOCK01", "password": "right"})
+	m := readJSON(t, helper)
+	if m["ok"] != false {
+		t.Fatalf("locked code still joined: %#v", m)
+	}
+}
+
 func TestUnknownOp(t *testing.T) {
 	_, addr := startTestServer(t, 8)
 	c := dial(t, addr)

@@ -88,7 +88,22 @@ CREATE INDEX IF NOT EXISTS idx_devices_user ON devices(user_id);
 	if _, err := s.db.Exec(schema); err != nil {
 		return err
 	}
+	if err := s.ensureGuestAuthMode(); err != nil {
+		return err
+	}
 	return s.ensureGuestAuditSchema()
+}
+
+func (s *Store) ensureGuestAuthMode() error {
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(1) FROM pragma_table_info('guest_sessions') WHERE name='auth_mode'`).Scan(&n); err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	_, err := s.db.Exec(`ALTER TABLE guest_sessions ADD COLUMN auth_mode TEXT NOT NULL DEFAULT 'password'`)
+	return err
 }
 
 func hashPassword(pw string) (string, error) {
@@ -242,15 +257,65 @@ func (s *Store) SaveGuest(code, password string, expiresAt time.Time) error {
 	}
 	now := time.Now().Unix()
 	_, err = s.db.Exec(`
-INSERT INTO guest_sessions(code, password_hash, created_at, expires_at, agent_present)
-VALUES(?,?,?,?,1)
+INSERT INTO guest_sessions(code, password_hash, created_at, expires_at, agent_present, auth_mode)
+VALUES(?,?,?,?,1,'password')
 ON CONFLICT(code) DO UPDATE SET
   password_hash=excluded.password_hash,
   created_at=excluded.created_at,
   expires_at=excluded.expires_at,
-  agent_present=1
+  agent_present=1,
+  auth_mode='password'
 `, code, h, now, expiresAt.Unix())
 	return err
+}
+
+// SaveGuestPake registers a code whose password is checked only by the two
+// endpoints. The relay stores no usable password.
+func (s *Store) SaveGuestPake(code string, expiresAt time.Time) error {
+	raw, err := randomToken(32)
+	if err != nil {
+		return err
+	}
+	now := time.Now().Unix()
+	_, err = s.db.Exec(`
+INSERT INTO guest_sessions(code, password_hash, created_at, expires_at, agent_present, auth_mode)
+VALUES(?,?,?,?,1,'pake')
+ON CONFLICT(code) DO UPDATE SET
+  password_hash=excluded.password_hash,
+  created_at=excluded.created_at,
+  expires_at=excluded.expires_at,
+  agent_present=1,
+  auth_mode='pake'
+`, code, "pake:"+raw, now, expiresAt.Unix())
+	return err
+}
+
+func (s *Store) GuestPakeOK(code string) (bool, error) {
+	var mode string
+	var exp int64
+	err := s.db.QueryRow(`SELECT auth_mode, expires_at FROM guest_sessions WHERE code=?`, code).Scan(&mode, &exp)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if time.Now().Unix() > exp {
+		return false, fmt.Errorf("guest session expired")
+	}
+	return mode == "pake", nil
+}
+
+func (s *Store) GuestAuthMode(code string) (string, error) {
+	var mode string
+	err := s.db.QueryRow(`SELECT auth_mode FROM guest_sessions WHERE code=?`, code).Scan(&mode)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return mode, nil
 }
 
 func (s *Store) GuestPasswordOK(code, password string) (bool, error) {

@@ -201,6 +201,8 @@ func classifyJoinFail(err error) string {
 		return FailPeerOffline
 	case strings.Contains(msg, "helper already"):
 		return FailBusy
+	case strings.Contains(msg, "too many attempts"):
+		return FailBadCredentials
 	case strings.Contains(msg, "too many"):
 		return FailTooManySessions
 	case strings.Contains(msg, "missing"), strings.Contains(msg, "too short"), strings.Contains(msg, "invalid"):
