@@ -268,6 +268,8 @@ func (c *clientConn) dispatch(op string, req map[string]any) (paired bool, err e
 		return false, c.opListDevices(req)
 	case "delete_device":
 		return false, c.opDeleteDevice(req)
+	case "set_device_unattended":
+		return false, c.opSetDeviceUnattended(req)
 	case "logout":
 		return false, c.opLogout(req)
 	case "connect_device":
@@ -332,10 +334,11 @@ func (c *clientConn) opDeviceOnline(req map[string]any) (bool, error) {
 	deviceID := strings.TrimSpace(asString(req["device_id"]))
 	displayName := strings.TrimSpace(asString(req["display_name"]))
 	fingerprint := strings.ToUpper(strings.TrimSpace(asString(req["fp"])))
+	unattended := asBool(req["unattended"])
 	if deviceID == "" {
 		return false, fmt.Errorf("missing field device_id")
 	}
-	if err := c.s.store.UpsertDevice(c.userID, deviceID, displayName, fingerprint); err != nil {
+	if err := c.s.store.UpsertDevice(c.userID, deviceID, displayName, fingerprint, unattended); err != nil {
 		return false, err
 	}
 
@@ -368,6 +371,21 @@ func (c *clientConn) opDeviceOffline(req map[string]any) error {
 	}
 	c.s.mu.Unlock()
 	return c.reply(map[string]any{"ok": true, "op": "device_offline", "device_id": deviceID})
+}
+
+func (c *clientConn) opSetDeviceUnattended(req map[string]any) error {
+	if err := c.requireAuth(); err != nil {
+		return err
+	}
+	deviceID := strings.TrimSpace(asString(req["device_id"]))
+	if deviceID == "" {
+		return fmt.Errorf("missing field device_id")
+	}
+	unattended := asBool(req["unattended"])
+	if err := c.s.store.SetDeviceUnattended(c.userID, deviceID, unattended); err != nil {
+		return err
+	}
+	return c.reply(map[string]any{"ok": true, "op": "set_device_unattended", "device_id": deviceID, "unattended": unattended})
 }
 
 func (c *clientConn) opDeleteDevice(req map[string]any) error {

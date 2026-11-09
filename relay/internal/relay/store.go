@@ -106,10 +106,23 @@ func (s *Store) ensureDeviceFingerprint() error {
 	if err := s.db.QueryRow(`SELECT COUNT(1) FROM pragma_table_info('devices') WHERE name='fp'`).Scan(&n); err != nil {
 		return err
 	}
+	if n == 0 {
+		if _, err := s.db.Exec(`ALTER TABLE devices ADD COLUMN fp TEXT NOT NULL DEFAULT ''`); err != nil {
+			return err
+		}
+	}
+	return s.ensureDeviceUnattended()
+}
+
+func (s *Store) ensureDeviceUnattended() error {
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(1) FROM pragma_table_info('devices') WHERE name='unattended'`).Scan(&n); err != nil {
+		return err
+	}
 	if n > 0 {
 		return nil
 	}
-	_, err := s.db.Exec(`ALTER TABLE devices ADD COLUMN fp TEXT NOT NULL DEFAULT ''`)
+	_, err := s.db.Exec(`ALTER TABLE devices ADD COLUMN unattended INTEGER NOT NULL DEFAULT 0`)
 	return err
 }
 
@@ -223,11 +236,12 @@ type DeviceRow struct {
 	DeviceID    string `json:"device_id"`
 	DisplayName string `json:"display_name"`
 	Online      bool   `json:"online"`
+	Unattended  bool   `json:"unattended"`
 	LastSeen    int64  `json:"last_seen"`
 	Fingerprint string `json:"fp,omitempty"`
 }
 
-func (s *Store) UpsertDevice(userID int64, deviceID, displayName, fingerprint string) error {
+func (s *Store) UpsertDevice(userID int64, deviceID, displayName, fingerprint string, unattended bool) error {
 	deviceID = strings.TrimSpace(deviceID)
 	displayName = strings.TrimSpace(displayName)
 	fingerprint = strings.ToUpper(strings.TrimSpace(fingerprint))
@@ -244,13 +258,18 @@ func (s *Store) UpsertDevice(userID int64, deviceID, displayName, fingerprint st
 		return fmt.Errorf("invalid fingerprint")
 	}
 	now := time.Now().Unix()
+	flag := 0
+	if unattended {
+		flag = 1
+	}
 	_, err := s.db.Exec(`
-INSERT INTO devices(user_id, device_id, display_name, last_seen, fp) VALUES(?,?,?,?,?)
+INSERT INTO devices(user_id, device_id, display_name, last_seen, fp, unattended) VALUES(?,?,?,?,?,?)
 ON CONFLICT(user_id, device_id) DO UPDATE SET
   display_name=excluded.display_name,
   last_seen=excluded.last_seen,
-  fp=CASE WHEN excluded.fp != '' THEN excluded.fp ELSE devices.fp END
-`, userID, deviceID, displayName, now, fingerprint)
+  fp=CASE WHEN excluded.fp != '' THEN excluded.fp ELSE devices.fp END,
+  unattended=excluded.unattended
+`, userID, deviceID, displayName, now, fingerprint, flag)
 	return err
 }
 
@@ -273,7 +292,7 @@ func (s *Store) TouchDevice(userID int64, deviceID string) error {
 }
 
 func (s *Store) ListDevices(userID int64) ([]DeviceRow, error) {
-	rows, err := s.db.Query(`SELECT device_id, display_name, last_seen, fp FROM devices WHERE user_id=? ORDER BY display_name COLLATE NOCASE`, userID)
+	rows, err := s.db.Query(`SELECT device_id, display_name, last_seen, fp, unattended FROM devices WHERE user_id=? ORDER BY display_name COLLATE NOCASE`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -281,12 +300,37 @@ func (s *Store) ListDevices(userID int64) ([]DeviceRow, error) {
 	out := make([]DeviceRow, 0)
 	for rows.Next() {
 		var d DeviceRow
-		if err := rows.Scan(&d.DeviceID, &d.DisplayName, &d.LastSeen, &d.Fingerprint); err != nil {
+		var flag int
+		if err := rows.Scan(&d.DeviceID, &d.DisplayName, &d.LastSeen, &d.Fingerprint, &flag); err != nil {
 			return nil, err
 		}
+		d.Unattended = flag != 0
 		out = append(out, d)
 	}
 	return out, rows.Err()
+}
+
+func (s *Store) SetDeviceUnattended(userID int64, deviceID string, unattended bool) error {
+	deviceID = strings.TrimSpace(deviceID)
+	if deviceID == "" {
+		return fmt.Errorf("invalid device_id")
+	}
+	flag := 0
+	if unattended {
+		flag = 1
+	}
+	res, err := s.db.Exec(`UPDATE devices SET unattended=?, last_seen=? WHERE user_id=? AND device_id=?`, flag, time.Now().Unix(), userID, deviceID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("device not found")
+	}
+	return nil
 }
 
 func (s *Store) DeleteDevice(userID int64, deviceID string) error {

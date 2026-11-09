@@ -7,122 +7,209 @@
   <link rel="stylesheet" href="/styles.css">
   <style>
     .admin-login { max-width: 360px; margin: 48px auto; display: grid; gap: 14px; }
-    .admin-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 0; }
     table.data { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
     table.data th, table.data td {
-      border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top;
+      border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top;
     }
-    table.data th { background: rgba(20,28,46,.9); color: var(--gold); font-weight: 600; }
-    table.data td { color: var(--muted); }
+    table.data th { background: var(--bg-soft); color: var(--muted); font-weight: 600; font-size: 0.82rem; }
+    table.data td { color: var(--ink-2); }
     table.data .ink { color: var(--ink); }
-    .problem { max-width: 280px; white-space: pre-wrap; word-break: break-word; }
+    .problem { max-width: 320px; white-space: pre-wrap; word-break: break-word; }
     .note-input { width: 100%; min-width: 120px; }
     select.status { min-width: 96px; }
-    .section-title { margin: 28px 0 12px; font-size: 1.15rem; }
     .hidden { display: none !important; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); font-size: 0.8rem; }
-    .badge.new { color: var(--gold); }
-    .badge.contact { color: var(--ok); }
-    .badge.done { color: var(--muted); }
+    .badge.new { color: var(--amber); background: var(--amber-soft); border-color: transparent; }
+    .badge.contact { color: var(--ok); background: #ecfdf5; border-color: transparent; }
+    .badge.done { color: var(--muted); background: var(--bg-soft); border-color: transparent; }
+
+    .admin-shell {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 100vh;
+      background: var(--bg-soft);
+    }
+    .admin-side {
+      background: var(--dark);
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 14px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .side-brand { padding: 6px 10px 18px; }
+    .side-brand strong { display: block; font-size: 1.15rem; color: #fff; letter-spacing: 0.02em; }
+    .side-brand span { color: #94a3b8; font-size: 0.8rem; }
+    .side-nav { display: grid; gap: 4px; }
+    .side-nav button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: #cbd5e1;
+      text-align: left;
+      font: inherit;
+      font-size: 0.95rem;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .side-nav button:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .side-nav button.active { background: var(--primary); color: #fff; }
+    .side-foot { margin-top: auto; display: grid; gap: 8px; padding-top: 16px; }
+    .side-foot a { color: #94a3b8; font-size: 0.85rem; text-decoration: none; padding: 4px 12px; }
+    .side-foot a:hover { color: #fff; }
+    .side-foot .btn { color: #e2e8f0; border-color: rgba(255,255,255,.16); background: transparent; }
+    .side-foot .btn:hover { color: #fff; border-color: #fff; background: transparent; }
+
+    .admin-main { padding: 28px 32px 48px; min-width: 0; }
+    .panel-head { margin-bottom: 16px; }
+    .panel-head h1 { margin: 0 0 6px; font-size: 1.35rem; }
+    .panel-head .hint { max-width: 42em; }
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
+    .toolbar label { display: flex; gap: 8px; align-items: center; margin: 0; color: var(--ink-2); font-size: 0.9rem; }
+    .table-card { overflow-x: auto; padding: 0; background: #fff; }
+
+    @media (max-width: 760px) {
+      .admin-shell { grid-template-columns: 1fr; }
+      .admin-side { position: static; height: auto; }
+      .side-nav { grid-template-columns: repeat(3, 1fr); }
+      .side-foot { margin-top: 12px; }
+      .admin-main { padding: 20px 16px 40px; }
+    }
   </style>
 </head>
 <body>
-  <div class="sky" aria-hidden="true"></div>
-  <div class="wrap">
-    <header class="top">
-      <a class="brand" href="/"><strong>鹊桥</strong><span>运营后台</span></a>
-      <nav>
-        <a href="/">介绍</a>
-        <a href="/ask">接单页</a>
-      </nav>
-    </header>
-
-    <section id="login-view" class="card admin-login">
-      <h1 style="margin:0;font-size:1.3rem">运营后台</h1>
-      <p class="hint" style="margin:0">输入口令后查看留言与客户名单。口令由服务器环境配置。</p>
-      <div class="alert err" id="login-err"></div>
-      <form id="login-form">
-        <label>口令
-          <input type="password" name="password" required autocomplete="current-password">
-        </label>
-        <button class="btn primary" type="submit" style="margin-top:12px;width:100%">登录</button>
-      </form>
-    </section>
-
-    <section id="dash-view" class="hidden">
-      <div class="admin-bar">
-        <h1 style="margin:0;font-size:1.4rem">留言与客户</h1>
-        <button class="btn" type="button" id="logout-btn">退出</button>
-      </div>
-      <div class="alert err" id="dash-err"></div>
-
-      <h2 class="section-title">留言列表</h2>
-      <div class="card" style="overflow-x:auto;padding:0">
-        <table class="data" id="msg-table">
-          <thead>
-            <tr>
-              <th>时间</th>
-              <th>称呼</th>
-              <th>联系方式</th>
-              <th>系统</th>
-              <th>问题</th>
-              <th>状态</th>
-              <th>备注</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <h2 class="section-title">客户名单</h2>
-      <p class="hint">按联系方式归拢；同一人的多次留言会叠在一起。</p>
-      <div class="card" style="overflow-x:auto;padding:0">
-        <table class="data" id="cust-table">
-          <thead>
-            <tr>
-              <th>称呼</th>
-              <th>联系方式</th>
-              <th>系统</th>
-              <th>最近留言</th>
-              <th>当前状态</th>
-              <th>历史条数</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <h2 class="section-title" id="session-codes-title">会话码</h2>
-      <p class="hint">只读事件流水（最新在前）。数据来自中继审计旁路；不展示密码、hash、凭证、指纹。</p>
-      <div class="admin-bar" style="margin:0 0 12px;justify-content:flex-start;flex-wrap:wrap">
-        <label style="display:flex;gap:8px;align-items:center;margin:0">按码过滤
-          <input id="sc-code" type="text" placeholder="如 ABC123" style="width:140px" autocomplete="off">
-        </label>
-        <button class="btn" type="button" id="sc-refresh">查询</button>
-      </div>
-      <div class="alert err" id="sc-err"></div>
-      <div class="card" style="overflow-x:auto;padding:0">
-        <table class="data" id="sc-table">
-          <thead>
-            <tr>
-              <th>时间</th>
-              <th>会话码</th>
-              <th>事件</th>
-              <th>失败原因</th>
-              <th>角色</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
+  <div id="login-wrap">
+    <div class="sky" aria-hidden="true"></div>
+    <div class="wrap">
+      <header class="top">
+        <a class="brand" href="/"><strong>鹊桥</strong><span>运营后台</span></a>
+        <nav>
+          <a href="/">介绍</a>
+          <a href="/ask">接单页</a>
+        </nav>
+      </header>
+      <section id="login-view" class="card admin-login">
+        <h1 style="margin:0;font-size:1.3rem">运营后台</h1>
+        <p class="hint" style="margin:0">输入口令后查看留言、客户与会话码。口令由服务器环境配置。</p>
+        <div class="alert err" id="login-err"></div>
+        <form id="login-form">
+          <label>口令
+            <input type="password" name="password" required autocomplete="current-password">
+          </label>
+          <button class="btn primary" type="submit" style="margin-top:12px;width:100%">登录</button>
+        </form>
+      </section>
+    </div>
   </div>
+
+  <section id="dash-view" class="hidden">
+    <div class="admin-shell">
+      <aside class="admin-side">
+        <div class="side-brand">
+          <strong>鹊桥</strong>
+          <span>运营后台</span>
+        </div>
+        <nav class="side-nav" id="side-nav">
+          <button type="button" data-panel="codes" class="active">会话码</button>
+          <button type="button" data-panel="messages">留言</button>
+          <button type="button" data-panel="customers">客户</button>
+        </nav>
+        <div class="side-foot">
+          <a href="/">产品介绍</a>
+          <a href="/ask">接单页</a>
+          <button class="btn" type="button" id="logout-btn">退出登录</button>
+        </div>
+      </aside>
+
+      <div class="admin-main">
+        <div class="alert err" id="dash-err"></div>
+
+        <section id="panel-messages" class="hidden" data-panel="messages">
+          <div class="panel-head">
+            <h1>留言</h1>
+            <p class="hint">接单页提交的留言。可改状态、加备注。</p>
+          </div>
+          <div class="card table-card">
+            <table class="data" id="msg-table">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>称呼</th>
+                  <th>联系方式</th>
+                  <th>系统</th>
+                  <th>问题</th>
+                  <th>状态</th>
+                  <th>备注</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="panel-customers" class="hidden" data-panel="customers">
+          <div class="panel-head">
+            <h1>客户</h1>
+            <p class="hint">按联系方式归拢；同一人的多次留言会叠在一起。</p>
+          </div>
+          <div class="card table-card">
+            <table class="data" id="cust-table">
+              <thead>
+                <tr>
+                  <th>称呼</th>
+                  <th>联系方式</th>
+                  <th>系统</th>
+                  <th>最近留言</th>
+                  <th>当前状态</th>
+                  <th>历史条数</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="panel-codes" data-panel="codes">
+          <div class="panel-head">
+            <h1>会话码</h1>
+            <p class="hint">只读事件流水（最新在前）。数据来自中继审计旁路；不展示密码、hash、凭证、指纹。</p>
+          </div>
+          <div class="toolbar">
+            <label>按码过滤
+              <input id="sc-code" type="text" placeholder="如 ABC123" style="width:160px" autocomplete="off">
+            </label>
+            <button class="btn" type="button" id="sc-refresh">查询</button>
+          </div>
+          <div class="alert err" id="sc-err"></div>
+          <div class="card table-card">
+            <table class="data" id="sc-table">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>会话码</th>
+                  <th>事件</th>
+                  <th>失败原因</th>
+                  <th>角色</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
   <script>
-    const loginView = document.getElementById("login-view");
+    const loginWrap = document.getElementById("login-wrap");
     const dashView = document.getElementById("dash-view");
     const loginErr = document.getElementById("login-err");
     const dashErr = document.getElementById("dash-err");
     const statuses = ["新留言", "已联系", "已结束"];
+    const panels = ["messages", "customers", "codes"];
 
     function fmtTime(sec) {
       if (!sec) return "";
@@ -147,6 +234,22 @@
       const res = await fetch(path, Object.assign({ credentials: "same-origin" }, opts || {}));
       const data = await res.json().catch(() => ({}));
       return { res, data };
+    }
+
+    function currentPanel() {
+      const name = (location.hash || "").replace(/^#/, "");
+      return panels.includes(name) ? name : "codes";
+    }
+
+    function showPanel(name) {
+      const panel = panels.includes(name) ? name : "codes";
+      document.querySelectorAll("[data-panel]").forEach(el => {
+        if (el.tagName === "SECTION") el.classList.toggle("hidden", el.dataset.panel !== panel);
+        if (el.tagName === "BUTTON") el.classList.toggle("active", el.dataset.panel === panel);
+      });
+      if (location.hash !== "#" + panel) {
+        history.replaceState(null, "", "#" + panel);
+      }
     }
 
     async function refresh() {
@@ -264,13 +367,20 @@
     function escapeAttr(s) { return escapeHtml(s).replace(/\n/g, " "); }
 
     function showLogin() {
-      loginView.classList.remove("hidden");
+      loginWrap.classList.remove("hidden");
       dashView.classList.add("hidden");
     }
     function showDash() {
-      loginView.classList.add("hidden");
+      loginWrap.classList.add("hidden");
       dashView.classList.remove("hidden");
+      showPanel(currentPanel());
     }
+
+    document.getElementById("side-nav").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("button[data-panel]");
+      if (!btn) return;
+      showPanel(btn.dataset.panel);
+    });
 
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -300,6 +410,10 @@
     document.getElementById("sc-refresh").addEventListener("click", refreshSessionCodes);
     document.getElementById("sc-code").addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") { ev.preventDefault(); refreshSessionCodes(); }
+    });
+
+    window.addEventListener("hashchange", () => {
+      if (!dashView.classList.contains("hidden")) showPanel(currentPanel());
     });
 
     refresh();
