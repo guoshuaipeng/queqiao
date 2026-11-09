@@ -82,11 +82,11 @@ func TestSignupLoginList(t *testing.T) {
 	c := dial(t, addr)
 	defer c.Close()
 
-	writeJSON(t, c, map[string]any{"op": "signup", "username": "alice", "password": "secret1"})
+	writeJSON(t, c, map[string]any{"op": "signup", "username": "alice", "password": "secret12"})
 	m := readJSON(t, c)
 	assertOK(t, m, "signup")
 
-	writeJSON(t, c, map[string]any{"op": "login", "username": "alice", "password": "secret1"})
+	writeJSON(t, c, map[string]any{"op": "login", "username": "alice", "password": "secret12"})
 	m = readJSON(t, c)
 	assertOK(t, m, "login")
 	token := asString(m["token"])
@@ -346,6 +346,30 @@ func TestUnknownOp(t *testing.T) {
 	writeJSON(t, c, map[string]any{"op": "nope"})
 	m := readJSON(t, c)
 	if m["ok"] != false {
+		t.Fatalf("%#v", m)
+	}
+}
+
+func TestSignupRules(t *testing.T) {
+	_, addr := startTestServer(t, 4)
+	c := dial(t, addr)
+	defer c.Close()
+
+	writeJSON(t, c, map[string]any{"op": "signup", "username": "ab", "password": "longenough"})
+	m := readJSON(t, c)
+	if m["ok"] != false || !strings.Contains(asString(m["error"]), "invalid username") {
+		t.Fatalf("%#v", m)
+	}
+	writeJSON(t, c, map[string]any{"op": "signup", "username": "alice_1", "password": "short"})
+	m = readJSON(t, c)
+	if m["ok"] != false || !strings.Contains(asString(m["error"]), "min 8") {
+		t.Fatalf("%#v", m)
+	}
+	writeJSON(t, c, map[string]any{"op": "signup", "username": "Alice_1", "password": "longenough"})
+	assertOK(t, readJSON(t, c), "signup")
+	writeJSON(t, c, map[string]any{"op": "signup", "username": "alice_1", "password": "longenough"})
+	m = readJSON(t, c)
+	if m["ok"] != false || asString(m["error"]) != "username taken" {
 		t.Fatalf("%#v", m)
 	}
 }

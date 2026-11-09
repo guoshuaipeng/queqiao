@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -13,11 +14,14 @@ import (
 )
 
 const (
-	tokenTTL       = 7 * 24 * time.Hour
-	guestTTL       = 2 * time.Hour
-	bcryptCost     = bcrypt.DefaultCost
-	minPasswordLen = 4
+	tokenTTL           = 7 * 24 * time.Hour
+	guestTTL           = 2 * time.Hour
+	bcryptCost         = bcrypt.DefaultCost
+	minPasswordLen     = 4
+	accountMinPassword = 8
 )
+
+var accountUsername = regexp.MustCompile(`^[A-Za-z0-9_]{3,32}$`)
 
 // Store is SQLite-backed persistence for users, devices, tokens, guest rows.
 type Store struct {
@@ -91,7 +95,22 @@ CREATE INDEX IF NOT EXISTS idx_devices_user ON devices(user_id);
 	if err := s.ensureGuestAuthMode(); err != nil {
 		return err
 	}
+	if err := s.ensureDeviceFingerprint(); err != nil {
+		return err
+	}
 	return s.ensureGuestAuditSchema()
+}
+
+func (s *Store) ensureDeviceFingerprint() error {
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(1) FROM pragma_table_info('devices') WHERE name='fp'`).Scan(&n); err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	_, err := s.db.Exec(`ALTER TABLE devices ADD COLUMN fp TEXT NOT NULL DEFAULT ''`)
+	return err
 }
 
 func (s *Store) ensureGuestAuthMode() error {
@@ -118,13 +137,21 @@ func checkPassword(hash, pw string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(pw)) == nil
 }
 
-func (s *Store) Signup(username, password string) (userID int64, err error) {
+func normalizeAccountUsername(username string) (string, error) {
 	username = strings.TrimSpace(username)
-	if username == "" || len(username) > 64 {
-		return 0, fmt.Errorf("invalid username")
+	if !accountUsername.MatchString(username) {
+		return "", fmt.Errorf("invalid username")
 	}
-	if len(password) < minPasswordLen {
-		return 0, fmt.Errorf("password too short (min %d)", minPasswordLen)
+	return username, nil
+}
+
+func (s *Store) Signup(username, password string) (userID int64, err error) {
+	username, err = normalizeAccountUsername(username)
+	if err != nil {
+		return 0, err
+	}
+	if len(password) < accountMinPassword {
+		return 0, fmt.Errorf("password too short (min %d)", accountMinPassword)
 	}
 	h, err := hashPassword(password)
 	if err != nil {
@@ -197,11 +224,13 @@ type DeviceRow struct {
 	DisplayName string `json:"display_name"`
 	Online      bool   `json:"online"`
 	LastSeen    int64  `json:"last_seen"`
+	Fingerprint string `json:"fp,omitempty"`
 }
 
-func (s *Store) UpsertDevice(userID int64, deviceID, displayName string) error {
+func (s *Store) UpsertDevice(userID int64, deviceID, displayName, fingerprint string) error {
 	deviceID = strings.TrimSpace(deviceID)
 	displayName = strings.TrimSpace(displayName)
+	fingerprint = strings.ToUpper(strings.TrimSpace(fingerprint))
 	if deviceID == "" || len(deviceID) > 128 {
 		return fmt.Errorf("invalid device_id")
 	}
@@ -211,14 +240,30 @@ func (s *Store) UpsertDevice(userID int64, deviceID, displayName string) error {
 	if len(displayName) > 128 {
 		displayName = displayName[:128]
 	}
+	if fingerprint != "" && !fingerprintOK(fingerprint) {
+		return fmt.Errorf("invalid fingerprint")
+	}
 	now := time.Now().Unix()
 	_, err := s.db.Exec(`
-INSERT INTO devices(user_id, device_id, display_name, last_seen) VALUES(?,?,?,?)
+INSERT INTO devices(user_id, device_id, display_name, last_seen, fp) VALUES(?,?,?,?,?)
 ON CONFLICT(user_id, device_id) DO UPDATE SET
   display_name=excluded.display_name,
-  last_seen=excluded.last_seen
-`, userID, deviceID, displayName, now)
+  last_seen=excluded.last_seen,
+  fp=CASE WHEN excluded.fp != '' THEN excluded.fp ELSE devices.fp END
+`, userID, deviceID, displayName, now, fingerprint)
 	return err
+}
+
+func fingerprintOK(fp string) bool {
+	if len(fp) != 64 {
+		return false
+	}
+	for _, c := range fp {
+		if (c < '0' || c > '9') && (c < 'A' || c > 'F') {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Store) TouchDevice(userID int64, deviceID string) error {
@@ -228,7 +273,7 @@ func (s *Store) TouchDevice(userID int64, deviceID string) error {
 }
 
 func (s *Store) ListDevices(userID int64) ([]DeviceRow, error) {
-	rows, err := s.db.Query(`SELECT device_id, display_name, last_seen FROM devices WHERE user_id=? ORDER BY display_name COLLATE NOCASE`, userID)
+	rows, err := s.db.Query(`SELECT device_id, display_name, last_seen, fp FROM devices WHERE user_id=? ORDER BY display_name COLLATE NOCASE`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -236,12 +281,26 @@ func (s *Store) ListDevices(userID int64) ([]DeviceRow, error) {
 	out := make([]DeviceRow, 0)
 	for rows.Next() {
 		var d DeviceRow
-		if err := rows.Scan(&d.DeviceID, &d.DisplayName, &d.LastSeen); err != nil {
+		if err := rows.Scan(&d.DeviceID, &d.DisplayName, &d.LastSeen, &d.Fingerprint); err != nil {
 			return nil, err
 		}
 		out = append(out, d)
 	}
 	return out, rows.Err()
+}
+
+func (s *Store) DeleteDevice(userID int64, deviceID string) error {
+	_, err := s.db.Exec(`DELETE FROM devices WHERE user_id=? AND device_id=?`, userID, strings.TrimSpace(deviceID))
+	return err
+}
+
+func (s *Store) RevokeToken(token string) error {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil
+	}
+	_, err := s.db.Exec(`DELETE FROM tokens WHERE token=?`, token)
+	return err
 }
 
 func (s *Store) OwnDevice(userID int64, deviceID string) (bool, error) {
