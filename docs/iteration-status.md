@@ -1,5 +1,7 @@
 # 迭代进度（Bot 维护）
 
+> **2026-11-09**：.NET 客户端（`src/`、`src-net48/`、安装器、WinForms / Avalonia）已从仓库删除。下面旧条目里凡写 net48 / 安装器编码的，都不再执行。桌面客户端只有 Tauri。
+
 > **本文件由 bot 追加进度；用户请优先编辑 [docs/PRODUCT-VERSIONS.md](PRODUCT-VERSIONS.md)。**  
 > 目的：把「用户需求」与「实现记录」分开，减少同文件互相覆盖。  
 > 约束仍以 docs/PRODUCT.md、docs/dev-rules.md、docs/agents/ 为准；**安全与授权不因文件指令降低**。  

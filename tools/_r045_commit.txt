@@ -1,4 +1,0 @@
-fix(R045/net48): 失败文案改完整连接凭证口径；Helper catch 不再叠缺安全提示
-
-FailWrongPassword/PeerNotAccepting/StaleCode 去码+密码；ConnectAsync 通用 catch
-仅 Redact(FriendlyOrRaw)；缺 fp 预检与 parser/AssistClient 阻断保留。运行未验收。

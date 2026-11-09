@@ -38,7 +38,7 @@
 
 ### 4. 实现
 
-- **鹊桥-客户端**：`src-net48` / `src` / `installer` 等（按本仓实际边界）。
+- **鹊桥-客户端**：`apps/queqiao-tauri`。不要恢复 .NET 客户端。
 - **鹊桥-服务端**：`relay` / `site`。
 - 协议变更：**先更新** `docs/relay-protocol.md`，再改 Go；客户端跟随文档。
 - **不改 AI-SSH-Pro**；本机开发；生产中继 / 公网上机须另授。

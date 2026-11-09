@@ -1,4 +1,0 @@
-feat(R048/net48): 去协助端补复制安装说明与 MCP 配置 JSON
-
-Helper 主屏常显安装说明/MCP 三步/复制 MCP 配置/Skill；缺完整凭证阻断且禁降明文；
-不自动监听 MCP。产物因本机已运行进程占锁发至 artifacts/app-net48-fd-r048；运行未验收。

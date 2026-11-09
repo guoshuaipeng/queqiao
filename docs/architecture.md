@@ -11,11 +11,10 @@
 
 | 组件 | 技术 | 仓库路径 / 产物 | 职责 |
 |------|------|-----------------|------|
-| 统一 App（双模式） | .NET 8 | `src/`、安装包 `installer/` | 接受协助 / 去协助；会话码与密码、账号设备列表、确认窗、审计入口 |
-| Helper / AgentHost | .NET 8 | `src/`（及兼容入口） | 被控侧执行只读查询与经确认的写操作；业务 TLS |
-| MCP（stdio） | .NET 8 | 安装包可选启用 | 供协助方 Agent 使用；与 UI 共用连接与确认流程 |
+| 桌面客户端 | Tauri | `apps/queqiao-tauri`（分支 `feat/tauri-client-migration`） | 接受协助 / 去协助；会话码与密码、确认窗、设置里的 MCP 配置 |
 | 公网中继 | Go + SQLite | `relay/` | JSONL 控制配对 → 透明双向 pipe；账号/设备轻量存储 |
-| 局域网直连 | .NET | 历史端口 `17890`，`via=lan` | 高级/调试，非默认路径 |
+| 官网 | Go | `site/` | 介绍页、接单、`/admin` |
+| 局域网直连 | 客户端高级路径 | 历史端口 `17890`，`via=lan` | 非默认 |
 
 约定：架构与产品决策写进本仓库 `docs/`，**不靠 bot 记忆**。架构 bot 不写业务代码、不上机部署。
 
@@ -109,7 +108,7 @@
 ## 10. 变更流程
 
 1. 在 `docs/` 拍板并更新本文及相关专题文档。
-2. 知会「鹊桥-产品」（优先级）、「鹊桥-客户端」（.NET）、「鹊桥-服务端」（Go 中继 / 部署）。
+2. 知会「鹊桥-产品」（优先级）、「鹊桥-客户端」（Tauri）、「鹊桥-服务端」（Go 中继 / 部署）。
 3. 开发侧改代码与上机；架构侧不上机写业务。
 
 ## 11. 协作角色（开发分工）
@@ -118,69 +117,18 @@
 |------|------|
 | 鹊桥-架构 | 对齐边界，写入 `docs/`；不写业务代码、不上机 |
 | 鹊桥-产品 | 定位、优先级、路线图 |
-| 鹊桥-客户端（原「远端协助」） | `src/`、统一 App / Helper / MCP / `installer/`；对接 `relay-protocol.md` |
+| 鹊桥-客户端（原「远端协助」） | `apps/queqiao-tauri`；对接 `relay-protocol.md`。不要恢复 .NET 客户端 |
 | 鹊桥-服务端（原「远端协助-并行」） | `relay/` Go 中继、协议实现、生产部署（`relay-deploy.md`） |
 
 协议变更：先改 `relay-protocol.md`，再由服务端改 Go，客户端跟随文档。细节见 `dev-rules.md`。
 
-## 12. 客户端窗口位置（2026-11-05 拍板）
+## 12. 客户端窗口
 
-统一 App（`RemoteAssist.exe`）**记住上次窗口所在的显示器、位置和大小**，下次启动还原到那里。
+主窗口记住上次所在的显示器、位置和大小，下次启动还原。确认窗跟主窗口同一块屏。显示器断开或还原后完全不可见时，回到当前主屏可见区域。设置只存在本机，不写中继。实现在 Tauri 客户端，不改 `relay/`。
 
-- 目的：本机多屏开发/使用时，不要每次都弹到主屏打断当前工作。
-- 范围：主窗口（接受协助 / 去协助首页及主界面）。确认窗跟随主窗口所在屏，避免跑到另一块屏。
-- 存储：本机用户设置（与现有本地设置一起即可）；不写中继、不进仓库。
-- 退化：所记录显示器已断开，或还原后窗口完全不可见 → 回退到当前主屏可见区域（不要生成看不见的窗口）。
-- 实现：`鹊桥-客户端`（`src/`）；不改 `relay/`。
-- 实现落点：HelperUiSettings.WindowPlacement（%LocalAppData%/RemoteAssist/helper-ui.json）+ src/UiShared/UiWindowPlacement.cs（App/Agent/Helper.UI Link）+ WindowPlacementMath（可单测）。确认窗 PlaceDialog 跟随 UiWindowPlacement.MainWindow 所在工作区。
+## 13. 平台
 
-## 13. 跨平台客户端（macOS / Linux，2026-11-05 拍板）
-
-产品范围见 `PRODUCT.md`「支持平台」：正式要做，**不阻塞**当前 Windows P0 演示。分两步：先 Mac/Linux **被控端 + MCP**（写操作同样本机确认），再对等双模式 GUI。不拆三套原生重写。Windows 上正在进行的工作（如 R001、窗口位置记忆）不停。
-
-### 13.1 GUI 栈
-
-- **macOS / Linux**：用 **Avalonia**（.NET）做被控端状态窗与确认窗，后续双模式 GUI 也走同一套。
-- **Linux 双形态**（2026-11-05 补充）：同时支持 **命令行** 与 **图形界面**，不是二选一。
-  - 命令行：无界面被控端 / Helper CLI，以及 MCP stdio（给协助方 Agent 用）；写操作仍须本机确认（可用终端提示或拉起确认窗）。
-  - 界面：Avalonia 被控状态与确认，以及后续对等的双模式 GUI。
-  - 两者共用同一套 `net8.0` 协议与中继对接；可只装 CLI，也可同时提供带界面的包。
-  - macOS 同样保留 CLI（含 MCP）+ Avalonia 界面，节奏与 Linux 一致：先 CLI/MCP + 确认，再补对等 GUI。
-- **Windows**：现阶段保持现有 WinForms（`net8.0-windows`），不在 P0 把 Windows 迁到 Avalonia。
-- 共享层继续是 `net8.0` 的 Protocol / Helper / MCP；平台 UI 只包确认与展示。
-- 确认窗：Mac/Linux 用 Avalonia 实现与 Windows 相同的 Assist 规则（写操作本机确认，不可由 MCP/中继绕过）。不要以 osascript / zenity 脚本作为正式方案。
-
-### 13.2 分发形态
-
-| 平台 | 第一期 | 随后可加 |
-|------|--------|----------|
-| Windows | 现有 Inno Setup 安装包；小体积路径继续用 `src-net48` 依赖系统自带的 .NET Framework 4.8 | 自包含 .NET 8 安装包（给没装 4.8 桌面组件、或要免装运行时的场景） |
-| macOS | `.app` 放入 `.dmg` | 以后再考虑公证 / 签名 |
-| Linux | 便携 `.tar.gz` | 可选 `.deb` |
-
-`src-net48` / .NET Framework 4.8 **不能**用在 Mac/Linux（那是 Windows 才有的系统组件）。Mac/Linux 要对齐「几兆」体量，只能发 **依赖已安装的 .NET 8（含桌面/Avalonia 所需运行时）** 的包，运行时用系统包管理器或官方运行时安装器装一次。
-
-### 13.3 体积（发布验收）
-
-实测基线（本机 `artifacts/`，2026-11-05）：
-
-| 产物 | 大小 | 含义 |
-|------|------|------|
-| `app-net48-fd/`（依赖 .NET Framework 4.8） | **约 1.4 MB** | Windows「几兆」对比版：不打进运行时，用系统自带 4.8 |
-| `RemoteAssist-Setup-0.1.0.exe`（.NET 8 自包含安装包） | 约 72 MB | 把运行时打进安装包，对方不用先装 .NET 8 |
-| `RemoteAssist-Agent-Setup-0.1.0.exe` | 约 63.5 MB | 同上，Agent 安装包 |
-| `app-win-x64-sc/RemoteAssist.exe` | 约 77 MB | .NET 8 自包含单文件 |
-
-用户补充（2026-11-05）：**macOS / Linux 尽量保持与 Windows net48 对比版同一量级（约 1.4 MB 这一档），而不是默认 72 MB 自包含。**
-
-要做到「尽量这么小」：
-
-1. Mac/Linux **默认发依赖运行时的小包**（framework-dependent）：应用本身目标尽量接近 `app-net48-fd` 的约 1.4 MB；Avalonia 与原生依赖可能导致略大，发布时写实测数字，应力争个位数 MB，而不是几十 MB。
-2. 运行时不打进应用包。对方机器需已有 **.NET 8 桌面方向运行时**（macOS 可用官方安装包或 Homebrew；Linux 用发行版/微软包）。首次使用要有简短安装说明，避免只弹英文「Download runtime」却讲不清。
-3. **自包含包保留为备选**（给不能/不愿装运行时的人），体积以不差于当前 Windows 自包含安装包（约 72 MB）为上限；用 `PublishTrimmed` + 单文件、后续可试 Native AOT 再压。
-4. 不把 .NET Framework 4.8 当作跨平台缩体积方案。
-
-Windows 主线演示仍按现有安排；小体积 4.8 对比版仅 Windows。实现由「鹊桥-客户端」在平台轨道执行，不改 `relay/`，也不停 R001 / 窗口位置记忆。
+当前客户端是 Windows 上的 Tauri。Mac / Linux 的旧 .NET 客户端已删除。写操作本机确认不因平台而取消。
 
 ## 14. 官网与接单（同机独立进程，2026-11-05 拍板）
 

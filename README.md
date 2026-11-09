@@ -1,172 +1,26 @@
-# RemoteAssist / 鹊桥远程协助 · 智能体
+# 鹊桥远程协助
 
-独立产品：可控远程协助 + AI 排障（可 MCP 嵌入其他智能体）。**不修改 AI-SSH-Pro。**
+桌面客户端只保留 **Tauri**。旧的 .NET 8 / .NET Framework 4.8 客户端、WinForms / Avalonia 工程、安装器和对应的迭代记录已从仓库删除。
 
-> **给亲友怎么用（一句话）**  
-> 安装「鹊桥」→ 打开后选 **接受协助** 或 **去协助别人** → 被控端把会话码发给协助方 → 危险操作需被控本机点允许。
+本分支（`master`）目前是中继、官网和产品文档：
 
-## 已锁定决策（v1）
+- `relay/` — Go 公网中继
+- `site/` — 官网与 `/admin`
+- `docs/` — 产品决策、界面规格、中继协议
 
-| 项 | 选择 |
-|---|---|
-| 语言 | .NET 8 |
-| 形态 | **同一安装包 / 同一 App**（被控 + 控制双模式，类似向日葵） |
-| 鉴权 | 无账号；会话码配对 + 短时令牌 |
-| 权限 | Guest 只读 / Assist 确认后执行 / Admin |
-| 连接 | **仅局域网**（公网中继后期，见 `src/RemoteAssist.Relay.Stub`） |
-| MCP | 通用 stdio |
-| 远控桌面 | 不做 |
-| 安装 | Inno Setup 安装包 / 本机软安装脚本 |
+Tauri 客户端在分支 `feat/tauri-client-migration`，目录 `apps/queqiao-tauri`（本机工作区 `E:\IdeaProjects\remote-assist-wt-tauri`）。界面规格见 [docs/CLIENT-UI.md](docs/CLIENT-UI.md)。
 
-详见 [docs/PRODUCT.md](docs/PRODUCT.md)。
-
-## 解决方案结构
-
-- `src/RemoteAssist.App` — **产品主入口**：首页双模式（接受协助 / 去协助别人）
-- `src/RemoteAssist.Protocol` — 共享消息 / 权限 / 会话契约 / TCP·TLS 帧 / 客户端 / 二维码载荷
-- `src/RemoteAssist.Agent` — 被控能力库 + 兼容独立入口（`--headless` / 旧 publish）
-- `src/RemoteAssist.Helper` — 协助端 CLI
-- `src/RemoteAssist.Helper.UI` — 控制端界面（由统一 App 复用；也可单独跑）
-- `src/RemoteAssist.Mcp` — stdio MCP Server（见 docs/MCP.md）
-- `src/RemoteAssist.Relay.Stub` — 公网中继占位（可用纯 IP）
-- `installer/` — Inno Setup 脚本与说明
-- `tests/RemoteAssist.Protocol.Tests` — 单元测试
-
-## 环境要求
-
-- Windows 10/11 x64
-- 开发机：.NET SDK 8+（Windows Desktop 工作负载）
-- 亲友机：使用**自包含安装包**时通常**无需**再装 .NET
-
-```powershell
-$env:PATH = "C:\Users\user\AppData\Local\Microsoft\dotnet;" + $env:PATH
-```
-
-## 给亲友安装（推荐 · 一个安装包）
-
-### 方式 A：Setup 安装包
+## 中继
 
 ```powershell
 cd E:\IdeaProjects\remote-assist
-.\scripts\build-installer.ps1
-# 产物：artifacts\installer\RemoteAssist-Setup-0.1.0.exe
+.\scripts\relay-smoke.ps1
 ```
 
-需要 [Inno Setup 6](https://jrsoftware.org/isdl.php)。详见 [installer/README.md](installer/README.md)。
+协议与部署见 [docs/relay.md](docs/relay.md)、[docs/relay-protocol.md](docs/relay-protocol.md)、[docs/relay-deploy.md](docs/relay-deploy.md)。
 
-亲友侧：双击 Setup → 开始菜单打开 **「鹊桥远程协助」** → 首页选角色。
+## 安全底线（仍然有效）
 
-### 方式 B：本机软安装（无 Inno）
-
-```powershell
-.\scripts\install-app-local.ps1
-# 可选桌面图标：
-.\scripts\install-app-local.ps1 -DesktopShortcut
-```
-
-### 方式 C：绿色拷贝
-
-```powershell
-.\scripts\publish-app.ps1
-# 拷贝 artifacts\app-win-x64-sc\ ，运行 RemoteAssist.exe
-```
-
-## 怎么用
-
-1. **被控（接受协助）**：首页点「接受协助」→ 会话码 / 二维码 / 托盘；可「返回首页」切换角色。
-2. **控制（去协助别人）**：首页点「去协助别人」→ 粘贴载荷连接 → 列进程/目录/日志/执行（写操作对方确认）。
-3. **直达参数**：`RemoteAssist.exe --accept` / `--control`；被控 CLI：`--headless` / `--yes`。
-
-开发调试：
-
-```powershell
-dotnet run --project src/RemoteAssist.App
-dotnet run --project src/RemoteAssist.App -- --accept
-dotnet run --project src/RemoteAssist.Agent -- --headless   # 兼容独立被控
-dotnet run --project src/RemoteAssist.Helper.UI            # 兼容独立控制端
-```
-
-| 参数 | 含义 |
-|---|---|
-| `--accept` / `--agent` | 启动后直接进入被控 |
-| `--control` / `--helper` | 启动后直接进入控制 |
-| `--port 17890` | 被控监听端口 |
-| `--confirm-timeout 60` | 确认超时（秒） |
-| `--headless` | 无 UI 被控（控制台确认） |
-| `--yes` | 自动同意（仅冒烟） |
-| `--insecure` | 明文 TCP（仅调试） |
-
-二维码载荷（默认 TLS）：
-
-```text
-remoteassist:pair?v=1&host=<所选IP>&port=17890&code=<SESSION>&tls=1&fp=<SHA256>
-```
-
-## 协助端 CLI / MCP（高级）
-
-```powershell
-dotnet run --project src/RemoteAssist.Helper -- pair --payload "<载荷>"
-.\scripts\publish-mcp.ps1
-```
-
-MCP 详见 [docs/MCP.md](docs/MCP.md)。被控界面 / 托盘可「复制 MCP 配置」。
-
-## 构建与测试
-
-```powershell
-cd E:\IdeaProjects\remote-assist
-dotnet build
-dotnet test
-.\scripts\publish-app.ps1
-.\scripts\build-installer.ps1
-```
-
-## 审计日志
-
-`%LOCALAPPDATA%\RemoteAssist\audit.log`
-
-## 已知限制（v1）
-
-- TLS 自签 + 指纹钉扎
-- 无公网中继（仅 stub；设置可填 IP:端口占位）
-- `run_command` 经 `cmd.exe /c`，超时约 15s
-- 自包含安装包体积仍偏大（后续可压体积 / 换运行时策略）
-
-## 仓库
-
-计划发布到 Gitee 私有仓；当前本地 git，**默认不 push**。
-
-## .NET 8 vs .NET Framework 4.8 对比
-
-主线仍是 **.NET 8**（`RemoteAssist.sln` / `src/`）。另有并行移植树 **`src-net48/`** + `RemoteAssist.Net48.sln`，方便对比体积与运行时依赖；**不替换**现有产品路径。
-
-| 项 | .NET 8（主线） | .NET Framework 4.8（并行） |
-|---|---|---|
-| 代码位置 | `src/` | `src-net48/` |
-| 解决方案 | `RemoteAssist.sln` | `RemoteAssist.Net48.sln` |
-| 统一 App | `RemoteAssist.exe` | `RemoteAssist.Net48.exe` |
-| 亲友机依赖 | 自包含安装包 **无需**另装运行时；或需 .NET 8 Desktop Runtime | **通常无需安装**（Win10/11 预装 .NET Framework 4.8） |
-| 发布形态 | 自包含单文件 / Setup ~**72–77 MB** | 框架依赖文件夹合计约 **1.4 MB**（exe 本体约 **18 KB** + 依赖 DLL） |
-| 跨平台中继 | 可用 .NET 8 服务 | 客户端仅 Windows；中继仍建议 Go/Python/.NET 8（Linux） |
-| TLS | TLS 1.2 / 1.3 | **TLS 1.2**（兼容层） |
-| 能力对齐 | 完整（含 MCP / Helper CLI / 安装包） | 统一 App（被控+控制）核心：会话码、配对、LAN TLS 指纹、确认窗、基础工具；MCP 发布/TaskDialog 等做了简化 |
-
-### 构建 / 运行 4.8 对比版
-
-```powershell
-$env:PATH = "C:\Users\user\AppData\Local\Microsoft\dotnet;" + $env:PATH
-cd E:\IdeaProjects\remote-assist
-.\scripts\build-net48.ps1
-# 产物：artifacts\app-net48-fd\RemoteAssist.Net48.exe
-# 直接运行（需本机已有 .NET Framework 4.8）：
-.\artifacts\app-net48-fd\RemoteAssist.Net48.exe
-```
-
-开发机用 SDK 风格工程 + NuGet `Microsoft.NETFramework.ReferenceAssemblies` 即可编译（不必先装 VS 的 4.8 Targeting Pack）。若要用传统 Targeting Pack：Visual Studio Installer → 生成工具 → 勾选「.NET Framework 4.8 目标包」。
-
-体积实测（本机，约）：
-
-- net8 自包含 App：`artifacts\app-win-x64-sc\RemoteAssist.exe` ≈ **77 MB**
-- net8 Setup：`artifacts\installer\RemoteAssist-Setup-0.1.0.exe` ≈ **72 MB**
-- net48 发布目录合计：`artifacts\app-net48-fd\` ≈ **1.4 MB**
-
+- 写操作必须在被协助的这台电脑上确认。
+- 连接主路径仍是完整安全载荷（含证书指纹）。短码单独连接（R050）未授权。
+- 不改 AI-SSH-Pro。默认不 push、不上公网，除非另授权。

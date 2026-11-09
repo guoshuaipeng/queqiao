@@ -12,7 +12,7 @@
 
 ## Bot 职责记忆（换 bot 接续）
 
-各角色站立决策与协作约定见 **`docs/agents/`**（[索引 README](agents/README.md)）：产品 / 客户端 / 服务端 / 架构 / 体验 / 场景。**Windows：主维护 net48（FW 4.8 小包）；冻结 net8 WinForms 功能迭代；既有 net8 能力迁 net48（账号免密除外，已废止）。** 细则以 `docs/agents/产品.md` 与下文为准。
+各角色站立决策与协作约定见 **`docs/agents/`**（[索引 README](agents/README.md)）：产品 / 客户端 / 服务端 / 架构 / 体验 / 场景。**桌面客户端只有 Tauri**（`apps/queqiao-tauri`）。.NET 客户端已删除，不要恢复。细则以 `docs/agents/产品.md` 与下文为准。
 
 ## 定位
 
@@ -25,7 +25,7 @@
 ## 连接（2026-11-05 起）
 
 1. **默认：公网中继**（Go `relay/`，建议阿里云 2C2G；正式默认 `121.196.45.81:17891`，见 `docs/relay-deploy.md`；客户端仍可改）。
-2. **访客协助（当前安全主路径）**：被控端展示会话码与验证码（短形态可展示/口述）；主按钮 **「复制连接凭证」** 复制**完整安全载荷**（既有 `remoteassist:pair`，含 code + password + **Agent 业务证书指纹 `fp=`**）。协助端**一个**输入框粘贴该整段后点「连接」。短码或无指纹旧两行可识别但**必须阻断**并人话请对方重发完整凭证。**Windows 主路径（net48）不得以填局域网 IP/端口/TLS 指纹为主操作。** 规范见 `docs/quality-connection-credential.md`（并入 R043）。**体验目标**是主路径只复制短码、地址进高级设置——见下节「体验目标」；在「安全实现前置条件」满足前**不得**把短码当已可安全连接。
+2. **访客协助（当前安全主路径）**：被控端展示会话码与验证码（短形态可展示/口述）；主按钮 **「复制连接凭证」** 复制**完整安全载荷**（既有 `remoteassist:pair`，含 code + password + **Agent 业务证书指纹 `fp=`**）。协助端**一个**输入框粘贴该整段后点「连接」。短码或无指纹旧两行可识别但**必须阻断**并人话请对方重发完整凭证。**客户端不得以填局域网 IP/端口/TLS 指纹为主操作。** 规范见 `docs/quality-connection-credential.md`（并入 R043）。**体验目标**是主路径只复制短码、地址进高级设置——见下节「体验目标」；在「安全实现前置条件」满足前**不得**把短码当已可安全连接。
 3. **账号免密 / 设备密钥快捷连（产品意图已废止 · 2026-11-06 10:35 Asia/Shanghai）**：曾支持简单注册/登录 → 设备上线 → 同账号机器列表 → `connect_device` / `ownerLink` 免输会话密码。用户已拍板 **严格唯一凭证**，本旁路**取消**（自有设备也须输入 code+密码）；现网代码若仍存在，属待收口遗留，**不得**继续宣传为产品能力。见「产品拍板：严格唯一凭证」。
 4. **局域网直连**保留为高级/调试（历史端口 `17890`，载荷 `via=lan`），非默认。
 5. 中继控制面：**JSONL**（见 `docs/relay-protocol.md`）；配对后透明转发。业务层默认 TLS + 证书指纹钉扎（端到端，中继只转发）。`--insecure` 仅显式调试。
@@ -83,25 +83,17 @@
 
 ## 产品形态与安装
 
-- **同一安装包、双模式**：接受协助 / 去协助别人；可返回首页。视觉质感以首页和配对确认为标杆，协助端向它们看齐；原则见 docs/quality.md（**Windows 主维护 = net48 WinForms**，不换框架；**冻结 net8 WinForms 功能**；net8 自包含仅为兼容备用；Avalonia 只管 Mac/Linux）。
-- **可选 MCP**：安装或设置里启用 stdio，供协助方 Agent 使用；与 UI 控制端共用同一连接与确认流程。MCP **默认不在「仅接受协助」场景自动对外监听**，避免误暴露。协助端 / 设置里须能看到怎么安装 MCP（复制配置并贴进 Cursor 等工具的 MCP 设置），不用另翻仓库文档。**Windows 主路径 net48「去协助」缺 MCP/安装说明入口**已由 **R048** 从 net8/Avalonia 迁入（编译/文档 PASS_WITH_NOTES `2d427d4`；运行未验收；Agent 侧已有复制配置不代替 Helper）。
-- 被控：主界面展示 code、验证密码、二维码/载荷、TLS 指纹、配对与审计；可登录绑定账号以上线设备。
-- 控制：code+密码或完整连接凭证经中继连接；设置里填中继地址（目标：默认内置、仅高级可改）；可注册/登录、刷设备列表作发现用途——**连接控制须 code+密码**，不再免密连。
-- 安装包：现有 `installer/RemoteAssist.iss` → `RemoteAssist-Setup-*.exe` 面向 **.NET 8 自包含**（兼容备用，**功能冻结**）。**Windows 亲友主维护分发**开 **R047**：打 **net48** Framework 4.8 依赖小 Setup（Inno 优先，或 MSI），内容来自 `artifacts/app-net48-fd`；默认仍装到 `%LOCALAPPDATA%\Programs\RemoteAssist`（与 net8 并存策略见 `docs/round-047.md`）。官网上传可选另轮。
-- 兼容：独立 Agent / Helper.UI / Helper CLI / MCP。
+- **一个窗口、两件事**：打开就能「请人帮我」和「我帮别人」。界面以 `docs/CLIENT-UI.md` 为准。
+- **客户端**：只有 Tauri（`apps/queqiao-tauri`）。.NET / WinForms / Avalonia 客户端已删除。
+- **可选 MCP**：设置里可以复制 MCP 配置，供协助方 Agent 使用；与界面共用同一连接和确认流程。MCP 不在「只接受协助」时自动对外监听。
+- 被控：主界面展示会话码、密码和连接凭证。连接控制须持有凭证，不再免密连。
+- 控制：粘贴完整连接凭证后点连接。中继地址默认内置，只在设置里改。
 
-## 支持平台（2026-11-05）
+## 支持平台
 
-- 三类用户在 Mac/Linux 上的闭环见 `docs/mac-linux-scenes.md`。R009 Linux CLI + MCP + 终端确认、R010 Linux Avalonia 被控窗、R011 Linux Avalonia 双模式、R012 Avalonia 信任等级三档 + Windows P2-7「结束完全信任」、R013 Linux Avalonia 已确认改动回看 + 刷新会话码确认、R014 Linux Avalonia 账号登录免密 + 审计人话、R015 Avalonia 设备列表人话与免密连接可点击态、R016 Linux Avalonia 协助端连上后五键白话对齐、R017 Linux Avalonia 去协助端 MCP / 复制安装说明、R018 Linux Avalonia 接受协助端可选 MCP 说明均已于 2026-11-05 产品对照截图验收通过；osx 已出包未上真机（R018 未重跑 publish）；同事运维可继续用 CLI；亲友/客户主路径走 Avalonia 双模式 GUI，不要把打开终端复制码当主路径。R019 官网 Windows / Linux 安装包下载已于 2026-11-05 产品对照公网验收通过（`04347f3`；macOS 仍标「即将提供」）。R020 官网 Linux 包跟上 R015–R018 已于 2026-11-05 产品对照公网验收通过（出包 `bafe80c`，上架 `8ce2bd9`）。R021 去协助端「复制安装说明」带上官网下载地址已于 2026-11-05 产品对照截图验收通过（`632928a`）。R022 官网安装包跟上含 R021 的客户端 + 安装说明联网话术中性化已于 2026-11-06 产品对照公网与截图验收通过（出包 `71893d2`）。R023 安装说明补 .NET 8 运行时短指引 + 官网 Linux 旁注对齐已于 2026-11-06 产品对照截图与公网验收通过（文案 `a5eb2df`，旁注 `3a0d53b`）。R024 官网安装包跟上含 R023 运行时指引的客户端已于 2026-11-06 产品对照公网与截图验收通过（出包 HEAD `bf078ac`，上架 `1ee1e9c`）。R025 安装说明与官网补「通常不会下载」时怎么选已于 2026-11-06 产品对照截图与公网验收通过（文案 `f423db1`，旁注 `40cae49`）。R026 官网安装包跟上含 R025 的客户端已于 2026-11-06 产品对照公网与截图验收通过（出包 HEAD `73b2fea`，上架 `a97a2f5`）。R027 去协助端 Skill 薄封装已于 2026-11-06 产品对照截图验收通过（`65f2e2d`）。R028 接受协助端可选 Skill 说明已于 2026-11-06 产品对照截图验收通过（`9c07065`）。R029 Windows 接受协助端菜单补复制 Skill 说明已于 2026-11-06 产品对照截图验收通过（`5909d99`）。R030 官网安装包跟上含 R027–R029 的客户端已于 2026-11-06 产品对照公网与截图验收通过（出包 HEAD `c7dc792`，上架 `9108924`）。R031 接受协助端对方连上后人话已于 2026-11-06 产品对照截图验收通过（`e40e70a`）。R032 已于 2026-11-06 产品对照截图验收通过（`b78fc1e`）。R033 Windows 接受协助端「结束这次协助」已于 2026-11-06 产品对照截图验收通过（`3b01e7f`）。R034 官网安装包跟上含 R031–R033 的客户端已于 2026-11-06 产品对照公网验收通过（出包 HEAD `7bf7924`，上架 `b5f089d`）。R035 去协助端对方结束协助后人话已于 2026-11-06 产品对照截图验收通过（`b707804`）。R036 去协助端连上后「连接」改为不可点的「已连接」已于 2026-11-06 产品对照截图验收通过（`d24fb44`）。R037 去协助端已连上后不再显示「粘贴后点「连接」」已于 2026-11-06 产品对照截图验收通过（`0405491`）。R038 官网安装包跟上含 R035–R037 的客户端已于 2026-11-06 产品对照公网哈希验收通过（出包 `0efc3c4`，上架 `68c5abc`）。R039 Avalonia 去协助端连上后五个常用操作出现在首屏已于 2026-11-06 产品对照截图验收通过（`5c276ec`）。R040 官网安装包跟上含 R039 的客户端已于 2026-11-06 产品对照公网哈希验收通过（出包 HEAD `49a4292`，上架 `2e51cea`）。R041 「提议一项改动」等待/结果四态人话 + 连上后去掉 PAIR_OK 已于 2026-11-06 产品对照截图验收通过（`aeafeeb`）。R042 官网安装包跟上含 R041 的客户端已于 2026-11-06 产品对照公网哈希验收通过（出包 HEAD `8d61398`，上架 `f90bd8f`）。R043 编译/文档核对 **PASS_WITH_NOTES**（`0122127`；产物 net48 exe 19968 字节 / 2026-11-06 09:23:55 Asia/Shanghai）；**真实连接仍 blocked**。完整连接凭证载荷已接线；实际连接、安全校验与界面运行验收另计。见 `docs/round-043.md`。R044 编译/文档核对 **PASS_WITH_NOTES**（`7cad0ab`；产物 19968 字节 / 2026-11-06 09:46:59 Asia/Shanghai / SHA256 `a78c0f246c4532025cd5ed0407013ac1828e2e3bb379fc692a0a32604080d81e`）；**运行仍 blocked**；net48 七句逐字文案已接线，Avalonia/CLI 未改。见 `docs/round-044.md`。R045 编译/文档核对 **PASS_WITH_NOTES**（`39d6dc1`；产物 19968 字节 / 2026-11-06 09:57:04 Asia/Shanghai / SHA256 `57F9ADB65B4FEC7A647E9966EAA105A1F4B8B24F23B320FFF3A75265706C60BF`）；**运行仍 blocked**；失败文案改完整连接凭证口径，Helper catch 不再叠缺安全提示。见 `docs/round-045.md`。当前并行打开：**R046**（规格已拍板 — 中继 SQLite 审计表 + 鉴权只读管理列表；禁记/禁展 pwd、password_hash、完整凭证、fp、业务载荷；不改 `guest_*`；与 `site/admin` 接单分离；`docs/round-046.md`、`docs/relay-audit.md`）；**R047**（规格已开 — Windows net48 单文件安装包发给别人安装，依赖 .NET Framework 4.8；Inno 优先或 MSI；官网上传可选另轮；`docs/round-047.md`）；**R048** 编译/文档核对 **PASS_WITH_NOTES**（`2d427d4`；产物 19968 字节 / 2026-11-06 10:25:51 Asia/Shanghai / SHA256 `53974730E878F07C031212CC20338945E5C4B898FDE6C7B201A35D0AA5F4A20D`）；**运行仍 blocked**；net48 Helper 已接线复制安装说明 + MCP 配置/Skill；禁缺指纹降明文。见 `docs/round-048.md`。另已锁定体验目标并开规格桩：**R049**（单主窗口 + 高级中继 UI，draft）；**R050**（严格唯一凭证 / 短码可连，决策已锁定；**blocked** 等架构 PAKE 评估与授权实现）。后续迭代优先稳定性和用户体验；本机验收勿打断用户工作，优先本机外路径。
-
-- **Windows / macOS / Linux** 均为正式产品范围，不是「以后再说」。
-- **不阻塞** Windows 的 P0 演示闭环：Windows 仍先可演示。
-- 分两步，避免为跨平台把当前 WinForms UI 推倒重来再卡住演示：
-  1. 先出 Mac/Linux **被控端 + MCP**（配对、只读查询、写操作本机确认与 Windows 同一套安全底线），让这两类机器能被协助。
-  2. 再出与 Windows 对等的双模式 GUI（接受协助 / 去协助）。macOS / Linux 都要命令行（CLI/MCP）和 Avalonia 界面，不是二选一；出货仍按上面两步，不挡 Windows 的 P0。
-- 不拆成三套互不相干的原生客户端；Protocol / Helper / MCP 已是 net8.0。细节见 docs/architecture.md 第 13 节。
-- **GUI**：Windows 现阶段保持 WinForms；macOS / Linux 用 Avalonia。确认规则与 Windows 相同（写操作本机确认）。
-- **分发**：Windows **主维护**走 **R047 net48** Setup（Framework 4.8 依赖小包；Inno 优先）；现有 net8 自包含 Inno 冻结功能、仅兼容备用；macOS 为 .app + .dmg；Linux 先便携 .tar.gz，随后可选 .deb。
+- 当前桌面客户端是 **Windows 上的 Tauri**。Mac / Linux 的旧 .NET / Avalonia 客户端已删除，没有替代包之前不要再写成可下载。
+- 写操作本机确认在所有平台上都是同一条安全底线。
+- 仍有效的服务端工作：**R046** 中继会话码审计（`docs/round-046.md`、`docs/relay-audit.md`）；**R050** 短码可连仍 **blocked**。
 
 ## 协助闭环（管理端 / Agent）
 
@@ -122,11 +114,7 @@ Skill 仅作「如何安装 MCP / 如何填参数」的薄封装；**控制面�
 
 **中继会话码审计（R046）**：中继 SQLite 另表记录会话码生成、join 成功/失败、会话结束，供鉴权后的管理台只读列表（created_at / code / status）；**不**存不展验证码、password_hash、fp、完整连接凭证；**不**改 guest_* 协议字段；与官网接单 /admin 分离。见 docs/relay-audit.md。
 
-**net48 安装包（R047）**：把 `app-net48-fd` 打成单个 **Framework 4.8 依赖**小 Setup 发给别人安装（几兆档，非几十兆自包含）；安装说明/旁注须写 **.NET Framework 4.8**，**不得**再写缺「.NET 8 运行时」。**跟进（未改代码）**：`src-net48`/`src` 的 `WriteConfirmCopy` 协助端「复制安装说明」仍含「先安装 .NET 8 运行时」——须在 R047 实现时改成 Framework 4.8（Windows 行）并保留 Linux 的 .NET 8 表述；改代码前须客户端授权。与 R046 并行、互不阻塞。见 docs/round-047.md。
-
-**net48 协助端 MCP（R048）**：去协助界面须有「复制安装说明」与「复制 MCP 配置」（可贴进 Cursor 等的 JSON，载荷为完整连接凭证）；对齐 net8 Helper / Avalonia；缺完整凭证阻断，禁止明文降级。编译/文档 **PASS_WITH_NOTES**（`2d427d4`）；运行未验收。见 docs/round-048.md。
-
-**短码复制与单主窗口（体验目标）**：复制内容目标为会话码+8位密码；单主窗口页内切换。安全短凭证未落地前主路径仍复制完整连接凭证。见「体验目标」「安全实现前置条件」；`docs/round-049.md`（R049 draft）；R050 blocked。
+**短码复制与单主窗口（体验目标）**：复制内容目标为会话码+8位密码；单主窗口页内切换。安全短凭证未落地前主路径仍复制完整连接凭证。见「体验目标」「安全实现前置条件」。R050 blocked。设置里须能复制安装说明和 MCP 配置；缺完整凭证必须阻断，禁止降成明文。
 
 被协助的人可以在本机设置信任等级（对方不能远程打开），详见 docs/trust-levels.md：
 
@@ -157,26 +145,15 @@ Skill 仅作「如何安装 MCP / 如何填参数」的薄封装；**控制面�
 
 ## 技术选型
 
-- 客户端：**Windows 主维护路径 = .NET Framework 4.8（`src-net48/` + `scripts/build-net48.ps1`）**，WinForms；官网/亲友下载与演示验收均优先 **net48 框架依赖小包**（约 1.4 MB 档，非几十兆自包含）。
-- **冻结 `src/` net8 WinForms 功能迭代**：不再向 net8 WinForms 加新功能；仅接受安全/协议关键回补。**凡此前在 net8（含 Avalonia/WinForms）已迭代、且仍属产品意图的能力，须迁到 net48 直至能力对等**——不为「两边都做一遍」去回填 net8。
-- **net48 迁移 backlog（已知缺口，非穷尽）**：信任三档；「结束这次协助」；本次协助已确认改动回看；写确认/安装说明等 `WriteConfirmCopy` 亲友文案与 Windows 安装前提（Framework 4.8）。**不迁**：账号免密 / `connect_device` / `ownerLink` / 设备密钥快捷连（产品意图已废止）。
-- **Avalonia** = **Mac/Linux** 轨道，**不是** Windows 亲友主路径。
-- **.NET 8 自包含 Windows 安装包**仅历史/兼容备用（约 72 MB），不作为主维护与官网主推。macOS / Linux 仍用 .NET 8 + Avalonia（见 architecture.md 第 13 节）；src-net48 不上 Mac/Linux。
+- 客户端：**Tauri**（`apps/queqiao-tauri`）。不要恢复 .NET、WinForms 或 Avalonia。
 - 公网中继：**Go** + SQLite（`relay/`）
-- 二维码：QRCoder
+- 官网：`site/`（Go）
 - 帧：业务侧 4 字节 LE 长度 + UTF-8 JSON；中继透明 pipe；控制面 JSONL
-
-## 体积说明
-
-- 小体积是跨平台一等约束。实测基线（2026-11-05，本机 artifacts/）：Windows **主路径** `src-net48` 依赖系统 **.NET Framework 4.8** 约 **1.4 MB**；.NET 8 自包含安装包约 **72 MB**（**兼容备用**，非 Windows 主路径）。演示与验收优先开 net48 产物（`scripts/build-net48.ps1`）。
-- **macOS / Linux 默认发依赖运行时的小包**，目标尽量接近上述 1.4 MB 这一档（应力争个位数 MB，而不是默认 72 MB）；对方需已装 .NET 8 桌面方向运行时，首次使用提供简短安装说明。
-- **.NET 8 自包含包保留为兼容备用**（不愿或不能先装 Framework 4.8 / 过渡官网大包），体积上限不差于当前约 72 MB；**不再为功能对等维护**。官网若仍挂 net8 大包，视为过渡/备用，产品叙事与主维护以 net48 小包为准。
-- src-net48 / .NET Framework 4.8 仅适用于 Windows，不能作为 Mac/Linux 的缩体积方案。
 
 ## 持续迭代
 
-- 产品 bot 驱动选题与验收；每轮文档 docs/round-NNN.md，优先级以 docs/roadmap.md 为准。
-- 实现由「鹊桥-客户端」（.NET 客户端 / UI / MCP / 安装包）/「鹊桥-服务端」（Go 中继）执行；架构边界见 docs/architecture.md。
+- 产品 bot 驱动选题与验收；优先级以 docs/roadmap.md 为准。
+- 实现由「鹊桥-客户端」（Tauri）/「鹊桥-服务端」（Go 中继）执行；架构边界见 docs/architecture.md。
 - 每轮结束后写 docs/retro.md。
 
 
