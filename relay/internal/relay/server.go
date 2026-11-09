@@ -48,7 +48,11 @@ type Server struct {
 	wg        sync.WaitGroup
 	ownStore  bool
 	auditHTTP *AuditHTTP
+	joinMu    sync.Mutex
+	joinFails map[string]int
 }
+
+const maxGuestJoinFails = 5
 
 type pairSlot struct {
 	key     string
@@ -86,9 +90,10 @@ func NewServer(cfg Config) (*Server, error) {
 		cfg.Addr = ":17891"
 	}
 	srv := &Server{
-		cfg:     cfg,
-		guests:  make(map[string]*pairSlot),
-		devices: make(map[string]*pairSlot),
+		cfg:       cfg,
+		guests:    make(map[string]*pairSlot),
+		devices:   make(map[string]*pairSlot),
+		joinFails: make(map[string]int),
 	}
 	if cfg.Store != nil {
 		srv.store = cfg.Store
@@ -261,6 +266,12 @@ func (c *clientConn) dispatch(op string, req map[string]any) (paired bool, err e
 		return false, c.opDeviceOffline(req)
 	case "list_devices":
 		return false, c.opListDevices(req)
+	case "delete_device":
+		return false, c.opDeleteDevice(req)
+	case "set_device_unattended":
+		return false, c.opSetDeviceUnattended(req)
+	case "logout":
+		return false, c.opLogout(req)
 	case "connect_device":
 		return c.opConnectDevice(req)
 	case "guest_host":
@@ -322,10 +333,12 @@ func (c *clientConn) opDeviceOnline(req map[string]any) (bool, error) {
 	}
 	deviceID := strings.TrimSpace(asString(req["device_id"]))
 	displayName := strings.TrimSpace(asString(req["display_name"]))
+	fingerprint := strings.ToUpper(strings.TrimSpace(asString(req["fp"])))
+	unattended := asBool(req["unattended"])
 	if deviceID == "" {
 		return false, fmt.Errorf("missing field device_id")
 	}
-	if err := c.s.store.UpsertDevice(c.userID, deviceID, displayName); err != nil {
+	if err := c.s.store.UpsertDevice(c.userID, deviceID, displayName, fingerprint, unattended); err != nil {
 		return false, err
 	}
 
@@ -358,6 +371,65 @@ func (c *clientConn) opDeviceOffline(req map[string]any) error {
 	}
 	c.s.mu.Unlock()
 	return c.reply(map[string]any{"ok": true, "op": "device_offline", "device_id": deviceID})
+}
+
+func (c *clientConn) opSetDeviceUnattended(req map[string]any) error {
+	if err := c.requireAuth(); err != nil {
+		return err
+	}
+	deviceID := strings.TrimSpace(asString(req["device_id"]))
+	if deviceID == "" {
+		return fmt.Errorf("missing field device_id")
+	}
+	unattended := asBool(req["unattended"])
+	if err := c.s.store.SetDeviceUnattended(c.userID, deviceID, unattended); err != nil {
+		return err
+	}
+	return c.reply(map[string]any{"ok": true, "op": "set_device_unattended", "device_id": deviceID, "unattended": unattended})
+}
+
+func (c *clientConn) opDeleteDevice(req map[string]any) error {
+	if err := c.requireAuth(); err != nil {
+		return err
+	}
+	deviceID := strings.TrimSpace(asString(req["device_id"]))
+	if deviceID == "" {
+		return fmt.Errorf("missing field device_id")
+	}
+	own, err := c.s.store.OwnDevice(c.userID, deviceID)
+	if err != nil {
+		return err
+	}
+	if !own {
+		return fmt.Errorf("device not found")
+	}
+	key := deviceKey(c.userID, deviceID)
+	c.s.mu.Lock()
+	slot := c.s.devices[key]
+	if slot != nil && slot.agent != nil {
+		c.s.finishSlotLocked(slot)
+		delete(c.s.devices, key)
+	}
+	c.s.mu.Unlock()
+	if err := c.s.store.DeleteDevice(c.userID, deviceID); err != nil {
+		return err
+	}
+	return c.reply(map[string]any{"ok": true, "op": "delete_device", "device_id": deviceID})
+}
+
+func (c *clientConn) opLogout(req map[string]any) error {
+	if err := c.requireAuth(); err != nil {
+		return err
+	}
+	token := strings.TrimSpace(asString(req["token"]))
+	if token != "" {
+		if id, err := c.s.store.AuthToken(token); err == nil && id == c.userID {
+			_ = c.s.store.RevokeToken(token)
+		}
+	}
+	c.authed = false
+	c.userID = 0
+	return c.reply(map[string]any{"ok": true, "op": "logout"})
 }
 
 func (c *clientConn) opListDevices(req map[string]any) error {
@@ -399,19 +471,33 @@ func (c *clientConn) opConnectDevice(req map[string]any) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if err := c.reply(map[string]any{"ok": true, "op": "paired", "mode": "account", "device_id": deviceID}); err != nil {
+	fp := ""
+	rows, err := c.s.store.ListDevices(c.userID)
+	if err == nil {
+		for _, row := range rows {
+			if row.DeviceID == deviceID {
+				fp = row.Fingerprint
+				break
+			}
+		}
+	}
+	paired := map[string]any{"ok": true, "op": "paired", "mode": "account", "device_id": deviceID}
+	if fp != "" {
+		paired["fp"] = fp
+	}
+	if err := c.reply(paired); err != nil {
 		c.s.abandonHelper(slot, c.conn)
 		return false, err
 	}
-	// notify agent
-	_ = writeJSONLine(peer, map[string]any{"ok": true, "op": "paired", "mode": "account", "device_id": deviceID})
+	_ = writeJSONLine(peer, paired)
 	c.s.runPipe(slot, peer, c.conn, slot.agentBr, c.br)
 	return true, nil
 }
 
 func (c *clientConn) opGuestHost(req map[string]any) (bool, error) {
+	pake := asString(req["auth"]) == "pake"
 	password := asString(req["password"])
-	if len(password) < minPasswordLen {
+	if !pake && len(password) < minPasswordLen {
 		return false, fmt.Errorf("password too short (min %d)", minPasswordLen)
 	}
 	code := normalizeCode(asString(req["code"]))
@@ -426,7 +512,13 @@ func (c *clientConn) opGuestHost(req map[string]any) (bool, error) {
 		return false, fmt.Errorf("invalid code")
 	}
 	exp := time.Now().Add(guestTTL)
-	if err := c.s.store.SaveGuest(code, password, exp); err != nil {
+	var err error
+	if pake {
+		err = c.s.store.SaveGuestPake(code, exp)
+	} else {
+		err = c.s.store.SaveGuest(code, password, exp)
+	}
+	if err != nil {
 		return false, err
 	}
 	c.s.safeAppendAudit(AuditInsert{Event: AuditGenerated, Code: code, OK: intPtr(1)})
@@ -446,6 +538,7 @@ func (c *clientConn) opGuestHost(req map[string]any) (bool, error) {
 func (c *clientConn) opGuestJoin(req map[string]any) (bool, error) {
 	code := normalizeCode(asString(req["code"]))
 	password := asString(req["password"])
+	pake := asString(req["auth"]) == "pake"
 	fail := func(err error) (bool, error) {
 		reason := classifyJoinFail(err)
 		c.s.safeAppendAudit(AuditInsert{
@@ -456,15 +549,41 @@ func (c *clientConn) opGuestJoin(req map[string]any) (bool, error) {
 	if code == "" {
 		return fail(fmt.Errorf("missing field code"))
 	}
-	if len(password) < minPasswordLen {
-		return fail(fmt.Errorf("password too short (min %d)", minPasswordLen))
-	}
-	ok, err := c.s.store.GuestPasswordOK(code, password)
-	if err != nil {
-		return fail(err)
-	}
-	if !ok {
-		return fail(fmt.Errorf("invalid code or password"))
+	if pake {
+		ok, err := c.s.store.GuestPakeOK(code)
+		if err != nil {
+			return fail(err)
+		}
+		if !ok {
+			return fail(fmt.Errorf("invalid code or password"))
+		}
+	} else {
+		mode, err := c.s.store.GuestAuthMode(code)
+		if err != nil {
+			return fail(err)
+		}
+		if mode == "pake" {
+			return fail(fmt.Errorf("invalid code or password"))
+		}
+		if c.s.joinBlocked(code) {
+			c.s.lockGuest(code)
+			return fail(fmt.Errorf("too many attempts"))
+		}
+		if len(password) < minPasswordLen {
+			return fail(fmt.Errorf("password too short (min %d)", minPasswordLen))
+		}
+		ok, err := c.s.store.GuestPasswordOK(code, password)
+		if err != nil {
+			return fail(err)
+		}
+		if !ok {
+			if c.s.noteJoinFail(code) {
+				c.s.lockGuest(code)
+				return fail(fmt.Errorf("too many attempts"))
+			}
+			return fail(fmt.Errorf("invalid code or password"))
+		}
+		c.s.clearJoinFail(code)
 	}
 	slot, peer, err := c.s.registerHelper("guest", code, c.conn)
 	if err != nil {
@@ -481,6 +600,40 @@ func (c *clientConn) opGuestJoin(req map[string]any) (bool, error) {
 	_ = writeJSONLine(peer, map[string]any{"ok": true, "op": "paired", "mode": "guest", "code": code})
 	c.s.runPipe(slot, peer, c.conn, slot.agentBr, c.br)
 	return true, nil
+}
+
+func (s *Server) joinBlocked(code string) bool {
+	s.joinMu.Lock()
+	defer s.joinMu.Unlock()
+	return s.joinFails[code] >= maxGuestJoinFails
+}
+
+func (s *Server) noteJoinFail(code string) bool {
+	s.joinMu.Lock()
+	defer s.joinMu.Unlock()
+	s.joinFails[code]++
+	return s.joinFails[code] >= maxGuestJoinFails
+}
+
+func (s *Server) clearJoinFail(code string) {
+	s.joinMu.Lock()
+	defer s.joinMu.Unlock()
+	delete(s.joinFails, code)
+}
+
+func (s *Server) lockGuest(code string) {
+	s.mu.Lock()
+	slot := s.guests[code]
+	var agent net.Conn
+	if slot != nil {
+		agent = slot.agent
+	}
+	s.mu.Unlock()
+	if agent != nil {
+		_ = writeJSONLine(agent, map[string]any{"ok": false, "op": "guest_host", "error": "too many attempts"})
+		s.abandonAgent(slot, agent)
+	}
+	_ = s.store.DeleteGuest(code)
 }
 
 func writeJSONLine(w io.Writer, v map[string]any) error {

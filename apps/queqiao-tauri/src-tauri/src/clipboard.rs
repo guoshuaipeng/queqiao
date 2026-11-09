@@ -1,12 +1,16 @@
 //! Windows 剪贴板。用本窗口句柄打开，避免空句柄被拒绝。
 //! 成功写入必须在关闭前读回；OpenClipboard 失败不得当成已写入。
 
+#[cfg(windows)]
 use std::ffi::c_void;
+#[cfg(windows)]
 use std::thread;
+#[cfg(windows)]
 use std::time::Duration;
 
 use crate::copy;
 
+#[cfg(windows)]
 pub fn set(owner: isize, value: &str) -> Result<(), String> {
     #[link(name = "user32")]
     extern "system" {
@@ -85,6 +89,7 @@ pub fn set(owner: isize, value: &str) -> Result<(), String> {
 }
 
 /// 探测 OpenClipboard 是否可用。不写入、不读凭证。返回 (opened, last_error)。
+#[cfg(windows)]
 #[allow(dead_code)]
 pub fn probe_open(owner: isize) -> (bool, u32) {
     #[link(name = "user32")]
@@ -111,6 +116,7 @@ pub fn probe_open(owner: isize) -> (bool, u32) {
     (false, 5)
 }
 
+#[cfg(windows)]
 pub fn get(owner: isize) -> Result<String, String> {
     #[link(name = "user32")]
     extern "system" {
@@ -151,6 +157,65 @@ pub fn get(owner: isize) -> Result<String, String> {
         }
     }
     Err("没能读取剪贴板。".into())
+}
+
+#[cfg(not(windows))]
+pub fn set(_owner: isize, value: &str) -> Result<(), String> {
+    if feed("wl-copy", &[], value).is_ok() || feed("xclip", &["-selection", "clipboard"], value).is_ok() {
+        Ok(())
+    } else {
+        Err(copy::COPY_FAIL.into())
+    }
+}
+
+#[cfg(not(windows))]
+pub fn get(_owner: isize) -> Result<String, String> {
+    if let Ok(text) = read_out("wl-paste", &["-n"]) {
+        return Ok(text);
+    }
+    if let Ok(text) = read_out("xclip", &["-selection", "clipboard", "-o"]) {
+        return Ok(text);
+    }
+    Err("没能读取剪贴板。".into())
+}
+
+#[cfg(not(windows))]
+pub fn probe_open(_owner: isize) -> (bool, u32) {
+    (false, 5)
+}
+
+#[cfg(not(windows))]
+fn feed(cmd: &str, args: &[&str], value: &str) -> Result<(), ()> {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+    let mut child = Command::new(cmd)
+        .args(args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|_| ())?;
+    let mut stdin = child.stdin.take().ok_or(())?;
+    stdin.write_all(value.as_bytes()).map_err(|_| ())?;
+    drop(stdin);
+    let status = child.wait().map_err(|_| ())?;
+    if status.success() { Ok(()) } else { Err(()) }
+}
+
+#[cfg(not(windows))]
+fn read_out(cmd: &str, args: &[&str]) -> Result<String, ()> {
+    use std::process::{Command, Stdio};
+    let out = Command::new(cmd)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output()
+        .map_err(|_| ())?;
+    if !out.status.success() {
+        return Err(());
+    }
+    String::from_utf8(out.stdout).map_err(|_| ())
 }
 
 #[cfg(test)]

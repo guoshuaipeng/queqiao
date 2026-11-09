@@ -49,6 +49,73 @@ pub fn create_identity() -> Result<Identity, String> {
     })
 }
 
+pub fn load_or_create_identity(path: &std::path::Path) -> Result<Identity, String> {
+    if let Some(id) = read_identity(path) {
+        if id.fingerprint.len() == 64 {
+            return Ok(id);
+        }
+    }
+    let id = create_identity()?;
+    write_identity(path, &id)?;
+    Ok(id)
+}
+
+fn read_identity(path: &std::path::Path) -> Option<Identity> {
+    let text = std::fs::read_to_string(path).ok()?;
+    let parsed: serde_json::Value = serde_json::from_str(&text).ok()?;
+    let cert = hex_decode(parsed.get("cert")?.as_str()?)?;
+    let key = hex_decode(parsed.get("key")?.as_str()?)?;
+    if cert.is_empty() || key.is_empty() {
+        return None;
+    }
+    let fingerprint = fingerprint_of(&cert);
+    Some(Identity {
+        cert_der: cert,
+        key_der: key,
+        fingerprint,
+    })
+}
+
+fn write_identity(path: &std::path::Path, identity: &Identity) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|_| "没能保存这台电脑的身份。".to_string())?;
+    }
+    let body = serde_json::json!({
+        "cert": hex_encode(&identity.cert_der),
+        "key": hex_encode(&identity.key_der),
+    });
+    std::fs::write(path, body.to_string()).map_err(|_| "没能保存这台电脑的身份。".to_string())
+}
+
+fn hex_encode(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn hex_decode(text: &str) -> Option<Vec<u8>> {
+    if text.len() % 2 != 0 {
+        return None;
+    }
+    let mut out = Vec::with_capacity(text.len() / 2);
+    let bytes = text.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        let hi = hex_val(bytes[i])?;
+        let lo = hex_val(bytes[i + 1])?;
+        out.push((hi << 4) | lo);
+        i += 2;
+    }
+    Some(out)
+}
+
+fn hex_val(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        _ => None,
+    }
+}
+
 fn provider() -> Arc<CryptoProvider> {
     let provider = rustls::crypto::ring::default_provider();
     let _ = provider.install_default();

@@ -9,6 +9,8 @@ pub struct RelayTarget {
     pub code: String,
     pub password: String,
     pub fingerprint: String,
+    /// 短码。密码不发给中继，指纹在握手之后才得知。
+    pub pake: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -35,7 +37,17 @@ pub fn classify(raw: &str) -> CredClass {
     if text.is_empty() {
         return CredClass::Format;
     }
-    if looks_short_or_legacy(text) {
+    if let Some((code, password)) = parse_short(text) {
+        return CredClass::Ok(Via::Relay(RelayTarget {
+            host: String::new(),
+            port: 0,
+            code,
+            password,
+            fingerprint: String::new(),
+            pake: true,
+        }));
+    }
+    if looks_two_line_legacy(text) {
         return CredClass::Incomplete;
     }
     if !text.to_ascii_lowercase().starts_with("remoteassist:pair") {
@@ -87,6 +99,7 @@ pub fn classify(raw: &str) -> CredClass {
             code,
             password,
             fingerprint,
+            pake: false,
         }));
     }
     if via.as_deref() == Some("lan") || map.contains_key("host") {
@@ -176,6 +189,10 @@ pub fn display_code(code: &str) -> String {
     out
 }
 
+pub fn short_credential(code: &str, password: &str) -> String {
+    format!("{code}-{password}")
+}
+
 pub fn build_relay_payload(relay: &str, code: &str, password: &str, fp: &str) -> String {
     format!(
         "remoteassist:pair?v=2&via=relay&relay={}&code={}&pwd={}&tls=1&fp={}",
@@ -186,19 +203,23 @@ pub fn build_relay_payload(relay: &str, code: &str, password: &str, fp: &str) ->
     )
 }
 
-fn looks_short_or_legacy(text: &str) -> bool {
-    if text.to_ascii_lowercase().contains("remoteassist:pair") {
-        return false;
+fn parse_short(text: &str) -> Option<(String, String)> {
+    if text.to_ascii_lowercase().contains("remoteassist:pair") || text.contains('?') {
+        return None;
     }
     let compact: String = text.chars().filter(|c| !c.is_whitespace()).collect();
     let upper = compact.to_ascii_uppercase();
-    if let Some((code, pwd)) = upper.split_once('-') {
-        let code_ok = (4..=16).contains(&code.len()) && code.chars().all(|c| c.is_ascii_alphanumeric());
-        let pwd_ok = (4..=12).contains(&pwd.len()) && pwd.chars().all(|c| c.is_ascii_alphanumeric());
-        if code_ok && pwd_ok && !upper.contains('?') {
-            return true;
-        }
+    let (code, pwd) = upper.split_once('-')?;
+    let code_ok = (4..=16).contains(&code.len()) && code.chars().all(|c| c.is_ascii_alphanumeric());
+    let pwd_ok = (8..=8).contains(&pwd.len()) && pwd.chars().all(|c| c.is_ascii_digit());
+    if code_ok && pwd_ok {
+        Some((code.to_string(), pwd.to_string()))
+    } else {
+        None
     }
+}
+
+fn looks_two_line_legacy(text: &str) -> bool {
     let lines: Vec<&str> = text.lines().map(str::trim).filter(|l| !l.is_empty()).collect();
     if lines.len() == 2 {
         let has_code = lines.iter().any(|l| l.contains("会话码") || l.to_ascii_lowercase().starts_with("code"));
@@ -279,12 +300,29 @@ mod tests {
     }
 
     #[test]
-    fn short_code_blocked_before_network() {
-        assert_eq!(classify("AB12CD-12345678"), CredClass::Incomplete);
+    fn short_code_is_pake_without_fingerprint() {
+        match classify("AB12CD-12345678") {
+            CredClass::Ok(Via::Relay(t)) => {
+                assert!(t.pake);
+                assert_eq!(t.code, "AB12CD");
+                assert_eq!(t.password, "12345678");
+                assert!(t.fingerprint.is_empty());
+                assert!(t.host.is_empty());
+            }
+            other => panic!("unexpected {other:?}"),
+        }
         assert_eq!(
             classify("会话码：AB12CD\n验证密码：12345678"),
             CredClass::Incomplete
         );
+    }
+
+    #[test]
+    fn full_payload_is_not_pake() {
+        match classify(&sample()) {
+            CredClass::Ok(Via::Relay(t)) => assert!(!t.pake),
+            other => panic!("unexpected {other:?}"),
+        }
     }
 
     #[test]

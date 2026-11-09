@@ -12,6 +12,7 @@ pub fn execute(tool: Tool, args: &serde_json::Map<String, serde_json::Value>) ->
         Tool::ListProcesses => list_processes(),
         Tool::ListDir => list_dir(&req(args, "path")?),
         Tool::ReadFile => read_file(&req(args, "path")?),
+        Tool::ListServices => list_services(),
         Tool::ReadLogTail => {
             let lines = args
                 .get("lines")
@@ -77,6 +78,32 @@ fn format_process_names(csv: &str) -> Result<String, String> {
         .into_iter()
         .map(|(name, n)| if n == 1 { name } else { format!("{name}（{n}）") })
         .collect();
+    Ok(lines.join("\n"))
+}
+
+fn list_services() -> Result<String, String> {
+    if !cfg!(windows) {
+        return Err("这台电脑暂时列不出服务。".into());
+    }
+    let out = Command::new("powershell.exe")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "Get-Service | Sort-Object Status,Name | Select-Object -First 40 | ForEach-Object { '{0}`t{1}' -f $_.Status, $_.Name }",
+        ])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .map_err(|_| "没能查看服务。".to_string())?;
+    if !out.status.success() {
+        return Err("没能查看服务。".into());
+    }
+    let text = String::from_utf8_lossy(&out.stdout);
+    let lines: Vec<&str> = text.lines().map(str::trim).filter(|line| !line.is_empty()).take(40).collect();
+    if lines.is_empty() {
+        return Err("没有读到服务。".into());
+    }
     Ok(lines.join("\n"))
 }
 

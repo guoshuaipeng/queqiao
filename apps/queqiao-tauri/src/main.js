@@ -1,10 +1,12 @@
 const $ = (id) => document.getElementById(id);
 let state = null;
-let revealed = "";
 let currentDlg = 0;
 let dlgLeft = 0;
 let dlgTimer = null;
 let selectedTool = "";
+let accountOpen = false;
+let accountMode = "login";
+let accountFormError = "";
 
 function invoke(cmd, args) {
   const api = window.__TAURI__ && window.__TAURI__.core;
@@ -29,16 +31,27 @@ function render(s) {
   const settings = s.view === "settings";
   const host = s.view === "host";
   const helper = s.view === "helper";
-  show($("home"), home);
+  if (host || helper) accountOpen = false;
+  const accountPage = accountOpen && home && !settings;
+  show($("home"), home && !accountPage);
+  show($("account"), accountPage);
   show($("settings"), settings);
   show($("host"), host);
   show($("helper"), helper);
-  show($("tagline"), home);
-  show($("foot"), home);
-  show($("btn-settings"), !settings);
-  show($("btn-back"), settings);
-  show($("settings-title"), settings);
-  show($("endbar"), host || helper);
+  show($("tagline"), home && !accountPage);
+  show($("foot"), home && !accountPage);
+  document.body.classList.toggle("view-home", home && !accountPage && !settings);
+  document.body.classList.toggle("view-settings", settings);
+  document.body.classList.toggle("view-account", accountPage);
+  show($("top-right"), !settings && !accountPage);
+  show($("btn-settings"), !settings && !accountPage);
+  show($("btn-account"), !settings && !accountPage);
+  show($("brand-home"), !settings && !accountPage);
+  show($("btn-back"), settings || accountPage);
+  show($("settings-title"), settings || accountPage);
+  if ($("settings-title")) $("settings-title").textContent = accountPage ? "个人中心" : "设置";
+  const session = s.phase === "host_session" || s.phase === "helper_session";
+  show($("endbar"), host || helper || (settings && session));
 
   const waiting = s.phase === "waiting";
   const opening = s.phase === "opening" || s.phase === "stopping";
@@ -51,16 +64,18 @@ function render(s) {
 
   show($("left-idle"), s.phase !== "waiting" && s.phase !== "opening" && s.phase !== "stopping");
   show($("left-wait"), waiting);
-  $("session-code").textContent = s.code || "";
-  if (!revealed) {
-    $("session-pwd").textContent = "•".repeat(Math.max(8, s.passwordLen || 0));
-    $("btn-reveal").textContent = "显示";
-  }
   $("left-note").textContent = waiting ? "" : (s.leftNote || "");
-  const startLabel = s.phase === "open_fail" ? "重试开启" : s.phase === "stop_fail" ? "重试停止" : "开启接受协助";
+  const startLabel = s.phase === "opening" ? "正在开启…" : s.phase === "open_fail" ? "重试开启" : s.phase === "stop_fail" ? "重试停止" : "开启接受协助";
   $("btn-start").textContent = startLabel;
   show($("btn-start"), !waiting && s.phase !== "stopping");
   $("btn-start").disabled = s.phase === "opening" || s.phase === "stopping" || rightBusy;
+  show($("long-box"), !!s.longOn);
+  if ($("long-code")) {
+    $("long-code").textContent = s.longCode ? "长久码 " + s.longCode : "正在准备长久码…";
+  }
+  if ($("long-hint")) {
+    $("long-hint").textContent = s.longSkip ? "写操作不再询问，仍会记下。" : "要改电脑时仍会问你。";
+  }
   show($("btn-copy"), waiting);
   show($("btn-stop"), waiting);
   $("btn-copy").disabled = s.phase === "stopping";
@@ -137,13 +152,115 @@ function render(s) {
   $("btn-past").textContent = ($("past").hidden ? "▸ " : "▾ ") + "之前的结果" + (pastCount ? "（" + pastCount + "）" : "");
   paintPast(s.past || []);
 
-  $("relay").value = s.relay || "";
+  if ($("relay") && document.activeElement !== $("relay")) $("relay").value = s.relay || "";
+  const trustUi = s.trustEffective === "full"
+    ? "full"
+    : (s.dialog && s.dialog.kind === "full" ? "full" : s.trustSaved);
   document.querySelectorAll('input[name="trust"]').forEach((el) => {
-    el.checked = el.value === (s.trustEffective === "full" ? "full" : s.trustSaved);
+    el.checked = el.value === trustUi;
   });
-  $("relay-hint").textContent = s.relayHint || "";
-  $("settings-hint").textContent = s.settingsHint || "";
-  $("version").textContent = "版本 " + (s.version || "");
+  if ($("relay-hint")) $("relay-hint").textContent = s.relayHint || "";
+  const settingsHint = s.settingsHint || "";
+  const trustNeedPeer = settingsHint.indexOf("完全信任不会保存") >= 0;
+  if ($("trust-hint")) {
+    $("trust-hint").textContent = trustNeedPeer ? settingsHint : "";
+    show($("trust-hint"), trustNeedPeer);
+  }
+  if ($("settings-hint")) $("settings-hint").textContent = trustNeedPeer ? "" : settingsHint;
+  if ($("version")) $("version").textContent = "版本 " + (s.version || "");
+  const logged = !!(s.accountUser);
+  const signup = accountMode === "signup";
+  const mark = logged ? s.accountUser.slice(0, 1).toUpperCase() : "";
+  if ($("acct-chip-label")) $("acct-chip-label").textContent = logged ? "个人中心" : "登录";
+  if ($("acct-mark")) {
+    show($("acct-mark"), logged);
+    $("acct-mark").textContent = mark;
+    $("acct-mark").classList.toggle("on", !!s.accountOnline);
+    $("acct-mark").classList.toggle("wait", !!s.accountAllow && !s.accountOnline);
+  }
+  show($("acct-guest"), !logged);
+  show($("acct-in"), logged);
+  if ($("btn-mode-login")) $("btn-mode-login").classList.toggle("on", !signup);
+  if ($("btn-mode-signup")) $("btn-mode-signup").classList.toggle("on", signup);
+  if ($("acct-lead")) {
+    $("acct-lead").textContent = signup
+      ? "注册后直接登录。只能连你自己允许过的电脑。"
+      : "自己的电脑之间可以免密连接。发给亲友，仍然不用登录。";
+  }
+  show($("acct-pass2-field"), signup);
+  show($("acct-rule"), signup);
+  if ($("acct-pass")) $("acct-pass").autocomplete = signup ? "new-password" : "current-password";
+  if ($("acct-hello")) $("acct-hello").textContent = s.accountUser || "";
+  if ($("acct-avatar")) {
+    $("acct-avatar").textContent = mark;
+    $("acct-avatar").classList.toggle("on", !!s.accountOnline);
+    $("acct-avatar").classList.toggle("wait", !!s.accountAllow && !s.accountOnline);
+  }
+  if ($("acct-error")) $("acct-error").textContent = s.accountError || accountFormError || "";
+  if ($("btn-acct-submit")) $("btn-acct-submit").textContent = signup ? "注册并登录" : "登录";
+  if ($("device-name") && document.activeElement !== $("device-name")) $("device-name").value = s.deviceName || "";
+  if ($("btn-allow")) {
+    $("btn-allow").classList.toggle("on", !!s.accountAllow);
+    $("btn-allow").setAttribute("aria-pressed", s.accountAllow ? "true" : "false");
+    $("btn-allow").title = s.accountAllow ? "停止允许" : "允许连接";
+  }
+  if ($("allow-dot")) {
+    $("allow-dot").classList.toggle("gray", !s.accountOnline);
+    $("allow-dot").classList.toggle("wait", !!s.accountAllow && !s.accountOnline);
+  }
+  if ($("allow-state")) {
+    $("allow-state").textContent = s.accountOnline
+      ? "这个账号现在可以连上这台电脑。"
+      : s.accountAllow
+        ? "正在连接服务器…"
+        : "还没有允许。允许后，同一账号不用会话码就能连上，改动前仍会问你。";
+  }
+  if ($("acct-skip")) $("acct-skip").checked = !!s.accountSkip;
+  if ($("acct-autostart")) {
+    $("acct-autostart").checked = !!s.accountAutostart;
+    $("acct-autostart").disabled = !s.accountUnattended;
+  }
+  show($("btn-acct-unattended"), !s.accountUnattended);
+  show($("btn-acct-unattended-off"), !!s.accountUnattended);
+  if ($("btn-acct-unattended")) $("btn-acct-unattended").disabled = !s.accountAllow;
+  if ($("acct-unattended-state")) {
+    $("acct-unattended-state").textContent = !s.accountAllow
+      ? "先允许这台电脑。"
+      : s.accountUnattended
+        ? (s.accountSkip ? "已开启。人不在时，改动不再询问。" : "已开启。人不在时也能连上，改动仍会询问。")
+        : "未开启。";
+  }
+  const devices = $("devices");
+  if (devices) {
+    const rows = s.devices || [];
+    const remote = rows.filter((d) => !d.selfDevice);
+    const unattendedCount = remote.filter((d) => d.unattended).length;
+    if ($("device-count")) {
+      $("device-count").textContent = rows.length
+        ? (unattendedCount ? "(" + rows.length + " · 无人值守 " + unattendedCount + ")" : "(" + rows.length + ")")
+        : "";
+    }
+    devices.innerHTML = rows.length
+      ? rows.map((d) => {
+          const name = escapeHtml(d.name || "未命名");
+          const online = !!d.online;
+          const mine = !!d.selfDevice;
+          const tags = [];
+          if (d.unattended) tags.push("无人值守");
+          tags.push(online ? "在线" : "离线");
+          const title = name + (mine ? '<span class="pill">本机</span>' : "");
+          const action = !mine && online
+            ? '<button type="button" class="btn primary sm" data-dev="' + escapeHtml(d.id) + '">连接</button>'
+            : mine
+              ? '<span class="hint">当前这台</span>'
+              : '<button type="button" class="btn sm" disabled>连接</button>';
+          return '<div class="device' + (online ? "" : " off") + '"><span class="dot' + (online ? "" : " gray") + '"></span><span class="name">' + title + "<small>" + tags.join(" · ") + "</small></span>" + action + "</div>";
+        }).join("")
+      : '<p class="hint">还没有电脑加入。在这台或另一台电脑登录后，打开「允许我的账号连接这台电脑」。</p>';
+  }
+  if ($("host-lead")) {
+    $("host-lead").textContent = s.hostBanner || "对方已连接。请核对对方身份，不要随便信任陌生人。";
+  }
   renderDialog(s.dialog);
 }
 
@@ -637,10 +754,107 @@ function showErr(err) {
 }
 
 function bindUi() {
-  $("btn-settings").onclick = () => invoke("show_settings", { open: true }).then(render);
-  $("btn-back").onclick = () => invoke("show_settings", { open: false }).then(render);
+  $("btn-settings").onclick = () => {
+    accountOpen = false;
+    invoke("show_settings", { open: true }).then(render);
+  };
+  $("btn-back").onclick = () => {
+    if (accountOpen) {
+      accountOpen = false;
+      if (state) render(state);
+      return;
+    }
+    invoke("show_settings", { open: false }).then(render);
+  };
   $("btn-start").onclick = () => invoke("start_accept").then(render).catch(showErr);
-  $("btn-stop").onclick = () => invoke("stop_accept").then((s) => { revealed = ""; render(s); }).catch(showErr);
+  if ($("btn-account")) {
+    $("btn-account").onclick = () => {
+      if (state && (state.view === "host" || state.view === "helper")) return;
+      const openAccount = (next) => {
+        accountOpen = true;
+        render(next || state);
+      };
+      if (state && state.view === "settings") {
+        invoke("show_settings", { open: false }).then(openAccount).catch(showErr);
+      } else if (state) {
+        openAccount(state);
+      }
+    };
+  }
+  const setAccountMode = (mode) => {
+    accountMode = mode;
+    accountFormError = "";
+    if (state) render(state);
+  };
+  if ($("btn-mode-login")) $("btn-mode-login").onclick = () => setAccountMode("login");
+  if ($("btn-mode-signup")) $("btn-mode-signup").onclick = () => setAccountMode("signup");
+  if ($("acct-form")) {
+    $("acct-form").onsubmit = (event) => {
+      event.preventDefault();
+      const username = $("acct-user").value;
+      const password = $("acct-pass").value;
+      const cmd = accountMode === "signup" ? "account_signup" : "account_login";
+      const args = accountMode === "signup"
+        ? { username, password, confirm: $("acct-pass2").value }
+        : { username, password };
+      accountFormError = "";
+      $("banner").hidden = true;
+      if ($("acct-error")) $("acct-error").textContent = "";
+      invoke(cmd, args).then((next) => {
+        $("acct-pass").value = "";
+        $("acct-pass2").value = "";
+        accountFormError = "";
+        $("banner").hidden = true;
+        $("banner").textContent = "";
+        render(next);
+      }).catch((err) => {
+        accountFormError = (err && err.message) || String(err);
+        if ($("acct-error")) $("acct-error").textContent = accountFormError;
+      });
+    };
+  }
+  if ($("btn-acct-out")) {
+    $("btn-acct-out").onclick = () => invoke("account_logout").then(render).catch(showErr);
+  }
+  if ($("btn-allow")) {
+    $("btn-allow").onclick = () => invoke("ask_account_allow").then(render).catch(showErr);
+  }
+  if ($("btn-device-name")) {
+    $("btn-device-name").onclick = () => invoke("set_device_name", { name: $("device-name").value }).then(render).catch(showErr);
+  }
+  if ($("btn-remove-device")) {
+    $("btn-remove-device").onclick = () => invoke("ask_account_remove").then(render).catch(showErr);
+  }
+  if ($("btn-refresh-devices")) {
+    $("btn-refresh-devices").onclick = () => invoke("refresh_devices").then(render).catch(showErr);
+  }
+  if ($("devices")) {
+    $("devices").onclick = (event) => {
+      const button = event.target.closest("button[data-dev]");
+      if (!button) return;
+      accountOpen = false;
+      invoke("connect_account", { deviceId: button.getAttribute("data-dev") }).then(render).catch(showErr);
+    };
+  }
+  if ($("btn-acct-unattended")) {
+    $("btn-acct-unattended").onclick = () => invoke("ask_account_unattended", { skipWrite: !!($("acct-skip") && $("acct-skip").checked) }).then(render).catch(showErr);
+  }
+  if ($("btn-acct-unattended-off")) {
+    $("btn-acct-unattended-off").onclick = () => invoke("stop_account_unattended").then(render).catch(showErr);
+  }
+  if ($("acct-autostart")) {
+    $("acct-autostart").onchange = () => invoke("set_account_autostart", { on: $("acct-autostart").checked }).then(render).catch(showErr);
+  }
+  if ($("btn-long-on")) {
+    $("btn-long-on").onclick = () => invoke("ask_unattended", { skipWrite: !!($("long-skip") && $("long-skip").checked) }).then(render).catch(showErr);
+  }
+  if ($("btn-long-off")) {
+    $("btn-long-off").onclick = () => invoke("ask_revoke_unattended").then(render).catch(showErr);
+  }
+  if ($("btn-long-copy")) {
+    $("btn-long-copy").onclick = () => invoke("copy_long_credential").then(render).catch(showErr);
+  }
+  $("btn-stop").onclick = () => invoke("stop_accept").then(render).catch(showErr);
   $("btn-copy").onclick = async () => {
     try {
       const snap = await invoke("copy_credential");
@@ -658,18 +872,6 @@ function bindUi() {
         }
       }
     } catch (err) { showErr(err); }
-  };
-  $("btn-reveal").onclick = () => {
-    if (revealed) {
-      revealed = "";
-      render(state);
-      return;
-    }
-    invoke("reveal_password").then((pwd) => {
-      revealed = pwd;
-      $("session-pwd").textContent = pwd;
-      $("btn-reveal").textContent = "隐藏";
-    }).catch(showErr);
   };
   $("btn-paste").onclick = () => invoke("paste_clipboard").then((text) => {
     $("cred").value = text;
@@ -693,8 +895,8 @@ function bindUi() {
       show($("path-row"), pathTool);
       show($("propose"), selectedTool === "RunCommand");
       revealResult(false);
-      if (selectedTool === "ListProcesses") {
-        invoke("run_tool", { name: "ListProcesses", path: "", summary: "", command: "" }).then(render).catch(showErr);
+      if (selectedTool === "ListProcesses" || selectedTool === "ListServices") {
+        invoke("run_tool", { name: selectedTool, path: "", summary: "", command: "" }).then(render).catch(showErr);
       }
     };
   });

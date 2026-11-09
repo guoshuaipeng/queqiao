@@ -1,0 +1,24 @@
+﻿Time=2026-11-09T08:34:54.5377702+08:00 UICulture=en-US RequestedLanguage=chinesesimplified Title=安装 - 鹊桥远程协助 0.1.0 (net48) HWND=10360128 ForegroundHWND=10360128 Rect=654,280,612,471
+ControlType.Pane | 
+ControlType.Pane | 
+ControlType.Pane | 
+ControlType.Pane | 信息
+ControlType.Pane | 请在继续安装前阅读以下重要信息。
+ControlType.Pane | 
+ControlType.Pane | 
+ControlType.Pane | 准备好继续安装后，点击“下一步”。
+ControlType.Pane | 鹊桥远程协助（Windows 主路径 · net48）
+
+本安装包为「框架依赖」小包，不是自包含大包。
+
+运行前提：本机需要已安装 .NET Framework 4.8。
+若打开程序时提示缺少 .NET Framework，请先安装：
+https://dotnet.microsoft.com/zh-cn/download/dotnet-framework/net48
+
+说明：
+- 安装后主程序：RemoteAssist.Net48.exe（接受协助 / 去协助）
+- 同目录含 RemoteAssist.Mcp.exe（Cursor 等 MCP 宿主；配置须带完整安全凭证/指纹，禁止缺指纹自动明文）
+- 官网若仍链到旧的 RemoteAssist-Setup（net8 自包含），属兼容备用，亲友主路径请用 RemoteAssist-Net48-Setup
+
+ControlType.Pane | 下一步(N)
+ControlType.Pane | 取消

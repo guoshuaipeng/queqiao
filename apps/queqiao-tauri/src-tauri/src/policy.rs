@@ -13,6 +13,7 @@ pub enum Tool {
     ReadLogTail,
     ListDir,
     ReadFile,
+    ListServices,
     RunCommand,
 }
 
@@ -23,6 +24,7 @@ impl Tool {
             "ReadLogTail" => Some(Self::ReadLogTail),
             "ListDir" => Some(Self::ListDir),
             "ReadFile" => Some(Self::ReadFile),
+            "ListServices" => Some(Self::ListServices),
             "RunCommand" => Some(Self::RunCommand),
             _ => None,
         }
@@ -34,6 +36,7 @@ impl Tool {
             Self::ReadLogTail => "ReadLogTail",
             Self::ListDir => "ListDir",
             Self::ReadFile => "ReadFile",
+            Self::ListServices => "ListServices",
             Self::RunCommand => "RunCommand",
         }
     }

@@ -13,6 +13,28 @@ use crate::policy::{self, Trust};
 pub struct Settings {
     pub relay: String,
     pub trust: String,
+    #[serde(default)]
+    pub unattended_code: String,
+    #[serde(default)]
+    pub unattended_password: String,
+    #[serde(default)]
+    pub unattended_skip_write: bool,
+    #[serde(default)]
+    pub account_username: String,
+    #[serde(default)]
+    pub account_token: String,
+    #[serde(default)]
+    pub device_id: String,
+    #[serde(default)]
+    pub device_name: String,
+    #[serde(default)]
+    pub account_allow: bool,
+    #[serde(default)]
+    pub account_unattended: bool,
+    #[serde(default)]
+    pub account_skip_write: bool,
+    #[serde(default)]
+    pub account_autostart: bool,
 }
 
 impl Default for Settings {
@@ -20,6 +42,17 @@ impl Default for Settings {
         Self {
             relay: copy::DEFAULT_RELAY.to_string(),
             trust: "ask".to_string(),
+            unattended_code: String::new(),
+            unattended_password: String::new(),
+            unattended_skip_write: false,
+            account_username: String::new(),
+            account_token: String::new(),
+            device_id: String::new(),
+            device_name: String::new(),
+            account_allow: false,
+            account_unattended: false,
+            account_skip_write: false,
+            account_autostart: false,
         }
     }
 }
@@ -80,6 +113,17 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
     let clean = Settings {
         relay: settings.relay.trim().to_string(),
         trust: policy::trust_token(settings.saved_trust()).to_string(),
+        unattended_code: settings.unattended_code.trim().to_string(),
+        unattended_password: settings.unattended_password.trim().to_string(),
+        unattended_skip_write: settings.unattended_skip_write,
+        account_username: settings.account_username.trim().to_string(),
+        account_token: settings.account_token.trim().to_string(),
+        device_id: settings.device_id.trim().to_string(),
+        device_name: settings.device_name.trim().to_string(),
+        account_allow: settings.account_allow,
+        account_unattended: settings.account_unattended,
+        account_skip_write: settings.account_skip_write,
+        account_autostart: settings.account_autostart,
     };
     if parse_endpoint(&clean.relay).is_none() {
         return Err("服务器地址不对。请填写 主机:端口。".into());
@@ -89,6 +133,28 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
         return Err("没能保存设置。".into());
     }
     fs::write(path, body).map_err(|_| "没能保存设置。".to_string())
+}
+
+pub fn set_unattended(path: &Path, code: &str, password: &str, skip: bool) -> Result<(), String> {
+    let mut current = load(path);
+    current.unattended_code = code.to_string();
+    current.unattended_password = password.to_string();
+    current.unattended_skip_write = skip;
+    save(path, &current)
+}
+
+pub fn set_unattended_code(path: &Path, code: &str) -> Result<(), String> {
+    let mut current = load(path);
+    current.unattended_code = code.to_string();
+    save(path, &current)
+}
+
+pub fn clear_unattended(path: &Path) -> Result<(), String> {
+    let mut current = load(path);
+    current.unattended_code.clear();
+    current.unattended_password.clear();
+    current.unattended_skip_write = false;
+    save(path, &current)
 }
 
 #[cfg(test)]

@@ -59,7 +59,8 @@ async () => {
 
   render({ phase: "waiting", code: "AB1 2CD", passwordLen: 8, leftNote: "对方连上时会先弹窗问你，你点「允许协助」才算连上。" });
   check("wait-pages", exclusive().join() === "home", exclusive().join());
-  check("wait-code", shown("left-wait") && document.getElementById("session-code").textContent === "AB1 2CD", document.getElementById("session-code").textContent);
+  check("wait-no-code", shown("left-wait") && !document.getElementById("session-code") && !document.getElementById("session-pwd"), "code");
+  check("wait-copy-label", document.getElementById("btn-copy").textContent === "复制链接码", document.getElementById("btn-copy").textContent);
   check("wait-mask", !shown("mask") && !shown("host"), "extra");
   check("wait-copy", shown("btn-copy") && !shown("btn-start"), "buttons");
 

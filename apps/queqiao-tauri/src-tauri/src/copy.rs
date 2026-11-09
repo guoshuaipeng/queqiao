@@ -48,6 +48,12 @@ pub const FULL_NEEDS_PEER: &str =
 pub const HOST_CONNECTED: &str = "正在接受协助 · 已连接";
 pub const HELPER_CONNECTED: &str = "正在协助对方 · 已连接";
 pub const PEER_ENDED: &str = "对方已结束这次协助。";
+pub const DROPPED: &str = "连接已断开。";
+pub const DROPPED_NEXT: &str =
+    "若对方仍在接受协助，可再点「连接」；若对方已结束，请对方重新打开接受协助并复制码发给你。";
+pub const DROPPED_HOST: &str = "连接已断开。这组凭证还能用，对方可以再连接。";
+pub const TOO_MANY: &str = "这组凭证尝试次数过多，已经停用。请让对方重新开启后再发一次。";
+pub const LOCKED_OPEN: &str = "这组凭证尝试次数过多，已经停用。请重新开启接受协助。";
 pub const CANCELLED_CONNECT: &str = "已取消，没有连上。";
 pub const BUSY_OP: &str = "正在执行…";
 pub const EMPTY_AUDIT: &str = "对方还没有做任何操作";
@@ -66,7 +72,7 @@ pub const CONFIRM_SECS: u64 = 60;
 
 pub fn install_text() -> String {
     format!(
-        "请打开官网下载鹊桥：{SITE}\n装好后打开，点「开启接受协助」，再点「复制连接凭证」，把整段发给我。"
+        "请打开官网下载鹊桥：{SITE}\n装好后打开，点「开启接受协助」，再点「复制链接码」，把整段发给我。"
     )
 }
 

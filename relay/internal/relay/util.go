@@ -62,3 +62,23 @@ func asString(v any) string {
 		return fmt.Sprint(t)
 	}
 }
+
+func asBool(v any) bool {
+	switch t := v.(type) {
+	case bool:
+		return t
+	case float64:
+		return t != 0
+	case int:
+		return t != 0
+	case string:
+		switch strings.ToLower(strings.TrimSpace(t)) {
+		case "1", "true", "yes", "on":
+			return true
+		default:
+			return false
+		}
+	default:
+		return false
+	}
+}

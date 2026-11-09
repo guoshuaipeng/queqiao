@@ -3,7 +3,8 @@
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::sync::mpsc::{self, Receiver};
-use std::time::Duration;
+use std::thread;
+use std::time::{Duration, Instant};
 
 use serde_json::{json, Map, Value};
 
@@ -29,6 +30,7 @@ pub enum Ev {
     Result(String),
     Fail(String),
     PeerEnded,
+    Dropped,
     Busy(bool),
     ClearPropose,
 }
@@ -40,6 +42,15 @@ pub trait Hooks: Send + Sync {
     fn bind_io(&self, stream: TcpStream);
     fn peer_gone(&self) -> bool {
         false
+    }
+    fn auto_allow_pair(&self) -> bool {
+        false
+    }
+    fn auto_pair_note(&self) -> &'static str {
+        "已按无人值守允许这次协助"
+    }
+    fn can_take_session(&self) -> bool {
+        true
     }
     fn ask(&self, kind: AskKind) -> Decision;
     fn emit(&self, ev: Ev);
@@ -56,23 +67,49 @@ pub struct Job {
 pub enum HostEnd {
     Stop,
     Fail,
+    PakeFail,
+    Locked,
     Relisten { code: String },
 }
 
-pub fn connect_endpoint(host: &str, port: u16) -> Result<TcpStream, ()> {
+pub fn connect_endpoint(host: &str, port: u16, alive: &dyn Fn() -> bool) -> Result<TcpStream, ()> {
+    if !alive() {
+        return Err(());
+    }
     let addr = format!("{host}:{port}");
-    let mut last = std::io::Error::new(std::io::ErrorKind::NotFound, "no addr");
-    for sock in addr.to_socket_addrs().map_err(|_| ())? {
-        match TcpStream::connect_timeout(&sock, Duration::from_secs(8)) {
-            Ok(stream) => {
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        let found = (|| -> Option<TcpStream> {
+            let targets = addr.to_socket_addrs().ok()?;
+            for sock in targets {
+                if let Ok(stream) = TcpStream::connect_timeout(&sock, Duration::from_secs(8)) {
+                    return Some(stream);
+                }
+            }
+            None
+        })();
+        let _ = tx.send(found);
+    });
+    let start = Instant::now();
+    loop {
+        if !alive() {
+            return Err(());
+        }
+        match rx.try_recv() {
+            Ok(Some(stream)) => {
                 wire::prepare(&stream);
                 return Ok(stream);
             }
-            Err(err) => last = err,
+            Ok(None) => return Err(()),
+            Err(mpsc::TryRecvError::Empty) => {
+                if start.elapsed() > Duration::from_secs(12) {
+                    return Err(());
+                }
+                thread::sleep(Duration::from_millis(50));
+            }
+            Err(mpsc::TryRecvError::Disconnected) => return Err(()),
         }
     }
-    let _ = last;
-    Err(())
 }
 
 pub fn run_host_once(
@@ -82,6 +119,7 @@ pub fn run_host_once(
     preferred_code: &str,
     identity: &Identity,
     hooks: &dyn Hooks,
+    pake: bool,
 ) -> HostEnd {
     if let Ok(clone) = tcp.try_clone() {
         hooks.bind_io(clone);
@@ -90,11 +128,19 @@ pub fn run_host_once(
         return HostEnd::Stop;
     }
     let alive = || hooks.alive();
-    let host_req = json!({
-        "op": "guest_host",
-        "password": password,
-        "code": preferred_code,
-    });
+    let host_req = if pake {
+        json!({
+            "op": "guest_host",
+            "auth": "pake",
+            "code": preferred_code,
+        })
+    } else {
+        json!({
+            "op": "guest_host",
+            "password": password,
+            "code": preferred_code,
+        })
+    };
     if wire::write_json_line(&mut tcp, &host_req).is_err() {
         return end_io(hooks);
     }
@@ -112,7 +158,11 @@ pub fn run_host_once(
     if code.len() < 4 {
         return HostEnd::Fail;
     }
-    let payload = credential::build_relay_payload(relay, &code, password, &identity.fingerprint);
+    let payload = if pake {
+        credential::short_credential(&code, password)
+    } else {
+        credential::build_relay_payload(relay, &code, password, &identity.fingerprint)
+    };
     hooks.emit(Ev::Waiting {
         code: code.clone(),
         payload,
@@ -131,7 +181,18 @@ pub fn run_host_once(
         return HostEnd::Stop;
     }
     if paired.get("ok") != Some(&Value::Bool(true)) || paired.get("op").and_then(|v| v.as_str()) != Some("paired") {
+        let err = paired.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        if err.contains("too many") {
+            return HostEnd::Locked;
+        }
         return HostEnd::Relisten { code };
+    }
+    if pake && crate::pake::confirm_agent(&mut tcp, password, &code, &identity.fingerprint, &alive).is_err() {
+        return if hooks.alive() {
+            HostEnd::PakeFail
+        } else {
+            HostEnd::Stop
+        };
     }
     let config = match tlsutil::server_config(identity) {
         Ok(c) => c,
@@ -145,6 +206,10 @@ pub fn run_host_once(
     match session_after_tls(&mut tls, &code, hooks) {
         Loop::Relisten => HostEnd::Relisten { code },
         Loop::Stop => HostEnd::Stop,
+        Loop::Dropped => {
+            hooks.emit(Ev::Dropped);
+            HostEnd::Relisten { code }
+        }
         Loop::PeerEnded => {
             hooks.emit(Ev::PeerEnded);
             HostEnd::Stop
@@ -157,6 +222,7 @@ enum Loop {
     Relisten,
     Stop,
     PeerEnded,
+    Dropped,
     Fail,
 }
 
@@ -171,7 +237,7 @@ fn session_after_tls(tls: &mut dyn StreamRw, code: &str, hooks: &dyn Hooks) -> L
             Ok(f) => f,
             Err(_) => {
                 if session.is_some() {
-                    return if hooks.alive() { Loop::PeerEnded } else { Loop::Stop };
+                    return if hooks.alive() { Loop::Dropped } else { Loop::Stop };
                 }
                 return if hooks.alive() { Loop::Relisten } else { Loop::Stop };
             }
@@ -199,7 +265,7 @@ fn session_after_tls(tls: &mut dyn StreamRw, code: &str, hooks: &dyn Hooks) -> L
             }
             "tool" => {
                 if !handle_tool(tls, &frame, session.as_ref(), hooks) {
-                    return if hooks.alive() { Loop::PeerEnded } else { Loop::Stop };
+                    return if hooks.alive() { Loop::Dropped } else { Loop::Stop };
                 }
             }
             _ => {
@@ -241,9 +307,10 @@ fn handle_pair(tls: &mut dyn StreamRw, frame: &wire::Frame, code: &str, hooks: &
         });
         return PairOut::Reject;
     }
-    // ownerLink 一律不能跳过本机确认。
+    // ownerLink 一律不能跳过本机确认。长久码在开启时已经确认过。
     let _ = frame.payload.get("ownerLink");
-    let decision = hooks.ask(AskKind::Pair);
+    let auto = hooks.auto_allow_pair();
+    let decision = if auto { Decision::Allow } else { hooks.ask(AskKind::Pair) };
     if !hooks.alive() || matches!(decision, Decision::Cancelled) {
         return PairOut::Stop;
     }
@@ -284,7 +351,11 @@ fn handle_pair(tls: &mut dyn StreamRw, frame: &wire::Frame, code: &str, hooks: &
         return PairOut::Stop;
     }
     hooks.emit(Ev::Audit {
-        text: "已允许这次协助".into(),
+        text: if auto {
+            hooks.auto_pair_note().into()
+        } else {
+            "已允许这次协助".into()
+        },
         kind: "y".into(),
     });
     PairOut::Session(Session {
@@ -352,6 +423,7 @@ fn handle_tool(tls: &mut dyn StreamRw, frame: &wire::Frame, session: Option<&Ses
     }
     let label = match tool {
         Tool::ListProcesses => "查看正在运行的程序".to_string(),
+        Tool::ListServices => "查看服务状态".to_string(),
         Tool::ListDir => format!("查看文件夹 {}", args.get("path").and_then(|v| v.as_str()).unwrap_or("")),
         Tool::ReadLogTail => format!("查看日志 {}", args.get("path").and_then(|v| v.as_str()).unwrap_or("")),
         Tool::ReadFile => format!("查看文件 {}", args.get("path").and_then(|v| v.as_str()).unwrap_or("")),
@@ -398,14 +470,25 @@ fn handle_tool(tls: &mut dyn StreamRw, frame: &wire::Frame, session: Option<&Ses
 
 pub fn run_helper(via: Via, jobs: &Receiver<Job>, hooks: &dyn Hooks) {
     hooks.emit(Ev::Status(copy::CONNECTING.into()));
-    let (host, port, code, fp, relay_step) = match &via {
-        Via::Relay(t) => (t.host.clone(), t.port, t.code.clone(), t.fingerprint.clone(), true),
-        Via::Lan { host, port, code, fingerprint } => (host.clone(), *port, code.clone(), fingerprint.clone(), false),
+    let (host, port, code, mut fp, relay_step, pake) = match &via {
+        Via::Relay(t) => (
+            t.host.clone(),
+            t.port,
+            t.code.clone(),
+            t.fingerprint.clone(),
+            true,
+            t.pake,
+        ),
+        Via::Lan { host, port, code, fingerprint } => {
+            (host.clone(), *port, code.clone(), fingerprint.clone(), false, false)
+        }
     };
-    let mut tcp = match connect_endpoint(&host, port) {
+    let mut tcp = match connect_endpoint(&host, port, &|| hooks.alive()) {
         Ok(s) => s,
         Err(()) => {
-            hooks.emit(Ev::Fail(copy::CONNECT_FAIL.into()));
+            if hooks.alive() {
+                hooks.emit(Ev::Fail(copy::CONNECT_FAIL.into()));
+            }
             return;
         }
     };
@@ -417,7 +500,11 @@ pub fn run_helper(via: Via, jobs: &Receiver<Job>, hooks: &dyn Hooks) {
             Via::Relay(t) => t.password.clone(),
             Via::Lan { .. } => String::new(),
         };
-        let req = json!({"op": "guest_join", "code": code, "password": password});
+        let req = if pake {
+            json!({"op": "guest_join", "auth": "pake", "code": code})
+        } else {
+            json!({"op": "guest_join", "code": code, "password": password})
+        };
         if wire::write_json_line(&mut tcp, &req).is_err() {
             fail_or_cancel(hooks);
             return;
@@ -435,13 +522,31 @@ pub fn run_helper(via: Via, jobs: &Receiver<Job>, hooks: &dyn Hooks) {
         }
         if reply.get("ok") != Some(&Value::Bool(true)) || reply.get("op").and_then(|v| v.as_str()) != Some("paired") {
             let err = reply.get("error").and_then(|v| v.as_str()).unwrap_or("");
-            let msg = if join_means_not_waiting(err) {
+            let msg = if err.contains("too many") {
+                copy::TOO_MANY
+            } else if join_means_not_waiting(err) {
                 copy::NOT_WAITING
             } else {
                 copy::CONNECT_FAIL
             };
             hooks.emit(Ev::Fail(msg.into()));
             return;
+        }
+    }
+    if pake {
+        let password = match &via {
+            Via::Relay(t) => t.password.clone(),
+            Via::Lan { .. } => String::new(),
+        };
+        let alive = || hooks.alive();
+        match crate::pake::confirm_helper(&mut tcp, &password, &code, &alive) {
+            Ok(got) => fp = got,
+            Err(_) => {
+                if hooks.alive() {
+                    hooks.emit(Ev::Fail(copy::CONNECT_FAIL.into()));
+                }
+                return;
+            }
         }
     }
     hooks.emit(Ev::Status(copy::WAIT_ALLOW.into()));
@@ -513,7 +618,7 @@ fn helper_jobs(tls: &mut dyn StreamRw, token: &str, jobs: &Receiver<Job>, hooks:
             Err(mpsc::RecvTimeoutError::Timeout) => {
                 if hooks.peer_gone() {
                     if hooks.alive() {
-                        hooks.emit(Ev::PeerEnded);
+                        hooks.emit(Ev::Dropped);
                     }
                     return;
                 }
@@ -545,7 +650,7 @@ fn helper_jobs(tls: &mut dyn StreamRw, token: &str, jobs: &Receiver<Job>, hooks:
         {
             hooks.emit(Ev::Busy(false));
             if hooks.alive() && job.gen == hooks.generation() {
-                hooks.emit(Ev::PeerEnded);
+                hooks.emit(Ev::Dropped);
             }
             return;
         }
@@ -554,7 +659,7 @@ fn helper_jobs(tls: &mut dyn StreamRw, token: &str, jobs: &Receiver<Job>, hooks:
             Err(_) => {
                 hooks.emit(Ev::Busy(false));
                 if hooks.alive() && job.gen == hooks.generation() {
-                    hooks.emit(Ev::PeerEnded);
+                    hooks.emit(Ev::Dropped);
                 }
                 return;
             }
@@ -616,6 +721,362 @@ fn fail_or_cancel(hooks: &dyn Hooks) {
 trait StreamRw: Read + Write {}
 impl<T: Read + Write> StreamRw for T {}
 
+pub struct ListedDevice {
+    pub id: String,
+    pub name: String,
+    pub online: bool,
+    pub unattended: bool,
+    pub fp: String,
+}
+
+fn relay_tcp(relay: &str, alive: &dyn Fn() -> bool) -> Result<TcpStream, ()> {
+    let Some((host, port)) = credential::parse_endpoint(relay) else {
+        return Err(());
+    };
+    connect_endpoint(&host, port, alive)
+}
+
+fn exchange(tcp: &mut TcpStream, req: Value, alive: &dyn Fn() -> bool) -> Result<Value, ()> {
+    if wire::write_json_line(tcp, &req).is_err() {
+        return Err(());
+    }
+    wire::read_json_line(tcp, alive).map_err(|_| ())
+}
+
+fn net_err() -> String {
+    "没能连上，请检查网络后重试。".into()
+}
+
+pub fn account_signup(relay: &str, username: &str, password: &str) -> Result<String, String> {
+    let alive = || true;
+    let mut tcp = relay_tcp(relay, &alive).map_err(|_| net_err())?;
+    let created = exchange(
+        &mut tcp,
+        json!({"op": "signup", "username": username, "password": password}),
+        &alive,
+    )
+    .map_err(|_| net_err())?;
+    if created.get("ok") != Some(&Value::Bool(true)) {
+        let err = created.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        return Err(crate::account::explain(err));
+    }
+    let logged = exchange(
+        &mut tcp,
+        json!({"op": "login", "username": username, "password": password}),
+        &alive,
+    )
+    .map_err(|_| net_err())?;
+    token_of(logged)
+}
+
+pub fn account_login(relay: &str, username: &str, password: &str) -> Result<String, String> {
+    let alive = || true;
+    let mut tcp = relay_tcp(relay, &alive).map_err(|_| net_err())?;
+    let logged = exchange(
+        &mut tcp,
+        json!({"op": "login", "username": username, "password": password}),
+        &alive,
+    )
+    .map_err(|_| net_err())?;
+    token_of(logged)
+}
+
+fn token_of(reply: Value) -> Result<String, String> {
+    if reply.get("ok") != Some(&Value::Bool(true)) {
+        let err = reply.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        return Err(crate::account::explain(err));
+    }
+    reply
+        .get("token")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .ok_or_else(|| "没能登录。".to_string())
+}
+
+pub fn account_logout(relay: &str, token: &str) -> Result<(), String> {
+    let alive = || true;
+    let mut tcp = relay_tcp(relay, &alive).map_err(|_| net_err())?;
+    let authed = exchange(&mut tcp, json!({"op": "auth_token", "token": token}), &alive).map_err(|_| net_err())?;
+    if authed.get("ok") != Some(&Value::Bool(true)) {
+        return Ok(());
+    }
+    let _ = exchange(&mut tcp, json!({"op": "logout", "token": token}), &alive);
+    Ok(())
+}
+
+pub fn account_list(relay: &str, token: &str) -> Result<Vec<ListedDevice>, String> {
+    let alive = || true;
+    let mut tcp = relay_tcp(relay, &alive).map_err(|_| net_err())?;
+    let authed = exchange(&mut tcp, json!({"op": "auth_token", "token": token}), &alive).map_err(|_| net_err())?;
+    if authed.get("ok") != Some(&Value::Bool(true)) {
+        let err = authed.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        return Err(crate::account::explain(err));
+    }
+    let listed = exchange(&mut tcp, json!({"op": "list_devices"}), &alive).map_err(|_| net_err())?;
+    if listed.get("ok") != Some(&Value::Bool(true)) {
+        let err = listed.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        return Err(crate::account::explain(err));
+    }
+    let mut out = Vec::new();
+    let Some(rows) = listed.get("devices").and_then(|v| v.as_array()) else {
+        return Ok(out);
+    };
+    for row in rows {
+        let Some(id) = row.get("device_id").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) else {
+            continue;
+        };
+        out.push(ListedDevice {
+            id: id.to_string(),
+            name: row
+                .get("display_name")
+                .and_then(|v| v.as_str())
+                .filter(|s| !s.is_empty())
+                .unwrap_or(id)
+                .to_string(),
+            online: row.get("online") == Some(&Value::Bool(true)),
+            unattended: row.get("unattended") == Some(&Value::Bool(true)),
+            fp: row.get("fp").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+        });
+    }
+    Ok(out)
+}
+
+pub fn account_set_unattended(relay: &str, token: &str, device_id: &str, unattended: bool) -> Result<(), String> {
+    let alive = || true;
+    let mut tcp = relay_tcp(relay, &alive).map_err(|_| net_err())?;
+    let authed = exchange(&mut tcp, json!({"op": "auth_token", "token": token}), &alive).map_err(|_| net_err())?;
+    if authed.get("ok") != Some(&Value::Bool(true)) {
+        let err = authed.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        return Err(crate::account::explain(err));
+    }
+    let reply = exchange(
+        &mut tcp,
+        json!({"op": "set_device_unattended", "device_id": device_id, "unattended": unattended}),
+        &alive,
+    )
+    .map_err(|_| net_err())?;
+    if reply.get("ok") != Some(&Value::Bool(true)) {
+        let err = reply.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        return Err(crate::account::explain(err));
+    }
+    Ok(())
+}
+
+pub fn account_delete(relay: &str, token: &str, device_id: &str) -> Result<(), String> {
+    let alive = || true;
+    let mut tcp = relay_tcp(relay, &alive).map_err(|_| net_err())?;
+    let authed = exchange(&mut tcp, json!({"op": "auth_token", "token": token}), &alive).map_err(|_| net_err())?;
+    if authed.get("ok") != Some(&Value::Bool(true)) {
+        let err = authed.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        return Err(crate::account::explain(err));
+    }
+    let reply = exchange(
+        &mut tcp,
+        json!({"op": "delete_device", "device_id": device_id}),
+        &alive,
+    )
+    .map_err(|_| net_err())?;
+    if reply.get("ok") != Some(&Value::Bool(true)) {
+        let err = reply.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        return Err(crate::account::explain(err));
+    }
+    Ok(())
+}
+
+pub fn run_account_host(
+    mut tcp: TcpStream,
+    identity: &Identity,
+    device_id: &str,
+    display_name: &str,
+    token: &str,
+    unattended: bool,
+    hooks: &dyn Hooks,
+) -> HostEnd {
+    if let Ok(clone) = tcp.try_clone() {
+        hooks.bind_io(clone);
+    }
+    if !hooks.alive() {
+        return HostEnd::Stop;
+    }
+    let alive = || hooks.alive();
+    let authed = match exchange(&mut tcp, json!({"op": "auth_token", "token": token}), &alive) {
+        Ok(v) => v,
+        Err(()) => return end_io(hooks),
+    };
+    if authed.get("ok") != Some(&Value::Bool(true)) {
+        return if hooks.alive() { HostEnd::Fail } else { HostEnd::Stop };
+    }
+    let online = match exchange(
+        &mut tcp,
+        json!({
+            "op": "device_online",
+            "device_id": device_id,
+            "display_name": display_name,
+            "fp": identity.fingerprint,
+            "unattended": unattended,
+        }),
+        &alive,
+    ) {
+        Ok(v) => v,
+        Err(()) => return end_io(hooks),
+    };
+    if online.get("ok") != Some(&Value::Bool(true)) {
+        return if hooks.alive() { HostEnd::Fail } else { HostEnd::Stop };
+    }
+    hooks.emit(Ev::Waiting {
+        code: String::new(),
+        payload: String::new(),
+    });
+    let paired = match wire::read_json_line(&mut tcp, &alive) {
+        Ok(v) => v,
+        Err(_) => {
+            return if hooks.alive() {
+                HostEnd::Relisten { code: device_id.to_string() }
+            } else {
+                HostEnd::Stop
+            };
+        }
+    };
+    if !hooks.alive() {
+        return HostEnd::Stop;
+    }
+    if paired.get("ok") != Some(&Value::Bool(true)) || paired.get("op").and_then(|v| v.as_str()) != Some("paired") {
+        return HostEnd::Relisten { code: device_id.to_string() };
+    }
+    if !hooks.can_take_session() || !hooks.auto_allow_pair() {
+        return HostEnd::Relisten { code: device_id.to_string() };
+    }
+    let config = match tlsutil::server_config(identity) {
+        Ok(c) => c,
+        Err(_) => return HostEnd::Fail,
+    };
+    let conn = match rustls::ServerConnection::new(config) {
+        Ok(c) => c,
+        Err(_) => return HostEnd::Fail,
+    };
+    let mut tls = rustls::StreamOwned::new(conn, tcp);
+    let code = credential::normalize_code(device_id);
+    match session_after_tls(&mut tls, &code, hooks) {
+        Loop::Relisten | Loop::Dropped => {
+            hooks.emit(Ev::Dropped);
+            HostEnd::Relisten { code }
+        }
+        Loop::Stop => HostEnd::Stop,
+        Loop::PeerEnded => {
+            hooks.emit(Ev::PeerEnded);
+            HostEnd::Stop
+        }
+        Loop::Fail => HostEnd::Fail,
+    }
+}
+
+pub fn run_account_helper(relay: &str, token: &str, device_id: &str, fp: &str, jobs: &Receiver<Job>, hooks: &dyn Hooks) {
+    hooks.emit(Ev::Status(copy::CONNECTING.into()));
+    let alive = || hooks.alive();
+    let mut tcp = match relay_tcp(relay, &alive) {
+        Ok(stream) => stream,
+        Err(()) => {
+            if hooks.alive() {
+                hooks.emit(Ev::Fail(copy::CONNECT_FAIL.into()));
+            }
+            return;
+        }
+    };
+    if let Ok(clone) = tcp.try_clone() {
+        hooks.bind_io(clone);
+    }
+    let authed = match exchange(&mut tcp, json!({"op": "auth_token", "token": token}), &alive) {
+        Ok(v) => v,
+        Err(()) => {
+            fail_or_cancel(hooks);
+            return;
+        }
+    };
+    if !hooks.alive() {
+        return;
+    }
+    if authed.get("ok") != Some(&Value::Bool(true)) {
+        let err = authed.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        hooks.emit(Ev::Fail(crate::account::explain(err)));
+        return;
+    }
+    let paired = match exchange(&mut tcp, json!({"op": "connect_device", "device_id": device_id}), &alive) {
+        Ok(v) => v,
+        Err(()) => {
+            fail_or_cancel(hooks);
+            return;
+        }
+    };
+    if !hooks.alive() {
+        return;
+    }
+    if paired.get("ok") != Some(&Value::Bool(true)) || paired.get("op").and_then(|v| v.as_str()) != Some("paired") {
+        let err = paired.get("error").and_then(|v| v.as_str()).unwrap_or("");
+        hooks.emit(Ev::Fail(crate::account::explain(err)));
+        return;
+    }
+    let pin = paired
+        .get("fp")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or(fp);
+    if !credential::is_sha256_hex(&credential::normalize_fp(pin)) {
+        hooks.emit(Ev::Fail("这台电脑还没准备好加密连接。".into()));
+        return;
+    }
+    hooks.emit(Ev::Status("正在连接你的电脑…".into()));
+    let config = match tlsutil::client_config(pin) {
+        Ok(c) => c,
+        Err(_) => {
+            hooks.emit(Ev::Fail(copy::INCOMPLETE.into()));
+            return;
+        }
+    };
+    let conn = match rustls::ClientConnection::new(config, tlsutil::server_name()) {
+        Ok(c) => c,
+        Err(_) => {
+            hooks.emit(Ev::Fail(copy::CONNECT_FAIL.into()));
+            return;
+        }
+    };
+    let mut tls = rustls::StreamOwned::new(conn, tcp);
+    let id = wire::new_id();
+    let pair_body = json!({
+        "sessionCode": device_id,
+        "requestedPermission": "Assist",
+        "clientName": "鹊桥",
+        "ownerLink": false,
+    });
+    if wire::write_frame(&mut tls, "pair", &id, None, pair_body).is_err() {
+        fail_or_cancel(hooks);
+        return;
+    }
+    let frame = match wire::read_frame(&mut tls, &alive) {
+        Ok(f) => f,
+        Err(_) => {
+            fail_or_cancel(hooks);
+            return;
+        }
+    };
+    if !hooks.alive() {
+        return;
+    }
+    let ok = frame.kind.eq_ignore_ascii_case("pair_result")
+        && frame.payload.get("ok") == Some(&Value::Bool(true))
+        && frame.payload.get("token").and_then(|v| v.as_str()).is_some();
+    if !ok {
+        hooks.emit(Ev::Fail(copy::CONNECT_FAIL.into()));
+        return;
+    }
+    let session_token = frame.payload.get("token").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    if !hooks.alive() {
+        return;
+    }
+    hooks.emit(Ev::HelperSession);
+    helper_jobs(&mut tls, &session_token, jobs, hooks);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -631,6 +1092,7 @@ mod tests {
         trust: Mutex<Trust>,
         decisions: Mutex<Vec<Decision>>,
         events: Mutex<Vec<String>>,
+        payload: Mutex<String>,
         connected: std::sync::atomic::AtomicBool,
         asks: std::sync::atomic::AtomicUsize,
     }
@@ -643,6 +1105,7 @@ mod tests {
                 trust: Mutex::new(Trust::Ask),
                 decisions: Mutex::new(decisions),
                 events: Mutex::new(Vec::new()),
+                payload: Mutex::new(String::new()),
                 connected: std::sync::atomic::AtomicBool::new(false),
                 asks: std::sync::atomic::AtomicUsize::new(0),
             }
@@ -666,7 +1129,10 @@ mod tests {
         }
         fn emit(&self, ev: Ev) {
             let label = match ev {
-                Ev::Waiting { .. } => "waiting".into(),
+                Ev::Waiting { payload, .. } => {
+                    *self.payload.lock().unwrap() = payload;
+                    "waiting".into()
+                }
                 Ev::HostSession => {
                     self.connected.store(true, std::sync::atomic::Ordering::SeqCst);
                     "host-session".into()
@@ -678,6 +1144,7 @@ mod tests {
                 Ev::Fail(s) => format!("fail:{s}"),
                 Ev::Result(s) => format!("result:{s}"),
                 Ev::PeerEnded => "peer-ended".into(),
+                Ev::Dropped => "dropped".into(),
                 Ev::Status(s) => format!("status:{s}"),
                 Ev::Audit { text, .. } => format!("audit:{text}"),
                 Ev::Busy(_) => "busy".into(),
@@ -756,8 +1223,8 @@ mod tests {
         let relay_h = relay.clone();
         let pwd = password.clone();
         let host_thread = thread::spawn(move || {
-            let tcp = connect_endpoint("127.0.0.1", port).unwrap();
-            run_host_once(tcp, &relay_h, &pwd, "AB12CD", &identity_host, host_hooks2.as_ref())
+            let tcp = connect_endpoint("127.0.0.1", port, &|| true).unwrap();
+            run_host_once(tcp, &relay_h, &pwd, "AB12CD", &identity_host, host_hooks2.as_ref(), false)
         });
         let start = std::time::Instant::now();
         while !host_hooks.events.lock().unwrap().iter().any(|e| e == "waiting") {
@@ -775,6 +1242,7 @@ mod tests {
                 code: "AB12CD".into(),
                 password,
                 fingerprint: fp,
+                pake: false,
             });
             run_helper(via, &rx, helper_hooks2.as_ref());
         });
@@ -827,8 +1295,8 @@ mod tests {
         assert_ne!(bad, identity.fingerprint);
         let host_hooks2 = host_hooks.clone();
         let host_thread = thread::spawn(move || {
-            let tcp = connect_endpoint("127.0.0.1", port).unwrap();
-            run_host_once(tcp, &format!("127.0.0.1:{port}"), "12345678", "AB12CD", &identity, host_hooks2.as_ref())
+            let tcp = connect_endpoint("127.0.0.1", port, &|| true).unwrap();
+            run_host_once(tcp, &format!("127.0.0.1:{port}"), "12345678", "AB12CD", &identity, host_hooks2.as_ref(), false)
         });
         thread::sleep(Duration::from_millis(150));
         let helper_hooks2 = helper_hooks.clone();
@@ -839,6 +1307,7 @@ mod tests {
                 code: "AB12CD".into(),
                 password: "12345678".into(),
                 fingerprint: bad,
+                pake: false,
             });
             let (_tx, rx) = mpsc::channel();
             run_helper(via, &rx, helper_hooks2.as_ref());
@@ -848,6 +1317,148 @@ mod tests {
         assert!(helper_hooks.events.lock().unwrap().iter().any(|e| e.starts_with("fail:")));
         host_hooks.alive.store(false, std::sync::atomic::Ordering::SeqCst);
         let _ = host_thread.join();
+    }
+
+    fn start_real_relay() -> Option<(std::process::Child, u16)> {
+        let Ok(bin) = std::env::var("QUEQIAO_RELAY_BIN") else {
+            return None;
+        };
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        drop(listener);
+        let db = std::env::temp_dir().join(format!("queqiao-relay-{}-{port}.db", std::process::id()));
+        let _ = std::fs::remove_file(&db);
+        let child = std::process::Command::new(bin)
+            .env("RELAY_ADDR", format!("127.0.0.1:{port}"))
+            .env("RELAY_DATA", &db)
+            .env_remove("RELAY_AUDIT_ADDR")
+            .env_remove("RELAY_AUDIT_TOKEN")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .expect("start relay");
+        let start = std::time::Instant::now();
+        loop {
+            if TcpStream::connect_timeout(
+                &format!("127.0.0.1:{port}").parse().unwrap(),
+                Duration::from_millis(200),
+            )
+            .is_ok()
+            {
+                break;
+            }
+            if start.elapsed() > Duration::from_secs(5) {
+                panic!("relay did not listen");
+            }
+            thread::sleep(Duration::from_millis(50));
+        }
+        Some((child, port))
+    }
+
+    #[test]
+    fn pake_short_code_survives_helper_drop() {
+        let Some((mut relay, port)) = start_real_relay() else {
+            return;
+        };
+        let host_hooks = Arc::new(TestHooks::new(vec![Decision::Allow]));
+        let helper_hooks = Arc::new(TestHooks::new(vec![]));
+        let identity = tlsutil::create_identity().unwrap();
+        let host_hooks2 = host_hooks.clone();
+        let host_thread = thread::spawn(move || {
+            let tcp = connect_endpoint("127.0.0.1", port, &|| true).unwrap();
+            run_host_once(tcp, &format!("127.0.0.1:{port}"), "12345678", "", &identity, host_hooks2.as_ref(), true)
+        });
+        let start = std::time::Instant::now();
+        while host_hooks.payload.lock().unwrap().is_empty() {
+            if start.elapsed() > Duration::from_secs(8) {
+                panic!("host did not publish a credential");
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        let payload = host_hooks.payload.lock().unwrap().clone();
+        assert!(!payload.contains("remoteassist:pair"), "{payload}");
+        let credential::CredClass::Ok(Via::Relay(mut target)) = credential::classify(&payload) else {
+            panic!("short credential not accepted: {payload}");
+        };
+        assert!(target.pake);
+        assert!(target.fingerprint.is_empty());
+        assert_eq!(target.password, "12345678");
+        target.host = "127.0.0.1".into();
+        target.port = port;
+        let code = target.code.clone();
+        let (tx, rx) = mpsc::channel();
+        let helper_hooks2 = helper_hooks.clone();
+        let helper_thread = thread::spawn(move || {
+            run_helper(Via::Relay(target), &rx, helper_hooks2.as_ref());
+        });
+        let start = std::time::Instant::now();
+        while !helper_hooks.connected.load(std::sync::atomic::Ordering::SeqCst) {
+            if start.elapsed() > Duration::from_secs(8) {
+                panic!("helper did not enter session: {:?}", helper_hooks.events.lock().unwrap());
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        assert!(host_hooks.events.lock().unwrap().iter().any(|e| e == "host-session"));
+        drop(tx);
+        helper_hooks.alive.store(false, std::sync::atomic::Ordering::SeqCst);
+        let _ = helper_thread.join();
+        let start = std::time::Instant::now();
+        while !host_hooks.events.lock().unwrap().iter().any(|e| e == "dropped") {
+            if start.elapsed() > Duration::from_secs(8) {
+                panic!("host did not see the drop: {:?}", host_hooks.events.lock().unwrap());
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        match host_thread.join().unwrap() {
+            HostEnd::Relisten { code: next } => assert_eq!(next, code),
+            other => panic!("expected relisten, got {other:?}"),
+        }
+        let _ = relay.kill();
+        let _ = relay.wait();
+    }
+
+    #[test]
+    fn pake_wrong_password_does_not_enter_session() {
+        let Some((mut relay, port)) = start_real_relay() else {
+            return;
+        };
+        let host_hooks = Arc::new(TestHooks::new(vec![Decision::Allow]));
+        let helper_hooks = Arc::new(TestHooks::new(vec![]));
+        let identity = tlsutil::create_identity().unwrap();
+        let host_hooks2 = host_hooks.clone();
+        let host_thread = thread::spawn(move || {
+            let tcp = connect_endpoint("127.0.0.1", port, &|| true).unwrap();
+            run_host_once(tcp, &format!("127.0.0.1:{port}"), "12345678", "AB12CD", &identity, host_hooks2.as_ref(), true)
+        });
+        let start = std::time::Instant::now();
+        while host_hooks.payload.lock().unwrap().is_empty() {
+            if start.elapsed() > Duration::from_secs(8) {
+                panic!("host did not publish a credential");
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        let helper_hooks2 = helper_hooks.clone();
+        let helper_thread = thread::spawn(move || {
+            let via = Via::Relay(credential::RelayTarget {
+                host: "127.0.0.1".into(),
+                port,
+                code: "AB12CD".into(),
+                password: "00000000".into(),
+                fingerprint: String::new(),
+                pake: true,
+            });
+            let (_tx, rx) = mpsc::channel();
+            run_helper(via, &rx, helper_hooks2.as_ref());
+        });
+        let _ = helper_thread.join();
+        assert!(!helper_hooks.connected.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(helper_hooks.events.lock().unwrap().iter().any(|e| e.starts_with("fail:")));
+        match host_thread.join().unwrap() {
+            HostEnd::PakeFail => {}
+            other => panic!("expected pake failure, got {other:?}"),
+        }
+        let _ = relay.kill();
+        let _ = relay.wait();
     }
 
     #[test]
