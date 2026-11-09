@@ -1,5 +1,0 @@
-fix(R043/net48): 禁止控制台/审计/错误路径输出完整连接凭证
-
-移除 AgentHost 横幅与会话刷新中的 QrPayload/会话码/指纹明文；
-AuditLog 与异常 UI 统一 RedactSecureMaterial；密码/会话码生成改拒绝采样消模偏。
-保留界面「复制连接凭证」/二维码/口述短码展示。

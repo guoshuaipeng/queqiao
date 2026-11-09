@@ -93,7 +93,7 @@
 
 | 角色 | 本轮 |
 |------|------|
-| **客户端** | **唯一执笔** `src-net48/RemoteAssist.App` 及必要 Agent/Helper 视图适配 / 状态绑定 |
+| **客户端** | **唯一执笔** `apps/queqiao-tauri`（.NET 客户端已删除） |
 | 服务端 | **不改** relay / site |
 | 安装器 | **不混**本轮 |
 | 迭代 | 协调；**独占** `iteration-status`（本收口文不改该文件） |

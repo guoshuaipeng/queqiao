@@ -1,4 +1,0 @@
-feat(R044/net48): 亲友界面逐字连接凭证文案（禁技术词）
-
-对齐 round-044 / quality-connection-credential 七句+引导/短码旁注；
-不改凭证格式、信任模型与安全阻断条件；Avalonia/CLI 未动；运行未验收。
