@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+  
+  :root {
+    --primary: #2563eb;
+    --surface: #ffffff;
+    --bg: #f8fafc;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+  }
+
+  body {
+    font-family: 'Noto Sans SC', "Microsoft YaHei UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app-window {
+    width: 840px;
+    height: 512px; /* 32px titlebar + 480px client */
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0,0,0,0.05);
+  }
+
+  .title-bar {
+    height: 32px;
+    background: #f1f5f9;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 12px;
+    color: var(--muted);
+    user-select: none;
+  }
+
+  .client-area {
+    height: 480px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logo-gradient {
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  }
+
+  .zone-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1.5px solid var(--line);
+  }
+
+  .zone-card:focus-within, .zone-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+  }
+
+  .step-num {
+    width: 24px;
+    height: 24px;
+    background: #eff6ff;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* Custom focus for accessibility */
+  .btn-primary:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+  <div class="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+    <!-- Windows-like Client Window -->
+    <div class="app-window flex flex-col">
+      
+      <!-- Title Bar -->
+      <div class="title-bar">
+        <span class="flex items-center gap-2">
+          <iconify-icon icon="lucide:bridge" class="text-blue-600"></iconify-icon>
+          鹊桥
+        </span>
+        <div class="ml-auto flex gap-4 text-gray-400">
+          <iconify-icon icon="lucide:minus" class="cursor-pointer hover:text-gray-600"></iconify-icon>
+          <iconify-icon icon="lucide:square" class="cursor-pointer hover:text-gray-600"></iconify-icon>
+          <iconify-icon icon="lucide:x" class="cursor-pointer hover:text-red-500"></iconify-icon>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="client-area">
+        
+        <!-- Header Section -->
+        <header class="px-8 pt-6 pb-2 flex justify-between items-center">
+          <div>
+            <div class="flex items-center gap-3">
+              <div class="logo-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-sm">
+                <iconify-icon icon="lucide:cable" class="text-white text-xl"></iconify-icon>
+              </div>
+              <h1 class="text-2xl font-bold tracking-tight text-slate-900">鹊桥</h1>
+            </div>
+            <p class="text-slate-500 text-sm mt-1">亲友之间，发凭证或粘贴连接，安全远程协助。</p>
+          </div>
+          <button id="nav-settings" class="flex items-center gap-1.5 px-3 py-1.5 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors text-sm font-medium">
+            <iconify-icon icon="lucide:settings" class="text-lg"></iconify-icon>
+            设置
+          </button>
+        </header>
+
+        <!-- Action Zones -->
+        <main class="flex-1 px-8 py-6 grid grid-cols-2 gap-6">
+          
+          <!-- Left Zone: Get Help -->
+          <div class="zone-card bg-white rounded-xl p-6 flex flex-col">
+            <div class="mb-4">
+              <h2 class="text-xl font-bold text-slate-900 mb-2">请人帮我</h2>
+              <p class="text-slate-500 text-[15px] leading-relaxed">让你信任的人帮你查电脑。对方要改动时会先询问你的许可。</p>
+            </div>
+
+            <div class="space-y-4 mb-6">
+              <div class="flex items-start gap-3">
+                <span class="step-num">1</span>
+                <span class="text-slate-700 text-sm leading-6">点「开启接受协助」生成凭证</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="step-num">2</span>
+                <span class="text-slate-700 text-sm leading-6">复制连接凭证，发给帮你的亲友</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="step-num">3</span>
+                <span class="text-slate-700 text-sm leading-6">对方连上时，点击屏幕上的「允许协助」</span>
+              </div>
+            </div>
+
+            <div class="mt-auto">
+              <button id="btn-start-accept" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all shadow-sm hover:shadow-md active:scale-[0.98]">
+                开启接受协助
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Zone: Provide Help -->
+          <div class="zone-card bg-white rounded-xl p-6 flex flex-col">
+            <div class="mb-4">
+              <h2 class="text-xl font-bold text-slate-900 mb-2">我帮别人</h2>
+              <p class="text-slate-500 text-[15px] leading-relaxed">粘贴对方发来的连接凭证，点击连接即可开始远程协助。</p>
+            </div>
+
+            <div class="relative mb-6">
+              <div class="group">
+                <input type="text" placeholder="粘贴连接凭证" 
+                  class="w-full h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-[15px] focus:outline-none focus:bg-white focus:border-blue-500 transition-all">
+                <button id="btn-paste" class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 font-medium text-sm hover:bg-blue-50 px-2 py-1 rounded-md transition-colors">
+                  粘贴
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-4 mb-4">
+              <div class="flex items-start gap-3">
+                <span class="step-num">1</span>
+                <span class="text-slate-700 text-sm leading-6">向对方索取连接凭证</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="step-num">2</span>
+                <span class="text-slate-700 text-sm leading-6">填入上方输入框，点「连接」</span>
+              </div>
+            </div>
+
+            <div class="mt-auto flex flex-col gap-3">
+              <button id="btn-connect" disabled class="w-full py-3.5 bg-slate-200 text-slate-400 rounded-xl font-semibold cursor-not-allowed">
+                连接
+              </button>
+              <a id="link-install-guide" href="#" class="text-blue-600 text-sm text-center hover:underline">
+                对方还没装鹊桥？复制安装说明
+              </a>
+            </div>
+          </div>
+
+        </main>
+
+        <!-- Safety Footer -->
+        <footer class="px-8 py-4 bg-slate-50 border-t border-slate-100 flex items-center gap-2 text-slate-400 text-sm">
+          <iconify-icon icon="lucide:shield-check" class="text-green-600 text-lg"></iconify-icon>
+          <span>安全提示：只把连接凭证私下发给你信任的人，协助结束后请及时关闭连接。</span>
+        </footer>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

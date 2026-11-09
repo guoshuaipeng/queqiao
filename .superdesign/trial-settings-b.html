@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+  
+  :root {
+    --primary: #2563eb;
+    --surface: #ffffff;
+    --bg: #f8fafc;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+  }
+
+  body {
+    font-family: 'Noto Sans SC', "Microsoft YaHei UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app-window {
+    width: 840px;
+    height: 512px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0,0,0,0.05);
+  }
+
+  .title-bar {
+    height: 32px;
+    background: #f1f5f9;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 12px;
+    color: var(--muted);
+    user-select: none;
+  }
+
+  .client-area {
+    height: 480px;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .settings-card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .radio-option {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  
+  .radio-option:hover {
+    background: #f1f5f9;
+  }
+
+  .radio-dot {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #cbd5e1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .radio-option.active .radio-dot {
+    border-color: var(--primary);
+  }
+  
+  .radio-option.active .radio-dot::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--primary);
+    border-radius: 50%;
+  }
+
+  .scroll-container {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+</style>
+</head>
+<body>
+  <div class="min-h-screen bg-slate-200 flex items-center justify-center p-4">
+    <div class="app-window flex flex-col">
+      
+      <!-- Title Bar -->
+      <div class="title-bar">
+        <span class="flex items-center gap-2">
+          <iconify-icon icon="lucide:bridge" class="text-blue-600"></iconify-icon>
+          鹊桥 · 设置
+        </span>
+        <div class="ml-auto flex gap-4 text-gray-400">
+          <iconify-icon icon="lucide:minus" class="cursor-pointer hover:text-gray-600"></iconify-icon>
+          <iconify-icon icon="lucide:square" class="cursor-pointer hover:text-gray-600"></iconify-icon>
+          <iconify-icon icon="lucide:x" class="cursor-pointer hover:text-red-500"></iconify-icon>
+        </div>
+      </div>
+
+      <!-- Client Area -->
+      <div class="client-area">
+        <!-- Top Nav -->
+        <header class="px-6 py-4 flex items-center gap-4 border-b border-slate-200 bg-white">
+          <a href="#" id="btn-back-home" class="flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-2 py-1 -ml-2 rounded-md transition-colors">
+            <iconify-icon icon="lucide:chevron-left" class="text-xl"></iconify-icon>
+            <span class="font-medium">返回</span>
+          </a>
+          <h1 class="text-lg font-bold text-slate-900">应用设置</h1>
+        </header>
+
+        <!-- Settings Content -->
+        <div class="flex-1 scroll-container p-6 space-y-6">
+          
+          <!-- Group: Security Permissions -->
+          <section>
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">对方要改这台电脑时</h2>
+            <div class="settings-card space-y-1">
+              <div class="radio-option active flex items-center gap-3 p-3 rounded-lg">
+                <div class="radio-dot"></div>
+                <div class="flex-1">
+                  <p class="text-[14px] font-semibold text-slate-900">每次询问</p>
+                  <p class="text-[12px] text-slate-500">对方尝试任何改动前都会先在屏幕上询问你（推荐）</p>
+                </div>
+              </div>
+              <div class="radio-option flex items-center gap-3 p-3 rounded-lg">
+                <div class="radio-dot"></div>
+                <div class="flex-1">
+                  <p class="text-[14px] font-semibold text-slate-900">宽松模式</p>
+                  <p class="text-[12px] text-slate-500">只有高风险操作（如删文件、关机）才询问，其余不再打扰</p>
+                </div>
+              </div>
+              <div class="radio-option flex items-center gap-3 p-3 rounded-lg">
+                <div class="radio-dot"></div>
+                <div class="flex-1">
+                  <p class="text-[14px] font-semibold text-slate-900">完全信任</p>
+                  <p class="text-[12px] text-slate-500">本次协助期间不询问，所有改动将自动记入日志</p>
+                </div>
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-50 flex items-start gap-2 text-amber-600 bg-amber-50/50 p-2 rounded-md">
+                <iconify-icon icon="lucide:info" class="text-sm mt-0.5"></iconify-icon>
+                <p class="text-[12px] leading-tight">即使设为宽松，如果对方权限受限，仍无法进行敏感操作。</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Group: Server Connection -->
+          <section>
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">连接服务器</h2>
+            <div class="settings-card">
+              <p class="text-[12px] text-slate-500 mb-3">一般无需修改。除非管理员告知需更换中转服务器。</p>
+              <div class="flex gap-2">
+                <div class="relative flex-1">
+                  <input type="text" value="121.196.45.81:17891" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-blue-500 transition-all">
+                </div>
+                <button id="btn-save-server" class="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800 transition-colors">保存</button>
+                <button id="btn-reset-server" class="px-3 py-2 text-blue-600 text-xs font-medium hover:underline">恢复默认</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Group: AI / MCP -->
+          <section>
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">开发者与 AI 助手 (MCP)</h2>
+            <div class="settings-card flex items-center justify-between">
+              <p class="text-[13px] text-slate-600">在 AI 编辑器中使用此客户端进行自动化协助</p>
+              <div class="flex gap-2">
+                <button id="btn-copy-mcp" class="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+                  <iconify-icon icon="lucide:copy"></iconify-icon>
+                  复制配置
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Footer / About -->
+          <footer class="flex items-center justify-between px-1 text-slate-400 pb-4">
+            <div class="flex items-center gap-4">
+              <span class="text-xs">版本 0.2.0-stable</span>
+              <a id="link-website" href="#" class="text-xs hover:text-blue-600 underline underline-offset-4">访问官网</a>
+            </div>
+            <a id="link-records" href="#" class="text-xs font-medium text-slate-600 flex items-center gap-1 hover:text-blue-600">
+              <iconify-icon icon="lucide:history"></iconify-icon>
+              查看历史协助记录
+            </a>
+          </footer>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

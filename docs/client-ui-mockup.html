@@ -17,39 +17,51 @@
   .cap{font-size:14px;font-weight:600}
   .cap span{font-weight:400;color:var(--sub);margin-left:6px}
 
-  /* 窗口 */
-  .win{width:840px;border-radius:10px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.18);background:#fff;position:relative}
-  .titlebar{height:32px;background:#f1f5f9;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--sub);border-bottom:1px solid var(--line)}
+  /* 窗口 · 方案 B */
+  .win{width:840px;border-radius:12px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.05);background:#fff;position:relative}
+  .titlebar{height:40px;background:#f8fafc;display:flex;align-items:center;padding:0 16px;font-size:12px;color:var(--sub);border-bottom:1px solid var(--line)}
   .titlebar .dots{margin-left:auto;letter-spacing:14px}
-  .client{height:480px;display:flex;flex-direction:column;position:relative}
-  .top{display:flex;align-items:center;padding:14px 24px 0}
-  .logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700}
-  .logo i{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#06b6d4);display:inline-block}
-  .gear{margin-left:auto;font-size:14px;color:var(--sub);cursor:pointer}
-  .tagline{padding:4px 24px 0;color:var(--sub);font-size:14px}
+  .client{height:480px;display:flex;flex-direction:column;position:relative;background:#fff}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 32px 0}
+  .brand{display:flex;flex-direction:column;gap:4px}
+  .logo{display:flex;align-items:center;gap:10px;font-size:24px;font-weight:700;letter-spacing:-.03em}
+  .logo i{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#2563eb,#06b6d4);display:inline-block}
+  .gear{display:flex;align-items:center;gap:8px;padding-top:2px}
+  .gear .me,.gear .set{height:34px;padding:0 12px;border-radius:10px;background:#f1f5f9;color:var(--sub);font-size:13px;font-weight:500;display:inline-flex;align-items:center}
+  .tagline{margin:0;color:var(--sub);font-size:14px}
 
-  /* 首页两区 */
-  .zones{display:flex;gap:16px;padding:16px 24px 0;flex:1;min-height:0}
-  .zone{flex:1;border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px}
-  .zone h2{font-size:18px;margin:0}
-  .zone p{margin:0;color:var(--sub);font-size:14px}
-  .zone.active{border-color:#93c5fd;box-shadow:0 0 0 3px #dbeafe}
-  .zone.dim{opacity:.55}
-  .foot{padding:14px 24px;color:var(--sub);font-size:13px}
+  /* 首页两区 · 方案 B */
+  .zones{display:flex;gap:24px;padding:16px 32px 0;flex:1;min-height:0}
+  .zone{flex:1;border:1.5px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px;background:#fff}
+  .zone.tint{background:rgba(248,250,252,.45)}
+  .zone-hd{display:flex;align-items:center;gap:12px}
+  .zone-ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+  .zone-ico svg{width:22px;height:22px;display:block}
+  .zone-ico.ask{background:#eff6ff;color:var(--blue)}
+  .zone-ico.help{background:#eef2ff;color:#4f46e5}
+  .zone h2{font-size:18px;margin:0;font-weight:600}
+  .zone p{margin:0;color:var(--sub);font-size:14px;line-height:1.6}
+  .zone.active{border-color:var(--blue);background:#f8faff;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+  .zone.dim{opacity:.5}
+  .foot{margin-top:12px;padding:14px 32px;color:#64748b;font-size:12px;background:rgba(248,250,252,.8);border-top:1px solid #f1f5f9;display:flex;align-items:center;gap:8px}
+  .foot-ico{color:var(--green);display:inline-flex;width:16px;height:16px}
+  .foot-ico svg{width:16px;height:16px}
 
-  .btn{height:38px;border-radius:8px;border:1px solid var(--line);background:#fff;padding:0 16px;font-size:14px;cursor:pointer;font-family:inherit;color:var(--ink)}
-  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
-  .btn.primary:disabled{background:#cbd5e1;border-color:#cbd5e1}
+  .btn{height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(37,99,235,.18)}
+  .btn.primary:disabled{background:#e2e8f0;border-color:#e2e8f0;color:#94a3b8;box-shadow:none}
   .btn.danger{color:var(--red);border-color:#fecaca}
   .btn.block{width:100%}
   .row{display:flex;gap:10px;align-items:center}
-  .link{color:var(--blue);font-size:13px;cursor:pointer}
+  .link{color:var(--blue);font-size:12px;cursor:pointer;text-align:center}
   .hint{font-size:13px;color:var(--sub)}
   .ok{font-size:13px;color:var(--green)}
 
-  .input{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 12px;display:flex;align-items:center;font-size:14px;color:#94a3b8;position:relative}
+  .input{height:44px;border:1px solid var(--line);border-radius:12px;padding:0 56px 0 38px;display:flex;align-items:center;font-size:14px;color:#94a3b8;position:relative;background:#fff;box-shadow:inset 0 1px 2px rgba(15,23,42,.04)}
   .input.filled{color:var(--ink);font-family:Consolas,monospace;font-size:12px;overflow:hidden;white-space:nowrap}
-  .input .paste{position:absolute;right:10px;color:var(--blue);font-size:13px;font-family:inherit}
+  .input .key{position:absolute;left:12px;color:#94a3b8;display:inline-flex;width:16px;height:16px}
+  .input .key svg{width:16px;height:16px}
+  .input .paste{position:absolute;right:12px;color:var(--blue);font-size:12px;font-weight:600;font-family:inherit}
 
   .code{font-family:Consolas,"Cascadia Mono",monospace;font-size:30px;font-weight:700;letter-spacing:3px}
   .pwd{font-family:Consolas,monospace;font-size:16px;color:var(--sub)}
@@ -87,15 +99,57 @@
   .dlg .row{justify-content:flex-end}
   .focus{outline:2px solid #93c5fd;outline-offset:2px}
 
-  /* 设置 */
-  .set{padding:6px 24px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
-  .grp h4{margin:0 0 8px;font-size:15px}
-  .radio{display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-size:14px}
-  .radio b{font-weight:600;width:72px}
-  .radio .r{width:16px;height:16px;border-radius:50%;border:2px solid #94a3b8;margin-top:2px;flex:none}
-  .radio .r.on{border-color:var(--blue);box-shadow:inset 0 0 0 3px #fff;background:var(--blue)}
-  .radio span{color:var(--sub)}
+  /* 设置 · 方案 B */
   .back{font-size:14px;color:var(--blue)}
+  .client.set-b{background:var(--bg)}
+  .set-hd{display:flex;align-items:center;gap:12px;padding:14px 24px;border-bottom:1px solid var(--line);background:#fff}
+  .set-hd h1{margin:0;font-size:18px;font-weight:700}
+  .set-scroll{flex:1;overflow:auto;padding:18px 24px 16px;display:flex;flex-direction:column;gap:18px}
+  .set-label{font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:.04em;margin:0 0 8px 2px}
+  .set-card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+  .radio-b{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:8px;cursor:pointer}
+  .radio-b.on{background:#f8fafc}
+  .radio-b .r{width:18px;height:18px;border-radius:50%;border:2px solid #cbd5e1;margin-top:2px;flex:none;display:flex;align-items:center;justify-content:center}
+  .radio-b.on .r{border-color:var(--blue)}
+  .radio-b.on .r::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--blue)}
+  .radio-b .t{font-size:14px;font-weight:600;margin:0 0 2px}
+  .radio-b .d{font-size:12px;color:var(--sub);margin:0;line-height:1.45}
+  .set-note{margin-top:10px;padding:8px 10px;border-radius:8px;background:#fffbeb;color:#b45309;font-size:12px;line-height:1.45;display:flex;gap:8px;align-items:flex-start}
+  .set-foot{display:flex;align-items:center;justify-content:space-between;padding:0 2px 4px;font-size:12px;color:#94a3b8}
+  .btn.dark{background:#0f172a;border-color:#0f172a;color:#fff;height:34px;font-size:13px;font-weight:600}
+  .input.mono{font-family:Consolas,monospace;font-size:12px;color:var(--ink);background:#f8fafc;flex:1}
+
+  /* 个人中心 · 方案 B */
+  .pc-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 24px 10px}
+  .pc-hd .left{display:flex;align-items:center;gap:10px}
+  .pc-hd h1{margin:0;font-size:18px;font-weight:700}
+  .pc-back{width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:16px}
+  .pc-body{flex:1;min-height:0;padding:0 24px 12px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+  .acct-card{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;border:1px solid rgba(37,99,235,.12);background:linear-gradient(135deg,#eff6ff 0%,#fefce8 100%)}
+  .avatar{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#06b6d4);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:none}
+  .acct-card .name{font-size:16px;font-weight:700;margin:0}
+  .acct-card .meta{font-size:12px;color:var(--sub);margin:2px 0 0}
+  .btn.sm{height:30px;font-size:12px;padding:0 12px}
+  .allow-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:2px}
+  .allow-row .t{font-size:15px;font-weight:700;margin:0}
+  .allow-row .d{font-size:12px;color:var(--sub);margin:4px 0 0;line-height:1.4}
+  .sw{width:40px;height:24px;border-radius:999px;background:var(--blue);position:relative;flex:none;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}
+  .sw::after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+  .dev-hd{display:flex;align-items:center;justify-content:space-between}
+  .dev-hd .t{font-size:14px;font-weight:700}
+  .dev-hd .n{font-size:12px;color:var(--sub);font-weight:400;margin-left:4px}
+  .dev-list{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px}
+  .dev{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .dev.off{background:#f8fafc;opacity:.78}
+  .dev-ico{width:40px;height:40px;border-radius:10px;background:#f1f5f9;color:#475569;display:flex;align-items:center;justify-content:center;flex:none}
+  .dev-ico.on{background:#eff6ff;color:var(--blue)}
+  .dev-ico svg{width:22px;height:22px}
+  .dev .title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .pill{font-size:10px;font-weight:700;color:var(--blue);background:#eff6ff;border-radius:4px;padding:2px 6px;letter-spacing:.03em}
+  .dev .sub{font-size:12px;color:var(--sub);margin-top:4px;display:flex;align-items:center;gap:6px}
+  .dev .sub .dot{width:6px;height:6px}
+  .pc-foot{padding:10px 24px;border-top:1px solid #f1f5f9;background:#f8fafc;font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:8px}
+
   .steps{display:flex;flex-direction:column;gap:10px;margin-top:6px}
   .step{display:flex;align-items:center;gap:10px;font-size:14px;color:#334155}
   .step b{width:22px;height:22px;border-radius:50%;background:#eff6ff;color:var(--blue);font-size:12px;display:flex;align-items:center;justify-content:center;flex:none}
@@ -104,7 +158,7 @@
 </head>
 <body>
 <h1>鹊桥客户端 · 效果图</h1>
-<p class="lead">对应 docs/CLIENT-UI.md 设计稿 v1（待用户确认）。窗口客户区均为 840×480；凭证为演示占位，非真实连接凭证。</p>
+<p class="lead">对应 docs/CLIENT-UI.md。整站视觉对齐 Superdesign 方案 B。窗口客户区均为 840×480；凭证与账号为演示占位。</p>
 
 <div class="grid">
 
@@ -113,12 +167,17 @@
   <div class="cap">① 首页 · 空闲<span>打开就能看到两件事，不需要先选模式</span></div>
   <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
   <div class="client">
-    <div class="top"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
-    <div class="tagline">亲友之间，发凭证或粘贴连接。</div>
+    <div class="top">
+      <div class="brand"><div class="logo"><i></i>鹊桥</div><div class="tagline">亲友之间，发凭证或粘贴连接。</div></div>
+      <div class="gear"><span class="me">登录</span><span class="set">⚙ 设置</span></div>
+    </div>
     <div class="zones">
       <div class="zone">
-        <h2>请人帮我</h2>
-        <p>让你信任的人帮你查电脑。对方要改动时会先问你。</p>
+        <div class="zone-hd">
+          <span class="zone-ico ask" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg></span>
+          <h2>请人帮我</h2>
+        </div>
+        <p>让你信任的人帮你查电脑。对方要改动时会先询问你，确保安全。</p>
         <div class="steps">
           <div class="step"><b>1</b>点「开启接受协助」</div>
           <div class="step"><b>2</b>复制连接凭证，发给帮你的人</div>
@@ -127,10 +186,13 @@
         <div style="flex:1"></div>
         <button class="btn primary block">开启接受协助</button>
       </div>
-      <div class="zone">
-        <h2>我帮别人</h2>
-        <p>粘贴对方发来的连接凭证，点连接。</p>
-        <div class="input">粘贴连接凭证<span class="paste">粘贴</span></div>
+      <div class="zone tint">
+        <div class="zone-hd">
+          <span class="zone-ico help" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><polygon points="10 8 16 11 10 14 10 8"/></svg></span>
+          <h2>我帮别人</h2>
+        </div>
+        <p>粘贴对方发来的连接凭证，即可远程连接协助。</p>
+        <div class="input"><span class="key" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg></span>粘贴连接凭证<span class="paste">粘贴</span></div>
         <div class="steps">
           <div class="step"><b>1</b>让对方发来连接凭证</div>
           <div class="step"><b>2</b>粘贴到上面，点「连接」</div>
@@ -140,7 +202,7 @@
         <div class="link">对方还没装鹊桥？复制安装说明</div>
       </div>
     </div>
-    <div class="foot">🔒 只把连接凭证私下发给你信任的人。</div>
+    <div class="foot"><span class="foot-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>安全提醒：只把连接凭证私下发给你信任的人。协助过程中你可以随时中断。</div>
   </div></div>
 </div>
 
@@ -149,8 +211,10 @@
   <div class="cap">② 请人帮我 · 等待对方连接<span>一个主按钮：复制连接凭证</span></div>
   <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
   <div class="client">
-    <div class="top"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
-    <div class="tagline">亲友之间，发凭证或粘贴连接。</div>
+    <div class="top">
+      <div class="brand"><div class="logo"><i></i>鹊桥</div><div class="tagline">亲友之间，发凭证或粘贴连接。</div></div>
+      <div class="gear"><span class="me">登录</span><span class="set">⚙ 设置</span></div>
+    </div>
     <div class="zones">
       <div class="zone active">
         <div class="status"><span class="dot wait"></span>等待对方连接</div>
@@ -162,7 +226,10 @@
         <div class="ok">✔ 已复制，请完整发给对方。</div>
       </div>
       <div class="zone dim">
-        <h2>我帮别人</h2>
+        <div class="zone-hd">
+          <span class="zone-ico help" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><polygon points="10 8 16 11 10 14 10 8"/></svg></span>
+          <h2>我帮别人</h2>
+        </div>
         <p>粘贴对方发来的连接凭证，点连接。</p>
         <div class="input">粘贴连接凭证<span class="paste">粘贴</span></div>
         <div style="flex:1"></div>
@@ -170,7 +237,7 @@
         <div class="hint">点连接会先停止接受协助（会先问你）。</div>
       </div>
     </div>
-    <div class="foot">🔒 只把连接凭证私下发给你信任的人。</div>
+    <div class="foot"><span class="foot-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>安全提醒：只把连接凭证私下发给你信任的人。协助过程中你可以随时中断。</div>
   </div></div>
 </div>
 
@@ -179,25 +246,33 @@
   <div class="cap">③ 我帮别人 · 等对方允许<span>可随时取消，迟到结果会被丢弃</span></div>
   <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
   <div class="client">
-    <div class="top"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
-    <div class="tagline">亲友之间，发凭证或粘贴连接。</div>
+    <div class="top">
+      <div class="brand"><div class="logo"><i></i>鹊桥</div><div class="tagline">亲友之间，发凭证或粘贴连接。</div></div>
+      <div class="gear"><span class="me">登录</span><span class="set">⚙ 设置</span></div>
+    </div>
     <div class="zones">
       <div class="zone dim">
-        <h2>请人帮我</h2>
+        <div class="zone-hd">
+          <span class="zone-ico ask" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg></span>
+          <h2>请人帮我</h2>
+        </div>
         <p>让你信任的人帮你查电脑。对方要改动时会先问你。</p>
         <div style="flex:1"></div>
         <button class="btn primary block" disabled>开启接受协助</button>
         <div class="hint">开启后，把连接凭证发给来帮你的人。</div>
       </div>
       <div class="zone active">
-        <h2>我帮别人</h2>
+        <div class="zone-hd">
+          <span class="zone-ico help" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><polygon points="10 8 16 11 10 14 10 8"/></svg></span>
+          <h2>我帮别人</h2>
+        </div>
         <div class="input filled">remoteassist:pair?code=482913075&amp;…（演示占位）</div>
         <div class="status" style="font-weight:400"><span class="spin"></span>已找到对方，等对方点「允许协助」…</div>
         <div style="flex:1"></div>
         <button class="btn block">取消</button>
       </div>
     </div>
-    <div class="foot">🔒 只把连接凭证私下发给你信任的人。</div>
+    <div class="foot"><span class="foot-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>安全提醒：只把连接凭证私下发给你信任的人。协助过程中你可以随时中断。</div>
   </div></div>
 </div>
 
@@ -206,11 +281,18 @@
   <div class="cap">④ 被协助端 · 配对确认弹窗<span>默认焦点在「拒绝」，倒计时到 0 自动拒绝</span></div>
   <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
   <div class="client">
-    <div class="top"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
-    <div class="tagline">亲友之间，发凭证或粘贴连接。</div>
+    <div class="top">
+      <div class="brand"><div class="logo"><i></i>鹊桥</div><div class="tagline">亲友之间，发凭证或粘贴连接。</div></div>
+      <div class="gear"><span class="me">登录</span><span class="set">⚙ 设置</span></div>
+    </div>
     <div class="zones">
       <div class="zone active"><div class="status"><span class="dot wait"></span>等待对方连接</div></div>
-      <div class="zone dim"><h2>我帮别人</h2></div>
+      <div class="zone dim">
+        <div class="zone-hd">
+          <span class="zone-ico help" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><polygon points="10 8 16 11 10 14 10 8"/></svg></span>
+          <h2>我帮别人</h2>
+        </div>
+      </div>
     </div>
     <div class="mask"><div class="dlg">
       <h3>有人想协助这台电脑</h3>
@@ -225,7 +307,7 @@
   <div class="cap">⑤ 接受协助会话页<span>完全信任时出现橙色提示条；记录实时显示</span></div>
   <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
   <div class="client">
-    <div class="top" style="padding-bottom:10px"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="top" style="padding-bottom:10px"><div class="logo"><i></i>鹊桥</div><div class="gear"><span class="me">个人中心</span><span>⚙ 设置</span></div></div>
     <div class="sbar"><div class="status"><span class="dot"></span>正在接受协助 · 已连接</div></div>
     <div class="trust">⚠ 当前是「完全信任」：这次协助的改动不会再问你。<button class="btn">结束完全信任</button></div>
     <div class="scroll">
@@ -247,7 +329,7 @@
   <div class="cap">⑥ 协助会话页<span>五个常用操作 + 结果，结束按钮固定在底部</span></div>
   <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
   <div class="client">
-    <div class="top" style="padding-bottom:10px"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="top" style="padding-bottom:10px"><div class="logo"><i></i>鹊桥</div><div class="gear"><span class="me">个人中心</span><span>⚙ 设置</span></div></div>
     <div class="sbar"><div class="status"><span class="dot"></span>正在协助对方 · 已连接</div></div>
     <div class="scroll">
       <div class="sec">常用操作</div>
@@ -272,7 +354,7 @@ spoolsv.exe      2876     18 MB
   <div class="cap">⑦ 被协助端 · 改动确认弹窗<span>白话在前，命令原文折叠</span></div>
   <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
   <div class="client">
-    <div class="top" style="padding-bottom:10px"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+    <div class="top" style="padding-bottom:10px"><div class="logo"><i></i>鹊桥</div><div class="gear"><span class="me">个人中心</span><span>⚙ 设置</span></div></div>
     <div class="sbar"><div class="status"><span class="dot"></span>正在接受协助 · 已连接</div></div>
     <div class="scroll"><div class="note">对方已连接。请核对对方身份，不要随便信任陌生人。</div></div>
     <div class="endbar"><button class="btn danger">结束本次协助</button></div>
@@ -284,27 +366,113 @@ spoolsv.exe      2876     18 MB
   </div></div>
 </div>
 
-<!-- 8 设置 -->
+<!-- 8 设置 · 方案 B -->
 <div class="shot">
-  <div class="cap">⑧ 设置页（同窗）<span>只有四组</span></div>
+  <div class="cap">⑧ 设置页（同窗 · 方案 B）<span>分组卡片 + 浅底滚动区</span></div>
   <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
-  <div class="client">
-    <div class="top" style="padding-bottom:6px"><span class="back">← 返回</span><span style="margin-left:14px;font-size:18px;font-weight:700">设置</span></div>
-    <div class="set">
-      <div class="grp"><h4>对方要改这台电脑时</h4>
-        <div class="radio"><i class="r on"></i><b>每次询问</b><span>对方改动前都会问你（推荐）</span></div>
-        <div class="radio"><i class="r"></i><b>宽松</b><span>只有高风险改动才问你，其余会记下但不再打扰</span></div>
-        <div class="radio"><i class="r"></i><b>完全信任</b><span>仅这次不再询问，但会记下</span></div>
-        <div class="hint">高风险包括删除文件、关机、改权限等。</div>
-      </div>
-      <div class="grp"><h4>连接服务器</h4>
-        <div class="hint" style="margin-bottom:6px">一般不用改。只有对方或管理员告诉你换服务器时才改这里。</div>
-        <div class="row"><div class="input filled" style="width:300px">121.196.45.81:17891</div><button class="btn">保存</button><span class="link">恢复默认</span></div>
-      </div>
-      <div class="grp"><h4>给 AI 助手用（MCP）</h4>
-        <div class="row"><button class="btn">复制 MCP 配置</button><button class="btn">复制使用说明</button><span class="hint">关于 · 版本 0.2.0</span></div>
+  <div class="client set-b">
+    <div class="set-hd"><span class="back">← 返回</span><h1>设置</h1></div>
+    <div class="set-scroll">
+      <section>
+        <div class="set-label">对方要改这台电脑时</div>
+        <div class="set-card">
+          <div class="radio-b on"><i class="r"></i><div><p class="t">每次询问</p><p class="d">对方改动前都会问你（推荐）</p></div></div>
+          <div class="radio-b"><i class="r"></i><div><p class="t">宽松</p><p class="d">只有高风险改动才问你，其余会记下但不再打扰</p></div></div>
+          <div class="radio-b"><i class="r"></i><div><p class="t">完全信任</p><p class="d">仅这次不再询问，但会记下</p></div></div>
+          <div class="set-note">⚠ 高风险包括删除文件、关机、改权限等。如果对方只能查看，不会因为这个设置就能改你的电脑。</div>
+        </div>
+      </section>
+      <section>
+        <div class="set-label">连接服务器</div>
+        <div class="set-card">
+          <div class="hint" style="margin-bottom:10px">一般不用改。只有对方或管理员告诉你换服务器时才改这里。</div>
+          <div class="row">
+            <div class="input mono">121.196.45.81:17891</div>
+            <button class="btn dark">保存</button>
+            <span class="link">恢复默认</span>
+          </div>
+        </div>
+      </section>
+      <section>
+        <div class="set-label">给 AI 助手用（MCP）</div>
+        <div class="set-card">
+          <div class="row" style="justify-content:space-between">
+            <span class="hint">复制配置后，粘贴到 Cursor 等助手的 MCP 设置里。</span>
+            <div class="row">
+              <button class="btn sm">复制 MCP 配置</button>
+              <button class="btn sm">复制使用说明</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="set-foot">
+        <div class="row"><span>版本 0.2.0</span><span class="link">官网</span></div>
+        <span class="link">查看协助记录</span>
       </div>
     </div>
+  </div></div>
+</div>
+
+<!-- 9 个人中心 · 方案 B -->
+<div class="shot">
+  <div class="cap">⑨ 个人中心（同窗 · 方案 B）<span>账号、允许连接、设备列表</span></div>
+  <div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+  <div class="client">
+    <div class="pc-hd">
+      <div class="left"><span class="pc-back" title="返回">←</span><h1>个人中心</h1></div>
+      <span class="link" style="color:#64748b">退出登录</span>
+    </div>
+    <div class="pc-body">
+      <div class="acct-card">
+        <div class="avatar">张</div>
+        <div style="flex:1">
+          <p class="name">zhang_wei</p>
+          <p class="meta">已登录 · 可管理自己的电脑</p>
+        </div>
+        <button class="btn sm">管理账号</button>
+      </div>
+
+      <div class="allow-row">
+        <div>
+          <p class="t">允许我的账号连接这台电脑</p>
+          <p class="d">打开后，你在其他已登录设备上可以从列表直接连本机。关掉或退出后会离线。</p>
+        </div>
+        <div class="sw" title="已开启"></div>
+      </div>
+
+      <div class="dev-hd">
+        <div><span class="t">我的设备</span><span class="n">(3)</span></div>
+        <span class="link">刷新列表</span>
+      </div>
+
+      <div class="dev-list">
+        <div class="dev">
+          <div class="dev-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg></div>
+          <div style="flex:1">
+            <div class="title">家里的台式机<span class="pill">本机</span></div>
+            <div class="sub"><span class="dot"></span>Windows · 在线</div>
+          </div>
+          <span class="hint">当前这台</span>
+        </div>
+        <div class="dev">
+          <div class="dev-ico on" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg></div>
+          <div style="flex:1">
+            <div class="title">公司笔记本</div>
+            <div class="sub"><span class="dot"></span>Windows · 在线</div>
+          </div>
+          <button class="btn primary sm">连接</button>
+        </div>
+        <div class="dev off">
+          <div class="dev-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><line x1="2" x2="22" y1="2" y2="22"/></svg></div>
+          <div style="flex:1">
+            <div class="title" style="color:#64748b">书房电脑</div>
+            <div class="sub"><span class="dot gray"></span>离线</div>
+          </div>
+          <button class="btn sm" disabled>连接</button>
+        </div>
+      </div>
+    </div>
+    <div class="pc-foot">ℹ 在线设备可直接连接，不必再输会话码；改动默认仍会问对方确认。</div>
   </div></div>
 </div>
 

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>鹊桥 · 设置（现有 UI 复刻）</title>
+<style>
+  :root{--blue:#2563eb;--ink:#0f172a;--sub:#64748b;--line:#e2e8f0;--bg:#f8fafc}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#e5e7eb;font-family:"Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;color:var(--ink)}
+  .win{width:840px;height:512px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.12);display:flex;flex-direction:column}
+  .titlebar{height:32px;background:#f8fafc;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 16px;font-size:12px;color:var(--sub)}
+  .client{height:480px;display:flex;flex-direction:column;background:var(--bg)}
+  .top{height:52px;display:flex;align-items:center;gap:10px;padding:0 24px;border-bottom:1px solid var(--line);background:#fff}
+  .back{color:var(--blue);font-size:14px}
+  .top h1{margin:0;font-size:18px}
+  .scroll{flex:1;overflow:auto;padding:16px 32px 20px;display:flex;flex-direction:column;gap:16px}
+  .label{font-size:12px;font-weight:700;color:#94a3b8;margin:0 0 8px 2px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .pick{display:flex;gap:12px;padding:10px 12px;border-radius:8px}
+  .pick.on{background:#f8fafc}
+  .r{width:18px;height:18px;border-radius:50%;border:2px solid #cbd5e1;margin-top:2px;flex:none}
+  .pick.on .r{border-color:var(--blue);box-shadow:inset 0 0 0 4px #fff, inset 0 0 0 9px var(--blue)}
+  .pick b{display:block;font-size:14px}
+  .pick small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
+  .warn{margin-top:10px;padding:8px 10px;border-radius:8px;background:#fffbeb;color:#b45309;font-size:12px}
+  .hint{font-size:13px;color:var(--sub);margin:0 0 10px}
+  .row{display:flex;gap:10px;align-items:center}
+  input{height:34px;flex:1;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:#f8fafc;font-family:Consolas,monospace;font-size:12px}
+  .btn{height:34px;border-radius:8px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:13px}
+  .btn.dark{background:#0f172a;border-color:#0f172a;color:#fff}
+  .link{border:0;background:transparent;color:var(--blue);font-size:13px}
+  .foot{display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;padding-top:4px}
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="titlebar">鹊桥</div>
+  <div class="client">
+    <div class="top"><span class="back">← 返回</span><h1>设置</h1></div>
+    <div class="scroll">
+      <section>
+        <div class="label">对方要改这台电脑时</div>
+        <div class="card">
+          <div class="pick on"><i class="r"></i><span><b>每次询问</b><small>对方改动前都会问你（推荐）</small></span></div>
+          <div class="pick"><i class="r"></i><span><b>宽松</b><small>只有高风险改动才问你，其余会记下但不再打扰</small></span></div>
+          <div class="pick"><i class="r"></i><span><b>完全信任</b><small>仅这次不再询问，但会记下</small></span></div>
+          <div class="warn">高风险包括删除文件、关机、改权限等。如果对方只能查看，不会因为这个设置就能改你的电脑。</div>
+        </div>
+      </section>
+      <section>
+        <div class="label">连接服务器</div>
+        <div class="card">
+          <p class="hint">一般不用改。只有对方或管理员告诉你换服务器时才改这里。</p>
+          <div class="row"><input value="121.196.45.81:17891"/><button class="btn dark">保存</button><button class="link">恢复默认</button></div>
+        </div>
+      </section>
+      <section>
+        <div class="label">给 AI 助手用（MCP）</div>
+        <div class="card">
+          <p class="hint">复制配置后，粘贴到 Cursor 等助手的 MCP 设置里。写操作仍要这台电脑确认。</p>
+          <div class="row" style="justify-content:flex-end"><button class="btn">复制 MCP 配置</button><button class="btn">复制使用说明</button></div>
+        </div>
+      </section>
+      <div class="foot"><span>版本 0.2.0 · 官网</span><span>查看协助记录</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

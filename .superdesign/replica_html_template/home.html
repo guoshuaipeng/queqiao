@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>鹊桥 · 首页空闲（现有 UI 复刻，非新设计）</title>
+<style>
+  :root{
+    --blue:#2563eb; --ink:#0f172a; --sub:#64748b; --line:#e2e8f0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e5e7eb;font-family:"Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;color:var(--ink);display:flex;align-items:center;justify-content:center;min-height:100vh}
+  .win{width:840px;border-radius:10px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.18);background:#fff}
+  .titlebar{height:32px;background:#f1f5f9;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--sub);border-bottom:1px solid var(--line)}
+  .titlebar .dots{margin-left:auto;letter-spacing:14px}
+  .client{height:480px;display:flex;flex-direction:column}
+  .top{display:flex;align-items:center;padding:14px 24px 0}
+  .logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700}
+  .logo i{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#06b6d4);display:inline-block}
+  .gear{margin-left:auto;font-size:14px;color:var(--sub)}
+  .tagline{padding:4px 24px 0;color:var(--sub);font-size:14px}
+  .zones{display:flex;gap:16px;padding:16px 24px 0;flex:1;min-height:0}
+  .zone{flex:1;border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px}
+  .zone-hd{display:flex;align-items:center;gap:10px}
+  .zone-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+  .zone-ico svg{width:20px;height:20px;display:block}
+  .zone-ico.ask{background:#eff6ff;color:var(--blue)}
+  .zone-ico.help{background:#ecfeff;color:#0891b2}
+  .zone h2{font-size:18px;margin:0}
+  .zone p{margin:0;color:var(--sub);font-size:14px}
+  .foot{padding:14px 24px;color:var(--sub);font-size:13px}
+  .btn{height:38px;border-radius:8px;border:1px solid var(--line);background:#fff;padding:0 16px;font-size:14px;font-family:inherit;color:var(--ink)}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+  .btn.primary:disabled{background:#cbd5e1;border-color:#cbd5e1}
+  .btn.block{width:100%}
+  .link{color:var(--blue);font-size:13px}
+  .input{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 12px;display:flex;align-items:center;font-size:14px;color:#94a3b8;position:relative}
+  .input .paste{position:absolute;right:10px;color:var(--blue);font-size:13px;font-family:inherit}
+  .steps{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .step{display:flex;align-items:center;gap:10px;font-size:14px;color:#334155}
+  .step b{width:22px;height:22px;border-radius:50%;background:#eff6ff;color:var(--blue);font-size:12px;display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+</head>
+<body>
+<div class="win"><div class="titlebar">鹊桥<span class="dots">— ☐ ✕</span></div>
+<div class="client">
+  <div class="top"><div class="logo"><i></i>鹊桥</div><div class="gear">⚙ 设置</div></div>
+  <div class="tagline">亲友之间，发凭证或粘贴连接。</div>
+  <div class="zones">
+    <div class="zone">
+      <div class="zone-hd">
+        <span class="zone-ico ask" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg></span>
+        <h2>请人帮我</h2>
+      </div>
+      <p>让你信任的人帮你查电脑。对方要改动时会先问你。</p>
+      <div class="steps">
+        <div class="step"><b>1</b>点「开启接受协助」</div>
+        <div class="step"><b>2</b>复制连接凭证，发给帮你的人</div>
+        <div class="step"><b>3</b>对方连上时，点「允许协助」</div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn primary block">开启接受协助</button>
+    </div>
+    <div class="zone">
+      <div class="zone-hd">
+        <span class="zone-ico help" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><polygon points="10 8 16 11 10 14 10 8"/></svg></span>
+        <h2>我帮别人</h2>
+      </div>
+      <p>粘贴对方发来的连接凭证，点连接。</p>
+      <div class="input">粘贴连接凭证<span class="paste">粘贴</span></div>
+      <div class="steps">
+        <div class="step"><b>1</b>让对方发来连接凭证</div>
+        <div class="step"><b>2</b>粘贴到上面，点「连接」</div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn primary block" disabled>连接</button>
+      <div class="link">对方还没装鹊桥？复制安装说明</div>
+    </div>
+  </div>
+  <div class="foot">🔒 只把连接凭证私下发给你信任的人。</div>
+</div></div>
+</body>
+</html>
