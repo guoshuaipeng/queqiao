@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>鹊桥</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="client" id="app">
+      <header class="top" id="top">
+        <div class="brand" id="brand-home">
+          <div class="logo"><i></i>鹊桥</div>
+          <p class="tagline" id="tagline">亲友之间，发凭证或粘贴连接。</p>
+        </div>
+        <button type="button" class="back" id="btn-back" hidden>← 返回</button>
+        <h1 id="settings-title" hidden>设置</h1>
+        <div class="top-right" id="top-right">
+          <button type="button" class="acct-chip" id="btn-account"><i id="acct-mark" hidden></i><span id="acct-chip-label">登录</span></button>
+          <button type="button" class="gear" id="btn-settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            设置
+          </button>
+        </div>
+      </header>
+      <div id="banner" class="banner" hidden></div>
+
+      <main id="home" class="zones">
+        <section class="zone zone-invite" id="zone-left">
+          <div id="left-idle">
+            <div class="zone-hd">
+              <span class="zone-ico ask" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg></span>
+              <h2>请人帮我</h2>
+            </div>
+            <p>让你信任的人帮你查电脑。对方要改动时会先问你。</p>
+            <div class="steps">
+              <div class="step"><b>1</b><span>点「开启接受协助」</span></div>
+              <div class="step"><b>2</b><span>复制连接凭证，发给帮你的人</span></div>
+              <div class="step"><b>3</b><span>对方连上时，点「允许协助」</span></div>
+            </div>
+          </div>
+          <div id="left-wait" hidden>
+            <div class="status" id="left-status"><span class="dot wait"></span>等待对方连接</div>
+            <div class="note" id="wait-note">把连接凭证发给来帮你的人。对方连上时会先弹窗问你，你点「允许协助」才算连上。</div>
+          </div>
+          <button type="button" class="link history-link" id="btn-history" hidden>查看上次协助记录</button>
+          <div id="history" class="log" hidden></div>
+          <div class="spacer"></div>
+          <div id="long-box" class="note" hidden>
+            <strong>无人时也能连</strong>
+            <p id="long-code"></p>
+            <p class="hint" id="long-hint"></p>
+          </div>
+          <p class="hint" id="left-note"></p>
+          <div class="row" id="left-actions">
+            <button type="button" class="btn primary block" id="btn-start">开启接受协助</button>
+            <button type="button" class="btn primary" id="btn-copy" hidden>复制链接码</button>
+            <button type="button" class="btn" id="btn-stop" hidden>停止接受</button>
+          </div>
+          <p class="ok" id="copy-hint"></p>
+          <textarea id="manual-copy" class="manual" hidden readonly></textarea>
+        </section>
+        <section class="zone zone-help" id="zone-right">
+          <div class="zone-hd">
+            <span class="zone-ico help" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/><polygon points="10 8 16 11 10 14 10 8"/></svg></span>
+            <h2>我帮别人</h2>
+          </div>
+          <p id="right-lead">粘贴对方发来的连接凭证，即可远程连接协助。</p>
+          <div class="input-wrap has-key">
+            <span class="input-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg></span>
+            <input id="cred" type="text" placeholder="粘贴连接凭证" autocomplete="off" spellcheck="false" />
+            <button type="button" class="paste" id="btn-paste">粘贴</button>
+          </div>
+          <div class="steps" id="right-steps">
+            <div class="step"><b>1</b><span>让对方发来连接凭证</span></div>
+            <div class="step"><b>2</b><span>粘贴到上面，点「连接」</span></div>
+          </div>
+          <div class="status" id="right-status" hidden></div>
+          <p class="err" id="right-error"></p>
+          <div class="spacer"></div>
+          <div class="right-actions">
+            <button type="button" class="btn primary block" id="btn-connect" disabled>连接</button>
+            <button type="button" class="btn block" id="btn-cancel" hidden>取消</button>
+            <p class="hint" id="right-hint"></p>
+            <button type="button" class="link install-link" id="btn-install">对方还没装鹊桥？复制安装说明</button>
+          </div>
+        </section>
+      </main>
+
+      <section id="host" class="session" hidden>
+        <div class="sbar"><div class="status"><span class="dot" id="host-dot"></span><span id="host-title">正在接受协助 · 已连接</span></div></div>
+        <div class="trust" id="trust-full" hidden>⚠ 当前是「完全信任」：这次协助的改动不会再问你。<button type="button" class="btn" id="btn-end-full">结束完全信任</button></div>
+        <div class="trust loose" id="trust-loose" hidden>当前是「宽松」：只有高风险改动才会问你。<button type="button" class="btn" id="btn-back-ask">改回每次询问</button></div>
+        <div class="scroll">
+          <div class="note" id="host-lead">对方已连接。请核对对方身份，不要随便信任陌生人。</div>
+          <div class="sec">对方做过的事</div>
+          <div class="log" id="audit"></div>
+        </div>
+      </section>
+
+      <section id="helper" class="session" hidden>
+        <div class="sbar"><div class="status"><span class="dot" id="helper-dot"></span><span id="helper-title">正在协助对方 · 已连接</span></div></div>
+        <div class="scroll" id="helper-scroll">
+          <div id="helper-tools">
+            <div id="ops-bar">
+            <div class="sec">常用操作</div>
+            <div class="ops">
+              <button type="button" class="btn" data-tool="ListProcesses">查看正在运行的程序</button>
+              <button type="button" class="btn" data-tool="ListServices">查看服务状态</button>
+              <button type="button" class="btn" data-tool="ListDir">查看文件夹</button>
+              <button type="button" class="btn" data-tool="ReadLogTail">查看日志</button>
+              <button type="button" class="btn" data-tool="ReadFile">查看文件</button>
+              <button type="button" class="btn" data-tool="RunCommand">提议一项改动</button>
+            </div>
+            </div>
+            <div class="path-row" id="path-row" hidden>
+              <input id="path" type="text" placeholder="路径" />
+              <button type="button" class="btn" id="btn-path-go">查看</button>
+            </div>
+            <div class="propose" id="propose" hidden>
+              <input id="summary" type="text" placeholder="要做什么" />
+              <input id="command" type="text" placeholder="命令" />
+              <button type="button" class="btn primary" id="btn-propose">发给对方确认</button>
+            </div>
+            <p class="hint" id="op-status"></p>
+          </div>
+          <div class="row"><span class="sec">结果</span><button type="button" class="link" id="btn-copy-result">复制结果</button></div>
+          <div class="box-hold">
+            <pre class="result" id="result">点上面的操作，结果会显示在这里</pre>
+            <div class="rail"></div>
+          </div>
+          <button type="button" class="link" id="btn-past">▸ 之前的结果</button>
+          <div class="box-hold" id="past-hold">
+            <div id="past" hidden></div>
+            <div class="rail"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="account" class="set set-b" hidden>
+        <div id="acct-guest" class="auth-wrap">
+          <div class="modes">
+            <button type="button" id="btn-mode-login" class="on">登录</button>
+            <button type="button" id="btn-mode-signup">注册</button>
+          </div>
+          <p class="hint" id="acct-lead">自己的电脑之间可以免密连接。发给亲友，仍然不用登录。</p>
+          <form id="acct-form" class="auth-card">
+            <label class="field"><span>用户名</span><input id="acct-user" type="text" autocomplete="username" spellcheck="false" /></label>
+            <label class="field"><span>密码</span><input id="acct-pass" type="password" autocomplete="current-password" /></label>
+            <label class="field" id="acct-pass2-field" hidden><span>再输一次</span><input id="acct-pass2" type="password" autocomplete="new-password" /></label>
+            <p class="hint" id="acct-rule" hidden>用户名用 3–32 位字母、数字或下划线。密码至少 8 位。忘了密码只能重新注册。</p>
+            <p class="err" id="acct-error"></p>
+            <button type="submit" class="btn primary block" id="btn-acct-submit">登录</button>
+          </form>
+        </div>
+        <div id="acct-in" class="pc-body" hidden>
+          <section class="identity acct-hero">
+            <i id="acct-avatar"></i>
+            <div>
+              <div class="who" id="acct-hello"></div>
+              <p class="hint" id="acct-meta">已登录 · 可管理自己的电脑</p>
+            </div>
+            <button type="button" class="link acct-out" id="btn-acct-out">退出登录</button>
+          </section>
+
+          <section class="allow-row set-card">
+            <div class="allow-copy">
+              <h3>允许我的账号连接这台电脑</h3>
+              <p class="hint">打开后，你在其他已登录设备上可以从列表直接连本机。关掉或退出后会离线。</p>
+              <div class="status-line"><span class="dot gray" id="allow-dot"></span><span id="allow-state"></span></div>
+            </div>
+            <button type="button" class="sw" id="btn-allow" aria-pressed="false" title="允许连接"></button>
+          </section>
+
+          <section class="set-card pc-local">
+            <div class="dev-hd">
+              <h3>这台电脑名称</h3>
+              <button type="button" class="link" id="btn-remove-device">从账号移除</button>
+            </div>
+            <label class="field set-field">
+              <span class="row">
+                <input id="device-name" type="text" maxlength="32" />
+                <button type="button" class="btn sm" id="btn-device-name">保存</button>
+              </span>
+            </label>
+          </section>
+
+          <section class="pc-devices">
+            <div class="dev-hd">
+              <div class="dev-title"><h3>我的设备</h3><span class="hint" id="device-count"></span></div>
+              <button type="button" class="link" id="btn-refresh-devices">刷新列表</button>
+            </div>
+            <div id="devices" class="devices"></div>
+          </section>
+
+          <section class="set-card set-quiet pc-unattended">
+            <header class="set-head">
+              <h3>人不在旁边时</h3>
+              <p>开启后，你不在旁边也能从设备列表连上。程序没开或电脑关了，就连不上。</p>
+            </header>
+            <label class="choice"><input id="acct-skip" type="checkbox" />人不在时，改动不再询问（仍会记下）</label>
+            <label class="choice"><input id="acct-autostart" type="checkbox" />登录 Windows 后自动打开鹊桥</label>
+            <div class="row">
+              <button type="button" class="btn sm" id="btn-acct-unattended">开启无人值守</button>
+              <button type="button" class="btn sm danger" id="btn-acct-unattended-off" hidden>关闭无人值守</button>
+            </div>
+            <p class="hint" id="acct-unattended-state"></p>
+          </section>
+
+          <p class="pc-foot">在线设备可直接连接，不必再输会话码；改动默认仍会问对方确认。</p>
+        </div>
+      </section>
+
+      <section id="settings" class="set set-compact" hidden>
+        <div class="set-body">
+          <section class="set-block">
+            <h3 class="set-title">对方要改这台电脑时</h3>
+            <div class="seg" role="radiogroup" aria-label="改动确认方式">
+              <label class="seg-item">
+                <input type="radio" name="trust" value="ask" />
+                <span>每次询问</span>
+              </label>
+              <label class="seg-item">
+                <input type="radio" name="trust" value="relaxed" />
+                <span>宽松</span>
+              </label>
+              <label class="seg-item">
+                <input type="radio" name="trust" value="full" />
+                <span>完全信任</span>
+              </label>
+            </div>
+            <p class="set-hint warn" id="trust-hint" hidden></p>
+            <p class="set-hint">高风险操作（删除文件、关机、改权限）默认仍会问你。对方只能查看时，改不了这台电脑。</p>
+          </section>
+
+          <section class="set-block">
+            <h3 class="set-title">连接服务器</h3>
+            <div class="row set-server">
+              <input id="relay" type="text" spellcheck="false" />
+              <button type="button" class="btn sm primary" id="btn-save-relay">保存</button>
+              <button type="button" class="link" id="btn-reset-relay">恢复默认</button>
+            </div>
+            <p class="set-hint quiet">一般不用改。只有对方或管理员让你换服务器时才改。</p>
+            <p class="ok" id="relay-hint"></p>
+          </section>
+
+          <section class="set-block set-mcp">
+            <div class="set-mcp-hd">
+              <h3 class="set-title">给 AI 助手用（MCP）</h3>
+              <div class="row">
+                <button type="button" class="btn sm" id="btn-mcp">复制 MCP 配置</button>
+                <button type="button" class="btn sm" id="btn-usage">使用说明</button>
+              </div>
+            </div>
+            <p class="set-hint quiet">复制后粘贴到 Cursor。写操作仍要这台电脑确认。</p>
+            <p class="ok" id="settings-hint"></p>
+          </section>
+        </div>
+        <footer class="set-bar">
+          <div class="row">
+            <span class="hint" id="version">版本</span>
+            <button type="button" class="link" id="btn-site">官网</button>
+          </div>
+          <button type="button" class="link" id="btn-records">查看协助记录</button>
+        </footer>
+      </section>
+
+      <footer class="foot" id="foot">
+        <span class="foot-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+        <span>安全提醒：只把连接凭证私下发给你信任的人。协助过程中你可以随时中断。</span>
+      </footer>
+      <footer class="endbar" id="endbar" hidden>
+        <button type="button" class="btn danger" id="btn-end">结束本次协助</button>
+      </footer>
+
+      <div class="mask" id="mask" hidden>
+        <div class="dlg" role="dialog" aria-modal="true">
+          <h3 id="dlg-title"></h3>
+          <p id="dlg-body"></p>
+          <button type="button" class="link" id="dlg-detail-toggle" hidden>▸ 查看详细</button>
+          <pre class="result" id="dlg-detail" hidden></pre>
+          <div class="row end">
+            <button type="button" class="btn" id="dlg-no">拒绝</button>
+            <button type="button" class="btn primary" id="dlg-yes">允许</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="main.js"></script>
+  </body>
+</html>

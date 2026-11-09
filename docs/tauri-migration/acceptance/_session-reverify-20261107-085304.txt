@@ -1,0 +1,5 @@
+﻿ts=20261107-085304
+stopPass=True
+bothPass=True
+payloadLen=154
+hasRetryBtn=True

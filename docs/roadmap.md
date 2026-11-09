@@ -1,6 +1,6 @@
 # 鹊桥 — 路线图
 
-> 以 `docs/PRODUCT.md` 为准。桌面客户端只有 Tauri（`apps/queqiao-tauri`，分支 `feat/tauri-client-migration`）。
+> 以 `docs/PRODUCT.md` 为准。桌面客户端只有 Tauri（`apps/queqiao-tauri`）。
 > .NET 客户端各轮（R001–R045、R047–R049）的实现记录已随代码删除，不再作为维护入口。
 
 ## 仍有效

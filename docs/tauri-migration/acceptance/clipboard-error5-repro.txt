@@ -1,0 +1,4 @@
+﻿time=2026-11-07 08:53:44 Asia/Shanghai
+pid=34764 inJob=True uiBits=0 hwnd=32773144 winErr=0 open=False err=5 holder=0 station=WinSta0 desktop=Default
+
+note=OpenClipboard error 5 = ACCESS_DENIED env block; must not claim copy success fixed

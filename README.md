@@ -1,14 +1,23 @@
 # 鹊桥远程协助
 
-桌面客户端只保留 **Tauri**。旧的 .NET 8 / .NET Framework 4.8 客户端、WinForms / Avalonia 工程、安装器和对应的迭代记录已从仓库删除。
+桌面客户端只保留 **Tauri**（`apps/queqiao-tauri`）。旧的 .NET 8 / .NET Framework 4.8 客户端、WinForms / Avalonia 工程、安装器和对应的迭代记录已从仓库删除。
 
-本分支（`master`）目前是中继、官网和产品文档：
-
+- `apps/queqiao-tauri` — Windows 桌面客户端（Tauri 2）
 - `relay/` — Go 公网中继
 - `site/` — 官网与 `/admin`
 - `docs/` — 产品决策、界面规格、中继协议
 
-Tauri 客户端在分支 `feat/tauri-client-migration`，目录 `apps/queqiao-tauri`（本机工作区 `E:\IdeaProjects\remote-assist-wt-tauri`）。界面规格见 [docs/CLIENT-UI.md](docs/CLIENT-UI.md)。
+界面规格见 [docs/CLIENT-UI.md](docs/CLIENT-UI.md)。
+
+## 客户端
+
+在 `apps/queqiao-tauri`：
+
+```bat
+npm install
+npm run check
+npm run dev
+```
 
 ## 中继
 

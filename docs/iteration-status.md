@@ -73,7 +73,7 @@
 
 - **官网静态改版：本侧暂停（用户 2026-11-06 15:30）**——不设计/不实现/不验收/不发布；文件保留不回滚；不撤销 Tauri 立项；本侧服务端/迭代不得继续官网实施。历史授权见 website-refresh-20261106（已标注暂停/收回）。
 - **旧 net48 功能开发：暂停**。不派紧凑/入口 A 编码；不续 PV-004 安装器。
-- **Tauri**：E:\IdeaProjects\remote-assist-wt-tauri / feat/tauri-client-migration，客户端唯一写入；UI=A-480-delta-v1.1。
+- **Tauri**：`apps/queqiao-tauri`（已合入 `master`）；UI=A-480-delta-v1.1。
 - **R049** 未授不可验收；**R050** blocked。
 
 > 下方历史记录中凡写「官网不编码 / 官网已授服务端实施 / 视为服务端实施中 / 有条件发布仍有效 / A 等 net48 放编码」等，**以本节与 CURRENT-POSTURE 覆盖**（本侧官网已于 15:30 暂停）。

@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "鹊桥主窗口。剪贴板与系统操作在 Rust 命令内完成，不向界面开放任意 shell。",
+  "windows": ["main"],
+  "permissions": [
+    "core:default"
+  ]
+}
