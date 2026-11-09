@@ -7,7 +7,7 @@
 - `site/` — 官网与 `/admin`
 - `docs/` — 产品决策、界面规格、中继协议
 
-界面规格见 [docs/CLIENT-UI.md](docs/CLIENT-UI.md)。
+界面规格见 [docs/CLIENT-UI.md](docs/CLIENT-UI.md)。需求队列（迭代入口）见 [docs/PRODUCT-VERSIONS.md](docs/PRODUCT-VERSIONS.md)，文档地图见 [docs/architecture.md](docs/architecture.md)。
 
 ## 客户端
 

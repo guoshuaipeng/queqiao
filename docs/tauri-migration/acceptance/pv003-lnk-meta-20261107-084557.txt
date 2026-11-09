@@ -1,8 +1,0 @@
-ts=20261107-084557
-lnk=C:\ProgramData\Microsoft\Windows\Start Menu\Programs\鹊桥远程协助\鹊桥远程协助.lnk
-target=C:\Users\user\AppData\Local\Programs\RemoteAssist\RemoteAssist.Net48.exe
-iconLocation=,0
-workingDir=C:\Users\user\AppData\Local\Programs\RemoteAssist
-desktopLnkBefore=False
-setupArtifactsSHA256=71CE3908300A804697502D80361B4FF9476E35F0F0B04A2286E70FA58DF39239
-setupDownloadsSHA256=460D8758F65064ECE19AB5CB34F8E470BD436356D13F03C50DBC8402469054D0

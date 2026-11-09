@@ -1,8 +1,8 @@
 # 中继侧会话码审计（R046 · 架构定稿）
 
-> 架构拍板：2026-11-06 Asia/Shanghai。与产品规格 `docs/relay-audit.md` / `docs/round-046.md` 对齐；实现归「鹊桥-服务端」。**尚未写业务代码、不上机。**  
-> 部署侧摘要：`docs/relay-deploy.md`「会话码审计（R046）」。  
-> 官网接单 `site/` `/admin`：**本轮不做**会话码读面（分库分进程）。
+> 架构拍板：2026-11-06 Asia/Shanghai。与产品规格 `docs/relay-audit.md` 对齐。**已实现（本地），公网未部署。**
+> 部署侧摘要：`docs/relay-deploy.md`「会话码审计（R046）」。
+> 官网接单 `site/` `/admin`：R046 本轮不做会话码读面；后续 PV-001 已加只读列表（仅本地验收）。
 
 ---
 
@@ -66,7 +66,7 @@
 | 鉴权 | 配置 **`RELAY_AUDIT_TOKEN` 后才启用**管理 HTTP；未配置 = 不开。与 `SITE_ADMIN_PASSWORD`、中继 `signup`/`token` **均独立** |
 | 能力 | 只读事件流水（**最新在前**），可按 **code** 过滤；无改删审计的对外 API |
 | UI | **不做**按 code 透视表（产品锁） |
-| 官网 `/admin` | **本轮不做**；非 MVP 必做读面 |
+| 官网 `/admin` | R046 不做；后续 PV-001 已加只读列表（仅本地验收） |
 | 协议 | 不增加客户端 `audit_*` op；不进 `relay-protocol.md` 消费方契约 |
 
 ---
@@ -146,7 +146,7 @@
 
 ## 9. 文档地图
 
-- 产品规格：`relay-audit.md`、`round-046.md`  
+- 产品规格：`relay-audit.md`
 - 本文：架构定稿（存储/旁路/IP/保留/字段）  
 - 部署：`relay-deploy.md`  
 - 总览回链：`architecture.md` §6 / §9  
