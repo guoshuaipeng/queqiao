@@ -7,6 +7,11 @@ on:
       - "apps/queqiao-tauri/**"
       - ".github/workflows/build-tauri.yml"
   workflow_dispatch:
+    inputs:
+      only:
+        description: "platforms to build: all | windows | macos | linux"
+        required: false
+        default: "all"
 
 permissions:
   contents: read
@@ -18,18 +23,30 @@ jobs:
       matrix:
         include:
           - platform: windows-latest
+            family: windows
             rust_targets: ""
             args: --bundles nsis
             artifact: queqiao-windows
           - platform: macos-latest
+            family: macos
             rust_targets: aarch64-apple-darwin
             args: --target aarch64-apple-darwin --bundles app,dmg
             artifact: queqiao-macos-arm64
           - platform: macos-latest
+            family: macos
             rust_targets: x86_64-apple-darwin
             args: --target x86_64-apple-darwin --bundles app,dmg
             artifact: queqiao-macos-x64
+          - platform: ubuntu-22.04
+            family: linux
+            rust_targets: ""
+            args: --bundles deb,appimage
+            artifact: queqiao-linux-x64
 
+    if: >-
+      github.event_name != 'workflow_dispatch'
+      || github.event.inputs.only == 'all'
+      || github.event.inputs.only == matrix.family
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +62,12 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.rust_targets }}
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install frontend dependencies
         working-directory: apps/queqiao-tauri
@@ -64,6 +87,8 @@ jobs:
           name: ${{ matrix.artifact }}
           path: |
             apps/queqiao-tauri/src-tauri/target/release/bundle/nsis/**
+            apps/queqiao-tauri/src-tauri/target/release/bundle/deb/**
+            apps/queqiao-tauri/src-tauri/target/release/bundle/appimage/**
             apps/queqiao-tauri/src-tauri/target/*/release/bundle/dmg/**
             apps/queqiao-tauri/src-tauri/target/*/release/bundle/macos/**
           if-no-files-found: warn
