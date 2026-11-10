@@ -117,11 +117,31 @@
       </main>
 
       <section id="host" class="session" hidden>
-        <div class="sbar"><div class="status"><span class="dot" id="host-dot"></span><span id="host-title">正在接受协助 · 已连接</span></div></div>
+        <div class="sbar host-sbar">
+          <div class="status"><span class="dot" id="host-dot"></span><span id="host-title">正在接受协助 · 已连接</span></div>
+          <div class="host-duration mono" id="host-duration">已连接 00:00</div>
+        </div>
+        <div class="host-meta" id="host-meta">
+          <div class="host-trust-label">安全等级</div>
+          <div class="seg host-trust-seg" role="radiogroup" aria-label="安全等级">
+            <label class="seg-item">
+              <input type="radio" name="host-trust" value="ask" />
+              <span>每次询问</span>
+            </label>
+            <label class="seg-item">
+              <input type="radio" name="host-trust" value="relaxed" />
+              <span>宽松</span>
+            </label>
+            <label class="seg-item">
+              <input type="radio" name="host-trust" value="full" />
+              <span>完全信任</span>
+            </label>
+          </div>
+        </div>
         <div class="trust" id="trust-full" hidden>⚠ 当前是「完全信任」：这次协助的改动不会再问你。<button type="button" class="btn" id="btn-end-full">结束完全信任</button></div>
         <div class="trust loose" id="trust-loose" hidden>当前是「宽松」：只有高风险改动才会问你。<button type="button" class="btn" id="btn-back-ask">改回每次询问</button></div>
         <div class="scroll">
-          <div class="note" id="host-lead">对方已连接。请核对对方身份，不要随便信任陌生人。</div>
+          <div class="note" id="host-lead">对方已连接。请核对对方身份，不要随便信任陌生人。可随时改安全等级或结束协助。</div>
           <div class="sec">对方做过的事</div>
           <div class="log" id="audit"></div>
         </div>

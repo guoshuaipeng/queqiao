@@ -19,6 +19,13 @@
 3. Copy once = full short credential `CODE-########` (code + password together).
 4. Bottom secondary「停止接受」; right zone dimmed; home MCP strip may remain visible.
 
+## Host session IA (approved B)
+1. Status bar: green「正在接受协助 · 已连接」+ mono duration「已连接 MM:SS」(or HH:MM:SS).
+2. **安全等级** inline segment on session page: 每次询问 / 宽松 / 完全信任 — wired to same `set_trust` as settings (full still needs confirm dialog).
+3. Non-default trust keeps warning banners (完全信任 / 宽松) with quick revert.
+4. Audit groups「查看」vs「改动」; empty:「对方还没有做任何操作」.
+5. Endbar danger「结束本次协助」. Not a helper console / MCP / tool rail.
+
 ## Helper session IA (approved 1B + 2A)
 1. Top brand bar + session status (connected green).
 2. **Left tool rail**: groups「查看」vs「改动」; 改动 visually stronger but not equal to dump of 6 chips.

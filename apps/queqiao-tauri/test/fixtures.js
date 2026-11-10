@@ -63,8 +63,15 @@
     host: Object.assign({}, idle, {
       view: "host",
       phase: "host_session",
-      trustEffective: "full",
-      audit: [{ t: "16:32", text: "界面样例，不是真实操作记录", kind: "info" }],
+      trustSaved: "ask",
+      trustEffective: "ask",
+      connectedSecs: 192,
+      audit: [
+        { t: "16:32", text: "查看正在运行的程序", kind: "" },
+        { t: "16:33", text: "查看日志", kind: "" },
+        { t: "16:35", text: "已允许：重启服务", kind: "y" },
+        { t: "16:36", text: "已拒绝：删除文件", kind: "n" },
+      ],
     }),
     helper: Object.assign({}, idle, {
       view: "helper",

@@ -102,6 +102,8 @@ struct Model {
     account_autostart: bool,
     device_name: String,
     host_banner: String,
+    /// 被协助会话开始时刻；用于界面「已连接时长」。
+    host_connected_at: Option<Instant>,
     devices: Vec<DeviceItem>,
     auto_update: bool,
     update_hint: String,
@@ -190,6 +192,7 @@ impl Shared {
                 account_autostart: loaded.account_autostart,
                 device_name: loaded.device_name.clone(),
                 host_banner: String::new(),
+                host_connected_at: None,
                 devices: Vec::new(),
                 auto_update: loaded.auto_update,
                 update_hint: String::new(),
@@ -432,6 +435,7 @@ impl Hooks for AppHooks {
                 model.view = "host".into();
                 model.dialog = None;
                 model.peer_ended = false;
+                model.host_connected_at = Some(Instant::now());
             }
             Ev::HelperSession => {
                 model.phase = "helper_session".into();
@@ -506,6 +510,7 @@ impl Hooks for AppHooks {
                         model.view = "home".into();
                         model.full_gen = 0;
                         model.session_long = false;
+                        model.host_connected_at = None;
                     }
                 }
             }
@@ -527,6 +532,7 @@ impl Hooks for AppHooks {
                 model.copy_hint.clear();
                 model.result.clear();
                 model.past.clear();
+                model.host_connected_at = None;
                 if helper {
                     model.helper_error = text::PEER_ENDED.into();
                     model.helper_status.clear();
@@ -572,6 +578,7 @@ impl AppHooks {
                         if model.phase == "host_session" {
                             model.phase = "idle".into();
                             model.view = "home".into();
+                            model.host_connected_at = None;
                             model.left_note = "连接已断开。长久码还能用，对方可以再连接。".into();
                         }
                     }
@@ -585,6 +592,7 @@ impl AppHooks {
                         model.phase = "host_session".into();
                         model.view = "host".into();
                         model.dialog = None;
+                        model.host_connected_at = Some(Instant::now());
                     }
                 }
                 Ev::Dropped => {
@@ -593,6 +601,7 @@ impl AppHooks {
                         model.phase = "idle".into();
                         model.view = "home".into();
                         model.dialog = None;
+                        model.host_connected_at = None;
                         model.left_note = "连接已断开。长久码还能用，对方可以再连接。".into();
                     }
                 }
@@ -646,6 +655,7 @@ impl AppHooks {
                     model.dialog = None;
                     model.peer_ended = false;
                     model.host_banner = banner.into();
+                    model.host_connected_at = Some(Instant::now());
                 }
                 Ev::Dropped | Ev::PeerEnded => {
                     if model.session_account {
@@ -654,6 +664,7 @@ impl AppHooks {
                         model.view = "home".into();
                         model.dialog = None;
                         model.host_banner.clear();
+                        model.host_connected_at = None;
                         model.left_note = "连接已断开。你的账号还可以再连。".into();
                         model.account_online = true;
                     }
@@ -782,6 +793,10 @@ impl Shared {
             account_autostart: model.account_autostart,
             device_name: model.device_name.clone(),
             host_banner: model.host_banner.clone(),
+            connected_secs: model
+                .host_connected_at
+                .map(|t| t.elapsed().as_secs())
+                .unwrap_or(0),
             devices: model
                 .devices
                 .iter()
@@ -884,6 +899,7 @@ impl Shared {
         model.session_long = false;
         model.session_account = false;
         model.host_banner.clear();
+        model.host_connected_at = None;
         model.just_dropped = false;
     }
 }
@@ -991,6 +1007,9 @@ struct Snapshot {
     device_name: String,
     #[serde(rename = "hostBanner")]
     host_banner: String,
+    /// 被协助会话已连接秒数；非 host_session 时为 0。
+    #[serde(rename = "connectedSecs")]
+    connected_secs: u64,
     devices: Vec<DeviceSnap>,
     #[serde(rename = "autoUpdate")]
     auto_update: bool,

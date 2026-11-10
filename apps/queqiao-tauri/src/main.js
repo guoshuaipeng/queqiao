@@ -149,6 +149,12 @@ function render(s) {
     $("btn-end-helper").textContent = endLabel;
     show($("btn-end-helper").closest(".helper-foot") || $("btn-end-helper"), helper);
   }
+  show($("host-meta"), host && !ended);
+  paintHostDuration(host && !ended ? Number(s.connectedSecs || 0) : 0);
+  tickHostDuration(host && !ended);
+  document.querySelectorAll('input[name="host-trust"]').forEach((el) => {
+    el.disabled = !!ended;
+  });
   show($("trust-full"), host && s.trustEffective === "full" && !ended);
   show($("trust-loose"), host && s.trustEffective === "relaxed" && !ended);
   const audit = $("audit");
@@ -159,7 +165,7 @@ function render(s) {
   if (!host) window.__auditSeen = 0;
   audit.__applying = true;
   audit.innerHTML = nextAudit
-    ? s.audit.map(rowHtml).join("")
+    ? (host ? auditGroupsHtml(s.audit) : s.audit.map(rowHtml).join(""))
     : '<div><span class="t"></span>对方还没有做任何操作</div>';
   if (host) requestAnimationFrame(() => applyScroll(audit, "__auditStick"));
   else audit.__applying = false;
@@ -194,7 +200,7 @@ function render(s) {
   const trustUi = s.trustEffective === "full"
     ? "full"
     : (s.dialog && s.dialog.kind === "full" ? "full" : s.trustSaved);
-  document.querySelectorAll('input[name="trust"]').forEach((el) => {
+  document.querySelectorAll('input[name="trust"], input[name="host-trust"]').forEach((el) => {
     el.checked = el.value === trustUi;
   });
   if ($("relay-hint")) $("relay-hint").textContent = s.relayHint || "";
@@ -734,6 +740,63 @@ function rowHtml(r) {
   return "<div><span class='t'>" + escapeHtml(r.t || "") + "</span><span>" + mark + escapeHtml(r.text || "") + "</span></div>";
 }
 
+function isWriteAudit(r) {
+  return r && (r.kind === "y" || r.kind === "n");
+}
+
+function auditGroupsHtml(rows) {
+  const views = [];
+  const writes = [];
+  (rows || []).forEach((r) => {
+    if (isWriteAudit(r)) writes.push(r);
+    else views.push(r);
+  });
+  let html = "";
+  if (views.length) {
+    html += '<div class="log-group"><div class="log-group-label">查看</div>' + views.map(rowHtml).join("") + "</div>";
+  }
+  if (writes.length) {
+    html += '<div class="log-group"><div class="log-group-label write">改动</div>' + writes.map(rowHtml).join("") + "</div>";
+  }
+  return html || '<div><span class="t"></span>对方还没有做任何操作</div>';
+}
+
+function formatConnected(secs) {
+  const n = Math.max(0, Math.floor(Number(secs) || 0));
+  const h = Math.floor(n / 3600);
+  const m = Math.floor((n % 3600) / 60);
+  const s = n % 60;
+  if (h > 0) {
+    return "已连接 " + String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+  return "已连接 " + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+}
+
+function paintHostDuration(secs) {
+  if (!$("host-duration")) return;
+  window.__hostConnectedBase = Number(secs) || 0;
+  window.__hostConnectedAt = Date.now();
+  $("host-duration").textContent = formatConnected(window.__hostConnectedBase);
+}
+
+function tickHostDuration(on) {
+  if (!on) {
+    if (window.__hostDurationTimer) {
+      clearInterval(window.__hostDurationTimer);
+      window.__hostDurationTimer = null;
+    }
+    return;
+  }
+  if (window.__hostDurationTimer) return;
+  window.__hostDurationTimer = setInterval(() => {
+    if (!$("host") || $("host").hidden || !$("host-duration")) return;
+    const base = Number(window.__hostConnectedBase) || 0;
+    const started = Number(window.__hostConnectedAt) || Date.now();
+    const secs = base + Math.floor((Date.now() - started) / 1000);
+    $("host-duration").textContent = formatConnected(secs);
+  }, 1000);
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -974,8 +1037,15 @@ function bindUi() {
     }
     revealResult(false);
   };
+  const onTrustChange = (el) => {
+    if (!el.checked) return;
+    invoke("set_trust", { trust: el.value }).then(render).catch(showErr);
+  };
   document.querySelectorAll('input[name="trust"]').forEach((el) => {
-    el.onchange = () => { if (el.checked) invoke("set_trust", { trust: el.value }).then(render).catch(showErr); };
+    el.onchange = () => onTrustChange(el);
+  });
+  document.querySelectorAll('input[name="host-trust"]').forEach((el) => {
+    el.onchange = () => onTrustChange(el);
   });
   $("btn-save-relay").onclick = () => invoke("save_relay", { relay: $("relay").value }).then(render).catch(showErr);
   $("btn-reset-relay").onclick = () => invoke("reset_relay").then(render).catch(showErr);

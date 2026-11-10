@@ -798,6 +798,49 @@ body.view-home .client {
 .sbar-actions { flex: none; display: flex; align-items: center; gap: 10px; }
 .sbar-hint { margin: 0; padding: 0 32px 8px; min-height: 0; }
 .sbar-hint:empty { display: none; }
+.host-sbar { flex-wrap: wrap; gap: 8px 16px; }
+.host-duration {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--sub);
+  font-family: Consolas, "Cascadia Mono", monospace;
+  flex: none;
+}
+.host-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 32px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+}
+.host-trust-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub);
+  flex: none;
+}
+.host-trust-seg {
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+}
+.log-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.log-group:last-child { margin-bottom: 0; }
+.log-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  padding-left: 8px;
+  border-left: 2px solid var(--line);
+  margin: 2px 0 2px;
+  letter-spacing: 0.04em;
+}
+.log-group-label.write {
+  color: var(--blue);
+  border-left-color: var(--blue);
+}
 .btn.mcp-cta {
   height: 36px;
   padding: 0 14px;
