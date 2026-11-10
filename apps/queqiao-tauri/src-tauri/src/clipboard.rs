@@ -161,6 +161,9 @@ pub fn get(owner: isize) -> Result<String, String> {
 
 #[cfg(not(windows))]
 pub fn set(_owner: isize, value: &str) -> Result<(), String> {
+    if cfg!(target_os = "macos") {
+        return feed("pbcopy", &[], value).map_err(|_| copy::COPY_FAIL.into());
+    }
     if feed("wl-copy", &[], value).is_ok() || feed("xclip", &["-selection", "clipboard"], value).is_ok() {
         Ok(())
     } else {
@@ -170,6 +173,9 @@ pub fn set(_owner: isize, value: &str) -> Result<(), String> {
 
 #[cfg(not(windows))]
 pub fn get(_owner: isize) -> Result<String, String> {
+    if cfg!(target_os = "macos") {
+        return read_out("pbpaste", &[]).map_err(|_| "没能读取剪贴板。".into());
+    }
     if let Ok(text) = read_out("wl-paste", &["-n"]) {
         return Ok(text);
     }

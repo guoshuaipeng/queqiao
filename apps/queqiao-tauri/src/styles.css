@@ -296,7 +296,6 @@ body.view-home .client {
 .pc-devices {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -441,10 +440,10 @@ body.view-home .client {
   flex: 1;
   border: 1.5px solid var(--line);
   border-radius: 16px;
-  padding: 22px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   background: #fff;
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
@@ -499,8 +498,8 @@ body.view-home .client {
 .zone.dim { opacity: 0.5; filter: none; pointer-events: none; }
 .zone.dim:hover { border-color: var(--line); background: inherit; }
 .foot {
-  margin-top: 12px;
-  padding: 14px 32px;
+  margin-top: 8px;
+  padding: 10px 32px;
   color: #64748b;
   font-size: 12px;
   background: rgba(248, 250, 252, 0.8);
@@ -573,9 +572,11 @@ body.view-home .client {
 .hint { font-size: 13px; color: var(--sub); margin: 0; }
 .ok { font-size: 13px; color: var(--green); margin: 0; min-height: 1em; }
 .err { font-size: 13px; color: var(--red); margin: 0; }
+/* 空提示元素仍占 flex gap，矮窗口下首页卡片会溢出，空时摘出布局。 */
+#left-note:empty, #right-error:empty, #right-hint:empty { display: none; }
 .input-wrap { position: relative; }
 .input-wrap input, #relay, #path, #summary, #command {
-  height: 44px;
+  height: 40px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 0 56px 0 14px;
@@ -634,8 +635,8 @@ body.view-home .client {
 .steps {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 8px 0 0;
+  gap: 10px;
+  margin: 6px 0 0;
   padding: 0;
 }
 .step {
@@ -990,7 +991,7 @@ body.view-account .top {
 }
 body.view-settings .logo,
 body.view-account .logo { font-size: 18px; }
-@media (max-width: 759px) {
+@media (max-width: 759px), (max-height: 479px) {
   .top { padding: 16px 16px 0; }
   .zones {
     flex-direction: column;

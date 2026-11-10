@@ -1964,7 +1964,8 @@ fn open_folder(dir: &std::path::Path) -> std::io::Result<std::process::Child> {
     }
     #[cfg(not(windows))]
     {
-        std::process::Command::new("xdg-open").arg(dir).spawn()
+        let opener = if cfg!(target_os = "macos") { "open" } else { "xdg-open" };
+        std::process::Command::new(opener).arg(dir).spawn()
     }
 }
 
@@ -1975,7 +1976,8 @@ fn open_url(url: &str) -> std::io::Result<std::process::Child> {
     }
     #[cfg(not(windows))]
     {
-        std::process::Command::new("xdg-open").arg(url).spawn()
+        let opener = if cfg!(target_os = "macos") { "open" } else { "xdg-open" };
+        std::process::Command::new(opener).arg(url).spawn()
     }
 }
 
@@ -2640,6 +2642,9 @@ fn ask_account_unattended(state: State<'_, std::sync::Arc<Shared>>, skip_write: 
 
 #[tauri::command]
 fn set_account_autostart(state: State<'_, std::sync::Arc<Shared>>, on: bool) -> Result<Snapshot, String> {
+    if !cfg!(windows) {
+        return Ok(note_account_error(&state, "这个平台暂不支持开机自动等待。".into()));
+    }
     if on && !state.model.lock().expect("model").account_unattended {
         return Ok(note_account_error(&state, "请先开启无人值守。".into()));
     }

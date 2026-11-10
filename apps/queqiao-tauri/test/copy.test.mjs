@@ -20,7 +20,7 @@ const required = [
   "对方还没装鹊桥？复制安装说明",
   "只把连接凭证私下发给你信任的人。",
   "等待对方连接",
-  "复制链接码",
+  "复制连接凭证",
   "停止接受",
   "已找到对方，等对方点「允许协助」",
   "有人想协助这台电脑",
@@ -48,7 +48,7 @@ const required = [
   "给 AI 助手用（MCP）",
   "复制 MCP 配置",
   "复制使用说明",
-  "高风险包括删除文件、关机、改权限等。",
+  "高风险操作（删除文件、关机、改权限）默认仍会问你。",
 ];
 
 test("prototype copy is present", () => {
@@ -85,7 +85,7 @@ test("narrow home wheel scrolls the connect column", () => {
 });
 
 test("pair dialog does not leave the credential readable behind it", () => {
-  assert.match(css, /\.mask\s*\{[^}]*background:\s*#e8eef6/);
+  assert.match(css, /\.mask\s*\{[^}]*background:\s*rgba\(15,\s*23,\s*42,\s*0\.28\)/);
   assert.match(js, /manual-copy/);
   assert.ok(js.includes("s.dialog ? \"\""));
 });
@@ -107,6 +107,7 @@ test("countdown does not pretend to be a click on reject", () => {
 
 test("write confirm shows the remaining seconds", () => {
   assert.match(js, /d\.kind === "pair" \|\| d\.kind === "write"/);
+  assert.match(js, /\$\("dlg-no"\)\.textContent = base \+/);
 });
 
 test("log result scrolls to the newest line", () => {

@@ -114,7 +114,7 @@ function render(s) {
   $("right-error").textContent = s.helperError || "";
   $("right-hint").textContent = waiting ? "点连接会先停止接受协助（会先问你）。" : "";
   const rightIdle = s.phase === "idle" || s.phase === "helper_fail" || s.phase === "open_fail" || s.phase === "stop_fail";
-  show($("right-steps"), rightIdle);
+  show($("right-steps"), rightIdle && !s.helperError);
   $("cred").disabled = rightBusy;
 
   const ended = !!s.peerEnded;
@@ -734,8 +734,8 @@ function renderDialog(d) {
 
 function paintCount(d) {
   if (d.kind === "pair" || d.kind === "write") {
-    const base = d.primary || (d.kind === "pair" ? "允许协助" : "允许");
-    $("dlg-yes").textContent = base + "（" + Math.max(0, dlgLeft) + "）";
+    const base = d.secondary || "取消";
+    $("dlg-no").textContent = base + "（" + Math.max(0, dlgLeft) + "）";
   }
 }
 

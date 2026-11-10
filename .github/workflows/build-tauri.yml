@@ -1,0 +1,70 @@
+name: Build Tauri
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "apps/queqiao-tauri/**"
+      - ".github/workflows/build-tauri.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            rust_targets: ""
+            args: --bundles nsis
+            artifact: queqiao-windows
+          - platform: macos-latest
+            rust_targets: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin --bundles app,dmg
+            artifact: queqiao-macos-arm64
+          - platform: macos-latest
+            rust_targets: x86_64-apple-darwin
+            args: --target x86_64-apple-darwin --bundles app,dmg
+            artifact: queqiao-macos-x64
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: apps/queqiao-tauri/package-lock.json
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - name: Install frontend dependencies
+        working-directory: apps/queqiao-tauri
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/queqiao-tauri
+          args: ${{ matrix.args }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            apps/queqiao-tauri/src-tauri/target/release/bundle/nsis/**
+            apps/queqiao-tauri/src-tauri/target/*/release/bundle/dmg/**
+            apps/queqiao-tauri/src-tauri/target/*/release/bundle/macos/**
+          if-no-files-found: warn
+          retention-days: 14
