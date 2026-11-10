@@ -138,6 +138,17 @@ CREATE INDEX IF NOT EXISTS idx_messages_customer ON messages(customer_id);
 CREATE INDEX IF NOT EXISTS idx_customers_wechat ON customers(wechat);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
 CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+CREATE TABLE IF NOT EXISTS access_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL,
+  path TEXT NOT NULL DEFAULT '',
+  file_name TEXT NOT NULL DEFAULT '',
+  ip TEXT NOT NULL DEFAULT '',
+  user_agent TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_access_kind_created ON access_events(kind, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_access_ip ON access_events(ip);
 `
 	_, err := s.db.Exec(schema)
 	return err

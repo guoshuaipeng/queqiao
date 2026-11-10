@@ -1,15 +1,15 @@
 # 公网中继 — 生产部署约定
 
-> 架构拍板（2026-11-05）。控制协议见 `docs/relay-protocol.md`；本机开发见 `docs/relay.md`。  
-> **实现 / 上机**：交给开发侧（「鹊桥-服务端」改 Go 与部署脚本；「鹊桥-客户端」填客户端默认中继地址）。架构 bot 不写业务代码、不上机。
+> 控制协议见 `docs/relay-protocol.md`；本机开发见 `docs/relay.md`。  
+> **真实主机地址、验收记录**写在本机 `private/deploy.md`（从 `private.example/` 复制），不要提交到开源仓库。
 
 ## 拓扑
 
 | 项 | 约定 |
 |---|---|
 | 形态 | **单机单实例**（MVP；不做多实例/负载均衡） |
-| 主机 | 阿里云 ECS `121.196.45.81` |
-| 系统 | Alibaba Cloud Linux 4 LTS 64 位（标准版，非 Pro / Agentic / 容器优化） |
+| 主机 | 自备 VPS / 云主机（示例：`YOUR_RELAY_HOST`） |
+| 系统 | 常见 Linux x86_64 发行版即可 |
 | 规格建议 | 2C2G 即可 |
 | 监听 | `RELAY_ADDR=:17891`（全网卡） |
 | 进程 | **systemd** 常驻，建议 unit 名 `remote-assist-relay` |
@@ -69,9 +69,9 @@ chown -R relay:relay /var/lib/remote-assist-relay
 ## 验收
 
 1. `systemctl enable --now remote-assist-relay` 后 `ss -lntp | grep 17891` 可见监听。
-2. 本机或外网：`go run ./cmd/smoketest -addr 121.196.45.81:17891`（或同等访客 guest_host / guest_join）通过。
+2. 本机或外网：`go run ./cmd/smoketest -addr YOUR_RELAY_HOST:17891`（或同等访客 guest_host / guest_join）通过。
 3. 安全组 / 本机 firewalld 或 nftables：中继对公网开放 **TCP 17891**（按运维习惯二选一或都配）。同机官网另放行 TCP 80，见 `docs/site-deploy.md`。
-4. 客户端 / MCP 默认中继填：`121.196.45.81:17891`（写入设置默认值；用户仍可改）。
+4. 客户端默认中继：开源包默认 `127.0.0.1:17891`；正式发版用 `QUEQIAO_DEFAULT_RELAY=YOUR_RELAY_HOST:17891`（见 `private.example/deploy.md`），用户仍可在设置里改。
 
 ## 会话码审计（R046）
 
@@ -109,18 +109,3 @@ RELAY_AUDIT_RETENTION_DAYS=90
 ## 变更流程
 
 改监听端口、数据路径或拓扑：先改本文 + `docs/relay.md` / `PRODUCT.md`，再改 systemd / 客户端默认，最后上机。
-
-
-## 验收记录（2026-11-05 Asia/Shanghai）
-
-| 项 | 结果 |
-|---|---|
-| 主机 | 121.196.45.81（Alibaba Cloud Linux 4） |
-| 二进制 | /usr/local/bin/remote-assist-relay（linux/amd64，CGO=0 / modernc） |
-| systemd | emote-assist-relay enabled + active |
-| 监听 | *:17891 |
-| 数据 | RELAY_DATA=/var/lib/remote-assist-relay/relay.db（用户 elay） |
-| 外网 smoketest | go run ./cmd/smoketest -addr 121.196.45.81:17891 → **SMOKE OK** |
-| 本机 firewalld | 未运行；依赖阿里云安全组放行 **TCP 17891**（请运维确认） |
-
-客户端 / MCP 默认中继建议填：121.196.45.81:17891。

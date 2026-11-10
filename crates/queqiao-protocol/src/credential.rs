@@ -1,4 +1,5 @@
-//! 完整 `remoteassist:pair` 解析。缺指纹阻断。短码标为 Incomplete（本库不做 PAKE）。
+//! 完整 `remoteassist:pair` 与短码 `CODE-########` 解析。
+//! 短码走 PAKE（`pake: true`），需另给中继地址；完整载荷须含 `fp=`。
 
 use std::collections::BTreeMap;
 
@@ -9,6 +10,8 @@ pub struct RelayTarget {
     pub code: String,
     pub password: String,
     pub fingerprint: String,
+    /// 短码：密码不发给中继，指纹在 SPAKE2 握手后得到。
+    pub pake: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,7 +37,17 @@ pub fn classify(raw: &str) -> CredClass {
     if text.is_empty() {
         return CredClass::Format;
     }
-    if looks_short_or_legacy(text) {
+    if let Some((code, password)) = parse_short(text) {
+        return CredClass::Ok(Via::Relay(RelayTarget {
+            host: String::new(),
+            port: 0,
+            code,
+            password,
+            fingerprint: String::new(),
+            pake: true,
+        }));
+    }
+    if looks_two_line_legacy(text) {
         return CredClass::Incomplete;
     }
     if !text.to_ascii_lowercase().starts_with("remoteassist:pair") {
@@ -86,6 +99,7 @@ pub fn classify(raw: &str) -> CredClass {
             code,
             password,
             fingerprint,
+            pake: false,
         }));
     }
     if via.as_deref() == Some("lan") || map.contains_key("host") {
@@ -111,6 +125,24 @@ pub fn classify(raw: &str) -> CredClass {
         });
     }
     CredClass::Format
+}
+
+/// `CODE-########`（8 位数字密码）。
+pub fn parse_short(raw: &str) -> Option<(String, String)> {
+    if raw.to_ascii_lowercase().contains("remoteassist:pair") {
+        return None;
+    }
+    let compact: String = raw.chars().filter(|c| !c.is_whitespace()).collect();
+    let upper = compact.to_ascii_uppercase();
+    let (code, pwd) = upper.split_once('-')?;
+    let code_ok =
+        (4..=16).contains(&code.len()) && code.chars().all(|c| c.is_ascii_alphanumeric());
+    let pwd_ok = pwd.len() == 8 && pwd.chars().all(|c| c.is_ascii_digit());
+    if code_ok && pwd_ok {
+        Some((code.to_string(), pwd.to_string()))
+    } else {
+        None
+    }
 }
 
 pub fn normalize_code(code: &str) -> String {
@@ -158,19 +190,16 @@ pub fn parse_endpoint(raw: &str) -> Option<(String, u16)> {
     Some((host, port))
 }
 
-fn looks_short_or_legacy(text: &str) -> bool {
+pub fn default_relay() -> &'static str {
+    match option_env!("QUEQIAO_DEFAULT_RELAY") {
+        Some(v) => v,
+        None => "127.0.0.1:17891",
+    }
+}
+
+fn looks_two_line_legacy(text: &str) -> bool {
     if text.to_ascii_lowercase().contains("remoteassist:pair") {
         return false;
-    }
-    let compact: String = text.chars().filter(|c| !c.is_whitespace()).collect();
-    let upper = compact.to_ascii_uppercase();
-    if let Some((code, pwd)) = upper.split_once('-') {
-        let code_ok =
-            (4..=16).contains(&code.len()) && code.chars().all(|c| c.is_ascii_alphanumeric());
-        let pwd_ok = pwd.len() == 8 && pwd.chars().all(|c| c.is_ascii_digit());
-        if code_ok && pwd_ok {
-            return true;
-        }
     }
     let lines: Vec<&str> = text
         .lines()
@@ -240,14 +269,24 @@ mod tests {
                 assert_eq!(t.code, "AB12CD");
                 assert_eq!(t.port, 17891);
                 assert_eq!(t.fingerprint.len(), 64);
+                assert!(!t.pake);
             }
             other => panic!("unexpected {other:?}"),
         }
     }
 
     #[test]
-    fn short_code_incomplete() {
-        assert_eq!(classify("AB12CD-12345678"), CredClass::Incomplete);
+    fn short_code_pake() {
+        match classify("8CEJTF-79570185") {
+            CredClass::Ok(Via::Relay(t)) => {
+                assert!(t.pake);
+                assert_eq!(t.code, "8CEJTF");
+                assert_eq!(t.password, "79570185");
+                assert!(t.host.is_empty());
+                assert!(t.fingerprint.is_empty());
+            }
+            other => panic!("unexpected {other:?}"),
+        }
     }
 
     #[test]

@@ -1,4 +1,4 @@
-module gitee.com/CodeYG/remote-assist/site
+module github.com/guoshuaipeng/remote-assist/site
 
 go 1.26.0
 

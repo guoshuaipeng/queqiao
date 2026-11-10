@@ -27,6 +27,7 @@ function render(s) {
     window.__queqiaoSeq = s.seq;
   }
   state = s;
+  window.__lastSnap = s;
   const home = s.view === "home" || (s.view !== "settings" && s.view !== "host" && s.view !== "helper");
   const settings = s.view === "settings";
   const host = s.view === "host";
@@ -51,7 +52,7 @@ function render(s) {
   show($("settings-title"), settings || accountPage);
   if ($("settings-title")) $("settings-title").textContent = accountPage ? "个人中心" : "设置";
   const session = s.phase === "host_session" || s.phase === "helper_session";
-  show($("endbar"), host || helper || (settings && session));
+  show($("endbar"), host || (settings && session));
 
   const waiting = s.phase === "waiting";
   const opening = s.phase === "opening" || s.phase === "stopping";
@@ -76,10 +77,29 @@ function render(s) {
   if ($("long-hint")) {
     $("long-hint").textContent = s.longSkip ? "写操作不再询问，仍会记下。" : "要改电脑时仍会问你。";
   }
-  show($("btn-copy"), waiting);
   show($("btn-stop"), waiting);
-  $("btn-copy").disabled = s.phase === "stopping";
+  if ($("btn-copy")) $("btn-copy").disabled = s.phase === "stopping";
   $("btn-stop").disabled = s.phase === "stopping";
+  if ($("wait-code")) $("wait-code").textContent = waiting ? (s.code || "…") : "";
+  if ($("wait-pass")) {
+    const len = Math.max(0, Number(s.passwordLen) || 0);
+    const pass = s.password || "";
+    const showPass = waiting && !!window.__passReveal && !!pass;
+    $("wait-pass").textContent = waiting
+      ? (showPass ? pass : "•".repeat(len || 8))
+      : "";
+    $("wait-pass").classList.toggle("revealed", showPass);
+  }
+  if ($("btn-pass-eye")) {
+    const showPass = waiting && !!window.__passReveal && !!(s.password || "");
+    const on = $("btn-pass-eye").querySelector(".eye-on");
+    const off = $("btn-pass-eye").querySelector(".eye-off");
+    if (on) on.hidden = showPass;
+    if (off) off.hidden = !showPass;
+    $("btn-pass-eye").setAttribute("aria-label", showPass ? "隐藏密码" : "显示密码");
+    $("btn-pass-eye").title = showPass ? "隐藏密码" : "显示密码";
+  }
+  if (!waiting) window.__passReveal = false;
   $("copy-hint").textContent = s.copyHint || "";
   show($("manual-copy"), !!s.manualCopy && !s.dialog);
   $("manual-copy").value = s.dialog ? "" : (s.manualCopy || "");
@@ -115,6 +135,7 @@ function render(s) {
   $("right-hint").textContent = waiting ? "点连接会先停止接受协助（会先问你）。" : "";
   const rightIdle = s.phase === "idle" || s.phase === "helper_fail" || s.phase === "open_fail" || s.phase === "stop_fail";
   show($("right-steps"), rightIdle && !s.helperError);
+  show($("home-mcp-strip"), !rightBusy && !s.helperError && (rightIdle || waiting || opening));
   $("cred").disabled = rightBusy;
 
   const ended = !!s.peerEnded;
@@ -122,7 +143,12 @@ function render(s) {
   $("helper-title").textContent = ended && helper ? "对方已结束这次协助。" : "正在协助对方 · 已连接";
   $("host-dot").classList.toggle("gray", ended && host);
   $("helper-dot").classList.toggle("gray", ended && helper);
-  $("btn-end").textContent = ended ? "返回首页" : "结束本次协助";
+  const endLabel = ended ? "返回首页" : "结束本次协助";
+  $("btn-end").textContent = endLabel;
+  if ($("btn-end-helper")) {
+    $("btn-end-helper").textContent = endLabel;
+    show($("btn-end-helper").closest(".helper-foot") || $("btn-end-helper"), helper);
+  }
   show($("trust-full"), host && s.trustEffective === "full" && !ended);
   show($("trust-loose"), host && s.trustEffective === "relaxed" && !ended);
   const audit = $("audit");
@@ -138,11 +164,23 @@ function render(s) {
   if (host) requestAnimationFrame(() => applyScroll(audit, "__auditStick"));
   else audit.__applying = false;
   show($("helper-tools"), !ended);
+  show($("helper-mcp-actions"), helper && !ended);
   document.querySelectorAll(".ops .btn").forEach((b) => {
     b.disabled = !!s.opBusy || ended;
   });
   $("op-status").textContent = s.opBusy ? "正在执行…" : (s.opStatus || "");
-  paintResult(s.result || "点上面的操作，结果会显示在这里");
+  paintResult(s.result || "点左侧的操作，结果会显示在这里");
+  if ($("tool-title")) {
+    const titles = {
+      ListProcesses: "正在运行的程序",
+      ListServices: "服务状态",
+      ListDir: "文件夹",
+      ReadLogTail: "日志",
+      ReadFile: "文件",
+      RunCommand: "提议一项改动",
+    };
+    $("tool-title").textContent = titles[selectedTool] || "选择一项操作";
+  }
   if (typeof s.formEpoch === "number" && s.formEpoch > (window.__formEpoch || 0)) {
     window.__formEpoch = s.formEpoch;
     $("summary").value = "";
@@ -167,7 +205,23 @@ function render(s) {
     show($("trust-hint"), trustNeedPeer);
   }
   if ($("settings-hint")) $("settings-hint").textContent = trustNeedPeer ? "" : settingsHint;
+  const mcpHint = !trustNeedPeer && /MCP|使用说明|没能复制/.test(settingsHint) ? settingsHint : "";
+  if ($("helper-mcp-hint")) $("helper-mcp-hint").textContent = helper && !ended ? mcpHint : "";
+  if ($("home-mcp-hint")) {
+    const stripOn = home && !accountPage && !rightBusy && !s.helperError && (rightIdle || waiting || opening);
+    $("home-mcp-hint").textContent = stripOn ? mcpHint : "";
+  }
   if ($("version")) $("version").textContent = "版本 " + (s.version || "");
+  if ($("auto-update")) $("auto-update").checked = !!s.autoUpdate;
+  if ($("update-hint")) $("update-hint").textContent = s.updateHint || "";
+  if ($("btn-check-update")) $("btn-check-update").disabled = !!s.updateBusy;
+  if ($("btn-apply-update")) {
+    show($("btn-apply-update"), !!s.updateAvailable);
+    $("btn-apply-update").disabled = !!s.updateBusy || !s.updateAvailable;
+    $("btn-apply-update").textContent = s.updateBusy
+      ? "正在更新…"
+      : (s.updateVersion ? "更新到 " + s.updateVersion : "立即更新");
+  }
   const logged = !!(s.accountUser);
   const signup = accountMode === "signup";
   const mark = logged ? s.accountUser.slice(0, 1).toUpperCase() : "";
@@ -485,33 +539,83 @@ function fitSpan() {
     document.body.classList.remove("tight");
     return;
   }
-  const summary = $("propose") && !$("propose").hidden ? $("summary") : null;
   const past = $("past") && !$("past").hidden && $("past").childElementCount ? $("past") : null;
-  const bar = $("ops-bar");
-  const barH = bar ? bar.getBoundingClientRect().height : 0;
-  const topEl = summary || result;
-  const bottomEl = past || result;
   const propose = $("propose");
   const tight = window.innerHeight <= 400;
   document.body.classList.toggle("tight", tight);
+  scroller.style.gap = "";
+  scroller.style.paddingTop = "";
+  scroller.style.paddingBottom = "";
+  if (propose) propose.style.gap = "";
+
+  const settle = (box, stickEnd) => {
+    if (!box) return;
+    const maxX = Math.max(0, box.scrollWidth - box.clientWidth);
+    const tail = box.__rowTail || 0;
+    if (tail > 1 && maxX - tail <= 48 && maxX - tail >= -1) {
+      box.scrollLeft = maxX;
+      box.__rowTail = box.scrollLeft;
+    } else if (tail > 1) {
+      box.scrollLeft = Math.min(tail, maxX);
+    }
+    if (stickEnd) snapEnd(box);
+    else snapNearest(box);
+    pinShortRows(box);
+  };
+
+  if (section.classList.contains("helper-console")) {
+    const hold = result.closest(".box-hold") || result;
+    const view = scroller.getBoundingClientRect();
+    const holdTop = hold.getBoundingClientRect().top;
+    const pastRows = tight ? 2 : 4;
+    if (past) {
+      const widePast = past.scrollWidth > past.clientWidth + 1;
+      past.style.maxHeight = (pastRows * 20 + 2 + (widePast ? 12 : 0)) + "px";
+    }
+    const pastBlock = past ? (past.closest(".box-hold") || past) : null;
+    const pastH = pastBlock ? Math.max(pastBlock.getBoundingClientRect().height, pastRows * 20 + 18) : 0;
+    const available = Math.max(tight ? 48 : 120, Math.floor(view.bottom - holdTop - pastH - 8));
+    const wide = result.scrollWidth > result.clientWidth + 1;
+    result.style.maxHeight = (available - (wide ? 0 : 0)) + "px";
+    if (past && past.__openEnd) {
+      snapEnd(past);
+      past.__openEnd = false;
+    } else if (past) snapNearest(past);
+    placeRail(result);
+    pinShortRows(result);
+    if (past) {
+      placeRail(past);
+      pinShortRows(past);
+    }
+    settle(result, (window.__resultStick || "end") === "end");
+    if (past) settle(past, false);
+    placeRail(result);
+    if (past) placeRail(past);
+    scroller.scrollTop = 0;
+    scroller.style.overflowY = "hidden";
+    return;
+  }
+
+  const summary = $("propose") && !$("propose").hidden ? $("summary") : null;
+  const bar = $("ops-bar");
+  const barInScroll = bar && scroller.contains(bar);
+  const barH = barInScroll ? bar.getBoundingClientRect().height : 0;
+  const topEl = summary || result;
+  const bottomEl = past || result;
   if (tight) {
     scroller.style.gap = "0px";
     scroller.style.paddingTop = "0px";
     scroller.style.paddingBottom = "0px";
-    if (bar) bar.style.paddingBottom = "0px";
+    if (barInScroll) bar.style.paddingBottom = "0px";
     if (propose && !propose.hidden) propose.style.gap = "0px";
   } else if (past) {
     scroller.style.gap = "4px";
     scroller.style.paddingTop = "0px";
     scroller.style.paddingBottom = "16px";
-    if (bar) bar.style.paddingBottom = "0px";
+    if (barInScroll) bar.style.paddingBottom = "0px";
     if (propose && !propose.hidden) propose.style.gap = "4px";
-  } else {
-    scroller.style.gap = "";
-    scroller.style.paddingTop = "";
-    scroller.style.paddingBottom = "";
-    if (bar) bar.style.paddingBottom = "";
-    if (propose) propose.style.gap = "";
+  } else if (barInScroll) {
+    bar.style.paddingBottom = "";
   }
   const rowHeight = (n) => n * 20 + 2 + 16;
   let resultRows = 8;
@@ -556,83 +660,18 @@ function fitSpan() {
     placeRail(past);
     pinShortRows(past);
   }
-  let extra = scroller.scrollHeight - scroller.clientHeight;
-  if (extra > 1 && bar) {
-    bar.style.paddingBottom = "0px";
-    extra = scroller.scrollHeight - scroller.clientHeight;
-  }
-  if (extra > 1) {
-    scroller.style.paddingTop = "0px";
-    extra = scroller.scrollHeight - scroller.clientHeight;
-  }
-  if (extra > 1 && extra <= 28) {
-    scroller.style.paddingTop = "0px";
-    if (!past) scroller.style.paddingBottom = "0px";
-    extra = scroller.scrollHeight - scroller.clientHeight;
-  }
-  if (extra > 1 && extra <= 12) {
-    const pad = parseFloat(scroller.style.paddingBottom) || 0;
-    scroller.style.paddingBottom = Math.max(0, pad - extra) + "px";
-    extra = scroller.scrollHeight - scroller.clientHeight;
-  }
-  if (!tight && extra > 1 && extra <= 40) {
-    scroller.style.gap = "4px";
-    extra = scroller.scrollHeight - scroller.clientHeight;
-  }
-  if (extra > 1 && extra <= 24) {
-    scroller.style.paddingBottom = "0px";
-    extra = scroller.scrollHeight - scroller.clientHeight;
-  }
-  const fitRows = (box, rows) => {
-    box.style.maxHeight = (rows * 20 + 2) + "px";
-    const wide = box.scrollWidth > box.clientWidth + 1;
-    box.style.maxHeight = (rows * 20 + 2 + (wide ? 12 : 0)) + "px";
+  const fitRows = (el, rows) => {
+    el.style.maxHeight = (rows * 20 + 2) + "px";
+    const wide = el.scrollWidth > el.clientWidth + 1;
+    el.style.maxHeight = (rows * 20 + 2 + (wide ? 12 : 0)) + "px";
   };
-  if (tight) {
-    scroller.style.paddingTop = "0px";
-    scroller.style.paddingBottom = "0px";
-    scroller.style.gap = "0px";
-    if (propose && !propose.hidden) propose.style.gap = "0px";
-  }
   fitRows(result, resultRows);
   if (past) fitRows(past, pastRows);
-  const settle = (box, stickEnd) => {
-    if (!box) return;
-    const maxX = Math.max(0, box.scrollWidth - box.clientWidth);
-    const tail = box.__rowTail || 0;
-    if (tail > 1 && maxX - tail <= 48 && maxX - tail >= -1) {
-      box.scrollLeft = maxX;
-      box.__rowTail = box.scrollLeft;
-    } else if (tail > 1) {
-      box.scrollLeft = Math.min(tail, maxX);
-    }
-    if (stickEnd) snapEnd(box);
-    else snapNearest(box);
-    pinShortRows(box);
-  };
   settle(result, (window.__resultStick || "end") === "end");
   if (past) settle(past, false);
-  extra = scroller.scrollHeight - scroller.clientHeight;
-  let shrinks = 0;
-  while (extra > 4 && shrinks < 8) {
-    scroller.style.paddingTop = "0px";
-    scroller.style.paddingBottom = "0px";
-    scroller.style.gap = "0px";
-    extra = scroller.scrollHeight - scroller.clientHeight;
-    if (extra <= 4) break;
-    if (resultRows > resultMin) resultRows -= 1;
-    else if (past && pastRows > pastMin) pastRows -= 1;
-    else break;
-    fitRows(result, resultRows);
-    if (past) fitRows(past, pastRows);
-    settle(result, (window.__resultStick || "end") === "end");
-    if (past) settle(past, false);
-    extra = scroller.scrollHeight - scroller.clientHeight;
-    shrinks += 1;
-  }
   placeRail(result);
   if (past) placeRail(past);
-  extra = scroller.scrollHeight - scroller.clientHeight;
+  const extra = scroller.scrollHeight - scroller.clientHeight;
   if (extra <= 4) scroller.scrollTop = 0;
   scroller.style.overflowY = extra <= 4 ? "hidden" : "auto";
 }
@@ -721,14 +760,17 @@ function renderDialog(d) {
   $("dlg-yes").textContent = d.primary || "允许";
   $("dlg-no").classList.add("focus");
   $("dlg-yes").classList.remove("focus");
-  dlgLeft = d.seconds || 60;
+  dlgLeft = Number.isFinite(d.seconds) ? d.seconds : 60;
   paintCount(d);
   clearInterval(dlgTimer);
-  dlgTimer = setInterval(() => {
-    dlgLeft -= 1;
-    paintCount(d);
-    if (dlgLeft <= 0) clearInterval(dlgTimer);
-  }, 1000);
+  dlgTimer = null;
+  if (dlgLeft > 0 && (d.kind === "pair" || d.kind === "write")) {
+    dlgTimer = setInterval(() => {
+      dlgLeft -= 1;
+      paintCount(d);
+      if (dlgLeft <= 0) clearInterval(dlgTimer);
+    }, 1000);
+  }
   setTimeout(() => $("dlg-no").focus(), 0);
 }
 
@@ -855,6 +897,12 @@ function bindUi() {
     $("btn-long-copy").onclick = () => invoke("copy_long_credential").then(render).catch(showErr);
   }
   $("btn-stop").onclick = () => invoke("stop_accept").then(render).catch(showErr);
+  if ($("btn-pass-eye")) {
+    $("btn-pass-eye").onclick = () => {
+      window.__passReveal = !window.__passReveal;
+      if (window.__lastSnap) render(window.__lastSnap);
+    };
+  }
   $("btn-copy").onclick = async () => {
     try {
       const snap = await invoke("copy_credential");
@@ -881,16 +929,27 @@ function bindUi() {
   $("btn-connect").onclick = () => invoke("connect", { payload: $("cred").value }).then(render).catch(showErr);
   $("btn-cancel").onclick = () => invoke("cancel_connect").then(render).catch(showErr);
   $("btn-install").onclick = () => invoke("copy_install").then(render).catch(showErr);
-  $("btn-end").onclick = () => {
+  const endSession = () => {
     if (state && state.peerEnded) invoke("return_home").then(render).catch(showErr);
     else invoke("request_end").then(render).catch(showErr);
   };
+  $("btn-end").onclick = endSession;
+  if ($("btn-end-helper")) $("btn-end-helper").onclick = endSession;
   $("btn-end-full").onclick = () => invoke("end_full_trust").then(render).catch(showErr);
   $("btn-back-ask").onclick = () => invoke("set_trust", { trust: "ask" }).then(render).catch(showErr);
   document.querySelectorAll(".ops .btn").forEach((b) => {
     b.onclick = () => {
       selectedTool = b.dataset.tool;
       document.querySelectorAll(".ops .btn").forEach((x) => x.classList.toggle("sel", x === b));
+      const titles = {
+        ListProcesses: "正在运行的程序",
+        ListServices: "服务状态",
+        ListDir: "文件夹",
+        ReadLogTail: "日志",
+        ReadFile: "文件",
+        RunCommand: "提议一项改动",
+      };
+      if ($("tool-title")) $("tool-title").textContent = titles[selectedTool] || "选择一项操作";
       const pathTool = selectedTool === "ListDir" || selectedTool === "ReadLogTail" || selectedTool === "ReadFile";
       show($("path-row"), pathTool);
       show($("propose"), selectedTool === "RunCommand");
@@ -920,9 +979,23 @@ function bindUi() {
   });
   $("btn-save-relay").onclick = () => invoke("save_relay", { relay: $("relay").value }).then(render).catch(showErr);
   $("btn-reset-relay").onclick = () => invoke("reset_relay").then(render).catch(showErr);
-  $("btn-mcp").onclick = () => invoke("copy_mcp", { draft: $("cred").value }).then(render).catch(showErr);
+  const copyMcp = () => invoke("copy_mcp", { draft: $("cred").value }).then(render).catch(showErr);
+  $("btn-mcp").onclick = copyMcp;
+  if ($("btn-mcp-session")) $("btn-mcp-session").onclick = copyMcp;
+  if ($("btn-mcp-home")) $("btn-mcp-home").onclick = copyMcp;
   $("btn-usage").onclick = () => invoke("copy_usage").then(render).catch(showErr);
   $("btn-site").onclick = () => invoke("open_site").catch(showErr);
+  if ($("btn-check-update")) {
+    $("btn-check-update").onclick = () => invoke("check_update").then(render).catch(showErr);
+  }
+  if ($("btn-apply-update")) {
+    $("btn-apply-update").onclick = () => invoke("apply_update").then(render).catch(showErr);
+  }
+  if ($("auto-update")) {
+    $("auto-update").onchange = () => {
+      invoke("set_auto_update", { on: !!$("auto-update").checked }).then(render).catch(showErr);
+    };
+  }
   $("btn-records").onclick = () => invoke("open_history_dir").then(render).catch(showErr);
   $("btn-history").onclick = () => invoke("toggle_history").then(render).catch(showErr);
   $("dlg-no").onclick = () => resolve(false);

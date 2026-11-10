@@ -74,7 +74,7 @@
     @media (max-width: 760px) {
       .admin-shell { grid-template-columns: 1fr; }
       .admin-side { position: static; height: auto; }
-      .side-nav { grid-template-columns: repeat(3, 1fr); }
+      .side-nav { grid-template-columns: repeat(4, 1fr); }
       .side-foot { margin-top: 12px; }
       .admin-main { padding: 20px 16px 40px; }
     }
@@ -93,7 +93,7 @@
       </header>
       <section id="login-view" class="card admin-login">
         <h1 style="margin:0;font-size:1.3rem">运营后台</h1>
-        <p class="hint" style="margin:0">输入口令后查看留言、客户与会话码。口令由服务器环境配置。</p>
+        <p class="hint" style="margin:0">输入口令后查看留言、客户、会话码与访问统计。口令由服务器环境配置。</p>
         <div class="alert err" id="login-err"></div>
         <form id="login-form">
           <label>口令
@@ -116,6 +116,7 @@
           <button type="button" data-panel="codes" class="active">会话码</button>
           <button type="button" data-panel="messages">留言</button>
           <button type="button" data-panel="customers">客户</button>
+          <button type="button" data-panel="stats">统计</button>
         </nav>
         <div class="side-foot">
           <a href="/">产品介绍</a>
@@ -199,6 +200,83 @@
             </table>
           </div>
         </section>
+
+        <section id="panel-stats" class="hidden" data-panel="stats">
+          <div class="panel-head">
+            <h1>访问与下载</h1>
+            <p class="hint">记录公开页打开与安装包下载（含 IP）。刷新页面会重复计数；独立访客按 IP 去重。不记后台与静态资源。</p>
+          </div>
+          <div class="toolbar">
+            <button class="btn" type="button" id="stats-refresh">刷新</button>
+          </div>
+          <div class="alert err" id="stats-err"></div>
+          <div class="card table-card" style="padding:16px 20px;margin-bottom:16px">
+            <table class="data" id="stats-summary">
+              <thead>
+                <tr>
+                  <th>打开次数</th>
+                  <th>打开独立 IP</th>
+                  <th>下载次数</th>
+                  <th>下载独立 IP</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="stat-visit-count">0</td>
+                  <td id="stat-visit-ips">0</td>
+                  <td id="stat-dl-count">0</td>
+                  <td id="stat-dl-ips">0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel-head" style="margin-top:8px">
+            <h1 style="font-size:1.1rem;margin:0 0 6px">按文件下载</h1>
+          </div>
+          <div class="card table-card" style="margin-bottom:16px">
+            <table class="data" id="stats-files">
+              <thead>
+                <tr>
+                  <th>文件名</th>
+                  <th>次数</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="panel-head" style="margin-top:8px">
+            <h1 style="font-size:1.1rem;margin:0 0 6px">最近打开</h1>
+          </div>
+          <div class="card table-card" style="margin-bottom:16px">
+            <table class="data" id="stats-visits">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>路径</th>
+                  <th>IP</th>
+                  <th>UA</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="panel-head" style="margin-top:8px">
+            <h1 style="font-size:1.1rem;margin:0 0 6px">最近下载</h1>
+          </div>
+          <div class="card table-card">
+            <table class="data" id="stats-downloads">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>文件</th>
+                  <th>IP</th>
+                  <th>UA</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
   </section>
@@ -209,7 +287,7 @@
     const loginErr = document.getElementById("login-err");
     const dashErr = document.getElementById("dash-err");
     const statuses = ["新留言", "已联系", "已结束"];
-    const panels = ["messages", "customers", "codes"];
+    const panels = ["messages", "customers", "codes", "stats"];
 
     function fmtTime(sec) {
       if (!sec) return "";
@@ -270,6 +348,7 @@
       renderCustomers(c.data.customers || []);
       showDash();
       refreshSessionCodes();
+      if (currentPanel() === "stats") refreshStats();
     }
 
     async function refreshSessionCodes() {
@@ -376,11 +455,62 @@
       showPanel(currentPanel());
     }
 
+    async function refreshStats() {
+      const statsErr = document.getElementById("stats-err");
+      showErr(statsErr, "");
+      const { res, data } = await api("/admin/api/stats");
+      if (res.status === 401) { showLogin(); return; }
+      if (!res.ok || !data.ok || !data.stats) {
+        showErr(statsErr, "统计加载失败");
+        return;
+      }
+      const st = data.stats;
+      document.getElementById("stat-visit-count").textContent = st.visit_count || 0;
+      document.getElementById("stat-visit-ips").textContent = st.visit_unique_ips || 0;
+      document.getElementById("stat-dl-count").textContent = st.download_count || 0;
+      document.getElementById("stat-dl-ips").textContent = st.download_unique_ips || 0;
+
+      const ftb = document.querySelector("#stats-files tbody");
+      ftb.innerHTML = "";
+      for (const f of (st.downloads_by_file || [])) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="ink">${escapeHtml(f.file_name || "")}</td><td>${f.count || 0}</td>`;
+        ftb.appendChild(tr);
+      }
+
+      const vtb = document.querySelector("#stats-visits tbody");
+      vtb.innerHTML = "";
+      for (const e of (st.recent_visits || [])) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${fmtTime(e.created_at)}</td>
+          <td class="ink">${escapeHtml(e.path || "")}</td>
+          <td>${escapeHtml(e.ip || "")}</td>
+          <td class="problem">${escapeHtml(e.user_agent || "")}</td>`;
+        vtb.appendChild(tr);
+      }
+
+      const dtb = document.querySelector("#stats-downloads tbody");
+      dtb.innerHTML = "";
+      for (const e of (st.recent_downloads || [])) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${fmtTime(e.created_at)}</td>
+          <td class="ink">${escapeHtml(e.file_name || "")}</td>
+          <td>${escapeHtml(e.ip || "")}</td>
+          <td class="problem">${escapeHtml(e.user_agent || "")}</td>`;
+        dtb.appendChild(tr);
+      }
+    }
+
     document.getElementById("side-nav").addEventListener("click", (ev) => {
       const btn = ev.target.closest("button[data-panel]");
       if (!btn) return;
       showPanel(btn.dataset.panel);
+      if (btn.dataset.panel === "stats") refreshStats();
     });
+
+    document.getElementById("stats-refresh").addEventListener("click", refreshStats);
 
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -413,7 +543,10 @@
     });
 
     window.addEventListener("hashchange", () => {
-      if (!dashView.classList.contains("hidden")) showPanel(currentPanel());
+      if (dashView.classList.contains("hidden")) return;
+      const panel = currentPanel();
+      showPanel(panel);
+      if (panel === "stats") refreshStats();
     });
 
     refresh();

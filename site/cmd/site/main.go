@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	sitefs "gitee.com/CodeYG/remote-assist/site"
-	"gitee.com/CodeYG/remote-assist/site/internal/site"
+	sitefs "github.com/guoshuaipeng/remote-assist/site"
+	"github.com/guoshuaipeng/remote-assist/site/internal/site"
 )
 
 func main() {

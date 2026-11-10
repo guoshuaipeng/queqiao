@@ -1,7 +1,8 @@
-//! 鹊桥协助端协议库：完整载荷解析、中继 JSONL、业务帧、TLS 钉扎会话。
+//! 鹊桥协助端协议库：完整载荷 / 短码 PAKE、中继 JSONL、业务帧、TLS 钉扎会话。
 //! 不依赖 Tauri；写操作确认仍在被控端 UI。
 
 pub mod credential;
+pub mod pake;
 pub mod session;
 pub mod tls;
 pub mod tools;

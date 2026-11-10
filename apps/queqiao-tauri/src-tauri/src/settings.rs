@@ -35,6 +35,13 @@ pub struct Settings {
     pub account_skip_write: bool,
     #[serde(default)]
     pub account_autostart: bool,
+    /// 发现新版本时自动下载并打开安装包（默认开）。
+    #[serde(default = "default_true")]
+    pub auto_update: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for Settings {
@@ -53,6 +60,7 @@ impl Default for Settings {
             account_unattended: false,
             account_skip_write: false,
             account_autostart: false,
+            auto_update: true,
         }
     }
 }
@@ -124,6 +132,7 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), String> {
         account_unattended: settings.account_unattended,
         account_skip_write: settings.account_skip_write,
         account_autostart: settings.account_autostart,
+        auto_update: settings.auto_update,
     };
     if parse_endpoint(&clean.relay).is_none() {
         return Err("服务器地址不对。请填写 主机:端口。".into());

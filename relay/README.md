@@ -7,7 +7,7 @@ Assist 写操作仍由被控本机确认；中继不绕过。完整契约见仓�
 ## 快速跑
 
 ```powershell
-cd E:\IdeaProjects\remote-assist\relay
+cd relay
 $env:RELAY_ADDR = ":17891"
 $env:RELAY_DATA = ".\data\relay.db"
 go run .\cmd\relay

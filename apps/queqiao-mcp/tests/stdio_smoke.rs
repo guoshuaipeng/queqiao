@@ -188,6 +188,9 @@ fn stdio_initialize_list_and_call() {
     );
     let init = read_msg(&mut stdout);
     assert_eq!(init["result"]["serverInfo"]["name"], "remote-assist");
+    let instructions = init["result"]["instructions"].as_str().unwrap_or("");
+    assert!(instructions.contains("鹊桥"), "{instructions}");
+    assert!(instructions.contains("run_command"), "{instructions}");
 
     write_msg(
         &mut stdin,
@@ -197,12 +200,124 @@ fn stdio_initialize_list_and_call() {
     let tools = list["result"]["tools"].as_array().unwrap();
     assert!(tools.iter().any(|t| t["name"] == "list_processes"));
     assert!(tools.iter().any(|t| t["name"] == "run_command"));
+    let run = tools.iter().find(|t| t["name"] == "run_command").unwrap();
+    let run_desc = run["description"].as_str().unwrap_or("");
+    assert!(run_desc.contains("允许") || run_desc.contains("确认"), "{run_desc}");
+
+    assert!(tools.iter().any(|t| t["name"] == "connect"));
+    assert!(tools.iter().any(|t| t["name"] == "connection_status"));
 
     write_msg(
         &mut stdin,
         &json!({
             "jsonrpc":"2.0",
             "id":3,
+            "method":"tools/call",
+            "params":{"name":"list_processes","arguments":{}}
+        })
+        .to_string(),
+    );
+    let call = read_msg(&mut stdout);
+    let text = call["result"]["content"][0]["text"].as_str().unwrap_or("");
+    assert!(text.contains("stdio-smoke-ok"), "{call}");
+
+    drop(stdin);
+    let _ = child.wait();
+}
+
+#[test]
+fn stdio_starts_disconnected_then_connect_tool() {
+    let (config, fp) = identity();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let cfg = config.clone();
+    thread::spawn(move || {
+        let (tcp, _) = listener.accept().unwrap();
+        host_loop(tcp, cfg);
+    });
+    thread::sleep(Duration::from_millis(80));
+
+    let payload = format!(
+        "remoteassist:pair?v=2&via=lan&host=127.0.0.1&port={port}&code=ABC123&pwd=12345678&tls=1&fp={}",
+        normalize_fp(&fp)
+    );
+    let exe = mcp_exe();
+    assert!(exe.exists(), "build mcp first: {}", exe.display());
+
+    // 无 PAYLOAD：应直接进入 stdio，不退出。
+    let mut child = Command::new(&exe)
+        .env_remove("REMOTE_ASSIST_PAYLOAD")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn mcp");
+
+    let mut stdin = child.stdin.take().unwrap();
+    let mut stdout = child.stdout.take().unwrap();
+
+    write_msg(
+        &mut stdin,
+        &json!({
+            "jsonrpc":"2.0",
+            "id":1,
+            "method":"initialize",
+            "params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"t","version":"0"}}
+        })
+        .to_string(),
+    );
+    let init = read_msg(&mut stdout);
+    assert_eq!(init["result"]["serverInfo"]["name"], "remote-assist");
+    let instructions = init["result"]["instructions"].as_str().unwrap_or("");
+    assert!(instructions.contains("connect"), "{instructions}");
+
+    write_msg(
+        &mut stdin,
+        &json!({
+            "jsonrpc":"2.0",
+            "id":2,
+            "method":"tools/call",
+            "params":{"name":"connection_status","arguments":{}}
+        })
+        .to_string(),
+    );
+    let st = read_msg(&mut stdout);
+    let st_text = st["result"]["content"][0]["text"].as_str().unwrap_or("");
+    assert_eq!(st_text, "disconnected");
+
+    write_msg(
+        &mut stdin,
+        &json!({
+            "jsonrpc":"2.0",
+            "id":3,
+            "method":"tools/call",
+            "params":{"name":"list_processes","arguments":{}}
+        })
+        .to_string(),
+    );
+    let before = read_msg(&mut stdout);
+    assert_eq!(before["result"]["isError"], true);
+    let before_text = before["result"]["content"][0]["text"].as_str().unwrap_or("");
+    assert!(before_text.contains("connect"), "{before_text}");
+
+    write_msg(
+        &mut stdin,
+        &json!({
+            "jsonrpc":"2.0",
+            "id":4,
+            "method":"tools/call",
+            "params":{"name":"connect","arguments":{"payload": payload}}
+        })
+        .to_string(),
+    );
+    let conn = read_msg(&mut stdout);
+    assert_eq!(conn["result"]["isError"], false, "{conn}");
+
+    write_msg(
+        &mut stdin,
+        &json!({
+            "jsonrpc":"2.0",
+            "id":5,
             "method":"tools/call",
             "params":{"name":"list_processes","arguments":{}}
         })

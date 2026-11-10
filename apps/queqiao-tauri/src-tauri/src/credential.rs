@@ -283,7 +283,7 @@ mod tests {
     use super::*;
 
     fn sample() -> String {
-        build_relay_payload("121.196.45.81:17891", "AB12CD", "12345678", &"AB".repeat(32))
+        build_relay_payload("127.0.0.1:17891", "AB12CD", "12345678", &"AB".repeat(32))
     }
 
     #[test]
@@ -330,7 +330,7 @@ mod tests {
         let mut s = sample();
         s = s.replace("&fp=", "&x=");
         // rebuild without fp
-        let no_fp = "remoteassist:pair?v=2&via=relay&relay=121.196.45.81:17891&code=AB12CD&pwd=12345678&tls=1";
+        let no_fp = "remoteassist:pair?v=2&via=relay&relay=127.0.0.1:17891&code=AB12CD&pwd=12345678&tls=1";
         assert_eq!(classify(no_fp), CredClass::Incomplete);
         let tls0 = sample().replace("tls=1", "tls=0");
         assert_eq!(classify(&tls0), CredClass::Incomplete);

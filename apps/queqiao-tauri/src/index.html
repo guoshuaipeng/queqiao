@@ -41,7 +41,29 @@
           </div>
           <div id="left-wait" hidden>
             <div class="status" id="left-status"><span class="dot wait"></span>等待对方连接</div>
-            <div class="note" id="wait-note">把连接凭证发给来帮你的人。对方连上时会先弹窗问你，你点「允许协助」才算连上。</div>
+            <div class="cred-panel" id="wait-cred">
+              <div class="cred-block">
+                <span class="cred-label">短码</span>
+                <div class="cred-line">
+                  <span class="cred-code" id="wait-code"></span>
+                  <button type="button" class="btn sm copy-cred" id="btn-copy">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16V4a2 2 0 0 1 2-2h12"/></svg>
+                    复制连接凭证
+                  </button>
+                </div>
+              </div>
+              <div class="cred-block cred-pass">
+                <span class="cred-label">密码</span>
+                <div class="cred-line">
+                  <span class="cred-secret" id="wait-pass"></span>
+                  <button type="button" class="eye" id="btn-pass-eye" aria-label="显示密码" title="显示密码">
+                    <svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="eye-off" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-1.7 2.5"/><path d="M6.6 6.6C3.8 8.5 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="m2 2 20 20"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p class="hint" id="wait-note">复制会带上短码和密码，完整发给对方或 AI。对方连上时会先弹窗问你，你点「允许协助」才算连上。</p>
           </div>
           <button type="button" class="link history-link" id="btn-history" hidden>查看上次协助记录</button>
           <div id="history" class="log" hidden></div>
@@ -54,7 +76,6 @@
           <p class="hint" id="left-note"></p>
           <div class="row" id="left-actions">
             <button type="button" class="btn primary block" id="btn-start">开启接受协助</button>
-            <button type="button" class="btn primary" id="btn-copy" hidden>复制连接凭证</button>
             <button type="button" class="btn" id="btn-stop" hidden>停止接受</button>
           </div>
           <p class="ok" id="copy-hint"></p>
@@ -75,6 +96,14 @@
             <div class="step"><b>1</b><span>让对方发来连接凭证</span></div>
             <div class="step"><b>2</b><span>粘贴到上面，点「连接」</span></div>
           </div>
+          <div class="mcp-strip" id="home-mcp-strip">
+            <div class="mcp-strip-copy">
+              <span class="mcp-strip-title">也可以用 Cursor / AI 协助</span>
+              <span class="mcp-strip-sub">未连接也能装；装好后把短码发给 AI</span>
+            </div>
+            <button type="button" class="btn sm primary" id="btn-mcp-home">复制 MCP 配置</button>
+          </div>
+          <p class="ok" id="home-mcp-hint"></p>
           <div class="status" id="right-status" hidden></div>
           <p class="err" id="right-error"></p>
           <div class="spacer"></div>
@@ -98,41 +127,89 @@
         </div>
       </section>
 
-      <section id="helper" class="session" hidden>
-        <div class="sbar"><div class="status"><span class="dot" id="helper-dot"></span><span id="helper-title">正在协助对方 · 已连接</span></div></div>
-        <div class="scroll" id="helper-scroll">
-          <div id="helper-tools">
+      <section id="helper" class="session helper-console" hidden>
+        <div class="sbar">
+          <div class="status"><span class="dot" id="helper-dot"></span><span id="helper-title">正在协助对方 · 已连接</span></div>
+          <div class="sbar-actions" id="helper-mcp-actions">
+            <button type="button" class="btn mcp-cta" id="btn-mcp-session">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16V4a2 2 0 0 1 2-2h12"/></svg>
+              复制 MCP 配置
+            </button>
+            <span class="mcp-side-hint">给 AI 助手用</span>
+          </div>
+        </div>
+        <p class="ok sbar-hint" id="helper-mcp-hint"></p>
+        <div class="helper-body">
+          <aside class="tool-rail" id="helper-tools">
             <div id="ops-bar">
-            <div class="sec">常用操作</div>
-            <div class="ops">
-              <button type="button" class="btn" data-tool="ListProcesses">查看正在运行的程序</button>
-              <button type="button" class="btn" data-tool="ListServices">查看服务状态</button>
-              <button type="button" class="btn" data-tool="ListDir">查看文件夹</button>
-              <button type="button" class="btn" data-tool="ReadLogTail">查看日志</button>
-              <button type="button" class="btn" data-tool="ReadFile">查看文件</button>
-              <button type="button" class="btn" data-tool="RunCommand">提议一项改动</button>
+              <div class="rail-group">
+                <div class="rail-label">查看</div>
+                <div class="ops">
+                  <button type="button" class="btn" data-tool="ListProcesses" title="查看正在运行的程序">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    进程
+                  </button>
+                  <button type="button" class="btn" data-tool="ListServices" title="查看服务状态">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+                    服务
+                  </button>
+                  <button type="button" class="btn" data-tool="ListDir" title="查看文件夹">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                    文件夹
+                  </button>
+                  <button type="button" class="btn" data-tool="ReadLogTail" title="查看日志">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                    日志
+                  </button>
+                  <button type="button" class="btn" data-tool="ReadFile" title="查看文件">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                    文件
+                  </button>
+                </div>
+              </div>
+              <div class="rail-group">
+                <div class="rail-label">改动</div>
+                <div class="ops">
+                  <button type="button" class="btn propose-tool" data-tool="RunCommand" title="提议一项改动">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+                    提议一项改动
+                  </button>
+                </div>
+              </div>
             </div>
+          </aside>
+          <div class="helper-main">
+            <div class="scroll helper-work" id="helper-scroll">
+              <div class="work-head">
+                <h2 class="work-title" id="tool-title">选择一项操作</h2>
+                <div class="work-actions">
+                  <button type="button" class="link" id="btn-past">▸ 之前的结果</button>
+                  <button type="button" class="btn sm copy-result" id="btn-copy-result">复制结果</button>
+                </div>
+              </div>
+              <div class="path-row" id="path-row" hidden>
+                <input id="path" type="text" placeholder="路径" />
+                <button type="button" class="btn primary" id="btn-path-go">查看</button>
+              </div>
+              <div class="propose" id="propose" hidden>
+                <input id="summary" type="text" placeholder="要做什么" />
+                <input id="command" type="text" placeholder="命令" />
+                <button type="button" class="btn primary" id="btn-propose">发给对方确认</button>
+              </div>
+              <p class="hint" id="op-status"></p>
+              <div class="box-hold result-hold">
+                <pre class="result" id="result">点左侧的操作，结果会显示在这里</pre>
+                <div class="rail"></div>
+              </div>
+              <div class="box-hold" id="past-hold">
+                <div id="past" hidden></div>
+                <div class="rail"></div>
+              </div>
             </div>
-            <div class="path-row" id="path-row" hidden>
-              <input id="path" type="text" placeholder="路径" />
-              <button type="button" class="btn" id="btn-path-go">查看</button>
-            </div>
-            <div class="propose" id="propose" hidden>
-              <input id="summary" type="text" placeholder="要做什么" />
-              <input id="command" type="text" placeholder="命令" />
-              <button type="button" class="btn primary" id="btn-propose">发给对方确认</button>
-            </div>
-            <p class="hint" id="op-status"></p>
-          </div>
-          <div class="row"><span class="sec">结果</span><button type="button" class="link" id="btn-copy-result">复制结果</button></div>
-          <div class="box-hold">
-            <pre class="result" id="result">点上面的操作，结果会显示在这里</pre>
-            <div class="rail"></div>
-          </div>
-          <button type="button" class="link" id="btn-past">▸ 之前的结果</button>
-          <div class="box-hold" id="past-hold">
-            <div id="past" hidden></div>
-            <div class="rail"></div>
+            <footer class="helper-foot">
+              <span class="helper-foot-note">所有提议的操作都需要对方在本机确认后才会执行</span>
+              <button type="button" class="btn danger" id="btn-end-helper">结束本次协助</button>
+            </footer>
           </div>
         </div>
       </section>
@@ -252,8 +329,22 @@
                 <button type="button" class="btn sm" id="btn-usage">使用说明</button>
               </div>
             </div>
-            <p class="set-hint quiet">复制后粘贴到 Cursor。写操作仍要这台电脑确认。</p>
+            <p class="set-hint quiet">未连接也能复制安装包。装到 Cursor 后，把对方短码发给 AI 用 connect 连接。写操作仍要对方本机确认。</p>
             <p class="ok" id="settings-hint"></p>
+          </section>
+
+          <section class="set-block">
+            <h3 class="set-title">版本更新</h3>
+            <div class="row set-update">
+              <button type="button" class="btn sm primary" id="btn-check-update">检查更新</button>
+              <button type="button" class="btn sm" id="btn-apply-update" hidden>立即更新</button>
+            </div>
+            <label class="set-check">
+              <input type="checkbox" id="auto-update" />
+              <span>有新版本时自动下载并打开安装包</span>
+            </label>
+            <p class="set-hint quiet">启动时也会悄悄检查。协助进行中不会强行打断。</p>
+            <p class="ok" id="update-hint"></p>
           </section>
         </div>
         <footer class="set-bar">

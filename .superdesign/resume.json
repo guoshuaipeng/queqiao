@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "helper-session": {
+      "targetKind": "existing-ui",
+      "projectId": "62777f4a-6ceb-4981-a8d1-3f801b25aa4e",
+      "baselineDraftId": "13723872-bca9-4326-b09e-305b3fc2d4d3",
+      "activeDraftId": "a2b5875b-7e7a-4aea-95ac-c60ec45ae470",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": ["e3ffc846-c936-4c01-8ee8-7967e50f1788"],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "apps/queqiao-tauri/src/index.html:1:25",
+        "apps/queqiao-tauri/src/index.html:101:144",
+        "apps/queqiao-tauri/src/index.html:274:280",
+        "apps/queqiao-tauri/src/styles.css:1:100",
+        "apps/queqiao-tauri/src/styles.css:519:556",
+        "apps/queqiao-tauri/src/styles.css:676:796"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "3cbac233219cf980d6e63e27b50cbdec45205effa83f3fa3f4c8d2f8330a7115",
+        ".superdesign/init/theme.md": "ebfb23ad746a1ce3f6787e695165d76a2d9c99fa2de452f4361da2154e29127c",
+        "apps/queqiao-tauri/src/index.html": "459bc331594fd5ca47b8989ec9abf82807d7de1bd1ef8aff6a20b1005978cfba",
+        "apps/queqiao-tauri/src/styles.css": "8a33fa0334438f3340f74b7b1c2e30a2b3ba320151442260622744d25249cf5c"
+      },
+      "components": [],
+      "drafts": {
+        "13723872-bca9-4326-b09e-305b3fc2d4d3": {
+          "title": "Current 协助会话页",
+          "visualDirection": "pixel-perfect baseline",
+          "currentVersion": 1
+        },
+        "a2b5875b-7e7a-4aea-95ac-c60ec45ae470": {
+          "title": "运维控制台布局 + MCP 强化",
+          "visualDirection": "left-rail tool console, MCP primary CTA",
+          "parentDraftId": "13723872-bca9-4326-b09e-305b3fc2d4d3",
+          "currentVersion": 2
+        },
+        "d9bd62f1-c81e-4cfe-a785-f7328a217ca5": {
+          "title": "专家模式 + MCP 高亮",
+          "visualDirection": "dense power-user console, MCP primary CTA",
+          "parentDraftId": "13723872-bca9-4326-b09e-305b3fc2d4d3",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-11-10T07:55:00.000Z"
+    },
+    "home-mcp-entry": {
+      "targetKind": "existing-ui",
+      "projectId": "c2c75f92-2408-4df9-959e-e422d98ec20a",
+      "baselineDraftId": "8d99d7cc-b1fb-4213-b75b-470b647122a6",
+      "activeDraftId": "0fcb6228-2fe4-4579-9d28-ae0695473ec0",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "apps/queqiao-tauri/src/index.html:1:88",
+        "apps/queqiao-tauri/src/styles.css:1:120",
+        "apps/queqiao-tauri/src/styles.css:426:600"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "3cbac233219cf980d6e63e27b50cbdec45205effa83f3fa3f4c8d2f8330a7115",
+        ".superdesign/init/theme.md": "ebfb23ad746a1ce3f6787e695165d76a2d9c99fa2de452f4361da2154e29127c",
+        "apps/queqiao-tauri/src/index.html": "9c48b6aea3b482cd96bd01ac2d230eb4750b26b485d1c6f2df616abd0ef2986a",
+        "apps/queqiao-tauri/src/styles.css": "785af295ae7d69ab56aaa3ff507221fe6f4951a03c29dc8cb6f29dcabe18c906"
+      },
+      "components": [],
+      "drafts": {
+        "8d99d7cc-b1fb-4213-b75b-470b647122a6": {
+          "title": "Current 首页空闲",
+          "visualDirection": "pixel-perfect baseline",
+          "currentVersion": 1
+        },
+        "804033ac-5225-4934-a2f0-fd6707e38397": {
+          "title": "A 安静链接",
+          "visualDirection": "right-zone quiet MCP install link under connect",
+          "parentDraftId": "8d99d7cc-b1fb-4213-b75b-470b647122a6",
+          "currentVersion": 1
+        },
+        "0fcb6228-2fe4-4579-9d28-ae0695473ec0": {
+          "title": "B 轻提示条",
+          "visualDirection": "right-zone soft AI strip + copy MCP button",
+          "parentDraftId": "8d99d7cc-b1fb-4213-b75b-470b647122a6",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-11-10T08:22:00.000Z"
+    },
+    "home-waiting": {
+      "targetKind": "existing-ui",
+      "projectId": "c2c75f92-2408-4df9-959e-e422d98ec20a",
+      "baselineDraftId": "73ae1f9f-c381-4109-aabe-cc4e0160ceed",
+      "activeDraftId": "29bd039e-4f36-4281-a15f-626e80d3bd06",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "apps/queqiao-tauri/src/index.html:1:88",
+        "apps/queqiao-tauri/src/styles.css:1:120",
+        "apps/queqiao-tauri/src/styles.css:426:600",
+        "apps/queqiao-tauri/src/styles.css:620:680"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "3cbac233219cf980d6e63e27b50cbdec45205effa83f3fa3f4c8d2f8330a7115",
+        ".superdesign/init/theme.md": "ebfb23ad746a1ce3f6787e695165d76a2d9c99fa2de452f4361da2154e29127c",
+        "apps/queqiao-tauri/src/index.html": "9c48b6aea3b482cd96bd01ac2d230eb4750b26b485d1c6f2df616abd0ef2986a",
+        "apps/queqiao-tauri/src/styles.css": "785af295ae7d69ab56aaa3ff507221fe6f4951a03c29dc8cb6f29dcabe18c906"
+      },
+      "components": [],
+      "drafts": {
+        "73ae1f9f-c381-4109-aabe-cc4e0160ceed": {
+          "title": "Current 等待对方连接",
+          "visualDirection": "pixel-perfect baseline waiting (no on-screen code)",
+          "currentVersion": 1
+        },
+        "aaf63e35-d3ee-4c86-8f01-74ad8c04d767": {
+          "title": "A 短码同行复制",
+          "visualDirection": "large short credential + copy button on same row",
+          "parentDraftId": "73ae1f9f-c381-4109-aabe-cc4e0160ceed",
+          "currentVersion": 1
+        },
+        "29bd039e-4f36-4281-a15f-626e80d3bd06": {
+          "title": "B 短码+密码分行（一次复制完整短凭证）",
+          "visualDirection": "code+password lines; one copy copies CODE-######## together",
+          "parentDraftId": "73ae1f9f-c381-4109-aabe-cc4e0160ceed",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-11-10T08:23:00.000Z"
+    },
+    "host-session": {
+      "targetKind": "existing-ui",
+      "projectId": "a5ef2a6b-410b-45da-bd34-1f0bd0620443",
+      "baselineDraftId": "7daf33db-bc6c-46e8-89f5-e2364bddb3c0",
+      "activeDraftId": "7daf33db-bc6c-46e8-89f5-e2364bddb3c0",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "apps/queqiao-tauri/src/index.html:1:25",
+        "apps/queqiao-tauri/src/index.html:98:107",
+        "apps/queqiao-tauri/src/index.html:342:344",
+        "apps/queqiao-tauri/src/styles.css:1:100",
+        "apps/queqiao-tauri/src/styles.css:711:720",
+        "apps/queqiao-tauri/src/styles.css:905:932"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "3d2a64faeb864ce7b4cb13562e953db204066b5f85833f302286d624a0d8e28c",
+        ".superdesign/init/theme.md": "ebfb23ad746a1ce3f6787e695165d76a2d9c99fa2de452f4361da2154e29127c",
+        "apps/queqiao-tauri/src/index.html": "7ef87c4e817440a83733e2efbc0da70b1688b3246baa72b820ff15b56ffbe9ff",
+        "apps/queqiao-tauri/src/styles.css": "70b1d2827e40f990684f4175af9cce120020b6dd63365236bcfe1d98915758f7"
+      },
+      "components": [],
+      "drafts": {
+        "7daf33db-bc6c-46e8-89f5-e2364bddb3c0": {
+          "title": "Current 被协助会话页",
+          "visualDirection": "pixel-perfect sparse host session",
+          "currentVersion": 1
+        },
+        "73508cf5-4810-4c94-8de8-6f4efa5c497f": {
+          "title": "A 轻量清晰化",
+          "visualDirection": "clearer safety copy + audit hierarchy",
+          "parentDraftId": "7daf33db-bc6c-46e8-89f5-e2364bddb3c0",
+          "currentVersion": 1
+        },
+        "badc969f-80e1-4f34-9c0b-94dbe5704a3f": {
+          "title": "B 时长+信任芯片",
+          "visualDirection": "duration meta + trust chip + audit groups",
+          "parentDraftId": "7daf33db-bc6c-46e8-89f5-e2364bddb3c0",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-11-10T08:25:00.000Z"
+    }
+  }
+}

@@ -1,4 +1,4 @@
-//! 无头协助端：中继 join → TLS → pair → tool。
+//! 无头协助端：中继 join →（短码则 PAKE）→ TLS → pair → tool。
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
@@ -8,7 +8,8 @@ use std::time::Duration;
 use rustls::StreamOwned;
 use serde_json::{json, Value};
 
-use crate::credential::{CredClass, Via};
+use crate::credential::{self, CredClass, Via};
+use crate::pake;
 use crate::tls;
 use crate::tools::ToolKind;
 use crate::wire;
@@ -28,7 +29,10 @@ impl std::fmt::Display for SessionError {
         match self {
             Self::CredFormat => write!(f, "连接凭证格式不对。"),
             Self::CredIncomplete => {
-                write!(f, "连接凭证不完整（须含完整 remoteassist:pair 与证书指纹 fp=）。")
+                write!(
+                    f,
+                    "连接凭证不完整（短码须配置中继地址；完整凭证须含 remoteassist:pair 与 fp=）。"
+                )
             }
             Self::Connect(m) => write!(f, "{m}"),
             Self::PairDenied(m) => write!(f, "{m}"),
@@ -55,9 +59,28 @@ pub struct AssistSession {
 }
 
 impl AssistSession {
-    /// 解析完整载荷并完成配对。client_name 会出现在被控端配对提示侧。
+    /// 解析载荷并完成配对。短码使用默认中继（`REMOTE_ASSIST_RELAY` / 编译期默认）。
     pub fn connect(payload: &str, client_name: &str) -> Result<Self, SessionError> {
-        let via = match crate::credential::classify(payload) {
+        Self::connect_with_relay(payload, client_name, &resolve_relay(None))
+    }
+
+    /// 短码可显式传入 `host:port`；完整 pair 载荷自带 relay 时忽略此参数。
+    pub fn connect_with_relay(
+        payload: &str,
+        client_name: &str,
+        relay: &str,
+    ) -> Result<Self, SessionError> {
+        let via = match credential::classify(payload) {
+            CredClass::Ok(Via::Relay(mut t)) if t.pake => {
+                if t.host.is_empty() || t.port == 0 {
+                    let Some((host, port)) = credential::parse_endpoint(relay) else {
+                        return Err(SessionError::CredIncomplete);
+                    };
+                    t.host = host;
+                    t.port = port;
+                }
+                Via::Relay(t)
+            }
             CredClass::Ok(v) => v,
             CredClass::Format => return Err(SessionError::CredFormat),
             CredClass::Incomplete => return Err(SessionError::CredIncomplete),
@@ -66,13 +89,14 @@ impl AssistSession {
     }
 
     pub fn connect_via(via: Via, client_name: &str) -> Result<Self, SessionError> {
-        let (host, port, code, fp, relay_step, password) = match via {
+        let (host, port, code, mut fp, relay_step, pake_mode, password) = match via {
             Via::Relay(t) => (
                 t.host,
                 t.port,
                 t.code,
                 t.fingerprint,
                 true,
+                t.pake,
                 t.password,
             ),
             Via::Lan {
@@ -80,18 +104,26 @@ impl AssistSession {
                 port,
                 code,
                 fingerprint,
-            } => (host, port, code, fingerprint, false, String::new()),
+            } => (host, port, code, fingerprint, false, false, String::new()),
         };
 
         let mut tcp = connect_tcp(&host, port)?;
         wire::prepare(&tcp);
 
         if relay_step {
-            let req = json!({
-                "op": "guest_join",
-                "code": code,
-                "password": password,
-            });
+            let req = if pake_mode {
+                json!({
+                    "op": "guest_join",
+                    "auth": "pake",
+                    "code": code,
+                })
+            } else {
+                json!({
+                    "op": "guest_join",
+                    "code": code,
+                    "password": password,
+                })
+            };
             wire::write_json_line(&mut tcp, &req).map_err(|e| SessionError::Io(e.to_string()))?;
             let alive = || true;
             let reply = wire::read_json_line(&mut tcp, &alive)
@@ -109,6 +141,15 @@ impl AssistSession {
                 };
                 return Err(SessionError::Connect(msg.into()));
             }
+        }
+
+        if pake_mode {
+            let alive = || true;
+            fp = pake::confirm_helper(&mut tcp, &password, &code, &alive).map_err(|_| {
+                SessionError::Connect(
+                    "短码握手失败。请核对会话码与密码，并确认对方仍在等待连接。".into(),
+                )
+            })?;
         }
 
         let config = tls::client_config(&fp).map_err(|_| SessionError::CredIncomplete)?;
@@ -148,13 +189,11 @@ impl AssistSession {
                     "对方没有同意这次协助。".into(),
                 ));
             }
-            return Err(SessionError::Connect(
-                if err.is_empty() {
-                    "没能完成配对。".into()
-                } else {
-                    err.into()
-                },
-            ));
+            return Err(SessionError::Connect(if err.is_empty() {
+                "没能完成配对。".into()
+            } else {
+                err.into()
+            }));
         }
         let token = frame
             .payload
@@ -184,9 +223,8 @@ impl AssistSession {
 
         // 写操作可能等对方确认约 60s；读超时循环由 wire::read_frame 处理。
         let alive = || true;
-        let frame = wire::read_frame(&mut self.tls, &alive).map_err(|e| {
-            SessionError::Io(format!("等待工具结果时断开：{e}"))
-        })?;
+        let frame = wire::read_frame(&mut self.tls, &alive)
+            .map_err(|e| SessionError::Io(format!("等待工具结果时断开：{e}")))?;
 
         if !frame.kind.eq_ignore_ascii_case("tool_result") {
             return Err(SessionError::Protocol(format!(
@@ -230,6 +268,20 @@ impl AssistSession {
             denied_by_user,
         })
     }
+}
+
+/// 解析中继：显式参数 > `REMOTE_ASSIST_RELAY` > 编译期默认。
+pub fn resolve_relay(explicit: Option<&str>) -> String {
+    if let Some(r) = explicit.map(str::trim).filter(|s| !s.is_empty()) {
+        return r.to_string();
+    }
+    if let Ok(r) = std::env::var("REMOTE_ASSIST_RELAY") {
+        let r = r.trim().to_string();
+        if !r.is_empty() {
+            return r;
+        }
+    }
+    credential::default_relay().to_string()
 }
 
 fn connect_tcp(host: &str, port: u16) -> Result<TcpStream, SessionError> {

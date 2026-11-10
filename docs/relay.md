@@ -12,7 +12,7 @@
 ## 本机跑
 
 ```powershell
-cd E:\IdeaProjects\remote-assist\relay
+cd relay
 $env:RELAY_ADDR = "127.0.0.1:17891"
 $env:RELAY_DATA = "$pwd\data\relay.db"
 go run .\cmd\relay
@@ -30,5 +30,5 @@ go run .\cmd\smoketest -addr 127.0.0.1:17891
 
 ## 生产部署
 
-正式环境约定见 **`docs/relay-deploy.md`**（单机单实例、`:17891`、systemd、SQLite `/var/lib/remote-assist-relay`、防火墙仅 TCP 17891；默认公网 `121.196.45.81:17891`）。
+正式环境约定见 **`docs/relay-deploy.md`**（单机单实例、`:17891`、systemd、SQLite `/var/lib/remote-assist-relay`、防火墙仅 TCP 17891；真实主机写在本机 `private/deploy.md`）。
 

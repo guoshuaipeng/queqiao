@@ -130,6 +130,23 @@ v0.2 — 官网管理台可管理客户端会话码（code）
   - `.\scripts\publish-mcp.ps1` → `artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe`；CLI：无载荷 exit 2、无效 join exit 3
   - **未做**：装进 NSIS、真机 Cursor 对真 Tauri 被控端联调、公网发版
 
+### PV-006 · 客户端提醒更新并自动更新
+
+- **状态**：待验收
+- **标题**：桌面客户端检查新版本、提醒，并可自动下载安装
+- **版本**：v0.2
+- **说明**：
+  - 启动后静默检查官网 `{SITE}/downloads/latest.json`；有新版本时提醒。
+  - 设置页提供「检查更新」、自动更新开关、「立即更新」。
+  - 自动更新：空闲时下载当前平台安装包并打开安装程序，然后退出客户端；协助进行中只提醒不强更。
+  - 验收：本机可对照示例清单（版本号抬高）弹出提醒；点立即更新能下载并拉起安装包；关掉自动更新后启动不再自动安装。
+- **约束**：
+  - 只信任编译进客户端的 `QUEQIAO_SITE` 同源下载地址；公网换包流程见 `docs/release.md`。
+  - 清单与安装包部署到 `SITE_DOWNLOADS`（见 `docs/update-latest.example.json`、`docs/site-deploy.md`、`docs/release.md`）。
+- **优先级**：高
+- **实现（2026-11-10）**：`apps/queqiao-tauri` 增加 `update` 模块与设置页「版本更新」；`cargo test … update::` 2 项 PASS。
+- **公网（2026-11-10 授权）**：用户授权公网换包；流程记入 `docs/release.md`（GitHub `Release packages (MCP)` → 上传官网；主路径 macOS + Linux）。现网 `0.1.0` mac/Linux/Win 包已在 `downloads/`；本轮补传 `latest.json`（version=0.1.0，供更新通道就位）。**含自动更新能力的客户端二进制**须后续抬版本号、推 GitHub 再跑 Actions 换包后才进用户手里。
+
 ---
 
 ---

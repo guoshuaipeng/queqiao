@@ -8,6 +8,7 @@ mod policy;
 mod settings;
 mod tlsutil;
 mod tools;
+mod update;
 mod wire;
 
 use std::net::TcpStream;
@@ -34,6 +35,8 @@ struct PromptSlot {
 struct Secrets {
     password: String,
     payload: String,
+    /// 协助方粘贴的完整 pair 凭证，供会话页「复制 MCP」；切换角色时 go_idle 会清 payload，此字段保留到会话结束。
+    mcp_payload: String,
     code: String,
     pending_via: Option<Via>,
     pending_device: String,
@@ -100,6 +103,11 @@ struct Model {
     device_name: String,
     host_banner: String,
     devices: Vec<DeviceItem>,
+    auto_update: bool,
+    update_hint: String,
+    update_busy: bool,
+    update_available: bool,
+    update_version: String,
 }
 
 struct DeviceItem {
@@ -132,6 +140,8 @@ struct Shared {
     app: Mutex<Option<AppHandle>>,
     settings_path: PathBuf,
     history_path: PathBuf,
+    pending_update: Mutex<Option<update::Available>>,
+    update_busy: AtomicBool,
 }
 
 impl Shared {
@@ -181,10 +191,16 @@ impl Shared {
                 device_name: loaded.device_name.clone(),
                 host_banner: String::new(),
                 devices: Vec::new(),
+                auto_update: loaded.auto_update,
+                update_hint: String::new(),
+                update_busy: false,
+                update_available: false,
+                update_version: String::new(),
             }),
             secrets: Mutex::new(Secrets {
                 password: String::new(),
                 payload: String::new(),
+                mcp_payload: String::new(),
                 code: String::new(),
                 pending_via: None,
                 pending_device: String::new(),
@@ -209,6 +225,8 @@ impl Shared {
             app: Mutex::new(None),
             settings_path: settings::settings_file(),
             history_path: settings::history_file(),
+            pending_update: Mutex::new(None),
+            update_busy: AtomicBool::new(false),
         }
     }
 }
@@ -526,6 +544,7 @@ impl Hooks for AppHooks {
             let mut secrets = self.shared.secrets.lock().expect("secrets");
             secrets.password.clear();
             secrets.payload.clear();
+            secrets.mcp_payload.clear();
             secrets.code.clear();
             secrets.pending_via = None;
         }
@@ -709,11 +728,17 @@ impl Shared {
             effective = "full";
         }
         let self_id = settings::load(&self.settings_path).device_id;
+        let wait_password = if model.phase == "waiting" {
+            self.secrets.lock().expect("secrets").password.clone()
+        } else {
+            String::new()
+        };
         Snapshot {
             phase: model.phase.clone(),
             view: model.view.clone(),
             code: model.code.clone(),
             password_len: model.password_len,
+            password: wait_password,
             left_note: model.left_note.clone(),
             helper_status: model.helper_status.clone(),
             helper_error: model.helper_error.clone(),
@@ -768,6 +793,11 @@ impl Shared {
                     self_device: !self_id.is_empty() && d.id == self_id,
                 })
                 .collect(),
+            auto_update: model.auto_update,
+            update_hint: model.update_hint.clone(),
+            update_busy: model.update_busy,
+            update_available: model.update_available,
+            update_version: model.update_version.clone(),
             active: is_active(&model.phase),
             generation: self.gen.load(Ordering::SeqCst),
             seq: self.seq.fetch_add(1, Ordering::SeqCst) + 1,
@@ -820,9 +850,12 @@ impl Shared {
     fn go_idle(&self) {
         let mut secrets = self.secrets.lock().expect("secrets");
         let account_token = secrets.account_token.clone();
+        // 切换角色时保留 mcp_payload，供协助会话页复制 MCP；真正结束会话时另清。
+        let mcp_payload = secrets.mcp_payload.clone();
         *secrets = Secrets {
             password: String::new(),
             payload: String::new(),
+            mcp_payload,
             code: String::new(),
             pending_via: None,
             pending_device: String::new(),
@@ -895,6 +928,8 @@ struct Snapshot {
     code: String,
     #[serde(rename = "passwordLen")]
     password_len: usize,
+    /// 仅等待对方时下发，供本机眼睛图标显示明文；空闲时为空。
+    password: String,
     #[serde(rename = "leftNote")]
     left_note: String,
     #[serde(rename = "helperStatus")]
@@ -957,6 +992,16 @@ struct Snapshot {
     #[serde(rename = "hostBanner")]
     host_banner: String,
     devices: Vec<DeviceSnap>,
+    #[serde(rename = "autoUpdate")]
+    auto_update: bool,
+    #[serde(rename = "updateHint")]
+    update_hint: String,
+    #[serde(rename = "updateBusy")]
+    update_busy: bool,
+    #[serde(rename = "updateAvailable")]
+    update_available: bool,
+    #[serde(rename = "updateVersion")]
+    update_version: String,
     active: bool,
     generation: u64,
     seq: u64,
@@ -1526,6 +1571,8 @@ fn connect(state: State<'_, std::sync::Arc<Shared>>, payload: String) -> Result<
                     target.port = port;
                 }
             }
+            // 协助方连上后，会话页「复制 MCP」要用完整 pair 凭证（短码 MCP 用不了）。
+            remember_mcp_payload(&state, &payload);
             let phase = state.model.lock().expect("model").phase.clone();
             if matches!(phase.as_str(), "opening" | "waiting" | "host_session" | "stopping" | "peer_ended") {
                 state.secrets.lock().expect("secrets").pending_via = Some(via);
@@ -1540,6 +1587,17 @@ fn connect(state: State<'_, std::sync::Arc<Shared>>, payload: String) -> Result<
             Ok(state.snapshot())
         }
     }
+}
+
+fn remember_mcp_payload(state: &std::sync::Arc<Shared>, payload: &str) {
+    let raw = payload.trim();
+    // 完整 pair 或短码均可供会话页「复制 MCP」。
+    let ok = raw.to_ascii_lowercase().starts_with("remoteassist:pair")
+        || matches!(credential::classify(raw), CredClass::Ok(_));
+    if !ok {
+        return;
+    }
+    state.secrets.lock().expect("secrets").mcp_payload = raw.to_string();
 }
 
 fn begin_helper(state: &std::sync::Arc<Shared>, via: Via) -> Result<(), String> {
@@ -1627,6 +1685,8 @@ fn resolve_dialog(state: State<'_, std::sync::Arc<Shared>>, id: u64, allow: bool
         if let Some(app) = state.app.lock().expect("app").clone() {
             app.exit(0);
         }
+    } else if kind == "update" {
+        begin_apply_update(state.inner());
     } else if kind == "full" {
         {
             let mut model = state.model.lock().expect("model");
@@ -1696,6 +1756,7 @@ fn finish_session(state: &std::sync::Arc<Shared>) -> Result<(), String> {
     if !stop_worker(state) {
         return Err(text::STOP_FAIL.into());
     }
+    state.secrets.lock().expect("secrets").mcp_payload.clear();
     state.go_idle();
     state.publish();
     Ok(())
@@ -1862,10 +1923,13 @@ fn reset_relay(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, Str
 
 #[tauri::command]
 fn copy_mcp(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>, draft: String) -> Result<Snapshot, String> {
+    // 有会话/输入框凭证时一并写入配置；没有也能复制「仅安装」配置（默认中继），由 Agent 再 connect。
     let payload = {
         let secrets = state.secrets.lock().expect("secrets");
         if !secrets.payload.is_empty() {
             secrets.payload.clone()
+        } else if !secrets.mcp_payload.is_empty() {
+            secrets.mcp_payload.clone()
         } else if let CredClass::Ok(_) = credential::classify(&draft) {
             draft.trim().to_string()
         } else {
@@ -1873,25 +1937,26 @@ fn copy_mcp(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>, draft: Str
         }
     };
     let mut model = state.model.lock().expect("model");
-    if payload.is_empty() {
-        model.settings_hint = text::MCP_NEED.into();
-        drop(model);
-        state.publish();
-        return Ok(state.snapshot());
-    }
     let exe = find_mcp(&app);
     let placeholder = if cfg!(windows) {
         "RemoteAssist.Mcp.exe"
     } else {
         "RemoteAssist.Mcp"
     };
-    let exe_text = exe
+    let command = exe
         .as_ref()
-        .map(|p| p.display().to_string().replace('\\', "\\\\"))
+        .map(|p| p.display().to_string())
         .unwrap_or_else(|| placeholder.into());
-    let body = format!(
-        "{{\n  \"mcpServers\": {{\n    \"remote-assist\": {{\n      \"command\": \"{exe_text}\",\n      \"args\": [],\n      \"env\": {{\n        \"REMOTE_ASSIST_PAYLOAD\": \"{}\"\n      }}\n    }}\n  }}\n}}",
-        payload.replace('\\', "\\\\").replace('"', "\\\"")
+    let relay = model.relay.clone();
+    let short = matches!(
+        credential::classify(&payload),
+        CredClass::Ok(Via::Relay(t)) if t.pake
+    );
+    let include_relay = payload.is_empty() || short;
+    let body = text::mcp_share_text(
+        &command,
+        &payload,
+        if include_relay { Some(relay.as_str()) } else { None },
     );
     match copy_text(&app, &body) {
         Ok(()) => {
@@ -2702,6 +2767,178 @@ fn stop_account_unattended(state: State<'_, std::sync::Arc<Shared>>) -> Result<S
     Ok(state.snapshot())
 }
 
+fn set_update_busy(state: &Shared, busy: bool, hint: impl Into<String>) {
+    state.update_busy.store(busy, Ordering::SeqCst);
+    let mut model = state.model.lock().expect("model");
+    model.update_busy = busy;
+    model.update_hint = hint.into();
+    drop(model);
+    state.publish();
+}
+
+fn remember_available(state: &Shared, avail: &update::Available) {
+    *state.pending_update.lock().expect("pending update") = Some(avail.clone());
+    let mut model = state.model.lock().expect("model");
+    model.update_available = true;
+    model.update_version = avail.version.clone();
+    if model.update_hint.is_empty() || !model.update_busy {
+        model.update_hint = format!("有新版本 {} 可更新。", avail.version);
+    }
+}
+
+fn show_update_dialog(state: &std::sync::Arc<Shared>, avail: &update::Available) {
+    if state.model.lock().expect("model").dialog.is_some() {
+        return;
+    }
+    let id = state.prompt_ids.fetch_add(1, Ordering::SeqCst);
+    let notes = if avail.notes.is_empty() {
+        String::new()
+    } else {
+        avail.notes.clone()
+    };
+    let body = if notes.is_empty() {
+        format!(
+            "当前版本 {}，最新版本 {}。更新会下载安装包并打开，完成后请按安装向导操作。",
+            update::current_version(),
+            avail.version
+        )
+    } else {
+        format!(
+            "当前版本 {}，最新版本 {}。\n\n{}",
+            update::current_version(),
+            avail.version,
+            notes
+        )
+    };
+    state.model.lock().expect("model").dialog = Some(Dialog {
+        id,
+        kind: "update".into(),
+        title: "发现新版本".into(),
+        body,
+        detail: String::new(),
+        primary: "立即更新".into(),
+        secondary: "稍后".into(),
+        seconds: 0,
+    });
+    state.publish();
+}
+
+fn begin_apply_update(state: &std::sync::Arc<Shared>) {
+    if state.update_busy.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let Some(avail) = state.pending_update.lock().expect("pending update").clone() else {
+        state.update_busy.store(false, Ordering::SeqCst);
+        set_update_busy(state, false, "没有可安装的更新。");
+        return;
+    };
+    set_update_busy(
+        state,
+        true,
+        format!("正在下载 {}…", avail.version),
+    );
+    let shared = state.clone();
+    thread::spawn(move || {
+        match update::download_to_temp(&avail) {
+            Ok(path) => {
+                set_update_busy(&shared, true, "正在打开安装程序…");
+                match update::launch_installer(&path) {
+                    Ok(()) => {
+                        if let Some(app) = shared.app.lock().expect("app").clone() {
+                            // 稍等安装器起来再退出，避免立刻被关。
+                            thread::sleep(Duration::from_millis(600));
+                            app.exit(0);
+                        }
+                    }
+                    Err(err) => {
+                        set_update_busy(&shared, false, err);
+                    }
+                }
+            }
+            Err(err) => set_update_busy(&shared, false, err),
+        }
+    });
+}
+
+fn run_update_check(state: &std::sync::Arc<Shared>, interactive: bool, auto_apply: bool) {
+    if state.update_busy.load(Ordering::SeqCst) {
+        return;
+    }
+    if interactive {
+        set_update_busy(state, false, "正在检查更新…");
+    }
+    let shared = state.clone();
+    thread::spawn(move || match update::check() {
+        Ok(None) => {
+            let mut model = shared.model.lock().expect("model");
+            model.update_available = false;
+            model.update_version.clear();
+            model.update_busy = false;
+            if interactive {
+                model.update_hint = format!("已是最新版本（{}）。", update::current_version());
+            }
+            drop(model);
+            *shared.pending_update.lock().expect("pending update") = None;
+            shared.publish();
+        }
+        Ok(Some(avail)) => {
+            remember_available(&shared, &avail);
+            shared.model.lock().expect("model").update_busy = false;
+            shared.publish();
+            let idle = {
+                let model = shared.model.lock().expect("model");
+                !is_active(&model.phase) && model.dialog.is_none()
+            };
+            let want_auto = auto_apply && shared.model.lock().expect("model").auto_update;
+            if want_auto && idle {
+                begin_apply_update(&shared);
+            } else {
+                // 协助中也提醒，但不强行下载；已有其它确认框时 show_update_dialog 会跳过。
+                show_update_dialog(&shared, &avail);
+            }
+        }
+        Err(err) => {
+            if interactive {
+                set_update_busy(&shared, false, err);
+            } else {
+                shared.model.lock().expect("model").update_busy = false;
+                shared.publish();
+            }
+        }
+    });
+}
+
+#[tauri::command]
+fn check_update(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
+    run_update_check(state.inner(), true, false);
+    Ok(state.snapshot())
+}
+
+#[tauri::command]
+fn apply_update(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, String> {
+    if state.pending_update.lock().expect("pending update").is_none() {
+        run_update_check(state.inner(), true, true);
+        return Ok(state.snapshot());
+    }
+    begin_apply_update(state.inner());
+    Ok(state.snapshot())
+}
+
+#[tauri::command]
+fn set_auto_update(state: State<'_, std::sync::Arc<Shared>>, on: bool) -> Result<Snapshot, String> {
+    let _ = save_settings(&state, |current| current.auto_update = on)?;
+    let mut model = state.model.lock().expect("model");
+    model.auto_update = on;
+    model.update_hint = if on {
+        "已开启：有新版本时会自动下载并打开安装包。".into()
+    } else {
+        "已关闭自动更新。仍可手动检查。".into()
+    };
+    drop(model);
+    state.publish();
+    Ok(state.snapshot())
+}
+
 pub fn run() {
     let shared = std::sync::Arc::new(Shared::new());
     tauri::Builder::default()
@@ -2716,6 +2953,11 @@ pub fn run() {
             if saved.account_allow && !saved.account_token.is_empty() {
                 spawn_account((*shared).clone());
             }
+            let boot = (*shared).clone();
+            thread::spawn(move || {
+                thread::sleep(Duration::from_secs(2));
+                run_update_check(&boot, false, true);
+            });
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -2781,7 +3023,10 @@ pub fn run() {
             ask_account_remove,
             ask_account_unattended,
             set_account_autostart,
-            stop_account_unattended
+            stop_account_unattended,
+            check_update,
+            apply_update,
+            set_auto_update
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

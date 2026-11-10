@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"gitee.com/CodeYG/remote-assist/relay/internal/relay"
+	"github.com/guoshuaipeng/remote-assist/relay/internal/relay"
 )
 
 func main() {

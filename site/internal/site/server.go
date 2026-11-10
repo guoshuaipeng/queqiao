@@ -98,6 +98,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /admin/api/status", s.requireAdmin(s.handleSetStatus))
 	s.mux.HandleFunc("POST /admin/api/note", s.requireAdmin(s.handleSetNote))
 	s.mux.HandleFunc("GET /admin/api/session-codes", s.requireAdmin(s.handleSessionCodes))
+	s.mux.HandleFunc("GET /admin/api/stats", s.requireAdmin(s.handleAccessStats))
 
 	s.mux.HandleFunc("GET /downloads/{name}", s.handleDownload)
 }
@@ -145,6 +146,8 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		ctype = "application/gzip"
 	case strings.HasSuffix(lower, ".exe"):
 		ctype = "application/octet-stream"
+	case strings.HasSuffix(lower, ".dmg"):
+		ctype = "application/x-apple-diskimage"
 	case strings.HasSuffix(lower, ".zip"):
 		ctype = "application/zip"
 	}
@@ -152,6 +155,7 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+name+"\"")
 	http.ServeFile(w, r, absFile)
+	s.recordAccess(AccessDownload, "", name, r)
 }
 
 func (s *Server) serveFile(name string) http.HandlerFunc {
@@ -175,7 +179,41 @@ func (s *Server) serveFile(name string) http.HandlerFunc {
 		w.Header().Set("Content-Type", ctype)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		_, _ = w.Write(b)
+		if shouldRecordVisit(name) {
+			s.recordAccess(AccessVisit, normalizeVisitPath(r.URL.Path), "", r)
+		}
 	}
+}
+
+func shouldRecordVisit(name string) bool {
+	switch name {
+	case "index.html", "ask.html", "thanks.html":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Server) recordAccess(kind, path, fileName string, r *http.Request) {
+	if err := s.store.RecordAccess(kind, path, fileName, clientIP(r), r.UserAgent()); err != nil {
+		s.log.Error("record access", "kind", kind, "err", err)
+	}
+}
+
+func (s *Server) handleAccessStats(w http.ResponseWriter, r *http.Request) {
+	limit := 100
+	if lim := strings.TrimSpace(r.URL.Query().Get("limit")); lim != "" {
+		if n, err := strconv.Atoi(lim); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	stats, err := s.store.AccessStats(limit)
+	if err != nil {
+		s.log.Error("access stats", "err", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "stats": stats})
 }
 
 func (s *Server) handleAsk(w http.ResponseWriter, r *http.Request) {

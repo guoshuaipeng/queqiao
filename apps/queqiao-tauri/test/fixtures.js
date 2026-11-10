@@ -5,6 +5,7 @@
     view: "home",
     code: "",
     passwordLen: 0,
+    password: "",
     leftNote: "",
     helperStatus: "",
     helperError: "",
@@ -13,7 +14,7 @@
     dialog: null,
     trustSaved: "ask",
     trustEffective: "ask",
-    relay: "121.196.45.81:17891",
+    relay: "127.0.0.1:17891",
     relayHint: "",
     audit: [],
     result: "",
@@ -26,6 +27,11 @@
     settingsHint: "",
     version: "0.1.0",
     pathOpen: "",
+    autoUpdate: true,
+    updateHint: "",
+    updateBusy: false,
+    updateAvailable: false,
+    updateVersion: "",
     active: false,
   };
   window.QUEQIAO_SHOTS = {
@@ -34,7 +40,8 @@
       phase: "waiting",
       code: "AB1 2CD",
       passwordLen: 8,
-      leftNote: "对方连上时会先弹窗问你，你点「允许协助」才算连上。",
+      password: "94735480",
+      leftNote: "复制会带上短码和密码，完整发给对方或 AI。对方连上时会先弹窗问你，你点「允许协助」才算连上。",
     }),
     allow: Object.assign({}, idle, {
       phase: "wait_allow",
@@ -59,7 +66,12 @@
       trustEffective: "full",
       audit: [{ t: "16:32", text: "界面样例，不是真实操作记录", kind: "info" }],
     }),
-    helper: Object.assign({}, idle, { view: "helper", phase: "helper_session" }),
+    helper: Object.assign({}, idle, {
+      view: "helper",
+      phase: "helper_session",
+      opStatus: "已完成",
+      result: "taskhostw.exe (2)\ntasklist.exe\nuhssvc.exe\nusysdiag.exe\nuv.exe\nwininit.exe\nwinlogon.exe (2)\nwsctrl.exe",
+    }),
     write: Object.assign({}, idle, {
       view: "host",
       phase: "host_session",

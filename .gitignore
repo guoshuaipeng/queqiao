@@ -10,11 +10,42 @@
 *~
 .DS_Store
 
-# relay local account store
+# Private local overrides (copy from private.example/)
+private/
+
+# Local marketing / publish drafts with production URLs
+site-pub/
+site-v2/
+site-v3/
+*.qoder.site
+
+# Build / release artifacts
+artifacts/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# relay / site local stores
 relay/data/
+site/data/
+site/downloads/
 
 # Tauri / Node (apps/queqiao-tauri)
 **/node_modules/
 apps/**/src-tauri/target/
 apps/**/dist/
 *.local
+
+/target/
+
+
+# Superdesign local drafts
+.superdesign/tmp/
+
+
+# Bundled MCP binary (build via publish-mcp)
+apps/**/resources/mcp/RemoteAssist.Mcp.exe
+apps/**/resources/mcp/RemoteAssist.Mcp
+

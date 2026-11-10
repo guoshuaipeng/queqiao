@@ -12,8 +12,9 @@
 | `/admin` | 运营后台（口令） |
 | `GET /downloads/<文件名>` | 安装包下载（来自 `SITE_DOWNLOADS`，不进二进制） |
 | `POST /api/ask` | 接单 API |
+| `GET /admin/api/stats` | 访问/下载统计（需登录；含次数、独立 IP、最近明细） |
 
-后台状态仅：`新留言` / `已联系` / `已结束`。
+后台状态仅：`新留言` / `已联系` / `已结束`。公开页打开与安装包下载会写入 SQLite（IP、路径/文件名、UA），后台「统计」页可查。
 
 ## 环境变量
 
@@ -35,8 +36,7 @@
 需要本机已装 Go（与中继相同）。
 
 ```powershell
-cd E:\IdeaProjects\remote-assist\site
-$env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+cd site
 $env:SITE_ADDR=":8088"
 $env:SITE_DATA=".\data\site.db"
 $env:SITE_DOWNLOADS=".\downloads"
@@ -48,23 +48,24 @@ go run .\cmd\site
 后台 http://127.0.0.1:8088/admin （口令 `dev`）
 
 
-把 Windows / Linux 安装包放到 `SITE_DOWNLOADS` 目录后即可通过 `/downloads/文件名` 下载。包文件**不要** `go:embed` 进二进制（生产 `MemoryMax=64M`）。缺文件或空目录返回 404，不提供目录浏览。
+把 Windows `.exe` / macOS `.dmg` / Linux `.AppImage` / `.tar.gz` 放到 `SITE_DOWNLOADS` 目录后即可通过 `/downloads/文件名` 下载。客户端自动更新还会读同目录的 `latest.json`（模板见仓库 `docs/update-latest.example.json`）。包文件**不要** `go:embed` 进二进制（生产 `MemoryMax=64M`）。缺文件或空目录返回 404，不提供目录浏览。
 
 ## 测试
 
 ```powershell
-cd E:\IdeaProjects\remote-assist\site
+cd site
 go test .\internal\site\ -count=1
 ```
 
 ## 交叉编译（不上机）
 
 ```powershell
-cd E:\IdeaProjects\remote-assist\site
+cd site
 $env:CGO_ENABLED=0
 $env:GOOS="linux"
 $env:GOARCH="amd64"
-go build -o E:\IdeaProjects\remote-assist\artifacts\remote-assist-site-linux-amd64 .\cmd\site
+mkdir ..\artifacts -Force
+go build -o ..\artifacts\remote-assist-site-linux-amd64 .\cmd\site
 ```
 
 生产单元名 `remote-assist-site`，监听 80，数据 `/var/lib/remote-assist-site/site.db`，**禁止占用 17891**。

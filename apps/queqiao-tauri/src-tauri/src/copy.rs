@@ -59,10 +59,10 @@ pub const BUSY_OP: &str = "正在执行…";
 pub const EMPTY_AUDIT: &str = "对方还没有做任何操作";
 pub const EMPTY_RESULT: &str = "点上面的操作，结果会显示在这里";
 pub const INSTALL_HINT: &str = "已复制安装说明，请发给对方。";
-pub const MCP_NEED: &str = "请先开启接受协助或粘贴完整连接凭证，再复制 MCP 配置。";
-pub const MCP_OK: &str = "已复制 MCP 配置。请粘贴到 Cursor 的 MCP 设置并保存。";
+pub const MCP_OK: &str =
+    "已复制 MCP 安装包（含一键链接、mcp.json、开场白）。未连接也可装；装好后把对方短码发给 Agent 用 connect。";
 pub const MCP_PLACEHOLDER: &str =
-    "已复制 MCP 配置，但本机还没有 RemoteAssist.Mcp.exe。请先运行 .\\scripts\\publish-mcp.ps1，再把配置里的 command 改成产物绝对路径。";
+    "已复制 MCP 安装包，但本机还没有 RemoteAssist.Mcp.exe。请先运行 .\\scripts\\publish-mcp.ps1，再把 command 改成产物绝对路径。";
 pub const USAGE_OK: &str = "已复制使用说明。";
 pub const NO_RESULT: &str = "还没有结果可复制。";
 pub const RESULT_COPIED: &str = "已复制结果。";
@@ -84,5 +84,150 @@ pub fn install_text() -> String {
 }
 
 pub fn usage_text() -> &'static str {
-    "1. 本机先运行 .\\scripts\\publish-mcp.ps1，得到 artifacts\\mcp-win-x64-sc\\RemoteAssist.Mcp.exe。\n2. 在鹊桥里点「复制 MCP 配置」（需已开启接受协助或粘贴完整连接凭证）。\n3. 粘贴到 Cursor 的 MCP 设置并保存，刷新后再用。\n对方电脑上要改动的操作仍会弹确认，智能体不能绕过。详见 docs/MCP.md。"
+    "1. 本机先有 RemoteAssist.Mcp.exe（.\\scripts\\publish-mcp.ps1 或安装包内 resources\\mcp）。\n2. 在首页「我帮别人」浅色条或设置里点「复制 MCP 配置」（未连接也可）。\n3. 用复制内容里的一键链接安装，或把 mcp.json 写入 Cursor（~/.cursor/mcp.json）。\n4. 启用 MCP 后，把开场白发给 Agent；再把对方短码给它，用 connect 连接。\n写操作仍要对方本机确认，智能体不能绕过。详见 docs/MCP.md。"
+}
+
+/// 发给 Cursor Agent 的开场白（装好 MCP 后粘贴）。
+pub fn mcp_agent_prompt() -> &'static str {
+    "我已安装并启用「remote-assist」（鹊桥）MCP。请先确认工具列表里能看到 connect、disconnect、connection_status，以及 list_processes、list_services、list_dir、read_file、read_log_tail、run_command。然后：\n1）用 connection_status 看是否已连上；未连接则用 connect 传入我给的短码/凭证（短码可带 relay）；\n2）用几句话介绍你能对远端做什么、不能做什么（尤其强调写操作必须对方本机确认）；\n3）按「先只读排查、后提议改动」给出 3～5 条本轮建议；\n4）已连接后先调用 list_processes，把结果摘要给我。\n不要跳过对方确认去执行危险命令，也不要假装已经改成功。"
+}
+
+/// 组装「复制 MCP」剪贴板全文：一键安装链接 + mcp.json + 开场白。
+pub fn mcp_share_text(command: &str, payload: &str, relay: Option<&str>) -> String {
+    let config_json = mcp_server_config_json(command, payload, relay);
+    let deeplink = mcp_install_deeplink(&config_json);
+    let mcp_json = format!(
+        "{{\n  \"mcpServers\": {{\n    \"remote-assist\": {config_json}\n  }}\n}}"
+    );
+    format!(
+        "【鹊桥 MCP · 安装到 Cursor】\n\n\
+1) 一键安装（用浏览器打开，或粘贴到地址栏；Cursor 会弹出确认）：\n{deeplink}\n\n\
+2) 或手动写入 ~/.cursor/mcp.json / 项目 .cursor/mcp.json：\n{mcp_json}\n\n\
+3) 装好并在 Cursor 里启用 remote-assist 后，把下面整段发给 Agent：\n\n\
+---\n{}\n---\n",
+        mcp_agent_prompt()
+    )
+}
+
+fn mcp_server_config_json(command: &str, payload: &str, relay: Option<&str>) -> String {
+    let cmd = json_escape(command);
+    let mut env = Vec::new();
+    if !payload.trim().is_empty() {
+        env.push(format!(
+            "\"REMOTE_ASSIST_PAYLOAD\": \"{}\"",
+            json_escape(payload.trim())
+        ));
+    }
+    if let Some(r) = relay {
+        if !r.trim().is_empty() {
+            env.push(format!(
+                "\"REMOTE_ASSIST_RELAY\": \"{}\"",
+                json_escape(r.trim())
+            ));
+        }
+    }
+    if env.is_empty() {
+        format!("{{\n      \"command\": \"{cmd}\",\n      \"args\": []\n    }}")
+    } else {
+        format!(
+            "{{\n      \"command\": \"{cmd}\",\n      \"args\": [],\n      \"env\": {{\n        {}\n      }}\n    }}",
+            env.join(",\n        ")
+        )
+    }
+}
+
+fn mcp_install_deeplink(server_config_json: &str) -> String {
+    // Cursor：name 独立；config 为单台 server 对象的 JSON 再 base64。
+    let compact = server_config_json
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .collect::<String>();
+    let b64 = base64_encode(compact.as_bytes());
+    format!(
+        "cursor://anysphere.cursor-deeplink/mcp/install?name=remote-assist&config={}",
+        url_encode_component(&b64)
+    )
+}
+
+fn json_escape(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+fn url_encode_component(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() * 3);
+    for b in s.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(b as char);
+            }
+            _ => out.push_str(&format!("%{b:02X}")),
+        }
+    }
+    out
+}
+
+fn base64_encode(data: &[u8]) -> String {
+    const T: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
+    let mut i = 0;
+    while i + 3 <= data.len() {
+        let n = ((data[i] as u32) << 16) | ((data[i + 1] as u32) << 8) | (data[i + 2] as u32);
+        out.push(T[((n >> 18) & 63) as usize] as char);
+        out.push(T[((n >> 12) & 63) as usize] as char);
+        out.push(T[((n >> 6) & 63) as usize] as char);
+        out.push(T[(n & 63) as usize] as char);
+        i += 3;
+    }
+    match data.len() - i {
+        1 => {
+            let n = (data[i] as u32) << 16;
+            out.push(T[((n >> 18) & 63) as usize] as char);
+            out.push(T[((n >> 12) & 63) as usize] as char);
+            out.push('=');
+            out.push('=');
+        }
+        2 => {
+            let n = ((data[i] as u32) << 16) | ((data[i + 1] as u32) << 8);
+            out.push(T[((n >> 18) & 63) as usize] as char);
+            out.push(T[((n >> 12) & 63) as usize] as char);
+            out.push(T[((n >> 6) & 63) as usize] as char);
+            out.push('=');
+        }
+        _ => {}
+    }
+    out
+}
+
+#[cfg(test)]
+mod mcp_share_tests {
+    use super::*;
+
+    #[test]
+    fn share_text_contains_deeplink_and_prompt() {
+        let t = mcp_share_text(
+            r"E:\mcp\RemoteAssist.Mcp.exe",
+            "AB12CD-12345678",
+            Some("127.0.0.1:17891"),
+        );
+        assert!(t.contains("cursor://anysphere.cursor-deeplink/mcp/install?name=remote-assist&config="));
+        assert!(t.contains("REMOTE_ASSIST_PAYLOAD"));
+        assert!(t.contains("REMOTE_ASSIST_RELAY"));
+        assert!(t.contains("list_processes"));
+        assert!(t.contains("connect"));
+        assert!(t.contains("发给 Agent"));
+    }
+
+    #[test]
+    fn share_text_install_only_without_payload() {
+        let t = mcp_share_text(r"E:\mcp\RemoteAssist.Mcp.exe", "", Some("121.196.45.81:17891"));
+        assert!(t.contains("REMOTE_ASSIST_RELAY"));
+        assert!(!t.contains("REMOTE_ASSIST_PAYLOAD"));
+        assert!(t.contains("connect"));
+    }
+
+    #[test]
+    fn base64_roundtrip_shape() {
+        assert_eq!(base64_encode(b"abc"), "YWJj");
+        assert_eq!(base64_encode(b"a"), "YQ==");
+    }
 }

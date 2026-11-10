@@ -412,6 +412,158 @@ func TestSessionCodesRequiresAuthAndProxies(t *testing.T) {
 	}
 }
 
+func TestAccessStatsVisitAndDownload(t *testing.T) {
+	dl := t.TempDir()
+	name := "Queqiao-Setup-0.1.0.exe"
+	if err := os.WriteFile(filepath.Join(dl, name), []byte("pkg"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	srv := newTestServerWithDownloads(t, dl)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "203.0.113.10:54321"
+	req.Header.Set("User-Agent", "TestBrowser/1.0")
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("index code=%d", rr.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/ask", nil)
+	req.Header.Set("X-Forwarded-For", "198.51.100.7, 10.0.0.1")
+	req.Header.Set("User-Agent", "AskBot/2")
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("ask code=%d", rr.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/styles.css", nil)
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("css code=%d", rr.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/downloads/"+name, nil)
+	req.Header.Set("X-Real-IP", "192.0.2.55")
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("download code=%d", rr.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/downloads/missing.bin", nil)
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("missing download code=%d", rr.Code)
+	}
+
+	// unauthenticated stats
+	req = httptest.NewRequest(http.MethodGet, "/admin/api/stats", nil)
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("unauth stats code=%d", rr.Code)
+	}
+
+	form := url.Values{"password": {"dev"}}
+	req = httptest.NewRequest(http.MethodPost, "/admin/login", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	var session string
+	for _, c := range rr.Result().Cookies() {
+		if c.Name == sessionCookie {
+			session = c.Value
+		}
+	}
+	if session == "" {
+		t.Fatal("no session")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/admin/api/stats", nil)
+	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: session})
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("stats code=%d body=%s", rr.Code, rr.Body.String())
+	}
+	var resp struct {
+		OK    bool `json:"ok"`
+		Stats struct {
+			VisitCount        int64 `json:"visit_count"`
+			VisitUniqueIPs    int64 `json:"visit_unique_ips"`
+			DownloadCount     int64 `json:"download_count"`
+			DownloadUniqueIPs int64 `json:"download_unique_ips"`
+			DownloadsByFile   []struct {
+				FileName string `json:"file_name"`
+				Count    int64  `json:"count"`
+			} `json:"downloads_by_file"`
+			RecentVisits []struct {
+				Path string `json:"path"`
+				IP   string `json:"ip"`
+			} `json:"recent_visits"`
+			RecentDownloads []struct {
+				FileName string `json:"file_name"`
+				IP       string `json:"ip"`
+			} `json:"recent_downloads"`
+		} `json:"stats"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if !resp.OK {
+		t.Fatalf("%v", resp)
+	}
+	if resp.Stats.VisitCount != 2 {
+		t.Fatalf("visit_count=%d want 2", resp.Stats.VisitCount)
+	}
+	if resp.Stats.VisitUniqueIPs != 2 {
+		t.Fatalf("visit_unique_ips=%d want 2", resp.Stats.VisitUniqueIPs)
+	}
+	if resp.Stats.DownloadCount != 1 {
+		t.Fatalf("download_count=%d want 1", resp.Stats.DownloadCount)
+	}
+	if resp.Stats.DownloadUniqueIPs != 1 {
+		t.Fatalf("download_unique_ips=%d want 1", resp.Stats.DownloadUniqueIPs)
+	}
+	if len(resp.Stats.DownloadsByFile) != 1 || resp.Stats.DownloadsByFile[0].FileName != name {
+		t.Fatalf("downloads_by_file=%v", resp.Stats.DownloadsByFile)
+	}
+	ips := map[string]bool{}
+	for _, v := range resp.Stats.RecentVisits {
+		ips[v.IP] = true
+	}
+	if !ips["203.0.113.10"] || !ips["198.51.100.7"] {
+		t.Fatalf("visit ips=%v", ips)
+	}
+	if len(resp.Stats.RecentDownloads) != 1 || resp.Stats.RecentDownloads[0].IP != "192.0.2.55" {
+		t.Fatalf("recent downloads=%v", resp.Stats.RecentDownloads)
+	}
+}
+
+func TestClientIPHelpers(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "10.1.2.3:9999"
+	if got := clientIP(req); got != "10.1.2.3" {
+		t.Fatalf("remote=%q", got)
+	}
+	req.Header.Set("X-Real-IP", "203.0.113.1")
+	if got := clientIP(req); got != "203.0.113.1" {
+		t.Fatalf("xri=%q", got)
+	}
+	req.Header.Set("X-Forwarded-For", "198.51.100.9, 10.0.0.1")
+	if got := clientIP(req); got != "198.51.100.9" {
+		t.Fatalf("xff=%q", got)
+	}
+	if got := normalizeVisitPath("/index.html"); got != "/" {
+		t.Fatalf("path=%q", got)
+	}
+}
+
 func TestSessionCodesUnconfigured(t *testing.T) {
 	srv := newTestServer(t)
 	form := url.Values{"password": {"dev"}}

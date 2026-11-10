@@ -1,4 +1,4 @@
-module gitee.com/CodeYG/remote-assist/relay
+module github.com/guoshuaipeng/remote-assist/relay
 
 go 1.26.0
 

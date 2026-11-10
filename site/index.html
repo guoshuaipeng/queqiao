@@ -202,7 +202,7 @@
               <div><h3>Windows</h3><p>适合大多数 Windows 电脑</p></div>
             </div>
             <ul class="dl-meta">
-              <li>版本 0.1.0 · 约 2.0 MB</li>
+              <li>版本 0.1.0 · 约 2.3 MB · 内含 MCP</li>
               <li>安装包内含 MCP · 不用另外装运行库</li>
             </ul>
             <a class="btn primary btn-lg btn-block" href="/downloads/Queqiao-Setup-0.1.0.exe">下载 Windows 版</a>
@@ -217,12 +217,15 @@
               <li>版本 0.1.0 · 约 3.4–3.7 MB · 内含 MCP</li>
               <li>未公证，首次打开需在系统设置中允许</li>
             </ul>
-            <label class="dl-select-label" for="mac-arch">芯片型号</label>
-            <select id="mac-arch" class="dl-select" aria-label="选择 macOS 芯片型号">
-              <option value="/downloads/Queqiao-0.1.0-macos-arm64.dmg" selected>Apple 芯片（M1 / M2 / M3…）</option>
-              <option value="/downloads/Queqiao-0.1.0-macos-x64.dmg">Intel 芯片</option>
-            </select>
-            <a id="mac-download" class="btn primary btn-lg btn-block" href="/downloads/Queqiao-0.1.0-macos-arm64.dmg">下载 macOS 版</a>
+            <div class="dl-split" data-dl-menu>
+              <button type="button" class="btn primary btn-lg btn-block" aria-expanded="false" aria-controls="mac-dl-menu" id="mac-dl-btn">
+                下载 macOS 版
+              </button>
+              <div class="dl-menu" id="mac-dl-menu" hidden role="menu" aria-labelledby="mac-dl-btn">
+                <a role="menuitem" href="/downloads/Queqiao-0.1.0-macos-arm64.dmg">Apple 芯片（M1 / M2 / M3…）</a>
+                <a role="menuitem" href="/downloads/Queqiao-0.1.0-macos-x64.dmg">Intel 芯片</a>
+              </div>
+            </div>
             <p class="dl-note">不确定型号时选 Apple 芯片。打开 dmg，把鹊桥拖到「应用程序」。</p>
           </article>
           <article class="dl-card">
@@ -243,11 +246,46 @@
     </section>
     <script>
       (function () {
-        var sel = document.getElementById("mac-arch");
-        var link = document.getElementById("mac-download");
-        if (!sel || !link) return;
-        sel.addEventListener("change", function () {
-          link.setAttribute("href", sel.value);
+        var roots = document.querySelectorAll("[data-dl-menu]");
+        if (!roots.length) return;
+
+        function closeAll(except) {
+          roots.forEach(function (root) {
+            if (except && root === except) return;
+            var btn = root.querySelector("button");
+            var menu = root.querySelector(".dl-menu");
+            if (!btn || !menu) return;
+            btn.setAttribute("aria-expanded", "false");
+            menu.hidden = true;
+          });
+        }
+
+        roots.forEach(function (root) {
+          var btn = root.querySelector("button");
+          var menu = root.querySelector(".dl-menu");
+          if (!btn || !menu) return;
+
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var open = btn.getAttribute("aria-expanded") === "true";
+            closeAll();
+            if (!open) {
+              btn.setAttribute("aria-expanded", "true");
+              menu.hidden = false;
+            }
+          });
+
+          menu.addEventListener("click", function () {
+            closeAll();
+          });
+        });
+
+        document.addEventListener("click", function () {
+          closeAll();
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") closeAll();
         });
       })();
     </script>
