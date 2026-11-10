@@ -57,9 +57,11 @@ fn wide(s: &str) -> Vec<u16> {
 }
 
 fn main() {
-    let mut cmd = wide(
-        r#"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File E:\IdeaProjects\remote-assist-wt-tauri\apps\queqiao-tauri\test\clip-probe.ps1"#,
-    );
+    let script = std::path::Path::new(file!()).with_file_name("clip-probe.ps1");
+    let mut cmd = wide(&format!(
+        r#"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File "{}""#,
+        script.display()
+    ));
     let mut si: StartInfo = unsafe { std::mem::zeroed() };
     si.cb = std::mem::size_of::<StartInfo>() as u32;
     let mut pi: ProcInfo = unsafe { std::mem::zeroed() };
