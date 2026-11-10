@@ -48,10 +48,10 @@ v0.2 — 官网管理台可管理客户端会话码（code）
 ### PV-001 · 官网 /admin 管理客户端会话码
 
 - **状态**：完成（仅本地验收）
-- **标题**：`http://121.196.45.81/admin` 增加对客户端会话码（code）的管理能力
+- **标题**：官网 `/admin` 增加对客户端会话码（code）的管理能力
 - **版本**：v0.2
 - **说明**：
-  - 现有官网管理台（`site/` `/admin`，公网 `http://121.196.45.81/admin`）目前以接单留言为主；需要在此管理台增加对**客户端会话码（code）**的管理。
+  - 现有官网管理台（`site/` `/admin`）目前以接单留言为主；需要在此管理台增加对**客户端会话码（code）**的管理。
   - 期望结果：运营在登录 `/admin` 后，能查看（并按合理操作管理）客户端产生的会话码相关记录，例如列表查看、按码查找；具体可管理动作（仅只读查看 / 作废失效码 / 结束会话等）以实现时与用户确认的最小闭环为准。
   - 验收：用管理口令打开公网或等价环境的 `/admin`，能看到会话码管理入口；能列出或查询到客户端 code；敏感字段（密码明文、`password_hash`、完整连接凭证、`fp`、业务载荷）不得展示；与现有接单「新留言 / 已联系 / 已结束」能力不互相破坏。
 - **约束**：
@@ -110,6 +110,25 @@ v0.2 — 官网管理台可管理客户端会话码（code）
   - **不允许**：上生产、公网换包、装到用户现用环境、R049/R050、push（除非另授）。
   - 详见 `docs/ux-user-confirmations-2026-11-06.md` §4 / §7。
 - **优先级**：高
+
+### PV-005 · 重建 MCP 控制面（Rust stdio）
+
+- **状态**：完成（仅本地验收）
+- **标题**：重建 `RemoteAssist.Mcp`，供 Cursor 等助手经完整连接凭证协助远端
+- **版本**：v0.2
+- **说明**：
+  - .NET 版 MCP exe 已删除；Tauri「复制 MCP 配置」仅能产出占位路径。
+  - 期望：新建 Rust stdio MCP（`apps/queqiao-mcp`，产物仍名 `RemoteAssist.Mcp.exe`），读 `REMOTE_ASSIST_PAYLOAD`，经中继 + 业务 TLS 配对后暴露 `list_processes` / `list_services` / `list_dir` / `read_file` / `read_log_tail` / `run_command`；写操作仍须被控本机确认。
+  - 验收（本地）：`.\scripts\publish-mcp.ps1` 产出 `artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe`；本机中继 + 被控端开启后，MCP 可调只读工具；`run_command` 在对方允许时成功、拒绝/超时时明确失败。
+- **约束**：
+  - 不得绕过本机写确认；不装进 NSIS；不账号免密 MCP；不上公网推送除非另授。
+  - 协议对齐现有 Tauri 业务帧；共享库可与 Tauri 有限度重复，优先可跑通。
+- **优先级**：高
+- **本地验收收口（2026-11-10）**：
+  - `cargo test -p queqiao-protocol`（含环回 list_processes + 拒绝 run_command）PASS
+  - `cargo test -p queqiao-mcp --test stdio_smoke`（stdio initialize/list/call）PASS
+  - `.\scripts\publish-mcp.ps1` → `artifacts/mcp-win-x64-sc/RemoteAssist.Mcp.exe`；CLI：无载荷 exit 2、无效 join exit 3
+  - **未做**：装进 NSIS、真机 Cursor 对真 Tauri 被控端联调、公网发版
 
 ---
 

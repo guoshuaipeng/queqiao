@@ -62,12 +62,19 @@ pub const INSTALL_HINT: &str = "已复制安装说明，请发给对方。";
 pub const MCP_NEED: &str = "请先开启接受协助或粘贴完整连接凭证，再复制 MCP 配置。";
 pub const MCP_OK: &str = "已复制 MCP 配置。请粘贴到 Cursor 的 MCP 设置并保存。";
 pub const MCP_PLACEHOLDER: &str =
-    "已复制 MCP 配置（还没找到本机的 RemoteAssist.Mcp.exe，路径需要改成实际程序）。";
+    "已复制 MCP 配置，但本机还没有 RemoteAssist.Mcp.exe。请先运行 .\\scripts\\publish-mcp.ps1，再把配置里的 command 改成产物绝对路径。";
 pub const USAGE_OK: &str = "已复制使用说明。";
 pub const NO_RESULT: &str = "还没有结果可复制。";
 pub const RESULT_COPIED: &str = "已复制结果。";
-pub const DEFAULT_RELAY: &str = "121.196.45.81:17891";
-pub const SITE: &str = "http://121.196.45.81/";
+/// 开源默认走本机中继。正式发版可设编译期环境变量 `QUEQIAO_DEFAULT_RELAY` / `QUEQIAO_SITE`（见 `private.example/deploy.md`）。
+pub const DEFAULT_RELAY: &str = match option_env!("QUEQIAO_DEFAULT_RELAY") {
+    Some(v) => v,
+    None => "127.0.0.1:17891",
+};
+pub const SITE: &str = match option_env!("QUEQIAO_SITE") {
+    Some(v) => v,
+    None => "http://127.0.0.1/",
+};
 pub const CONFIRM_SECS: u64 = 60;
 
 pub fn install_text() -> String {
@@ -77,5 +84,5 @@ pub fn install_text() -> String {
 }
 
 pub fn usage_text() -> &'static str {
-    "1. 在鹊桥里点「复制 MCP 配置」。\n2. 打开 Cursor（或同类工具）的 MCP 设置，粘贴进去并保存。\n3. 刷新或重启后再用智能体协助。\n对方电脑上要改动的操作仍会弹确认，智能体不能绕过。"
+    "1. 本机先运行 .\\scripts\\publish-mcp.ps1，得到 artifacts\\mcp-win-x64-sc\\RemoteAssist.Mcp.exe。\n2. 在鹊桥里点「复制 MCP 配置」（需已开启接受协助或粘贴完整连接凭证）。\n3. 粘贴到 Cursor 的 MCP 设置并保存，刷新后再用。\n对方电脑上要改动的操作仍会弹确认，智能体不能绕过。详见 docs/MCP.md。"
 }

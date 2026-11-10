@@ -1,0 +1,201 @@
+# 打包含 MCP 的 macOS / Linux（可选 Windows），上传 Artifact 供官网部署。
+name: Release packages (MCP)
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_windows:
+        description: "Also build Windows NSIS"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  QUEQIAO_DEFAULT_RELAY: "121.196.45.81:17891"
+  QUEQIAO_SITE: "http://121.196.45.81/"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rust_target: aarch64-apple-darwin
+            artifact: queqiao-macos-arm64
+            dmg_name: Queqiao-0.1.0-macos-arm64.dmg
+            mcp_out: RemoteAssist.Mcp-macos-arm64
+          - rust_target: x86_64-apple-darwin
+            artifact: queqiao-macos-x64
+            dmg_name: Queqiao-0.1.0-macos-x64.dmg
+            mcp_out: RemoteAssist.Mcp-macos-x64
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: apps/queqiao-tauri/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Build MCP
+        run: |
+          cargo build -p queqiao-mcp --release --target ${{ matrix.rust_target }}
+          mkdir -p apps/queqiao-tauri/src-tauri/resources/mcp
+          cp "target/${{ matrix.rust_target }}/release/remote_assist_mcp" \
+            apps/queqiao-tauri/src-tauri/resources/mcp/RemoteAssist.Mcp
+          chmod +x apps/queqiao-tauri/src-tauri/resources/mcp/RemoteAssist.Mcp
+
+      - name: Install frontend dependencies
+        working-directory: apps/queqiao-tauri
+        run: npm ci
+
+      - name: Build Tauri (dmg)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUEQIAO_DEFAULT_RELAY: ${{ env.QUEQIAO_DEFAULT_RELAY }}
+          QUEQIAO_SITE: ${{ env.QUEQIAO_SITE }}
+        with:
+          projectPath: apps/queqiao-tauri
+          args: --target ${{ matrix.rust_target }} --bundles app,dmg
+
+      - name: Stage downloads
+        run: |
+          mkdir -p dist
+          DMG=$(find apps/queqiao-tauri/src-tauri/target -name "*.dmg" | head -n 1)
+          test -n "$DMG"
+          cp "$DMG" "dist/${{ matrix.dmg_name }}"
+          cp apps/queqiao-tauri/src-tauri/resources/mcp/RemoteAssist.Mcp \
+            "dist/${{ matrix.mcp_out }}"
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/**
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: apps/queqiao-tauri/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Build MCP (CLI)
+        run: |
+          cargo build -p queqiao-mcp --release
+          mkdir -p apps/queqiao-tauri/src-tauri/resources/mcp
+          cp target/release/remote_assist_mcp apps/queqiao-tauri/src-tauri/resources/mcp/RemoteAssist.Mcp
+          chmod +x apps/queqiao-tauri/src-tauri/resources/mcp/RemoteAssist.Mcp
+          mkdir -p dist/Queqiao-MCP-0.1.0-linux-x64
+          cp target/release/remote_assist_mcp dist/Queqiao-MCP-0.1.0-linux-x64/RemoteAssist.Mcp
+          chmod +x dist/Queqiao-MCP-0.1.0-linux-x64/RemoteAssist.Mcp
+          printf '%s\n' \
+            '鹊桥 MCP（Linux x64）' \
+            '用法：REMOTE_ASSIST_PAYLOAD="remoteassist:pair?..." ./RemoteAssist.Mcp' \
+            '详见 https://github.com/guoshuaipeng/remote-assist/blob/master/docs/MCP.md' \
+            > dist/Queqiao-MCP-0.1.0-linux-x64/README.txt
+          tar -C dist -czf dist/Queqiao-MCP-0.1.0-linux-x64.tar.gz Queqiao-MCP-0.1.0-linux-x64
+
+      - name: Install frontend dependencies
+        working-directory: apps/queqiao-tauri
+        run: npm ci
+
+      - name: Build Tauri (UI)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUEQIAO_DEFAULT_RELAY: ${{ env.QUEQIAO_DEFAULT_RELAY }}
+          QUEQIAO_SITE: ${{ env.QUEQIAO_SITE }}
+        with:
+          projectPath: apps/queqiao-tauri
+          args: --bundles deb,appimage
+
+      - name: Stage UI downloads
+        run: |
+          mkdir -p dist
+          APPIMAGE=$(find apps/queqiao-tauri/src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -n 1)
+          DEB=$(find apps/queqiao-tauri/src-tauri/target/release/bundle/deb -name "*.deb" | head -n 1)
+          test -n "$APPIMAGE"
+          cp "$APPIMAGE" dist/Queqiao-0.1.0-linux-x64.AppImage
+          if [ -n "$DEB" ]; then cp "$DEB" dist/Queqiao-0.1.0-linux-x64.deb; fi
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: queqiao-linux-x64
+          path: dist/**
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    if: ${{ inputs.include_windows }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: apps/queqiao-tauri/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build MCP
+        shell: pwsh
+        run: |
+          cargo build -p queqiao-mcp --release
+          New-Item -ItemType Directory -Force -Path apps/queqiao-tauri/src-tauri/resources/mcp | Out-Null
+          Copy-Item target/release/remote_assist_mcp.exe apps/queqiao-tauri/src-tauri/resources/mcp/RemoteAssist.Mcp.exe
+
+      - name: Install frontend dependencies
+        working-directory: apps/queqiao-tauri
+        run: npm ci
+
+      - name: Build Tauri (NSIS)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUEQIAO_DEFAULT_RELAY: ${{ env.QUEQIAO_DEFAULT_RELAY }}
+          QUEQIAO_SITE: ${{ env.QUEQIAO_SITE }}
+        with:
+          projectPath: apps/queqiao-tauri
+          args: --bundles nsis
+
+      - name: Stage downloads
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $setup = Get-ChildItem -Recurse apps/queqiao-tauri/src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
+          if (-not $setup) { throw "NSIS exe missing" }
+          Copy-Item $setup.FullName dist/Queqiao-Setup-0.1.0.exe
+          Copy-Item apps/queqiao-tauri/src-tauri/resources/mcp/RemoteAssist.Mcp.exe dist/RemoteAssist.Mcp-windows-x64.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: queqiao-windows
+          path: dist/**
+          if-no-files-found: error
+          retention-days: 14

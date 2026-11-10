@@ -34,13 +34,13 @@
 | 公网中继 · 账号 | 是（有账号时） | `login`/`auth_token` → `device_online` / `list_devices` / `connect_device` | 同账号连本机已允许的设备免输会话密码 |
 | 局域网直连 | 否 | 历史 LAN 路径 | 仅高级/调试 |
 
-生产中继（已验收）：`121.196.45.81:17891`，systemd `remote-assist-relay`，SQLite `/var/lib/remote-assist-relay/relay.db`。客户端默认同此地址，可覆盖。详见 `relay-deploy.md`。
+生产中继：`YOUR_RELAY_HOST:17891`，systemd `remote-assist-relay`，SQLite `/var/lib/remote-assist-relay/relay.db`。开源客户端默认 `127.0.0.1:17891`，正式发版或设置可覆盖。详见 `relay-deploy.md`、本机 `private/deploy.md`。
 
 ## 4. 协议分层
 
 1. **中继控制面**：单 TCP；配对前 **JSON Lines**（`signup` / `login` / `auth_token` / `device_*` / `guest_*`）；配对成功两端收到 `paired` 后切 **原始双向字节管道**。契约：`relay-protocol.md`。
 2. **业务面**：管道内业务帧（4 字节 LE 长度 + UTF-8 JSON）+ **TLS（自签 + 证书指纹钉扎）**。`--insecure` 仅显式调试。中继只转发，不终结业务 TLS。指纹为被控端临时业务证书，经完整载荷分享；规则见 **`tls-trust.md`** 与本文 §15。
-3. **MCP（待重建）**：.NET 版 MCP 服务程序已随旧客户端删除；重建前客户端设置页的「复制 MCP 配置」不可用。重建时 stdio 工具映射到同一客户端协议，`run_command` 等写路径仍走本机确认。
+3. **MCP**：协助方机器上的 stdio 服务（`apps/queqiao-mcp` → `RemoteAssist.Mcp.exe`）。读完整连接凭证，经中继 + 业务 TLS 后发 `pair`/`tool`；工具映射到同一业务协议，`run_command` 等写路径仍走被控本机确认。详见 `docs/MCP.md`。
 
 ## 5. 鉴权与权限
 
@@ -121,7 +121,7 @@
 产品范围见 `site.md`。部署细节见 `site-deploy.md`。**官网改版已暂停（2026-11-06），交由其他人制作。**
 
 - **独立 Go 小二进制** + systemd `remote-assist-site`，与 `remote-assist-relay` 分进程、分用户（`rasite`）、分 SQLite 文件。官网故障不得拖死中继。
-- 监听 **`SITE_ADDR=:80`**（MVP：`http://121.196.45.81`）。不占用 `17891`。本阶段不上 HTTPS、不放行 443。
+- 监听 **`SITE_ADDR=:80`**（MVP：`http://YOUR_SITE_HOST`）。不占用 `17891`。本阶段不上 HTTPS、不放行 443。
 - 数据：`SITE_DATA=/var/lib/remote-assist-site/site.db`。
 - 运营口令：`SITE_ADMIN_PASSWORD`，仅写在服务器 `/etc/remote-assist-site.env`，不进仓库。
 - 资源：`MemoryMax=64M`、`CPUQuota=30%`；不装 Node/Java/PHP/MySQL/Docker 等重栈。

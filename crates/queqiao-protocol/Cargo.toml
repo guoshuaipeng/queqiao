@@ -1,0 +1,15 @@
+[package]
+name = "queqiao-protocol"
+version.workspace = true
+edition.workspace = true
+description = "鹊桥协助端：凭证、帧、TLS 会话（供 MCP 等无头客户端）"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+getrandom = { workspace = true }
+rustls = { workspace = true }
+sha2 = { workspace = true }
+
+[dev-dependencies]
+rcgen = "0.13"

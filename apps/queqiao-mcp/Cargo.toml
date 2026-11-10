@@ -1,0 +1,20 @@
+[package]
+name = "queqiao-mcp"
+version.workspace = true
+edition.workspace = true
+description = "鹊桥 MCP stdio 服务（产物名 RemoteAssist.Mcp）"
+
+[[bin]]
+name = "remote_assist_mcp"
+path = "src/main.rs"
+
+[dependencies]
+queqiao-protocol = { path = "../../crates/queqiao-protocol" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+rcgen = "0.13"
+rustls = { workspace = true }
+sha2 = { workspace = true }
+queqiao-protocol = { path = "../../crates/queqiao-protocol" }

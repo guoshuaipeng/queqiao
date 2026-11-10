@@ -1879,11 +1879,16 @@ fn copy_mcp(app: AppHandle, state: State<'_, std::sync::Arc<Shared>>, draft: Str
         state.publish();
         return Ok(state.snapshot());
     }
-    let exe = find_mcp();
+    let exe = find_mcp(&app);
+    let placeholder = if cfg!(windows) {
+        "RemoteAssist.Mcp.exe"
+    } else {
+        "RemoteAssist.Mcp"
+    };
     let exe_text = exe
         .as_ref()
         .map(|p| p.display().to_string().replace('\\', "\\\\"))
-        .unwrap_or_else(|| "RemoteAssist.Mcp.exe".into());
+        .unwrap_or_else(|| placeholder.into());
     let body = format!(
         "{{\n  \"mcpServers\": {{\n    \"remote-assist\": {{\n      \"command\": \"{exe_text}\",\n      \"args\": [],\n      \"env\": {{\n        \"REMOTE_ASSIST_PAYLOAD\": \"{}\"\n      }}\n    }}\n  }}\n}}",
         payload.replace('\\', "\\\\").replace('"', "\\\"")
@@ -2080,17 +2085,48 @@ fn view_for(phase: &str) -> String {
     }
 }
 
-fn find_mcp() -> Option<PathBuf> {
-    let mut cursor = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.to_path_buf()));
+fn mcp_binary_names() -> &'static [&'static str] {
+    if cfg!(windows) {
+        &["RemoteAssist.Mcp.exe", "remote_assist_mcp.exe"]
+    } else {
+        &["RemoteAssist.Mcp", "remote_assist_mcp"]
+    }
+}
+
+fn find_mcp_in_dir(dir: &std::path::Path) -> Option<PathBuf> {
+    for name in mcp_binary_names() {
+        let direct = dir.join(name);
+        if direct.exists() {
+            return Some(direct);
+        }
+        let nested = dir.join("mcp").join(name);
+        if nested.exists() {
+            return Some(nested);
+        }
+    }
+    let win_artifacts = dir
+        .join("artifacts")
+        .join("mcp-win-x64-sc")
+        .join("RemoteAssist.Mcp.exe");
+    if win_artifacts.exists() {
+        return Some(win_artifacts);
+    }
+    None
+}
+
+fn find_mcp(app: &AppHandle) -> Option<PathBuf> {
+    if let Ok(res) = app.path().resource_dir() {
+        if let Some(p) = find_mcp_in_dir(&res) {
+            return Some(p);
+        }
+    }
+    let mut cursor = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.to_path_buf()));
     for _ in 0..8 {
         let Some(dir) = cursor else { break };
-        let cand = dir.join("artifacts").join("mcp-win-x64-sc").join("RemoteAssist.Mcp.exe");
-        if cand.exists() {
-            return Some(cand);
-        }
-        let flat = dir.join("RemoteAssist.Mcp.exe");
-        if flat.exists() {
-            return Some(flat);
+        if let Some(p) = find_mcp_in_dir(&dir) {
+            return Some(p);
         }
         cursor = dir.parent().map(|p| p.to_path_buf());
     }
