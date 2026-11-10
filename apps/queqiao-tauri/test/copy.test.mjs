@@ -65,8 +65,22 @@ test("demo credentials from the mock are not hardcoded as live data", () => {
 
 test("reject stays the default dialog button", () => {
   assert.ok(js.includes("dlg-no"));
+  assert.ok(js.includes("dlg-pair-no"));
   assert.ok(js.includes("focus"));
   assert.ok(js.includes('e.key === "Escape"'));
+});
+
+test("pair confirm allows by trust row in one click", () => {
+  assert.ok(html.includes("允许 · 每次询问"));
+  assert.ok(html.includes("允许 · 宽松"));
+  assert.ok(html.includes("允许 · 完全信任"));
+  assert.ok(html.includes('data-trust="ask"'));
+  assert.ok(html.includes("dlg-pair-actions"));
+  assert.ok(html.includes("dlg-pair-foot"));
+  assert.match(js, /resolve\(true,\s*btn\.getAttribute\("data-trust"\)/);
+  assert.match(js, /args\.trust = trust \|\| "ask"/);
+  assert.match(css, /\.pair-allow\.ask/);
+  assert.match(css, /\.dlg-pair-foot/);
 });
 
 test("desktop channel missing is not treated as connected", () => {
@@ -107,7 +121,8 @@ test("countdown does not pretend to be a click on reject", () => {
 
 test("write confirm shows the remaining seconds", () => {
   assert.match(js, /d\.kind === "pair" \|\| d\.kind === "write"/);
-  assert.match(js, /\$\("dlg-no"\)\.textContent = base \+/);
+  assert.match(js, /const label = base \+ "（" \+ Math\.max\(0, dlgLeft\) \+ "）"/);
+  assert.match(js, /\$\("dlg-no"\)\.textContent = label/);
 });
 
 test("log result scrolls to the newest line", () => {
@@ -286,9 +301,9 @@ test("a long result line stays clear of its scrollbar", () => {
 });
 
 test("a wide result does not bring back the page scrollbar", () => {
-  assert.match(js, /if \(!past\) scroller\.style\.paddingBottom = "0px"/);
+  assert.match(js, /scroller\.style\.paddingBottom = "0px"/);
   assert.match(js, /scroller\.style\.overflowY = extra <= 4 \? "hidden" : "auto"/);
-  assert.match(js, /while \(extra > 4 && shrinks < 8\)/);
+  assert.match(js, /while \(guard < 12 && span\(\)\.bottom - span\(\)\.top > room - 8\)/);
 });
 
 test("a long line can slide sideways without sliding the page", () => {

@@ -19,6 +19,12 @@
 3. Copy once = full short credential `CODE-########` (code + password together).
 4. Bottom secondary「停止接受」; right zone dimmed; home MCP strip may remain visible.
 
+## Pair confirm IA (approved B)
+1. Title/body unchanged:「有人想协助这台电脑」+ 查看说明.
+2. **一键按档允许**：三行「允许 · 每次询问 / 宽松 / 完全信任」（点即同意并以该档连上）；不要「先选档再点允许」。
+3. 每次询问行推荐态（蓝底 `#eff6ff`）；完全信任浅警示（`#fff7ed`）。
+4. 底部只留「拒绝（倒计时）」全宽；默认焦点仍在拒绝；超时仍拒绝。弹窗不滚动，收紧间距塞进 840×480。
+
 ## Host session IA (approved B)
 1. Status bar: green「正在接受协助 · 已连接」+ mono duration「已连接 MM:SS」(or HH:MM:SS).
 2. **安全等级** inline segment on session page: 每次询问 / 宽松 / 完全信任 — wired to same `set_trust` as settings (full still needs confirm dialog).

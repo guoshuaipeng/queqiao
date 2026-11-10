@@ -1,6 +1,6 @@
 [package]
 name = "queqiao-tauri"
-version = "0.1.1"
+version = "0.1.2"
 description = "鹊桥 Tauri 客户端"
 authors = ["鹊桥"]
 edition = "2021"

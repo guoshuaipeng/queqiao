@@ -814,36 +814,44 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+function rejectBtn() {
+  const pair = state && state.dialog && state.dialog.kind === "pair";
+  return pair ? $("dlg-pair-no") : $("dlg-no");
+}
+
 function renderDialog(d) {
   show($("mask"), !!d);
   if (!d) {
     clearInterval(dlgTimer);
     dlgTimer = null;
     currentDlg = 0;
-    show($("dlg-trust"), false);
+    const box = $("dlg");
+    if (box) box.classList.remove("pair");
+    show($("dlg-pair-actions"), false);
+    show($("dlg-pair-foot"), false);
     return;
   }
   if (currentDlg === d.id) return;
   currentDlg = d.id;
   $("dlg-title").textContent = d.title || "";
   $("dlg-body").textContent = d.body || "";
-  const pairTrust = d.kind === "pair";
-  show($("dlg-trust"), pairTrust);
-  if (pairTrust) {
-    const pref = state && state.trustSaved === "relaxed" ? "relaxed" : "ask";
-    document.querySelectorAll('input[name="dlg-trust"]').forEach((el) => {
-      el.checked = el.value === pref;
-    });
-  }
+  const pair = d.kind === "pair";
+  const box = $("dlg");
+  if (box) box.classList.toggle("pair", pair);
+  show($("dlg-pair-actions"), pair);
+  show($("dlg-pair-foot"), pair);
   const hasDetail = !!d.detail;
   const detail = $("dlg-detail");
   show($("dlg-detail-toggle"), false);
   detail.textContent = d.detail || "";
   show(detail, hasDetail);
   if (hasDetail) requestAnimationFrame(() => { detail.scrollLeft = detail.scrollWidth; });
-  $("dlg-no").textContent = d.secondary || "取消";
+  const secondary = d.secondary || "取消";
+  $("dlg-no").textContent = secondary;
+  $("dlg-pair-no").textContent = secondary;
   $("dlg-yes").textContent = d.primary || "允许";
-  $("dlg-no").classList.add("focus");
+  $("dlg-no").classList.toggle("focus", !pair);
+  $("dlg-pair-no").classList.toggle("focus", pair);
   $("dlg-yes").classList.remove("focus");
   dlgLeft = Number.isFinite(d.seconds) ? d.seconds : 60;
   paintCount(d);
@@ -856,28 +864,30 @@ function renderDialog(d) {
       if (dlgLeft <= 0) clearInterval(dlgTimer);
     }, 1000);
   }
-  setTimeout(() => $("dlg-no").focus(), 0);
+  setTimeout(() => {
+    const btn = rejectBtn();
+    if (btn) btn.focus();
+  }, 0);
 }
 
 function paintCount(d) {
   if (d.kind === "pair" || d.kind === "write") {
     const base = d.secondary || "取消";
-    $("dlg-no").textContent = base + "（" + Math.max(0, dlgLeft) + "）";
+    const label = base + "（" + Math.max(0, dlgLeft) + "）";
+    $("dlg-no").textContent = label;
+    if ($("dlg-pair-no")) $("dlg-pair-no").textContent = label;
   }
 }
 
-function resolve(allow) {
+function resolve(allow, trust) {
   if (!state || !state.dialog) return;
   const id = state.dialog.id;
   const kind = state.dialog.kind;
-  window.__queqiaoLastResolve = { id, allow };
+  window.__queqiaoLastResolve = { id, allow, trust: allow && kind === "pair" ? (trust || "ask") : undefined };
   clearInterval(dlgTimer);
   dlgTimer = null;
   const args = { id, allow };
-  if (allow && kind === "pair") {
-    const picked = document.querySelector('input[name="dlg-trust"]:checked');
-    args.trust = (picked && picked.value) || "ask";
-  }
+  if (allow && kind === "pair") args.trust = trust || "ask";
   invoke("resolve_dialog", args).then(render).catch(showErr);
 }
 
@@ -1097,7 +1107,11 @@ function bindUi() {
   $("btn-records").onclick = () => invoke("open_history_dir").then(render).catch(showErr);
   $("btn-history").onclick = () => invoke("toggle_history").then(render).catch(showErr);
   $("dlg-no").onclick = () => resolve(false);
+  $("dlg-pair-no").onclick = () => resolve(false);
   $("dlg-yes").onclick = () => resolve(true);
+  document.querySelectorAll(".pair-allow").forEach((btn) => {
+    btn.onclick = () => resolve(true, btn.getAttribute("data-trust") || "ask");
+  });
   $("dlg-detail-toggle").onclick = () => { $("dlg-detail").hidden = !$("dlg-detail").hidden; };
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && state && state.dialog) {

@@ -1,23 +1,23 @@
 {
-  "version": "0.1.1",
-  "notes": "修复连接提示；设置页可检查并自动更新。",
-  "pub_date": "2026-11-10T08:00:00Z",
+  "version": "0.1.2",
+  "notes": "配对确认可一键选择安全等级允许协助。",
+  "pub_date": "2026-11-10T10:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "http://YOUR_SITE_HOST/downloads/Queqiao-Setup-0.1.1.exe",
-      "name": "Queqiao-Setup-0.1.1.exe"
+      "url": "http://YOUR_SITE_HOST/downloads/Queqiao-Setup-0.1.2.exe",
+      "name": "Queqiao-Setup-0.1.2.exe"
     },
     "darwin-aarch64": {
-      "url": "http://YOUR_SITE_HOST/downloads/Queqiao-0.1.1-macos-arm64.dmg",
-      "name": "Queqiao-0.1.1-macos-arm64.dmg"
+      "url": "http://YOUR_SITE_HOST/downloads/Queqiao-0.1.2-macos-arm64.dmg",
+      "name": "Queqiao-0.1.2-macos-arm64.dmg"
     },
     "darwin-x86_64": {
-      "url": "http://YOUR_SITE_HOST/downloads/Queqiao-0.1.1-macos-x64.dmg",
-      "name": "Queqiao-0.1.1-macos-x64.dmg"
+      "url": "http://YOUR_SITE_HOST/downloads/Queqiao-0.1.2-macos-x64.dmg",
+      "name": "Queqiao-0.1.2-macos-x64.dmg"
     },
     "linux-x86_64": {
-      "url": "http://YOUR_SITE_HOST/downloads/Queqiao-0.1.1-linux-x64.AppImage",
-      "name": "Queqiao-0.1.1-linux-x64.AppImage"
+      "url": "http://YOUR_SITE_HOST/downloads/Queqiao-0.1.2-linux-x64.AppImage",
+      "name": "Queqiao-0.1.2-linux-x64.AppImage"
     }
   }
 }
