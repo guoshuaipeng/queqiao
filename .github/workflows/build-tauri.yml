@@ -35,6 +35,8 @@ jobs:
             artifact: queqiao-linux-x64
 
     runs-on: ${{ matrix.platform }}
+    # Manual runs can pass "only=linux|windows|macos" via repository variable SKIP; default build all.
+    # For cost control on private repos, prefer workflow_dispatch after editing matrix, or cancel unused jobs.
     steps:
       - uses: actions/checkout@v4
 
