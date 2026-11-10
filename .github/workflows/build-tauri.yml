@@ -7,11 +7,6 @@ on:
       - "apps/queqiao-tauri/**"
       - ".github/workflows/build-tauri.yml"
   workflow_dispatch:
-    inputs:
-      only:
-        description: "platforms to build: all | windows | macos | linux"
-        required: false
-        default: "all"
 
 permissions:
   contents: read
@@ -23,30 +18,22 @@ jobs:
       matrix:
         include:
           - platform: windows-latest
-            family: windows
             rust_targets: ""
             args: --bundles nsis
             artifact: queqiao-windows
           - platform: macos-latest
-            family: macos
             rust_targets: aarch64-apple-darwin
             args: --target aarch64-apple-darwin --bundles app,dmg
             artifact: queqiao-macos-arm64
           - platform: macos-latest
-            family: macos
             rust_targets: x86_64-apple-darwin
             args: --target x86_64-apple-darwin --bundles app,dmg
             artifact: queqiao-macos-x64
           - platform: ubuntu-22.04
-            family: linux
             rust_targets: ""
             args: --bundles deb,appimage
             artifact: queqiao-linux-x64
 
-    if: >-
-      github.event_name != 'workflow_dispatch'
-      || github.event.inputs.only == 'all'
-      || github.event.inputs.only == matrix.family
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
