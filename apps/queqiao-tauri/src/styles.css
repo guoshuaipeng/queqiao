@@ -1177,11 +1177,13 @@ body.tight #btn-propose { height: 28px; }
 .set-body {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
-  padding: 18px 32px 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 32px 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
 }
 .set-block {
   display: flex;

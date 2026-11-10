@@ -70,6 +70,13 @@ test("reject stays the default dialog button", () => {
   assert.ok(js.includes('e.key === "Escape"'));
 });
 
+test("settings body scrolls so version update stays reachable", () => {
+  assert.match(css, /\.set-body\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(css, /\.set-bar\s*\{[^}]*flex:\s*none/);
+  assert.ok(html.includes("版本更新"));
+  assert.ok(html.includes("btn-check-update"));
+});
+
 test("pair confirm allows by trust row in one click", () => {
   assert.ok(html.includes("允许 · 每次询问"));
   assert.ok(html.includes("允许 · 宽松"));
