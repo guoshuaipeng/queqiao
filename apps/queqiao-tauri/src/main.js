@@ -135,7 +135,8 @@ function render(s) {
   $("right-hint").textContent = waiting ? "点连接会先停止接受协助（会先问你）。" : "";
   const rightIdle = s.phase === "idle" || s.phase === "helper_fail" || s.phase === "open_fail" || s.phase === "stop_fail";
   show($("right-steps"), rightIdle && !s.helperError);
-  show($("home-mcp-strip"), !rightBusy && !s.helperError && (rightIdle || waiting || opening));
+  // 连接失败也保留 MCP 入口：未连接就能装，不应被 helperError 藏掉。
+  show($("home-mcp-strip"), !rightBusy && (rightIdle || waiting || opening));
   $("cred").disabled = rightBusy;
 
   const ended = !!s.peerEnded;
@@ -211,11 +212,23 @@ function render(s) {
     show($("trust-hint"), trustNeedPeer);
   }
   if ($("settings-hint")) $("settings-hint").textContent = trustNeedPeer ? "" : settingsHint;
-  const mcpHint = !trustNeedPeer && /MCP|使用说明|没能复制/.test(settingsHint) ? settingsHint : "";
+  const mcpHint = !trustNeedPeer && /MCP|使用说明|没能复制|装到 Cursor|缺 MCP|再改路径/.test(settingsHint) ? settingsHint : "";
   if ($("helper-mcp-hint")) $("helper-mcp-hint").textContent = helper && !ended ? mcpHint : "";
-  if ($("home-mcp-hint")) {
-    const stripOn = home && !accountPage && !rightBusy && !s.helperError && (rightIdle || waiting || opening);
-    $("home-mcp-hint").textContent = stripOn ? mcpHint : "";
+  const homeMcpStrip = $("home-mcp-strip");
+  const homeMcpSub = $("home-mcp-sub");
+  const homeMcpBtn = $("btn-mcp-home");
+  if (homeMcpStrip && homeMcpSub && homeMcpBtn) {
+    const stripOn = home && !accountPage && !rightBusy && (rightIdle || waiting || opening);
+    const homeMcpMsg = stripOn ? mcpHint : "";
+    const homeMcpWarn = /缺 MCP|没能复制|没有 RemoteAssist|发布/.test(homeMcpMsg);
+    const homeMcpOk = !!homeMcpMsg && !homeMcpWarn;
+    homeMcpStrip.classList.toggle("is-ok", homeMcpOk);
+    homeMcpStrip.classList.toggle("is-warn", homeMcpWarn);
+    // 副文案固定说明，不拿成功/失败长句占位，避免挤到「连接」。
+    homeMcpSub.textContent = "未连接也能装；装好后把短码发给 AI";
+    homeMcpBtn.disabled = false;
+    homeMcpBtn.textContent = homeMcpOk ? "已复制" : "复制 MCP 配置";
+    homeMcpBtn.title = homeMcpOk ? "再点可再次复制" : "";
   }
   if ($("version")) $("version").textContent = "版本 " + (s.version || "");
   if ($("auto-update")) $("auto-update").checked = !!s.autoUpdate;

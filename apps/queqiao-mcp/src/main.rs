@@ -1,5 +1,8 @@
-//! 鹊桥 MCP：stdio JSON-RPC 2.0 + Content-Length。
-//! 启动即可用；用 connect 传入短码/完整载荷再连远端。写操作仍须被控本机确认。
+//! 鹊桥 MCP：stdio JSON-RPC 2.0。
+//! 帧格式兼容：
+//! - Content-Length（MCP 规范 / Claude Desktop / 官方 SDK）
+//! - NDJSON 一行一 JSON（Cursor 等部分宿主）
+//! 启动即可用；用 connect 传短码/完整载荷再连远端。写操作仍须被控本机确认。
 
 use std::collections::BTreeMap;
 use std::io::{self, Read, Write};
@@ -11,41 +14,53 @@ use serde_json::{json, Value};
 
 static SESSION: Mutex<Option<AssistSession>> = Mutex::new(None);
 
+/// 本进程明确支持的协议版本（按新→旧）。未知客户端版本时回退到最旧稳定版。
+const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-11-25", "2025-06-18", "2024-11-05"];
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|a| a == "-h" || a == "--help" || a == "help") {
         eprintln!("RemoteAssist MCP (stdio)");
-        eprintln!("启动后未连接也可被 Cursor 拉起；用工具 connect 传短码/完整载荷再连远端。");
+        eprintln!("兼容 Content-Length 与 NDJSON；未连接也可被宿主拉起，用 connect 传短码/完整载荷。");
         eprintln!("Env: REMOTE_ASSIST_PAYLOAD=<remoteassist:pair?... | CODE-########>  # 可选，有则启动时尝试配对");
         eprintln!("     REMOTE_ASSIST_RELAY=<host:port>   # 短码默认中继");
+        eprintln!("     REMOTE_ASSIST_MCP_DEBUG_LOG=<path>  # 可选，追加帧调试日志");
         eprintln!("Or:  RemoteAssist.Mcp.exe [--payload \"...\"] [--relay host:port]");
         eprintln!("See docs/MCP.md");
         std::process::exit(0);
     }
 
+    // 首个 MCP 请求前不要写 stderr：部分宿主（如 Cursor）会因此推迟/卡住 initialize。
     let boot_payload = resolve_payload(&args);
     let boot_relay = resolve_relay_arg(&args);
+    let mut boot_note: Option<String> = None;
     if !boot_payload.is_empty() {
         match AssistSession::connect_with_relay(&boot_payload, "鹊桥 MCP", &boot_relay) {
             Ok(session) => {
-                eprintln!("[mcp] paired ok (boot)");
                 *SESSION.lock().expect("session") = Some(session);
+                boot_note = Some("[mcp] paired ok (boot)".into());
             }
             Err(e) => {
-                eprintln!("[mcp] 启动时配对失败（MCP 仍可用，请用 connect 重试）: {e}");
+                boot_note = Some(format!(
+                    "[mcp] 启动时配对失败（MCP 仍可用，请用 connect 重试）: {e}"
+                ));
             }
         }
-    } else {
-        eprintln!("[mcp] ready (disconnected); call connect with payload/short code");
     }
 
     let stdin = io::stdin();
     let mut stdin = stdin.lock();
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
+    let mut logged_boot = false;
+    let debug_log = std::env::var_os("REMOTE_ASSIST_MCP_DEBUG_LOG")
+        .map(std::path::PathBuf::from)
+        .filter(|p| !p.as_os_str().is_empty());
+    // 同一会话内帧格式锁定：首包判定后全程同帧回写，避免混用导致宿主拆包失败。
+    let mut session_framing: Option<Framing> = None;
 
     loop {
-        let msg = match read_lsp_message(&mut stdin) {
+        let (msg, detected) = match read_mcp_message(&mut stdin) {
             Ok(Some(m)) => m,
             Ok(None) => break,
             Err(e) => {
@@ -53,6 +68,16 @@ fn main() {
                 break;
             }
         };
+        let framing = *session_framing.get_or_insert(detected);
+        if let Some(path) = debug_log.as_ref() {
+            let _ = append_debug_log(path, framing, &msg);
+        }
+        if !logged_boot {
+            logged_boot = true;
+            if let Some(note) = boot_note.take() {
+                eprintln!("{note}");
+            }
+        }
         let node: Value = match serde_json::from_str(&msg) {
             Ok(v) => v,
             Err(_) => continue,
@@ -61,18 +86,23 @@ fn main() {
         let Some(method) = node.get("method").and_then(|m| m.as_str()) else {
             continue;
         };
-        // notifications (no id)
+        // notifications（无 id）直接吞掉
         if id.is_none() {
             continue;
         }
 
         let (result, error) = match method {
-            "initialize" => (Some(handle_initialize()), None),
+            "initialize" => (Some(handle_initialize(node.get("params"))), None),
             "tools/list" => (Some(handle_tools_list()), None),
             "tools/call" => match handle_tools_call(node.get("params")) {
                 Ok(v) => (Some(v), None),
                 Err(e) => (None, Some(json!({"code": -32000, "message": e}))),
             },
+            // 部分宿主会探测未声明能力；返回空集比 -32601 更稳。
+            "resources/list" => (Some(json!({"resources": []})), None),
+            "resources/templates/list" => (Some(json!({"resourceTemplates": []})), None),
+            "prompts/list" => (Some(json!({"prompts": []})), None),
+            "logging/setLevel" => (Some(json!({})), None),
             "ping" => (Some(json!({})), None),
             other => (
                 None,
@@ -89,11 +119,28 @@ fn main() {
         } else if let Some(res) = result {
             response["result"] = res;
         }
-        if let Err(e) = write_lsp_message(&mut stdout, &response.to_string()) {
+        if let Err(e) = write_mcp_message(&mut stdout, &response.to_string(), framing) {
             eprintln!("[mcp] write error: {e}");
             break;
         }
     }
+}
+
+fn append_debug_log(path: &std::path::Path, framing: Framing, msg: &str) -> io::Result<()> {
+    use std::io::Write;
+    let mut f = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?;
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    writeln!(
+        f,
+        "[{ts}] framing={framing:?} msg_preview={}",
+        msg.chars().take(300).collect::<String>()
+    )
 }
 
 fn resolve_payload(args: &[String]) -> String {
@@ -128,9 +175,23 @@ fn resolve_relay_arg(args: &[String]) -> String {
     queqiao_protocol::session::resolve_relay(None)
 }
 
-fn handle_initialize() -> Value {
+fn negotiate_protocol_version(client_ver: &str) -> &'static str {
+    for &v in SUPPORTED_PROTOCOL_VERSIONS {
+        if v == client_ver {
+            return v;
+        }
+    }
+    // 未知版本：回退到最广泛兼容的稳定版。
+    "2024-11-05"
+}
+
+fn handle_initialize(params: Option<&Value>) -> Value {
+    let client_ver = params
+        .and_then(|p| p.get("protocolVersion"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("2024-11-05");
     json!({
-        "protocolVersion": "2024-11-05",
+        "protocolVersion": negotiate_protocol_version(client_ver),
         "capabilities": { "tools": {} },
         "serverInfo": {
             "name": "remote-assist",
@@ -393,7 +454,13 @@ fn arg_str(args: &Value, key: &str) -> Option<String> {
     }
 }
 
-fn read_lsp_message(stdin: &mut impl Read) -> io::Result<Option<String>> {
+#[derive(Debug, Clone, Copy)]
+enum Framing {
+    ContentLength,
+    Ndjson,
+}
+
+fn read_mcp_message(stdin: &mut impl Read) -> io::Result<Option<(String, Framing)>> {
     let mut content_length: Option<usize> = None;
     let mut saw_any = false;
     loop {
@@ -414,6 +481,11 @@ fn read_lsp_message(stdin: &mut impl Read) -> io::Result<Option<String>> {
             break;
         }
         let line = String::from_utf8_lossy(&line_buf);
+        let trimmed = line.trim_start();
+        // NDJSON：首行即 JSON 对象（Cursor 等）；规范宿主走 Content-Length 头。
+        if content_length.is_none() && trimmed.starts_with('{') {
+            return Ok(Some((trimmed.to_string(), Framing::Ndjson)));
+        }
         let lower = line.to_ascii_lowercase();
         if let Some(rest) = lower.strip_prefix("content-length:") {
             content_length = rest.trim().parse().ok();
@@ -427,7 +499,10 @@ fn read_lsp_message(stdin: &mut impl Read) -> io::Result<Option<String>> {
     };
     let mut body = vec![0u8; len];
     stdin.read_exact(&mut body)?;
-    Ok(Some(String::from_utf8_lossy(&body).into_owned()))
+    Ok(Some((
+        String::from_utf8_lossy(&body).into_owned(),
+        Framing::ContentLength,
+    )))
 }
 
 fn read_line(stdin: &mut impl Read, buf: &mut Vec<u8>) -> io::Result<()> {
@@ -454,10 +529,62 @@ fn read_line(stdin: &mut impl Read, buf: &mut Vec<u8>) -> io::Result<()> {
     }
 }
 
-fn write_lsp_message(stdout: &mut impl Write, body: &str) -> io::Result<()> {
+fn write_mcp_message(stdout: &mut impl Write, body: &str, framing: Framing) -> io::Result<()> {
     let bytes = body.as_bytes();
-    write!(stdout, "Content-Length: {}\r\n\r\n", bytes.len())?;
-    stdout.write_all(bytes)?;
+    match framing {
+        Framing::ContentLength => {
+            write!(stdout, "Content-Length: {}\r\n\r\n", bytes.len())?;
+            stdout.write_all(bytes)?;
+        }
+        Framing::Ndjson => {
+            stdout.write_all(bytes)?;
+            stdout.write_all(b"\n")?;
+        }
+    }
     stdout.flush()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod framing_tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn reads_content_length_frame() {
+        let body = r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#;
+        let raw = format!("Content-Length: {}\r\n\r\n{}", body.len(), body);
+        let mut cur = Cursor::new(raw.into_bytes());
+        let (msg, framing) = read_mcp_message(&mut cur).unwrap().unwrap();
+        assert!(matches!(framing, Framing::ContentLength));
+        assert_eq!(msg, body);
+    }
+
+    #[test]
+    fn reads_ndjson_frame() {
+        let body = r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#;
+        let raw = format!("{body}\n");
+        let mut cur = Cursor::new(raw.into_bytes());
+        let (msg, framing) = read_mcp_message(&mut cur).unwrap().unwrap();
+        assert!(matches!(framing, Framing::Ndjson));
+        assert_eq!(msg, body);
+    }
+
+    #[test]
+    fn writes_matching_framing() {
+        let body = r#"{"ok":true}"#;
+        let mut cl = Vec::new();
+        write_mcp_message(&mut cl, body, Framing::ContentLength).unwrap();
+        assert!(cl.starts_with(b"Content-Length:"));
+        let mut nd = Vec::new();
+        write_mcp_message(&mut nd, body, Framing::Ndjson).unwrap();
+        assert_eq!(nd, b"{\"ok\":true}\n");
+    }
+
+    #[test]
+    fn negotiates_known_and_unknown_protocol_versions() {
+        assert_eq!(negotiate_protocol_version("2025-11-25"), "2025-11-25");
+        assert_eq!(negotiate_protocol_version("2024-11-05"), "2024-11-05");
+        assert_eq!(negotiate_protocol_version("2099-01-01"), "2024-11-05");
+    }
 }

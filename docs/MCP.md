@@ -1,9 +1,19 @@
 # MCP 接入说明（stdio）
 
-`RemoteAssist.Mcp` 是通用 **stdio MCP Server**（JSON-RPC 2.0 + `Content-Length` 帧）。  
-协助方机器上由 Cursor 等拉起；**未连接也可启动**，再用工具 `connect` 传入短码/完整凭证连到被控端。**写操作（如 `run_command`）仍须被控本机确认，MCP 无法绕过。**
+`RemoteAssist.Mcp` 是通用 **stdio MCP Server**（JSON-RPC 2.0）。  
+协助方机器上由 Cursor / Claude Desktop / 其他 Agent 宿主拉起；**未连接也可启动**，再用工具 `connect` 传入短码/完整凭证连到被控端。**写操作（如 `run_command`）仍须被控本机确认，MCP 无法绕过。**
 
 中继控制协议见 `docs/relay-protocol.md`。业务工具名在线上为 PascalCase；MCP 对外仍用 snake_case。
+
+## 多宿主兼容
+
+| 项 | 行为 |
+|----|------|
+| 帧格式 | 同时识别 **Content-Length**（MCP 规范 / Claude Desktop / 官方 SDK）与 **NDJSON**（一行一 JSON，Cursor 等）。首包判定后整会话同帧回写。 |
+| 协议版本 | 支持 `2024-11-05` / `2025-06-18` / `2025-11-25`；客户端发已知版本则回显，未知则回退 `2024-11-05`。 |
+| 启动日志 | **首个 MCP 请求前不写 stderr**，避免部分宿主卡住不发 `initialize`。 |
+| 探测方法 | 对 `resources/list`、`prompts/list`、`logging/setLevel` 返回空结果，减少宿主因 `-32601` 中断。 |
+| 鉴权提示 | 本地 stdio **无 OAuth**。Cursor 若弹出 Authenticate，可 Skip；配对请用工具 `connect` 传短码，不是该按钮。 |
 
 ## 构建
 
@@ -66,6 +76,8 @@ REMOTE_ASSIST_RELAY=121.196.45.81:17891
 客户端首页 / 设置「复制 MCP 配置」默认只留 `command` + `REMOTE_ASSIST_RELAY`（未连接也可装）。若当时已有会话凭证，会一并写入 `REMOTE_ASSIST_PAYLOAD` 方便启动即配对；短码仍可再交给 Agent 用 `connect` 传入。
 
 MCP `initialize` 会返回 `instructions`（能力边界与推荐工作方式）；`tools/list` 含较完整的中文工具说明，供 Cursor 自动选工具。
+
+若聊天里出现 **Connect with remote-assist / Authenticate**：这是 Cursor 允许 Agent 使用 MCP 的确认，不是鹊桥短码配对。可点 Skip，或在 Settings → MCP 确认 `remote-assist` 已启用；配对仍靠 Agent 调 `connect`。
 
 ## 工具
 

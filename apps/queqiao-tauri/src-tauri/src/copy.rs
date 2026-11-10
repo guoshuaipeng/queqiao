@@ -59,10 +59,9 @@ pub const BUSY_OP: &str = "正在执行…";
 pub const EMPTY_AUDIT: &str = "对方还没有做任何操作";
 pub const EMPTY_RESULT: &str = "点上面的操作，结果会显示在这里";
 pub const INSTALL_HINT: &str = "已复制安装说明，请发给对方。";
-pub const MCP_OK: &str =
-    "已复制 MCP 安装包（含一键链接、mcp.json、开场白）。未连接也可装；装好后把对方短码发给 Agent 用 connect。";
+pub const MCP_OK: &str = "已复制。装到 Cursor 后，把对方短码发给 AI。";
 pub const MCP_PLACEHOLDER: &str =
-    "已复制 MCP 安装包，但本机还没有 RemoteAssist.Mcp.exe。请先运行 .\\scripts\\publish-mcp.ps1，再把 command 改成产物绝对路径。";
+    "已复制，但本机还缺 MCP 程序。请先发布后再改路径。";
 pub const USAGE_OK: &str = "已复制使用说明。";
 pub const NO_RESULT: &str = "还没有结果可复制。";
 pub const RESULT_COPIED: &str = "已复制结果。";

@@ -602,8 +602,24 @@ body.view-home .client {
   font-size: 12px;
   border-radius: 8px;
   flex: none;
+  min-width: 7.5em;
 }
-#home-mcp-hint:empty { display: none; }
+.mcp-strip.is-ok {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+.mcp-strip.is-ok .mcp-strip-sub { color: var(--green); }
+.mcp-strip.is-warn {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+.mcp-strip.is-warn .mcp-strip-sub { color: #b45309; }
+.mcp-strip.is-ok .btn.sm.primary,
+.mcp-strip.is-warn .btn.sm.primary {
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line);
+}
 .cred-panel {
   display: flex;
   flex-direction: column;

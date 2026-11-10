@@ -133,13 +133,17 @@ fn read_msg(stdout: &mut impl Read) -> Value {
 }
 
 fn mcp_exe() -> PathBuf {
+    // 集成测试优先用 cargo 注入的当前构建产物，避免误用过期的 debug exe。
+    if let Ok(p) = std::env::var("CARGO_BIN_EXE_remote_assist_mcp") {
+        return PathBuf::from(p);
+    }
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    p.push("../../target/debug/remote_assist_mcp.exe");
+    p.push("../../target/release/remote_assist_mcp.exe");
     if p.exists() {
         return p;
     }
     p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    p.push("../../target/release/remote_assist_mcp.exe");
+    p.push("../../target/debug/remote_assist_mcp.exe");
     p
 }
 
@@ -326,6 +330,87 @@ fn stdio_starts_disconnected_then_connect_tool() {
     let call = read_msg(&mut stdout);
     let text = call["result"]["content"][0]["text"].as_str().unwrap_or("");
     assert!(text.contains("stdio-smoke-ok"), "{call}");
+
+    drop(stdin);
+    let _ = child.wait();
+}
+
+fn write_ndjson(stdin: &mut impl Write, body: &str) {
+    stdin.write_all(body.as_bytes()).unwrap();
+    stdin.write_all(b"\n").unwrap();
+    stdin.flush().unwrap();
+}
+
+fn read_ndjson(stdout: &mut impl Read) -> Value {
+    let mut line = Vec::new();
+    loop {
+        let mut b = [0u8; 1];
+        stdout.read_exact(&mut b).unwrap();
+        if b[0] == b'\n' {
+            break;
+        }
+        line.push(b[0]);
+    }
+    while line.last().is_some_and(|c| *c == b'\r') {
+        line.pop();
+    }
+    serde_json::from_slice(&line).unwrap()
+}
+
+/// Cursor 等宿主走 NDJSON（无 Content-Length）；须同帧回写。
+#[test]
+fn stdio_ndjson_initialize_and_tools_list() {
+    let exe = mcp_exe();
+    assert!(exe.exists(), "build mcp first: {}", exe.display());
+
+    let mut child = Command::new(&exe)
+        .env_remove("REMOTE_ASSIST_PAYLOAD")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn mcp");
+
+    let mut stdin = child.stdin.take().unwrap();
+    let mut stdout = child.stdout.take().unwrap();
+
+    write_ndjson(
+        &mut stdin,
+        &json!({
+            "jsonrpc":"2.0",
+            "id":0,
+            "method":"initialize",
+            "params":{
+                "protocolVersion":"2025-11-25",
+                "capabilities":{},
+                "clientInfo":{"name":"cursor-like","version":"1.0.0"}
+            }
+        })
+        .to_string(),
+    );
+    let init = read_ndjson(&mut stdout);
+    assert_eq!(init["result"]["serverInfo"]["name"], "remote-assist");
+    assert_eq!(init["result"]["protocolVersion"], "2025-11-25");
+
+    write_ndjson(
+        &mut stdin,
+        &json!({"jsonrpc":"2.0","method":"notifications/initialized"}).to_string(),
+    );
+    write_ndjson(
+        &mut stdin,
+        &json!({"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}).to_string(),
+    );
+    let list = read_ndjson(&mut stdout);
+    let tools = list["result"]["tools"].as_array().unwrap();
+    assert!(tools.iter().any(|t| t["name"] == "connect"));
+    assert!(tools.iter().any(|t| t["name"] == "list_processes"));
+
+    write_ndjson(
+        &mut stdin,
+        &json!({"jsonrpc":"2.0","id":2,"method":"resources/list","params":{}}).to_string(),
+    );
+    let resources = read_ndjson(&mut stdout);
+    assert!(resources["result"]["resources"].as_array().unwrap().is_empty());
 
     drop(stdin);
     let _ = child.wait();
