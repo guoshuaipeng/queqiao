@@ -384,14 +384,42 @@
       </footer>
 
       <div class="mask" id="mask" hidden>
-        <div class="dlg" role="dialog" aria-modal="true">
-          <h3 id="dlg-title"></h3>
-          <p id="dlg-body"></p>
-          <button type="button" class="link" id="dlg-detail-toggle" hidden>▸ 查看详细</button>
-          <pre class="result" id="dlg-detail" hidden></pre>
-          <div class="row end">
-            <button type="button" class="btn" id="dlg-no">拒绝</button>
-            <button type="button" class="btn primary" id="dlg-yes">允许</button>
+        <div class="dlg" id="dlg" role="dialog" aria-modal="true">
+          <div class="dlg-main">
+            <h3 id="dlg-title"></h3>
+            <p id="dlg-body"></p>
+            <div class="dlg-pair-actions" id="dlg-pair-actions" hidden>
+              <button type="button" class="pair-allow ask" data-trust="ask">
+                <span class="pair-allow-text">
+                  <span class="pair-allow-title">允许 · 每次询问</span>
+                  <span class="pair-allow-hint">推荐。改动前需你确认</span>
+                </span>
+                <span class="pair-allow-chev" aria-hidden="true">›</span>
+              </button>
+              <button type="button" class="pair-allow" data-trust="relaxed">
+                <span class="pair-allow-text">
+                  <span class="pair-allow-title">允许 · 宽松</span>
+                  <span class="pair-allow-hint">只有高风险改动才问你</span>
+                </span>
+                <span class="pair-allow-chev" aria-hidden="true">›</span>
+              </button>
+              <button type="button" class="pair-allow full" data-trust="full">
+                <span class="pair-allow-text">
+                  <span class="pair-allow-title">允许 · 完全信任</span>
+                  <span class="pair-allow-hint">仅这次不再询问，但仍会记下</span>
+                </span>
+                <span class="pair-allow-chev" aria-hidden="true">›</span>
+              </button>
+            </div>
+            <button type="button" class="link" id="dlg-detail-toggle" hidden>▸ 查看详细</button>
+            <pre class="result" id="dlg-detail" hidden></pre>
+            <div class="row end" id="dlg-actions">
+              <button type="button" class="btn" id="dlg-no">拒绝</button>
+              <button type="button" class="btn primary" id="dlg-yes">允许</button>
+            </div>
+          </div>
+          <div class="dlg-pair-foot" id="dlg-pair-foot" hidden>
+            <button type="button" class="btn block" id="dlg-pair-no">拒绝</button>
           </div>
         </div>
       </div>

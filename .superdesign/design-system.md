@@ -31,7 +31,7 @@
 2. **Left tool rail**: groups「查看」vs「改动」; 改动 visually stronger but not equal to dump of 6 chips.
 3. **Main workspace**: tool params + structured results + copy; session action timeline secondary.
 4. End session always available, clear but not a empty full-width footer dominating the layout.
-5. **「复制 MCP 配置」主入口在首页右区 + 设置**：未连接也可复制安装包（仅 command + 默认中继）。首页「我帮别人」在步骤与「连接」之间放浅色条（`#eff6ff` +「复制 MCP 配置」）。会话页可保留次要入口。短码交给 Agent 用 `connect`，不要绑死在 mcp.json。
+5. **「复制 MCP 配置」主入口在首页右区 + 设置**：未连接也可复制安装包（仅 command + 默认中继）。首页「我帮别人」在步骤与「连接」之间放浅色条（`#eff6ff` +「复制 MCP 配置」）。**反馈只改按钮文案为「已复制」**（仍可再点复制），副文案固定、不另起提示行，以免挡住底部「连接」。会话页可保留次要入口。短码交给 Agent 用 `connect`，不要绑死在 mcp.json。
 
 ## Motion
 Subtle only: status dot pulse when waiting; selected tool state change. Prefer `prefers-reduced-motion` quiet.

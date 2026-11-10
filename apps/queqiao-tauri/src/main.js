@@ -820,12 +820,21 @@ function renderDialog(d) {
     clearInterval(dlgTimer);
     dlgTimer = null;
     currentDlg = 0;
+    show($("dlg-trust"), false);
     return;
   }
   if (currentDlg === d.id) return;
   currentDlg = d.id;
   $("dlg-title").textContent = d.title || "";
   $("dlg-body").textContent = d.body || "";
+  const pairTrust = d.kind === "pair";
+  show($("dlg-trust"), pairTrust);
+  if (pairTrust) {
+    const pref = state && state.trustSaved === "relaxed" ? "relaxed" : "ask";
+    document.querySelectorAll('input[name="dlg-trust"]').forEach((el) => {
+      el.checked = el.value === pref;
+    });
+  }
   const hasDetail = !!d.detail;
   const detail = $("dlg-detail");
   show($("dlg-detail-toggle"), false);
@@ -860,10 +869,16 @@ function paintCount(d) {
 function resolve(allow) {
   if (!state || !state.dialog) return;
   const id = state.dialog.id;
+  const kind = state.dialog.kind;
   window.__queqiaoLastResolve = { id, allow };
   clearInterval(dlgTimer);
   dlgTimer = null;
-  invoke("resolve_dialog", { id, allow }).then(render).catch(showErr);
+  const args = { id, allow };
+  if (allow && kind === "pair") {
+    const picked = document.querySelector('input[name="dlg-trust"]:checked');
+    args.trust = (picked && picked.value) || "ask";
+  }
+  invoke("resolve_dialog", args).then(render).catch(showErr);
 }
 
 function showErr(err) {

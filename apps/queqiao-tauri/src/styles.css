@@ -1363,9 +1363,23 @@ body.tight #btn-propose { height: 28px; }
 .radio b { font-weight: 600; width: 72px; flex: none; }
 .radio span { color: var(--sub); }
 .mask { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.28); display: flex; align-items: center; justify-content: center; }
-.dlg { width: 420px; max-width: calc(100% - 32px); background: #fff; border-radius: 16px; padding: 22px 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.04); }
+.dlg { width: 440px; max-width: calc(100% - 32px); background: #fff; border-radius: 16px; padding: 22px 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.04); }
 .dlg h3 { margin: 0 0 10px; font-size: 17px; }
 .dlg p { margin: 0 0 18px; font-size: 14px; line-height: 1.7; color: #334155; }
+.dlg-trust { margin: -6px 0 16px; }
+.dlg-trust-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub);
+  margin-bottom: 8px;
+}
+.dlg-trust-seg { width: 100%; }
+.dlg-trust-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--sub);
+}
 .focus { outline: 2px solid #93c5fd; outline-offset: 2px; }
 body.view-settings .top,
 body.view-account .top {

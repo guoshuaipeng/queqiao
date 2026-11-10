@@ -20,7 +20,7 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager, State, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, State, UserAttentionType, WindowEvent};
 
 use copy::{self as text};
 use credential::{CredClass, Via};
@@ -85,6 +85,8 @@ struct Model {
     show_history: bool,
     settings_hint: String,
     full_gen: u64,
+    /// 配对弹窗选了「完全信任」：等进入 host_session 再落档。
+    pending_full_trust: bool,
     path_open: String,
     form_epoch: u64,
     just_dropped: bool,
@@ -175,6 +177,7 @@ impl Shared {
                 show_history: false,
                 settings_hint: String::new(),
                 full_gen: 0,
+                pending_full_trust: false,
                 path_open: String::new(),
                 form_epoch: 0,
                 just_dropped: false,
@@ -363,6 +366,9 @@ impl Hooks for AppHooks {
             });
         }
         self.shared.publish();
+        // 确认窗在主窗口遮罩里；最小化/被挡住时人看不见，超时会当拒绝。
+        // unminimize + 尝试置前；抢焦点常被系统拦住，再靠任务栏闪烁提醒。
+        raise_for_confirm(&self.shared);
         let start = Instant::now();
         loop {
             if !self.alive() {
@@ -436,6 +442,7 @@ impl Hooks for AppHooks {
                 model.dialog = None;
                 model.peer_ended = false;
                 model.host_connected_at = Some(Instant::now());
+                take_pending_full_trust(self.shared.as_ref(), &mut model);
             }
             Ev::HelperSession => {
                 model.phase = "helper_session".into();
@@ -509,6 +516,7 @@ impl Hooks for AppHooks {
                         model.phase = "waiting".into();
                         model.view = "home".into();
                         model.full_gen = 0;
+                        model.pending_full_trust = false;
                         model.session_long = false;
                         model.host_connected_at = None;
                     }
@@ -525,6 +533,7 @@ impl Hooks for AppHooks {
                 model.code.clear();
                 model.password_len = 0;
                 model.full_gen = 0;
+                model.pending_full_trust = false;
                 model.op_busy = false;
                 model.op_status.clear();
                 model.audit.clear();
@@ -593,6 +602,7 @@ impl AppHooks {
                         model.view = "host".into();
                         model.dialog = None;
                         model.host_connected_at = Some(Instant::now());
+                        take_pending_full_trust(self.shared.as_ref(), &mut model);
                     }
                 }
                 Ev::Dropped => {
@@ -656,6 +666,7 @@ impl AppHooks {
                     model.peer_ended = false;
                     model.host_banner = banner.into();
                     model.host_connected_at = Some(Instant::now());
+                    take_pending_full_trust(self.shared.as_ref(), &mut model);
                 }
                 Ev::Dropped | Ev::PeerEnded => {
                     if model.session_account {
@@ -895,6 +906,7 @@ impl Shared {
         model.op_status.clear();
         model.peer_ended = false;
         model.full_gen = 0;
+        model.pending_full_trust = false;
         model.path_open.clear();
         model.session_long = false;
         model.session_account = false;
@@ -1112,6 +1124,40 @@ fn trust_generation(state: &Shared, model: &Model) -> u64 {
     }
 }
 
+fn take_pending_full_trust(state: &Shared, model: &mut Model) {
+    if !model.pending_full_trust {
+        return;
+    }
+    model.full_gen = trust_generation(state, model);
+    model.pending_full_trust = false;
+    model.settings_hint.clear();
+}
+
+/// 配对弹窗选中的安全等级：每次询问/宽松立即记偏好；完全信任等会话起来再落档。
+fn apply_pair_trust_choice(state: &Shared, trust: &str) {
+    if trust == "full" {
+        let mut model = state.model.lock().expect("model");
+        model.pending_full_trust = true;
+        model.settings_hint.clear();
+        return;
+    }
+    let saved = if trust == "relaxed" {
+        Trust::Relaxed
+    } else {
+        Trust::Ask
+    };
+    let token = policy::trust_token(saved);
+    let mut model = state.model.lock().expect("model");
+    model.trust_saved = token.into();
+    model.full_gen = 0;
+    model.pending_full_trust = false;
+    let relay = model.relay.clone();
+    let mut file = settings::load(&state.settings_path);
+    file.relay = relay;
+    file.trust = token.into();
+    let _ = settings::save(&state.settings_path, &file);
+}
+
 fn window_hwnd(app: &AppHandle) -> isize {
     #[cfg(windows)]
     {
@@ -1126,6 +1172,22 @@ fn window_hwnd(app: &AppHandle) -> isize {
         let _ = app;
         0
     }
+}
+
+/// 配对/写操作确认弹出时：还原最小化，尽量置前；失败则任务栏闪烁（Windows 常限制强制抢焦点）。
+fn raise_for_confirm(shared: &Shared) {
+    let Some(app) = shared.app.lock().expect("app").clone() else {
+        return;
+    };
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        let Some(win) = handle.get_webview_window("main") else {
+            return;
+        };
+        let _ = win.unminimize();
+        let _ = win.set_focus();
+        let _ = win.request_user_attention(Some(UserAttentionType::Critical));
+    });
 }
 
 fn spawn_host(shared: std::sync::Arc<Shared>, my: u64) {
@@ -1657,7 +1719,12 @@ fn cancel_connect(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, 
 }
 
 #[tauri::command]
-fn resolve_dialog(state: State<'_, std::sync::Arc<Shared>>, id: u64, allow: bool) -> Result<Snapshot, String> {
+fn resolve_dialog(
+    state: State<'_, std::sync::Arc<Shared>>,
+    id: u64,
+    allow: bool,
+    trust: Option<String>,
+) -> Result<Snapshot, String> {
     let kind = {
         let model = state.model.lock().expect("model");
         match &model.dialog {
@@ -1666,6 +1733,9 @@ fn resolve_dialog(state: State<'_, std::sync::Arc<Shared>>, id: u64, allow: bool
         }
     };
     if kind == "pair" || kind == "write" {
+        if kind == "pair" && allow {
+            apply_pair_trust_choice(state.inner(), trust.as_deref().unwrap_or("ask"));
+        }
         let slot = state.prompt.lock().expect("prompt");
         if let Some(prompt) = slot.as_ref() {
             if prompt.id == id {
@@ -1873,6 +1943,7 @@ fn set_trust(state: State<'_, std::sync::Arc<Shared>>, trust: String) -> Result<
             if model.phase != "host_session" {
                 model.settings_hint = text::FULL_NEEDS_PEER.into();
                 model.full_gen = 0;
+                model.pending_full_trust = false;
                 model.dialog = None;
                 drop(model);
                 state.publish();
@@ -1880,6 +1951,7 @@ fn set_trust(state: State<'_, std::sync::Arc<Shared>>, trust: String) -> Result<
             }
             let id = state.prompt_ids.fetch_add(1, Ordering::SeqCst);
             model.settings_hint.clear();
+            model.pending_full_trust = false;
             model.dialog = Some(Dialog {
                 id,
                 kind: "full".into(),
@@ -1894,18 +1966,7 @@ fn set_trust(state: State<'_, std::sync::Arc<Shared>>, trust: String) -> Result<
         state.publish();
         return Ok(state.snapshot());
     }
-    let saved = if trust == "relaxed" { Trust::Relaxed } else { Trust::Ask };
-    let token = policy::trust_token(saved);
-    {
-        let mut model = state.model.lock().expect("model");
-        model.trust_saved = token.into();
-        model.full_gen = 0;
-        let relay = model.relay.clone();
-        let mut file = settings::load(&state.settings_path);
-        file.relay = relay;
-        file.trust = token.into();
-        let _ = settings::save(&state.settings_path, &file);
-    }
+    apply_pair_trust_choice(state.inner(), &trust);
     state.publish();
     Ok(state.snapshot())
 }

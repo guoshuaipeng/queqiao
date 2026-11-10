@@ -172,6 +172,47 @@
         }
       },
       "updatedAt": "2026-11-10T08:25:00.000Z"
+    },
+    "pair-confirm-dialog": {
+      "targetKind": "existing-ui",
+      "projectId": "48fcf40c-012e-4889-938d-7d7d0dbc1c77",
+      "baselineDraftId": "17808def-3e46-4ea3-8db8-b7488a172b84",
+      "activeDraftId": "17808def-3e46-4ea3-8db8-b7488a172b84",
+      "designSystemPath": ".superdesign/design-system.md",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "docs/client-ui-mockup.html:279:303",
+        "apps/queqiao-tauri/src/styles.css:1:20",
+        "apps/queqiao-tauri/src/styles.css:519:562"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "4df4ad59d79946c47dd75139d38fcf83ff19e132c72ec7ce1ae0e4ae81e42907",
+        ".superdesign/init/theme.md": "ebfb23ad746a1ce3f6787e695165d76a2d9c99fa2de452f4361da2154e29127c",
+        "docs/client-ui-mockup.html": "614c92ac3fb3463a46c6696dcb8600990630c7303678988a0347a5b92cdc0c7c",
+        "apps/queqiao-tauri/src/styles.css": "aa2aff2f4a7cf7ac777f5bc237db5e14b64b165c63c38fc7cf471b04af8bf166"
+      },
+      "components": [],
+      "drafts": {
+        "17808def-3e46-4ea3-8db8-b7488a172b84": {
+          "title": "Current 配对确认弹窗",
+          "visualDirection": "pixel-perfect baseline pair confirm",
+          "currentVersion": 1
+        },
+        "c6a5769e-97ec-44fb-9eb4-6523aae2a748": {
+          "title": "A 堆叠允许卡片",
+          "visualDirection": "one-click allow cards by trust; reject with countdown",
+          "parentDraftId": "17808def-3e46-4ea3-8db8-b7488a172b84",
+          "currentVersion": 1
+        },
+        "a01adcb1-a1cb-446c-b6ef-1e272bb37e6e": {
+          "title": "B 允许行列表",
+          "visualDirection": "one-click trust rows + bottom reject only",
+          "parentDraftId": "17808def-3e46-4ea3-8db8-b7488a172b84",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-11-10T09:35:00.000Z"
     }
   }
 }
