@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>鹊桥 · 帮亲友处理电脑问题</title>
-      <meta name="description" content="鹊桥帮助亲友远程处理电脑问题，也能登录账号无人值守连自己的电脑。提供 Windows / macOS / Linux 安装包与 MCP 命令行，处于试用阶段。">
+      <meta name="description" content="鹊桥帮助亲友远程处理电脑问题，也能登录账号无人值守连自己的电脑；代码开源，可私有化部署。提供 Windows / macOS / Linux 安装包与 MCP 命令行，处于试用阶段。">
   <meta name="theme-color" content="#ffffff">
   <link rel="stylesheet" href="/styles.css">
 </head>
@@ -25,6 +25,7 @@
         <a href="#how">如何使用</a>
         <a href="#unattended">无人值守</a>
         <a href="#download">获取软件</a>
+        <a href="#self-host">私有部署</a>
         <a href="#safe">安全与隐私</a>
         <a href="#faq">帮助</a>
       </nav>
@@ -348,6 +349,43 @@
       })();
     </script>
 
+    <section id="self-host" class="section section-alt">
+      <div class="wrap agent-grid">
+        <div class="agent-copy">
+          <span class="eyebrow">开源 · 私有化部署</span>
+          <h2>服务器也可以<br>放在你自己手里</h2>
+          <p class="agent-lead">客户端、中继和官网代码都已开源。公司或团队可以把中继部署在自己的服务器上，连接、账号和设备列表都只经过自己的机器。</p>
+          <ul class="sh-points">
+            <li><strong>中继看不到内容</strong><span>两端之间是端到端加密，中继只负责配对和转发，不解密，也不能替对方执行改动。</span></li>
+            <li><strong>部署很轻</strong><span>一个 Go 程序加一个 SQLite 文件，2 核 2G 的 Linux 主机就够，只需放行 TCP 17891。</span></li>
+            <li><strong>客户端改一处即可</strong><span>在「设置 → 连接服务器」填自己的地址；也可以自己打包，把默认地址换成自己的，员工不用改。</span></li>
+            <li><strong>安全规则不变</strong><span>改动仍要被协助的电脑点允许，自己部署也绕不过这一步。</span></li>
+          </ul>
+          <div class="actions">
+            <a class="btn primary btn-lg" href="https://github.com/guoshuaipeng/remote-assist" target="_blank" rel="noopener">GitHub 源码</a>
+            <a class="btn ghost btn-lg" href="https://gitee.com/CodeYG/remote-assist" target="_blank" rel="noopener">Gitee 镜像</a>
+          </div>
+        </div>
+        <div class="agent-demo" aria-label="自建中继步骤示意">
+          <div class="term">
+            <div class="term-bar"><i></i><i></i><i></i><span>自建中继 · Linux</span></div>
+            <pre class="term-code"><span class="c"># 1. 编译中继（仓库 relay/ 目录）</span>
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+  go build -o remote-assist-relay ./cmd/relay
+
+<span class="c"># 2. 在服务器上运行（建议交给 systemd 常驻）</span>
+RELAY_ADDR=:17891 \
+RELAY_DATA=/var/lib/remote-assist-relay/relay.db \
+  ./remote-assist-relay
+
+<span class="c"># 3. 安全组放行 TCP 17891</span>
+<span class="c">#    客户端「设置 → 连接服务器」填 你的地址:17891</span></pre>
+          </div>
+          <p class="demo-note">完整步骤见仓库 docs/relay-deploy.md</p>
+        </div>
+      </div>
+    </section>
+
     <section id="safe" class="section section-dark">
       <div class="wrap">
         <div class="section-head">
@@ -404,6 +442,10 @@
             <p>发凭证适合临时帮别人看一下，不用注册，结束就停。无人值守适合连自己的电脑，需要登录同一个账号，不用每次发凭证，也不用有人在电脑前点允许连接。</p>
           </details>
           <details class="faq-item">
+            <summary>可以部署在自己公司的服务器上吗？</summary>
+            <p>可以。代码开源，按仓库里的说明把中继装到自己的 Linux 服务器上，再在客户端「设置 → 连接服务器」填上自己的地址即可。账号和设备列表都存在你自己的服务器里。</p>
+          </details>
+          <details class="faq-item">
             <summary>需要帮助和来帮忙是两个软件吗？</summary>
             <p>不是，是同一个程序，只是用法不同。</p>
           </details>
@@ -449,8 +491,10 @@
         <a href="#how">如何使用</a>
         <a href="#unattended">无人值守</a>
         <a href="#download">获取软件</a>
+        <a href="#self-host">私有部署</a>
         <a href="#safe">安全与隐私</a>
         <a href="#faq">帮助</a>
+        <a href="https://github.com/guoshuaipeng/remote-assist" target="_blank" rel="noopener">开源仓库</a>
         <a href="/ask">留言咨询</a>
       </nav>
     </div>
