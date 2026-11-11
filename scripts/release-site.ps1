@@ -120,6 +120,7 @@ function Update-SiteIndex([string]$ver, [string[]]$plats) {
     }
     if ($plats -contains "linux") {
         $text = [regex]::Replace($text, "Queqiao-\d+\.\d+\.\d+-linux-x64\.AppImage", "Queqiao-$ver-linux-x64.AppImage")
+        $text = [regex]::Replace($text, "Queqiao-\d+\.\d+\.\d+-linux-x64\.deb", "Queqiao-$ver-linux-x64.deb")
         $text = [regex]::Replace($text, "Queqiao-MCP-\d+\.\d+\.\d+-linux-x64\.tar\.gz", "Queqiao-MCP-$ver-linux-x64.tar.gz")
         $text = [regex]::Replace(
             $text,
