@@ -259,23 +259,12 @@ a:hover { text-decoration: underline; }
 .t-ok { color: #34d399; font-size: 0.82rem; }
 .t-wait { border-color: rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.06); }
 .t-pending { color: #fbbf24; font-size: 0.82rem; }
-.term-code {
-  margin: 0;
-  padding: 22px;
-  overflow-x: auto;
-  color: #e2e8f0;
-  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
-  font-size: 0.85rem;
-  line-height: 1.7;
-}
-.term-code .c { color: #64748b; }
-
 /* —— 私有化部署 —— */
-.sh-points { display: grid; gap: 14px; margin: 0 0 28px; padding: 0; list-style: none; }
-.sh-points li { padding-left: 18px; border-left: 3px solid var(--primary-soft); }
-.sh-points strong { display: block; color: var(--ink); font-size: 1rem; }
-.sh-points span { color: var(--muted); font-size: 0.92rem; }
-#self-host .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+#self-host.section { padding: 64px 0; }
+.sh-band { display: flex; align-items: center; justify-content: space-between; gap: 32px; }
+.sh-band h2 { margin: 0 0 8px; font-size: clamp(1.4rem, 2.6vw, 1.9rem); font-weight: 800; }
+.sh-band p { margin: 0; color: var(--muted); }
+.sh-actions { display: flex; flex-wrap: wrap; gap: 12px; flex: none; }
 .demo-note { margin: 10px 0 0; text-align: center; color: var(--subtle); font-size: 0.8rem; }
 
 /* —— 使用步骤 —— */
@@ -583,6 +572,7 @@ textarea { min-height: 140px; resize: vertical; }
   .highlight-grid { grid-template-columns: 1fr; }
   .highlight + .highlight { border-left: 0; border-top: 1px solid var(--line); }
   .steps-grid { grid-template-columns: 1fr; }
+  .sh-band { flex-direction: column; align-items: flex-start; }
   .section { padding: 64px 0; }
   .section-head { margin-bottom: 32px; }
   .cta-inner { flex-direction: column; align-items: flex-start; padding: 32px 28px; }
