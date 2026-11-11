@@ -20,6 +20,8 @@ pub struct Available {
 
 #[derive(Debug, Deserialize)]
 struct Manifest {
+    /// 全局回退版本（旧清单 / 旧客户端）。新清单优先用各 platform.version。
+    #[serde(default)]
     version: String,
     #[serde(default)]
     notes: String,
@@ -29,9 +31,26 @@ struct Manifest {
 
 #[derive(Debug, Deserialize)]
 struct Platform {
+    /// 本平台最新包版本；缺省则回退到清单顶层 version。
+    #[serde(default)]
+    version: String,
     url: String,
     #[serde(default)]
     name: String,
+}
+
+/// 解析本平台应比较的远端版本：platform.version > 顶层 version。
+fn resolve_remote_version(manifest: &Manifest, platform: &Platform) -> Result<String, String> {
+    let raw = if !platform.version.trim().is_empty() {
+        platform.version.as_str()
+    } else {
+        manifest.version.as_str()
+    };
+    let remote = normalize_version(raw);
+    if remote.is_empty() {
+        return Err("更新信息里没有版本号。".into());
+    }
+    Ok(remote)
 }
 
 pub fn current_version() -> &'static str {
@@ -82,17 +101,14 @@ pub fn check() -> Result<Option<Available>, String> {
         serde_json::from_str(body.trim_start_matches('\u{feff}')).map_err(|_| {
             "更新信息不完整。请稍后再试，或到官网下载最新版。".to_string()
         })?;
-    let remote = normalize_version(&manifest.version);
-    if remote.is_empty() {
-        return Err("更新信息里没有版本号。".into());
-    }
-    if !is_newer(&remote, current_version()) {
-        return Ok(None);
-    }
     let platform = manifest
         .platforms
         .get(key)
         .ok_or_else(|| "官网还没有这一版对应你系统的安装包。".to_string())?;
+    let remote = resolve_remote_version(&manifest, platform)?;
+    if !is_newer(&remote, current_version()) {
+        return Ok(None);
+    }
     let download = platform.url.trim();
     if download.is_empty() {
         return Err("更新地址为空。".into());
@@ -247,6 +263,42 @@ mod tests {
         assert!(is_newer("v0.1.1", "0.1.0"));
         assert!(!is_newer("0.1.0", "0.1.0"));
         assert!(!is_newer("0.1.0", "0.2.0"));
+    }
+
+    #[test]
+    fn platform_version_overrides_top_level() {
+        let manifest: Manifest = serde_json::from_str(
+            r#"{
+              "version": "0.9.0",
+              "platforms": {
+                "windows-x86_64": {
+                  "version": "0.1.3",
+                  "url": "http://127.0.0.1/downloads/a.exe",
+                  "name": "a.exe"
+                }
+              }
+            }"#,
+        )
+        .unwrap();
+        let p = manifest.platforms.get("windows-x86_64").unwrap();
+        assert_eq!(resolve_remote_version(&manifest, p).unwrap(), "0.1.3");
+    }
+
+    #[test]
+    fn falls_back_to_top_level_version() {
+        let manifest: Manifest = serde_json::from_str(
+            r#"{
+              "version": "0.1.2",
+              "platforms": {
+                "linux-x86_64": {
+                  "url": "http://127.0.0.1/downloads/a.AppImage"
+                }
+              }
+            }"#,
+        )
+        .unwrap();
+        let p = manifest.platforms.get("linux-x86_64").unwrap();
+        assert_eq!(resolve_remote_version(&manifest, p).unwrap(), "0.1.2");
     }
 
     #[test]

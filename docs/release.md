@@ -10,7 +10,35 @@
   → 本机下载 Artifact → 上传官网 downloads/ → 写/更新 latest.json → 核对首页链接
 ```
 
-当前主路径：**macOS（arm64 + x64）与 Linux（AppImage / deb / MCP tar）**。Windows NSIS 为可选同工作流开关。
+**本机一键脚本（推荐日常换包）**：[`scripts/release-site.ps1`](../scripts/release-site.ps1)
+
+```powershell
+# 交互选择 windows / macos / linux
+.\scripts\release-site.ps1
+
+# 只发 Windows（本机可直接 NSIS 打包并上传）
+.\scripts\release-site.ps1 -Platforms windows
+
+# 多平台：Windows 本机打；mac/Linux 需先把产物放进 artifacts/release-<ver>/
+.\scripts\release-site.ps1 -Platforms windows,macos,linux -Version 0.1.4
+
+# 只打包不上传 / 只用已有产物上传
+.\scripts\release-site.ps1 -Platforms windows -SkipUpload
+.\scripts\release-site.ps1 -Platforms windows -SkipBuild -ArtifactsRoot .\artifacts\release-0.1.3
+```
+
+| 能力 | 说明 |
+|------|------|
+| `-Platforms` | `windows` / `macos` / `linux`（可多选）；省略则交互询问 |
+| 本机构建 | **仅 Windows**（当前机是 Win 时打 NSIS + 随包 MCP） |
+| mac / Linux | 不交叉编译；把 Actions 产物放进 `artifacts/release-<ver>/` 后同一脚本上传 |
+| 上传 | `scp`/`ssh` → `QUEQIAO_SSH`（默认 `root@121.196.45.81`），目标 `…/downloads/` |
+| 首页 | 改 `site/index.html` 后交叉编译并替换 `remote-assist-site`（`-SkipSite` 可关） |
+| `latest.json` | 每平台写独立 `platforms.*.version`；顶层 `version` 取各平台最大值（旧客户端回退） |
+
+需对本机 `ssh`/`scp` 到官网免密；否则 `-SkipUpload`，再用 ssh-connect MCP 上传同目录产物。
+
+当前主路径：**macOS（arm64 + x64）与 Linux（AppImage / deb / MCP tar）**。Windows NSIS 为可选同工作流开关；本机 Win 发版可直接走脚本而不必开 Actions。
 
 ## 1. 版本号
 
@@ -110,29 +138,37 @@ chmod 755 /var/lib/remote-assist-site/downloads/*.AppImage 2>/dev/null || true
 
 客户端读：`{QUEQIAO_SITE}/downloads/latest.json`（模板：`docs/update-latest.example.json`）。
 
-换包后把清单放到**同一** `downloads/` 目录，`version` 与安装包 SemVer 一致，各平台 `url` 必须是官网同源绝对地址，例如：
+换包后把清单放到**同一** `downloads/` 目录。各平台 `url` 必须是官网同源绝对地址。
+
+**版本比较（0.1.3+ 客户端）**：优先用该平台的 `platforms.<key>.version`；缺省才回退顶层 `version`。因此可以只抬 Windows 而不触发 mac/Linux 更新。
+
+顶层 `version` 仍建议写成各平台里的**最高**版本（给更旧客户端回退用）。
 
 ```json
 {
-  "version": "0.1.0",
-  "notes": "macOS / Linux 公网包（含随包 MCP）。",
-  "pub_date": "2026-11-10T15:00:00Z",
+  "version": "0.1.3",
+  "notes": "托盘常驻；各平台可独立抬版本。",
+  "pub_date": "2026-11-11T01:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "http://121.196.45.81/downloads/Queqiao-Setup-0.1.0.exe",
-      "name": "Queqiao-Setup-0.1.0.exe"
+      "version": "0.1.3",
+      "url": "http://121.196.45.81/downloads/Queqiao-Setup-0.1.3.exe",
+      "name": "Queqiao-Setup-0.1.3.exe"
     },
     "darwin-aarch64": {
-      "url": "http://121.196.45.81/downloads/Queqiao-0.1.0-macos-arm64.dmg",
-      "name": "Queqiao-0.1.0-macos-arm64.dmg"
+      "version": "0.1.3",
+      "url": "http://121.196.45.81/downloads/Queqiao-0.1.3-macos-arm64.dmg",
+      "name": "Queqiao-0.1.3-macos-arm64.dmg"
     },
     "darwin-x86_64": {
-      "url": "http://121.196.45.81/downloads/Queqiao-0.1.0-macos-x64.dmg",
-      "name": "Queqiao-0.1.0-macos-x64.dmg"
+      "version": "0.1.3",
+      "url": "http://121.196.45.81/downloads/Queqiao-0.1.3-macos-x64.dmg",
+      "name": "Queqiao-0.1.3-macos-x64.dmg"
     },
     "linux-x86_64": {
-      "url": "http://121.196.45.81/downloads/Queqiao-0.1.0-linux-x64.AppImage",
-      "name": "Queqiao-0.1.0-linux-x64.AppImage"
+      "version": "0.1.3",
+      "url": "http://121.196.45.81/downloads/Queqiao-0.1.3-linux-x64.AppImage",
+      "name": "Queqiao-0.1.3-linux-x64.AppImage"
     }
   }
 }
@@ -140,7 +176,8 @@ chmod 755 /var/lib/remote-assist-site/downloads/*.AppImage 2>/dev/null || true
 
 注意：
 
-- 只有**客户端二进制版本低于**清单 `version` 时才会提醒/自动更新。
+- **新客户端**：本机版本低于**本平台** `version` 才提醒/自动更新。
+- **旧客户端**（无平台 version 逻辑）：仍只看顶层 `version`。
 - 新功能进包 = 先合入 GitHub 再跑 Actions；只改 `latest.json` 不会给旧包打补丁。
 
 ## 5. 验收
@@ -173,4 +210,6 @@ chmod 755 /var/lib/remote-assist-site/downloads/*.AppImage 2>/dev/null || true
 
 | 日期 | 内容 |
 |------|------|
+| 2026-11-11 | `latest.json` 支持 `platforms.*.version`；客户端优先按平台版本比较。增加 `scripts/release-site.ps1`。 |
+| 2026-11-11 | 增加 `scripts/release-site.ps1`：可选 windows/macOS/linux，本机打 Win + 上传 downloads / 更新 latest.json / 可选换 site。 |
 | 2026-11-10 | 成文：GitHub `Release packages (MCP)` → 官网 `downloads/`；主路径 macOS + Linux；附 `latest.json`。当日现网已有 `Queqiao-0.1.0` mac/Linux/Win 包；补齐自动更新清单流程。 |
