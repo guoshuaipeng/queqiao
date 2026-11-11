@@ -1,7 +1,7 @@
 {
   "name": "queqiao-tauri",
   "private": true,
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "鹊桥 Tauri v2 客户端壳（D0 空壳 · 开发阶段）",
   "type": "module",
   "scripts": {

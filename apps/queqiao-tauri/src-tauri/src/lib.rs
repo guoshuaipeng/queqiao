@@ -20,6 +20,8 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, State, UserAttentionType, WindowEvent};
 
 use copy::{self as text};
@@ -1174,19 +1176,57 @@ fn window_hwnd(app: &AppHandle) -> isize {
     }
 }
 
-/// 配对/写操作确认弹出时：还原最小化，尽量置前；失败则任务栏闪烁（Windows 常限制强制抢焦点）。
+/// 从托盘/最小化还原主窗并尽量置前。
+fn show_main(app: &AppHandle) {
+    let Some(win) = app.get_webview_window("main") else {
+        return;
+    };
+    let _ = win.show();
+    let _ = win.unminimize();
+    let _ = win.set_focus();
+}
+
+/// 托盘「退出鹊桥」：空闲直接退出；有活动则亮窗并弹既有 quit 确认。
+fn request_quit(shared: &Shared) {
+    let phase = shared.model.lock().expect("model").phase.clone();
+    let has_dialog = shared.model.lock().expect("model").dialog.is_some();
+    if !is_active(&phase) {
+        if let Some(app) = shared.app.lock().expect("app").clone() {
+            app.exit(0);
+        }
+        return;
+    }
+    if let Some(app) = shared.app.lock().expect("app").clone() {
+        show_main(&app);
+    }
+    if has_dialog {
+        return;
+    }
+    let id = shared.prompt_ids.fetch_add(1, Ordering::SeqCst);
+    shared.model.lock().expect("model").dialog = Some(Dialog {
+        id,
+        kind: "quit".into(),
+        title: "要退出鹊桥吗？".into(),
+        body: text::QUIT_BODY.into(),
+        detail: String::new(),
+        primary: "退出".into(),
+        secondary: "取消".into(),
+        seconds: text::CONFIRM_SECS,
+    });
+    shared.publish();
+}
+
+/// 配对/写操作确认弹出时：从托盘/最小化还原并尽量置前；失败则任务栏闪烁（Windows 常限制强制抢焦点）。
 fn raise_for_confirm(shared: &Shared) {
     let Some(app) = shared.app.lock().expect("app").clone() else {
         return;
     };
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
-        let Some(win) = handle.get_webview_window("main") else {
-            return;
-        };
-        let _ = win.unminimize();
-        let _ = win.set_focus();
-        let _ = win.request_user_attention(Some(UserAttentionType::Critical));
+        show_main(&handle);
+        if let Some(win) = handle.get_webview_window("main") {
+            let _ = win.request_user_attention(Some(UserAttentionType::Critical));
+        }
     });
 }
 
@@ -3038,30 +3078,39 @@ pub fn run() {
                 thread::sleep(Duration::from_secs(2));
                 run_update_check(&boot, false, true);
             });
+
+            let show_item = MenuItem::with_id(app, "tray-show", "打开鹊桥", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "tray-quit", "退出鹊桥", true, None::<&str>)?;
+            let tray_menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+            if let Some(tray) = app.tray_by_id("main") {
+                tray.set_menu(Some(tray_menu))?;
+                let _ = tray.set_show_menu_on_left_click(false);
+            }
             Ok(())
+        })
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "tray-show" => show_main(app),
+            "tray-quit" => {
+                let shared = app.state::<std::sync::Arc<Shared>>();
+                request_quit(shared.inner().as_ref());
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|app, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                show_main(app);
+            }
         })
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
-                let shared = window.state::<std::sync::Arc<Shared>>();
-                let phase = shared.model.lock().expect("model").phase.clone();
-                let has_dialog = shared.model.lock().expect("model").dialog.is_some();
-                if is_active(&phase) {
-                    api.prevent_close();
-                    if !has_dialog {
-                        let id = shared.prompt_ids.fetch_add(1, Ordering::SeqCst);
-                        shared.model.lock().expect("model").dialog = Some(Dialog {
-                            id,
-                            kind: "quit".into(),
-                            title: "要退出鹊桥吗？".into(),
-                            body: text::QUIT_BODY.into(),
-                            detail: String::new(),
-                            primary: "退出".into(),
-                            secondary: "取消".into(),
-                            seconds: text::CONFIRM_SECS,
-                        });
-                        shared.publish();
-                    }
-                }
+                // 关窗进托盘常驻；真正退出只走托盘「退出鹊桥」。
+                api.prevent_close();
+                let _ = window.hide();
             }
         })
         .invoke_handler(tauri::generate_handler![
