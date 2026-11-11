@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>鹊桥 · 帮亲友处理电脑问题</title>
-      <meta name="description" content="鹊桥帮助亲友远程处理电脑问题。提供 Windows / macOS / Linux 安装包与 MCP 命令行，处于试用阶段。">
+      <meta name="description" content="鹊桥帮助亲友远程处理电脑问题，也能登录账号无人值守连自己的电脑。提供 Windows / macOS / Linux 安装包与 MCP 命令行，处于试用阶段。">
   <meta name="theme-color" content="#ffffff">
   <link rel="stylesheet" href="/styles.css">
 </head>
@@ -23,6 +23,7 @@
       <nav class="nav" aria-label="主导航">
         <a href="#agent">AI 智能体</a>
         <a href="#how">如何使用</a>
+        <a href="#unattended">无人值守</a>
         <a href="#download">获取软件</a>
         <a href="#safe">安全与隐私</a>
         <a href="#faq">帮助</a>
@@ -164,8 +165,14 @@
         <div class="section-head">
           <span class="eyebrow">如何使用</span>
           <h2>第一次怎么用</h2>
-          <p>双方都在电脑上打开鹊桥，按自己的角色做三步。</p>
+          <p>两种用法，同一个软件：帮亲友临时看一下，或者连自己不在身边的电脑。</p>
         </div>
+        <div class="scene-tabs" role="tablist" aria-label="使用场景">
+          <button type="button" class="scene-tab" role="tab" id="tab-friend" aria-controls="scene-friend" aria-selected="true">帮亲友临时看一下</button>
+          <button type="button" class="scene-tab" role="tab" id="tab-unattended" aria-controls="unattended" aria-selected="false">无人值守 · 连自己的电脑</button>
+        </div>
+        <div class="scene-panel" id="scene-friend" role="tabpanel" aria-labelledby="tab-friend">
+        <p class="scene-lead">双方都在电脑上打开鹊桥，按自己的角色做三步。不用注册账号。</p>
         <div class="steps-grid">
           <article class="role-card role-need">
             <header><span class="role-tag">我需要帮助</span><h3>需要帮助的人</h3></header>
@@ -184,8 +191,59 @@
             </ol>
           </article>
         </div>
+        </div>
+
+        <div class="scene-panel" id="unattended" role="tabpanel" aria-labelledby="tab-unattended">
+        <p class="scene-lead">家里、公司或机房的电脑，人不在旁边也想连上去查问题。两台电脑登录同一个鹊桥账号，不用再发凭证。</p>
+        <div class="steps-grid">
+          <article class="role-card role-host">
+            <header><span class="role-tag">被连的电脑</span><h3>先在这台电脑上设置好</h3></header>
+            <ol class="steps">
+              <li><b>1</b><div><strong>点右上角「登录」，注册或登录</strong><p>用户名 + 密码即可，不收手机号和邮箱。忘了密码只能重新注册。</p></div></li>
+              <li><b>2</b><div><strong>打开「允许我的账号连接这台电脑」</strong><p>只有本机打开了这个开关，账号才能连上它；从没允许过的电脑，账号也连不上。</p></div></li>
+              <li><b>3</b><div><strong>点「开启无人值守」</strong><p>本机会再确认一次。Windows 可勾选登录后自动打开鹊桥，关掉窗口后仍在托盘运行。</p></div></li>
+            </ol>
+          </article>
+          <article class="role-card role-help">
+            <header><span class="role-tag">你手边的电脑</span><h3>需要时直接连</h3></header>
+            <ol class="steps">
+              <li><b>1</b><div><strong>登录同一个账号</strong><p>登录后在「个人中心」里能看到「我的设备」列表。</p></div></li>
+              <li><b>2</b><div><strong>在列表里点在线的那台</strong><p>不用会话码，也不用对方在电脑前点「允许协助」。</p></div></li>
+              <li><b>3</b><div><strong>排查完断开</strong><p>改动默认仍要那台电脑点允许；人不在时会一直等，不会自动通过。</p></div></li>
+            </ol>
+          </article>
+        </div>
+        <p class="scene-note">想让人不在时改动也直接执行，需要在被连的电脑上另外勾选「人不在时，改动不再询问」，默认关闭；所有改动仍会记在那台电脑上。被连的电脑关机或鹊桥没开时，连不上。</p>
+        </div>
       </div>
     </section>
+    <script>
+      (function () {
+        var tabs = document.querySelectorAll(".scene-tab");
+        if (!tabs.length) return;
+
+        function show(id) {
+          tabs.forEach(function (tab) {
+            var on = tab.getAttribute("aria-controls") === id;
+            tab.setAttribute("aria-selected", on ? "true" : "false");
+            document.getElementById(tab.getAttribute("aria-controls")).hidden = !on;
+          });
+        }
+
+        tabs.forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            show(tab.getAttribute("aria-controls"));
+          });
+        });
+
+        function fromHash() {
+          if (location.hash === "#unattended") show("unattended");
+        }
+        window.addEventListener("hashchange", fromHash);
+        show("scene-friend");
+        fromHash();
+      })();
+    </script>
 
     <section id="download" class="section">
       <div class="wrap">
@@ -307,6 +365,10 @@
             <p>结束连接不代表凭证永久失效，请继续妥善保管。</p>
           </div>
           <div class="safe-item">
+            <h3>无人值守要本机打开</h3>
+            <p>装上、开机都不代表能被连。必须在那台电脑上登录并亲手打开；账号密码请自己保管好，随时可在本机关闭。</p>
+          </div>
+          <div class="safe-item">
             <h3>不加追踪</h3>
             <p>留言咨询沿用现有表单，不新增采集字段，本页不加载第三方统计脚本。</p>
           </div>
@@ -328,6 +390,18 @@
           <details class="faq-item">
             <summary>怎么把问题交给 AI 智能体？</summary>
             <p>在「去协助别人」里复制 MCP 配置，贴进 Cursor 等支持 MCP 的工具的设置里。智能体可以查进程、读日志、浏览目录和读文件；要执行命令时，必须由对方在本机点允许，智能体也不能绕过。</p>
+          </details>
+          <details class="faq-item">
+            <summary>人不在电脑旁边，也能连上吗？</summary>
+            <p>可以，用无人值守：在那台电脑上登录鹊桥账号，打开「允许我的账号连接这台电脑」并开启无人值守；之后在另一台登录同一账号的电脑上，从「我的设备」直接连。那台电脑要开着机、鹊桥在运行。</p>
+          </details>
+          <details class="faq-item">
+            <summary>无人值守时，对方能直接改我的电脑吗？</summary>
+            <p>默认不能。改动仍要在那台电脑上点允许，人不在就一直等着。只有在那台电脑上另外勾选「人不在时，改动不再询问」才会直接执行，并且每次改动都会记下来。</p>
+          </details>
+          <details class="faq-item">
+            <summary>无人值守和发凭证给亲友有什么区别？</summary>
+            <p>发凭证适合临时帮别人看一下，不用注册，结束就停。无人值守适合连自己的电脑，需要登录同一个账号，不用每次发凭证，也不用有人在电脑前点允许连接。</p>
           </details>
           <details class="faq-item">
             <summary>需要帮助和来帮忙是两个软件吗？</summary>
@@ -373,6 +447,7 @@
       <nav class="footer-nav" aria-label="页脚导航">
         <a href="#agent">AI 智能体</a>
         <a href="#how">如何使用</a>
+        <a href="#unattended">无人值守</a>
         <a href="#download">获取软件</a>
         <a href="#safe">安全与隐私</a>
         <a href="#faq">帮助</a>
