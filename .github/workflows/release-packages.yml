@@ -1,5 +1,6 @@
 # 打包含 MCP 的 macOS / Linux（可选 Windows），上传 Artifact 供官网部署。
 name: Release packages (MCP)
+# public-repo packaging
 
 on:
   workflow_dispatch:
