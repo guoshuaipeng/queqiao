@@ -185,7 +185,8 @@ impl Shared {
                 just_dropped: false,
                 long_on: !loaded.unattended_code.is_empty() && !loaded.unattended_password.is_empty(),
                 long_code: credential::display_code(&loaded.unattended_code),
-                long_skip: loaded.unattended_skip_write,
+                // 已开启长久码时一律按「改动不再询问」生效（与 2026-11-12 口径对齐）。
+                long_skip: !loaded.unattended_code.is_empty() || loaded.unattended_skip_write,
                 session_long: false,
                 session_account: false,
                 account_user: loaded.account_username.clone(),
@@ -224,7 +225,9 @@ impl Shared {
             long_gen: AtomicU64::new(1),
             long_worker: AtomicBool::new(false),
             long_killer: Mutex::new(None),
-            long_skip: AtomicBool::new(loaded.unattended_skip_write),
+            long_skip: AtomicBool::new(
+                !loaded.unattended_code.is_empty() || loaded.unattended_skip_write,
+            ),
             account_gen: AtomicU64::new(1),
             account_worker: AtomicBool::new(false),
             account_killer: Mutex::new(None),
@@ -284,7 +287,8 @@ impl Hooks for AppHooks {
     }
     fn trust(&self) -> Trust {
         let model = self.shared.model.lock().expect("model");
-        if self.long && self.shared.long_skip.load(Ordering::SeqCst) {
+        // 长久码无人值守：固定完全信任写操作（开启时已确认）。
+        if self.long {
             return Trust::Full;
         }
         if self.account
@@ -1395,9 +1399,10 @@ fn spawn_long(shared: std::sync::Arc<Shared>) {
 }
 
 fn enable_unattended(state: &std::sync::Arc<Shared>) -> Result<(), String> {
-    let skip = state.long_skip.load(Ordering::SeqCst);
+    // 长久码无人值守 = 始终跳过写确认。
+    state.long_skip.store(true, Ordering::SeqCst);
     let password = wire::new_password();
-    settings::set_unattended(&state.settings_path, "", &password, skip)?;
+    settings::set_unattended(&state.settings_path, "", &password, true)?;
     let _ = state.long_gen.fetch_add(1, Ordering::SeqCst);
     let stream = state.long_killer.lock().expect("long killer").take();
     if let Some(stream) = stream {
@@ -1406,7 +1411,7 @@ fn enable_unattended(state: &std::sync::Arc<Shared>) -> Result<(), String> {
     {
         let mut model = state.model.lock().expect("model");
         model.long_on = true;
-        model.long_skip = skip;
+        model.long_skip = true;
         model.long_code.clear();
         model.settings_hint = "正在开启无人值守…".into();
     }
@@ -2187,20 +2192,19 @@ fn toggle_history(state: State<'_, std::sync::Arc<Shared>>) -> Result<Snapshot, 
 }
 
 #[tauri::command]
-fn ask_unattended(state: State<'_, std::sync::Arc<Shared>>, skip_write: bool) -> Result<Snapshot, String> {
-    state.long_skip.store(skip_write, Ordering::SeqCst);
+fn ask_unattended(
+    state: State<'_, std::sync::Arc<Shared>>,
+    #[allow(unused_variables)] skip_write: bool,
+) -> Result<Snapshot, String> {
+    // 2026-11-12：长久码无人值守固定为「连上不弹允许 + 改动不再询问」，不再单独开关。
+    state.long_skip.store(true, Ordering::SeqCst);
     let id = state.prompt_ids.fetch_add(1, Ordering::SeqCst);
-    let body = if skip_write {
-        "持有长久码的人可以在你不在时连上，并且改动不再询问。改动仍会记在这台电脑上。确定开启吗？"
-    } else {
-        "持有长久码的人可以在你不在时连上。你不在时，对方要改电脑会一直等到有人点允许。确定开启吗？"
-    };
     let mut model = state.model.lock().expect("model");
     model.dialog = Some(Dialog {
         id,
         kind: "unattended".into(),
         title: "开启无人值守？".into(),
-        body: body.into(),
+        body: "持有长久码的人可以在你不在时连上，并且改动不再询问。改动仍会记在这台电脑上。请只把凭证放在你信任的设备上。确定开启吗？".into(),
         detail: String::new(),
         primary: "开启".into(),
         secondary: "取消".into(),
@@ -3070,9 +3074,7 @@ pub fn run() {
             if !saved.unattended_code.is_empty() && saved.unattended_password.len() >= 8 {
                 spawn_long((*shared).clone());
             }
-            if saved.account_allow && !saved.account_token.is_empty() {
-                spawn_account((*shared).clone());
-            }
+            // 2026-11-12：账号/登录产品路径取消，界面已隐藏；启动时不再拉起账号上线。
             let boot = (*shared).clone();
             thread::spawn(move || {
                 thread::sleep(Duration::from_secs(2));

@@ -19,7 +19,7 @@
 | 项 | 状态 | 文档 |
 |----|------|------|
 | 公网中继访客配对 + 透明转发 | 保持（生产已验收） | `docs/relay-protocol.md`、`docs/relay-deploy.md` |
-| 账号 / 设备列表 / 免密连接 / 无人值守 | 2026-11-09 拍板恢复，随当前版本迭代 | `docs/PRODUCT.md` |
+| 临时码 + 长久码（无人值守）；取消登录/账号 | 2026-11-12 拍板；账号路径作废 | `docs/PRODUCT.md`、`docs/CLIENT-UI.md` |
 | 中继会话码审计（R046） | 本地已落地；公网未部署 | `docs/relay-audit.md` |
 | 严格唯一凭证 / 短码可连（R050） | **blocked**：产品意图已锁定（code+8位密码唯一凭证、成熟 PAKE、服务端不知明文），未授权实现；安全验收通过前不得宣称 | `docs/PRODUCT.md`、`docs/tls-trust.md` |
 | MCP 控制面 | **完成（仅本地验收 · PV-005）**：Rust stdio `RemoteAssist.Mcp`；`publish-mcp.ps1` 后可用；未进安装包 / 未公网发版 | `docs/MCP.md`、`docs/architecture.md` §4 |

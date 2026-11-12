@@ -1,4 +1,6 @@
 const $ = (id) => document.getElementById(id);
+/** 2026-11-12：注册/登录/个人中心/设备列表产品取消，界面先隐藏；后端命令暂留。 */
+const ACCOUNT_UI = false;
 let state = null;
 let currentDlg = 0;
 let dlgLeft = 0;
@@ -32,8 +34,8 @@ function render(s) {
   const settings = s.view === "settings";
   const host = s.view === "host";
   const helper = s.view === "helper";
-  if (host || helper) accountOpen = false;
-  const accountPage = accountOpen && home && !settings;
+  if (!ACCOUNT_UI || host || helper) accountOpen = false;
+  const accountPage = ACCOUNT_UI && accountOpen && home && !settings;
   show($("home"), home && !accountPage);
   show($("account"), accountPage);
   show($("settings"), settings);
@@ -46,7 +48,7 @@ function render(s) {
   document.body.classList.toggle("view-account", accountPage);
   show($("top-right"), !settings && !accountPage);
   show($("btn-settings"), !settings && !accountPage);
-  show($("btn-account"), !settings && !accountPage);
+  show($("btn-account"), ACCOUNT_UI && !settings && !accountPage);
   show($("brand-home"), !settings && !accountPage);
   show($("btn-back"), settings || accountPage);
   show($("settings-title"), settings || accountPage);
@@ -75,7 +77,13 @@ function render(s) {
     $("long-code").textContent = s.longCode ? "长久码 " + s.longCode : "正在准备长久码…";
   }
   if ($("long-hint")) {
-    $("long-hint").textContent = s.longSkip ? "写操作不再询问，仍会记下。" : "要改电脑时仍会问你。";
+    $("long-hint").textContent = "无人值守：连上不必点允许，改动也不再询问（仍会记下）。";
+  }
+  if ($("long-skip")) {
+    $("long-skip").checked = true;
+    $("long-skip").disabled = true;
+    const wrap = $("long-skip").closest("label") || $("long-skip").parentElement;
+    if (wrap) wrap.hidden = true;
   }
   show($("btn-stop"), waiting);
   if ($("btn-copy")) $("btn-copy").disabled = s.phase === "stopping";
@@ -910,7 +918,7 @@ function bindUi() {
     invoke("show_settings", { open: false }).then(render);
   };
   $("btn-start").onclick = () => invoke("start_accept").then(render).catch(showErr);
-  if ($("btn-account")) {
+  if ($("btn-account") && ACCOUNT_UI) {
     $("btn-account").onclick = () => {
       if (state && (state.view === "host" || state.view === "helper")) return;
       const openAccount = (next) => {
@@ -989,7 +997,7 @@ function bindUi() {
     $("acct-autostart").onchange = () => invoke("set_account_autostart", { on: $("acct-autostart").checked }).then(render).catch(showErr);
   }
   if ($("btn-long-on")) {
-    $("btn-long-on").onclick = () => invoke("ask_unattended", { skipWrite: !!($("long-skip") && $("long-skip").checked) }).then(render).catch(showErr);
+    $("btn-long-on").onclick = () => invoke("ask_unattended", { skipWrite: true }).then(render).catch(showErr);
   }
   if ($("btn-long-off")) {
     $("btn-long-off").onclick = () => invoke("ask_revoke_unattended").then(render).catch(showErr);

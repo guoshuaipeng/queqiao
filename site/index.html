@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>鹊桥 · 帮亲友处理电脑问题</title>
-      <meta name="description" content="鹊桥帮助亲友远程处理电脑问题，也能登录账号无人值守连自己的电脑；代码开源，可私有化部署。提供 Windows / macOS / Linux 安装包与 MCP 命令行，处于试用阶段。">
+      <meta name="description" content="鹊桥帮助亲友远程处理电脑问题，也能用长久码无人值守连自己的电脑；代码开源，可私有化部署。提供 Windows / macOS / Linux 安装包与 MCP 命令行，处于试用阶段。">
   <meta name="theme-color" content="#ffffff">
   <link rel="stylesheet" href="/styles.css">
 </head>
@@ -47,7 +47,7 @@
             </a>
             <a class="btn ghost btn-lg" href="#how">第一次怎么用</a>
           </div>
-          <p class="hero-meta">版本 0.1.3 · Windows / macOS / Linux · 不用另外安装运行库</p>
+          <p class="hero-meta">版本 0.1.4 · Windows / macOS / Linux · 不用另外安装运行库</p>
         </div>
 
         <div class="hero-art" aria-hidden="true">
@@ -195,26 +195,26 @@
         </div>
 
         <div class="scene-panel" id="unattended" role="tabpanel" aria-labelledby="tab-unattended">
-        <p class="scene-lead">家里、公司或机房的电脑，人不在旁边也想连上去查问题。两台电脑登录同一个鹊桥账号，不用再发凭证。</p>
+        <p class="scene-lead">家里、公司或机房的电脑，人不在旁边也想连上去查问题。在那台电脑上开启无人值守，生成长久码；之后用这份连接凭证就能连，不用注册账号。</p>
         <div class="steps-grid">
           <article class="role-card role-host">
             <header><span class="role-tag">被连的电脑</span><h3>先在这台电脑上设置好</h3></header>
             <ol class="steps">
-              <li><b>1</b><div><strong>点右上角「登录」，注册或登录</strong><p>用户名 + 密码即可，不收手机号和邮箱。忘了密码只能重新注册。</p></div></li>
-              <li><b>2</b><div><strong>打开「允许我的账号连接这台电脑」</strong><p>只有本机打开了这个开关，账号才能连上它；从没允许过的电脑，账号也连不上。</p></div></li>
-              <li><b>3</b><div><strong>点「开启无人值守」</strong><p>本机会再确认一次。Windows 可勾选登录后自动打开鹊桥，关掉窗口后仍在托盘运行。</p></div></li>
+              <li><b>1</b><div><strong>打开鹊桥，开启无人值守</strong><p>本机会说明风险并请你确认。开启后会生成长久码（可长期使用，直到你撤销）。</p></div></li>
+              <li><b>2</b><div><strong>复制连接凭证，放到你信任的设备上</strong><p>谁拿到这份凭证都能连上这台电脑，请不要发到群里或公开地方。</p></div></li>
+              <li><b>3</b><div><strong>保持鹊桥在运行</strong><p>可关到托盘。电脑关机或鹊桥退出后，暂时连不上。</p></div></li>
             </ol>
           </article>
           <article class="role-card role-help">
             <header><span class="role-tag">你手边的电脑</span><h3>需要时直接连</h3></header>
             <ol class="steps">
-              <li><b>1</b><div><strong>登录同一个账号</strong><p>登录后在「个人中心」里能看到「我的设备」列表。</p></div></li>
-              <li><b>2</b><div><strong>在列表里点在线的那台</strong><p>不用会话码，也不用对方在电脑前点「允许协助」。</p></div></li>
-              <li><b>3</b><div><strong>排查完断开</strong><p>改动默认仍要那台电脑点允许；人不在时会一直等，不会自动通过。</p></div></li>
+              <li><b>1</b><div><strong>打开鹊桥</strong><p>在「我帮别人」里整段粘贴那台电脑的长久连接凭证。</p></div></li>
+              <li><b>2</b><div><strong>点「连接」</strong><p>无人值守下不会再弹「允许协助」；对方也不必守在电脑前。</p></div></li>
+              <li><b>3</b><div><strong>排查完断开</strong><p>改动也不会再弹窗询问，但仍会记在被连电脑上。用完请断开。</p></div></li>
             </ol>
           </article>
         </div>
-        <p class="scene-note">想让人不在时改动也直接执行，需要在被连的电脑上另外勾选「人不在时，改动不再询问」，默认关闭；所有改动仍会记在那台电脑上。被连的电脑关机或鹊桥没开时，连不上。</p>
+        <p class="scene-note">长久码适合连自己的电脑；帮亲友临时看一下请用「开启接受协助」的临时凭证。被连电脑关机或鹊桥没开时，连不上。可随时在本机撤销长久码。</p>
         </div>
       </div>
     </section>
@@ -261,10 +261,10 @@
               <div><h3>Windows</h3><p>适合大多数 Windows 电脑</p></div>
             </div>
             <ul class="dl-meta">
-              <li>版本 0.1.3 · 托盘常驻 · 内含 MCP</li>
+              <li>版本 0.1.4 · 托盘常驻 · 内含 MCP</li>
               <li>安装包内含 MCP · 不用另外装运行库</li>
             </ul>
-            <a class="btn primary btn-lg btn-block" href="/downloads/Queqiao-Setup-0.1.3.exe">下载 Windows 版</a>
+            <a class="btn primary btn-lg btn-block" href="/downloads/Queqiao-Setup-0.1.4.exe">下载 Windows 版</a>
             <p class="dl-note">浏览器提示“通常不会下载”时，选择保留即可。</p>
           </article>
           <article class="dl-card">
@@ -273,7 +273,7 @@
               <div><h3>macOS</h3><p>Apple 芯片与 Intel 二选一</p></div>
             </div>
             <ul class="dl-meta">
-              <li>版本 0.1.3 · 约 3.4–3.7 MB · 内含 MCP</li>
+              <li>版本 0.1.4 · 约 3.4–3.7 MB · 内含 MCP</li>
               <li>未公证，首次打开需在系统设置中允许</li>
             </ul>
             <div class="dl-split" data-dl-menu>
@@ -282,8 +282,8 @@
                 <svg class="caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
               <div class="dl-menu" id="mac-dl-menu" hidden role="menu" aria-labelledby="mac-dl-btn">
-                <a role="menuitem" href="/downloads/Queqiao-0.1.3-macos-arm64.dmg">Apple 芯片（M1 / M2 / M3…）</a>
-                <a role="menuitem" href="/downloads/Queqiao-0.1.3-macos-x64.dmg">Intel 芯片</a>
+                <a role="menuitem" href="/downloads/Queqiao-0.1.4-macos-arm64.dmg">Apple 芯片（M1 / M2 / M3…）</a>
+                <a role="menuitem" href="/downloads/Queqiao-0.1.4-macos-x64.dmg">Intel 芯片</a>
               </div>
             </div>
             <p class="dl-note">不确定型号时选 Apple 芯片。打开 dmg，把鹊桥拖到「应用程序」。</p>
@@ -294,7 +294,7 @@
               <div><h3>Linux</h3><p>图形界面或 MCP 命令行</p></div>
             </div>
             <ul class="dl-meta">
-              <li>版本 0.1.3 · x86_64</li>
+              <li>版本 0.1.4 · x86_64</li>
               <li>界面约 78 MB（内含 MCP）；命令行约 1 MB</li>
             </ul>
             <div class="dl-split" data-dl-menu>
@@ -303,9 +303,9 @@
                 <svg class="caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
               <div class="dl-menu" id="linux-dl-menu" hidden role="menu" aria-labelledby="linux-dl-btn">
-                <a role="menuitem" href="/downloads/Queqiao-0.1.3-linux-x64.AppImage">图形界面 · AppImage</a>
-                <a role="menuitem" href="/downloads/Queqiao-0.1.3-linux-x64.deb">图形界面 · .deb 安装包</a>
-                <a role="menuitem" href="/downloads/Queqiao-MCP-0.1.3-linux-x64.tar.gz">MCP 命令行 · tar.gz</a>
+                <a role="menuitem" href="/downloads/Queqiao-0.1.4-linux-x64.AppImage">图形界面 · AppImage</a>
+                <a role="menuitem" href="/downloads/Queqiao-0.1.4-linux-x64.deb">图形界面 · .deb 安装包</a>
+                <a role="menuitem" href="/downloads/Queqiao-MCP-0.1.4-linux-x64.tar.gz">MCP 命令行 · tar.gz</a>
               </div>
             </div>
             <p class="dl-note">不确定时选 AppImage，chmod +x 后运行。命令行包解压见 README。</p>
@@ -391,7 +391,7 @@
           </div>
           <div class="safe-item">
             <h3>无人值守要本机打开</h3>
-            <p>装上、开机都不代表能被连。必须在那台电脑上登录并亲手打开；账号密码请自己保管好，随时可在本机关闭。</p>
+            <p>装上、开机都不代表能被连。必须在那台电脑上亲手开启无人值守并保管好长久码；随时可在本机撤销。</p>
           </div>
           <div class="safe-item">
             <h3>不加追踪</h3>
@@ -418,15 +418,15 @@
           </details>
           <details class="faq-item">
             <summary>人不在电脑旁边，也能连上吗？</summary>
-            <p>可以，用无人值守：在那台电脑上登录鹊桥账号，打开「允许我的账号连接这台电脑」并开启无人值守；之后在另一台登录同一账号的电脑上，从「我的设备」直接连。那台电脑要开着机、鹊桥在运行。</p>
+            <p>可以，用无人值守：在那台电脑上开启无人值守，复制长久连接凭证；之后在另一台电脑粘贴该凭证连接即可。那台电脑要开着机、鹊桥在运行。不用注册账号。</p>
           </details>
           <details class="faq-item">
             <summary>无人值守时，对方能直接改我的电脑吗？</summary>
-            <p>默认不能。改动仍要在那台电脑上点允许，人不在就一直等着。只有在那台电脑上另外勾选「人不在时，改动不再询问」才会直接执行，并且每次改动都会记下来。</p>
+            <p>可以。开启无人值守后，连上不必再点「允许协助」，改动也不会再弹窗；每次改动仍会记在那台电脑上。请只把长久码放在你信任的设备上，不用时可以撤销。</p>
           </details>
           <details class="faq-item">
             <summary>无人值守和发凭证给亲友有什么区别？</summary>
-            <p>发凭证适合临时帮别人看一下，不用注册，结束就停。无人值守适合连自己的电脑，需要登录同一个账号，不用每次发凭证，也不用有人在电脑前点允许连接。</p>
+            <p>临时凭证适合帮亲友当场看一下：连上要对方点允许，结束就作废。长久码适合连自己的电脑：开启无人值守后可反复使用，连上和改动都不再弹窗，也不用注册账号。</p>
           </details>
           <details class="faq-item">
             <summary>可以部署在自己公司的服务器上吗？</summary>
