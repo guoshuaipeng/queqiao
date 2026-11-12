@@ -5,11 +5,26 @@ use std::net::TcpStream;
 use std::time::Duration;
 
 use serde_json::{json, Value};
+use socket2::{SockRef, TcpKeepalive};
 
 pub fn prepare(stream: &TcpStream) {
     let _ = stream.set_nodelay(true);
     let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(8)));
+    keepalive(stream);
+}
+
+/// NAT 会在几分钟内丢掉空闲映射，两端却都以为连接还活着。探测包既刷新映射，
+/// 也让半开连接在一分钟内变成读错误，好让无人值守立刻重新注册。
+fn keepalive(stream: &TcpStream) {
+    let sock = SockRef::from(stream);
+    let _ = sock.set_keepalive(true);
+    let params = TcpKeepalive::new()
+        .with_time(Duration::from_secs(30))
+        .with_interval(Duration::from_secs(10));
+    #[cfg(unix)]
+    let params = params.with_retries(3);
+    let _ = sock.set_tcp_keepalive(&params);
 }
 
 pub fn write_json_line(stream: &mut TcpStream, value: &Value) -> io::Result<()> {
@@ -147,6 +162,19 @@ pub fn redact(text: &str, secrets: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::redact;
+
+    #[test]
+    fn prepare_enables_keepalive_on_the_socket() {
+        use socket2::SockRef;
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let stream = std::net::TcpStream::connect(addr).unwrap();
+        let (peer, _) = listener.accept().unwrap();
+        super::prepare(&stream);
+        assert!(SockRef::from(&stream).keepalive().unwrap());
+        assert!(stream.nodelay().unwrap());
+        drop(peer);
+    }
 
     #[test]
     fn password_and_payload_do_not_survive() {

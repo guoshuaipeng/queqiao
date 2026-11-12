@@ -77,7 +77,8 @@ function render(s) {
     $("long-code").textContent = s.longCode ? "长久码 " + s.longCode : "正在准备长久码…";
   }
   if ($("long-hint")) {
-    $("long-hint").textContent = "无人值守：连上不必点允许，改动也不再询问（仍会记下）。";
+    $("long-hint").textContent = "无人值守：连上不必点允许，改动也不再询问（仍会记下）。"
+      + (s.canAutostart ? "登录 Windows 后会自动在托盘启动，重启也不用手动开。" : "");
   }
   if ($("long-skip")) {
     $("long-skip").checked = true;

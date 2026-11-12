@@ -5,11 +5,20 @@ use std::net::TcpStream;
 use std::time::Duration;
 
 use serde_json::{json, Value};
+use socket2::{SockRef, TcpKeepalive};
 
 pub fn prepare(stream: &TcpStream) {
     let _ = stream.set_nodelay(true);
     let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(8)));
+    let sock = SockRef::from(stream);
+    let _ = sock.set_keepalive(true);
+    let params = TcpKeepalive::new()
+        .with_time(Duration::from_secs(30))
+        .with_interval(Duration::from_secs(10));
+    #[cfg(unix)]
+    let params = params.with_retries(3);
+    let _ = sock.set_tcp_keepalive(&params);
 }
 
 pub fn write_json_line(stream: &mut TcpStream, value: &Value) -> io::Result<()> {

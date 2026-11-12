@@ -3,6 +3,7 @@ mod copy;
 mod clipboard;
 mod pake;
 mod credential;
+mod diag;
 mod link;
 mod policy;
 mod settings;
@@ -408,6 +409,19 @@ impl Hooks for AppHooks {
         }
     }
     fn emit(&self, ev: Ev) {
+        let lane = if self.long {
+            "long"
+        } else if self.account {
+            "account"
+        } else {
+            "session"
+        };
+        match &ev {
+            Ev::Fail(s) => diag::note(&format!("{lane} fail"), s),
+            Ev::Dropped => diag::note(&format!("{lane} dropped"), "连接中断"),
+            Ev::PeerEnded => diag::note(&format!("{lane} peer ended"), "对方结束"),
+            _ => {}
+        }
         if self.long {
             self.emit_long(ev);
             return;
@@ -801,6 +815,7 @@ impl Shared {
             long_on: model.long_on,
             long_code: model.long_code.clone(),
             long_skip: model.long_skip,
+            can_autostart: cfg!(windows),
             account_user: model.account_user.clone(),
             account_error: model.account_error.clone(),
             account_allow: model.account_allow,
@@ -871,11 +886,8 @@ impl Shared {
                 kind: r.kind.clone(),
             })
             .collect();
-        if let Some(parent) = self.history_path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
         if let Ok(body) = serde_json::to_string_pretty(&rows) {
-            let _ = std::fs::write(&self.history_path, body);
+            let _ = settings::write_atomic(&self.history_path, &body);
         }
     }
 
@@ -1007,6 +1019,9 @@ struct Snapshot {
     long_code: String,
     #[serde(rename = "longSkip")]
     long_skip: bool,
+    /// 本机是否支持开机自启（目前只有 Windows 登记 Run 项）。
+    #[serde(rename = "canAutostart")]
+    can_autostart: bool,
     #[serde(rename = "accountUser")]
     account_user: String,
     #[serde(rename = "accountError")]
@@ -1234,6 +1249,28 @@ fn raise_for_confirm(shared: &Shared) {
     });
 }
 
+/// 断网或中继重启时不要每 3 秒硬打一次：3s 起指数退避、封顶 60s，
+/// 再加抖动，避免一堆客户端在同一秒回连把中继打满。
+fn retry_delay(fails: u32) -> Duration {
+    let secs = 3u64.saturating_mul(1u64 << fails.min(5)).min(60);
+    let mut bytes = [0u8; 2];
+    let _ = getrandom::getrandom(&mut bytes);
+    let jitter = u64::from(u16::from_le_bytes(bytes)) % (secs * 200 + 1);
+    Duration::from_secs(secs) + Duration::from_millis(jitter)
+}
+
+/// 退避期间也要能立刻响应「关闭无人值守」，不能一觉睡到 60 秒后才发现世代变了。
+fn sleep_while_alive(delay: Duration, alive: &dyn Fn() -> bool) {
+    let start = Instant::now();
+    while alive() {
+        let left = delay.saturating_sub(start.elapsed());
+        if left.is_zero() {
+            return;
+        }
+        thread::sleep(left.min(Duration::from_millis(200)));
+    }
+}
+
 fn spawn_host(shared: std::sync::Arc<Shared>, my: u64) {
     shared.worker.store(true, Ordering::SeqCst);
     thread::spawn(move || {
@@ -1348,6 +1385,7 @@ fn spawn_long(shared: std::sync::Arc<Shared>) {
         let password = saved.unattended_password;
         let mut code = saved.unattended_code;
         let mut pake_fails = 0u8;
+        let mut net_fails = 0u32;
         loop {
             if !hooks.alive() || password.len() < 8 {
                 break;
@@ -1359,10 +1397,20 @@ fn spawn_long(shared: std::sync::Arc<Shared>) {
             let tcp = match link::connect_endpoint(&host, port, &|| hooks.alive()) {
                 Ok(stream) => stream,
                 Err(()) => {
-                    if hooks.alive() {
-                        hooks.emit(Ev::Fail("没能连上服务器，无人值守会再试。".into()));
-                        thread::sleep(Duration::from_secs(3));
+                    if !hooks.alive() {
+                        break;
                     }
+                    net_fails = net_fails.saturating_add(1);
+                    // 只在第一次失败时提示，后面安静退避，别每几秒刷一次界面。
+                    if net_fails == 1 {
+                        hooks.emit(Ev::Fail("没能连上服务器，无人值守会再试。".into()));
+                    }
+                    let delay = retry_delay(net_fails);
+                    diag::note(
+                        "long reconnect",
+                        &format!("attempt={net_fails} wait_ms={}", delay.as_millis()),
+                    );
+                    sleep_while_alive(delay, &|| hooks.alive());
                     continue;
                 }
             };
@@ -1370,6 +1418,7 @@ fn spawn_long(shared: std::sync::Arc<Shared>) {
                 link::HostEnd::Relisten { code: next } => {
                     code = next;
                     pake_fails = 0;
+                    net_fails = 0;
                 }
                 link::HostEnd::PakeFail => {
                     pake_fails = pake_fails.saturating_add(1);
@@ -1380,6 +1429,7 @@ fn spawn_long(shared: std::sync::Arc<Shared>) {
                         model.long_on = false;
                         model.long_code.clear();
                         drop(model);
+                        sync_autostart(&shared);
                         shared.publish();
                         break;
                     }
@@ -1387,7 +1437,13 @@ fn spawn_long(shared: std::sync::Arc<Shared>) {
                 link::HostEnd::Locked | link::HostEnd::Stop => break,
                 link::HostEnd::Fail => {
                     if hooks.alive() {
-                        thread::sleep(Duration::from_secs(3));
+                        net_fails = net_fails.saturating_add(1);
+                        let delay = retry_delay(net_fails);
+                        diag::note(
+                            "long retry",
+                            &format!("attempt={net_fails} wait_ms={}", delay.as_millis()),
+                        );
+                        sleep_while_alive(delay, &|| hooks.alive());
                     }
                 }
             }
@@ -1415,6 +1471,7 @@ fn enable_unattended(state: &std::sync::Arc<Shared>) -> Result<(), String> {
         model.long_code.clear();
         model.settings_hint = "正在开启无人值守…".into();
     }
+    sync_autostart(state);
     spawn_long(state.clone());
     state.publish();
     Ok(())
@@ -1440,6 +1497,7 @@ fn revoke_unattended(state: &std::sync::Arc<Shared>) -> Result<(), String> {
     model.left_note = "长久码已作废，无人时不能再连。".into();
     model.settings_hint = "长久码已作废。".into();
     drop(model);
+    sync_autostart(state);
     state.publish();
     Ok(())
 }
@@ -2440,6 +2498,7 @@ fn spawn_account(shared: std::sync::Arc<Shared>) {
                 return;
             }
         };
+        let mut net_fails = 0u32;
         loop {
             if !hooks.alive() || !shared.account_allow.load(Ordering::SeqCst) {
                 break;
@@ -2461,10 +2520,19 @@ fn spawn_account(shared: std::sync::Arc<Shared>) {
             let tcp = match link::connect_endpoint(&host, port, &|| hooks.alive()) {
                 Ok(stream) => stream,
                 Err(()) => {
-                    if hooks.alive() {
-                        hooks.emit(Ev::Fail("没能连上服务器，允许连接会再试。".into()));
-                        thread::sleep(Duration::from_secs(3));
+                    if !hooks.alive() {
+                        break;
                     }
+                    net_fails = net_fails.saturating_add(1);
+                    if net_fails == 1 {
+                        hooks.emit(Ev::Fail("没能连上服务器，允许连接会再试。".into()));
+                    }
+                    let delay = retry_delay(net_fails);
+                    diag::note(
+                        "account reconnect",
+                        &format!("attempt={net_fails} wait_ms={}", delay.as_millis()),
+                    );
+                    sleep_while_alive(delay, &|| hooks.alive());
                     continue;
                 }
             };
@@ -2478,13 +2546,20 @@ fn spawn_account(shared: std::sync::Arc<Shared>) {
                 &hooks,
             ) {
                 link::HostEnd::Relisten { .. } => {
+                    net_fails = 0;
                     if hooks.alive() && !hooks.can_take_session() {
-                        thread::sleep(Duration::from_secs(3));
+                        sleep_while_alive(Duration::from_secs(3), &|| hooks.alive());
                     }
                 }
                 link::HostEnd::Fail => {
                     if hooks.alive() {
-                        thread::sleep(Duration::from_secs(3));
+                        net_fails = net_fails.saturating_add(1);
+                        let delay = retry_delay(net_fails);
+                        diag::note(
+                            "account retry",
+                            &format!("attempt={net_fails} wait_ms={}", delay.as_millis()),
+                        );
+                        sleep_while_alive(delay, &|| hooks.alive());
                     }
                 }
                 link::HostEnd::Stop | link::HostEnd::Locked | link::HostEnd::PakeFail => break,
@@ -2685,8 +2760,10 @@ fn set_windows_run(on: bool) {
         let key = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
         if on {
             if let Ok(exe) = std::env::current_exe() {
+                // 带空格的路径必须加引号，否则登录后 Run 项起不来；--minimized 让它只待在托盘。
+                let command = format!("\"{}\" --minimized", exe.to_string_lossy());
                 let _ = std::process::Command::new("reg")
-                    .args(["add", key, "/v", "Queqiao", "/t", "REG_SZ", "/d", &exe.to_string_lossy(), "/f"])
+                    .args(["add", key, "/v", "Queqiao", "/t", "REG_SZ", "/d", &command, "/f"])
                     .status();
             }
         } else {
@@ -2695,6 +2772,17 @@ fn set_windows_run(on: bool) {
                 .status();
         }
     }
+    #[cfg(not(windows))]
+    {
+        let _ = on;
+    }
+}
+
+/// 无人值守必须能在重启后自己回来：自启跟着「长久码开着 或 账号允许连接」走。
+fn sync_autostart(state: &Shared) {
+    let long_on = state.model.lock().expect("model").long_on;
+    let account_on = settings::load(&state.settings_path).account_autostart;
+    set_windows_run(long_on || account_on);
 }
 
 fn note_account_error(state: &Shared, err: String) -> Snapshot {
@@ -2874,8 +2962,8 @@ fn set_account_autostart(state: State<'_, std::sync::Arc<Shared>>, on: bool) -> 
         return Ok(note_account_error(&state, "请先开启无人值守。".into()));
     }
     let _ = save_settings(&state, |current| current.account_autostart = on)?;
-    set_windows_run(on);
     state.model.lock().expect("model").account_autostart = on;
+    sync_autostart(state.inner());
     state.model.lock().expect("model").settings_hint = if on {
         "登录 Windows 后会自动打开鹊桥并等待连接。".into()
     } else {
@@ -3064,6 +3152,7 @@ fn set_auto_update(state: State<'_, std::sync::Arc<Shared>>, on: bool) -> Result
 }
 
 pub fn run() {
+    diag::init();
     let shared = std::sync::Arc::new(Shared::new());
     tauri::Builder::default()
         .manage(shared)
@@ -3073,6 +3162,13 @@ pub fn run() {
             let saved = settings::load(&shared.settings_path);
             if !saved.unattended_code.is_empty() && saved.unattended_password.len() >= 8 {
                 spawn_long((*shared).clone());
+                // 老版本开过无人值守但没登记自启的，这次启动补上。
+                sync_autostart(shared.inner());
+            }
+            if std::env::args().any(|a| a == "--minimized") {
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.hide();
+                }
             }
             // 2026-11-12：账号/登录产品路径取消，界面已隐藏；启动时不再拉起账号上线。
             let boot = (*shared).clone();
@@ -3161,4 +3257,32 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{retry_delay, sleep_while_alive};
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn retry_backs_off_and_caps_at_one_minute() {
+        for fails in 1..=9u32 {
+            let base = 3u64.saturating_mul(1u64 << fails.min(5)).min(60);
+            let delay = retry_delay(fails);
+            assert!(delay >= Duration::from_secs(base));
+            assert!(delay <= Duration::from_secs(base) + Duration::from_millis(base * 200));
+        }
+        assert!(retry_delay(1) < retry_delay(4));
+        assert!(retry_delay(9) <= Duration::from_secs(72));
+    }
+
+    #[test]
+    fn backoff_sleep_waits_but_stops_when_generation_dies() {
+        let start = Instant::now();
+        sleep_while_alive(Duration::from_millis(300), &|| true);
+        assert!(start.elapsed() >= Duration::from_millis(280));
+        let start = Instant::now();
+        sleep_while_alive(Duration::from_secs(60), &|| false);
+        assert!(start.elapsed() < Duration::from_secs(1));
+    }
 }

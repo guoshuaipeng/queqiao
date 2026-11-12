@@ -34,7 +34,7 @@
 | mac / Linux | 不交叉编译；把 Actions 产物放进 `artifacts/release-<ver>/` 后同一脚本上传 |
 | 上传 | `scp`/`ssh` → `QUEQIAO_SSH`（默认 `root@121.196.45.81`），目标 `…/downloads/` |
 | 首页 | 改 `site/index.html` 后交叉编译并替换 `remote-assist-site`（`-SkipSite` 可关） |
-| `latest.json` | 每平台写独立 `platforms.*.version`；顶层 `version` 取各平台最大值（旧客户端回退） |
+| `latest.json` | 每平台写独立 `platforms.*.version`；顶层 `version` 取各平台最大值（旧客户端回退）；每平台必须带 `sha256`（脚本自动算），缺校验值客户端拒绝自动更新 |
 
 需对本机 `ssh`/`scp` 到官网免密；否则 `-SkipUpload`，再用 ssh-connect MCP 上传同目录产物。
 
@@ -179,6 +179,24 @@ chmod 755 /var/lib/remote-assist-site/downloads/*.AppImage 2>/dev/null || true
 - **新客户端**：本机版本低于**本平台** `version` 才提醒/自动更新。
 - **旧客户端**（无平台 version 逻辑）：仍只看顶层 `version`。
 - 新功能进包 = 先合入 GitHub 再跑 Actions；只改 `latest.json` 不会给旧包打补丁。
+
+### 完整性校验（必须）
+
+每个平台要带 `sha256`（安装包 SHA256，64 位十六进制），可选 `size`（字节数）：
+
+```json
+"windows-x86_64": {
+  "version": "0.1.4",
+  "url": "http://YOUR_SITE_HOST/downloads/Queqiao-Setup-0.1.4.exe",
+  "name": "Queqiao-Setup-0.1.4.exe",
+  "sha256": "…64 位十六进制…",
+  "size": 9437184
+}
+```
+
+- `scripts/release-site.ps1` 按 `artifacts/release-<version>/` 里的实际文件算好写入；本轮没重出的平台沿用上一轮的校验值。
+- **缺 `sha256`、大小对不上或摘要对不上，客户端一律拒绝自动更新**，只提示去官网手动下载。所以换包后清单必须带校验值，否则自动更新会静默停摆。
+- 下载先落 `.part`，校验通过才改名成安装包；中断不会留下半个可执行文件。
 
 ## 5. 验收
 

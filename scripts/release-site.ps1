@@ -388,16 +388,34 @@ function New-LatestJson([string]$ver, [string[]]$plats, [string]$outDir, $existi
                 $pv = [string]$p.Value.version
             }
             if ($pv) { $entry.version = $pv }
+            # 本轮没重出的平台，保留上一轮的校验值，否则客户端会拒绝自动更新。
+            foreach ($field in @("sha256", "size")) {
+                if ($p.Value.PSObject.Properties.Name -contains $field) {
+                    $entry[$field] = $p.Value.$field
+                }
+            }
+            if (-not $entry.sha256 -or $entry.sha256 -notmatch '^[0-9a-fA-F]{64}$') {
+                Write-Warn2 "平台 $($p.Name) 没有有效 sha256，客户端会拒绝该平台自动更新（本轮重出该平台即可补上）"
+            }
             $platforms[$p.Name] = $entry
         }
     }
 
     function Set-Plat([string]$key, [string]$name) {
-        $platforms[$key] = @{
+        $entry = @{
             version = $ver
             url     = "$SiteBase/downloads/$name"
             name    = $name
         }
+        $file = Join-Path $outDir $name
+        if (Test-Path $file) {
+            $entry.sha256 = (Get-FileHash -Algorithm SHA256 $file).Hash.ToLower()
+            $entry.size = (Get-Item $file).Length
+        }
+        else {
+            Write-Warn2 "缺少 $name，清单不写 sha256；该平台自动更新会被客户端拒绝，需手动下载"
+        }
+        $platforms[$key] = $entry
     }
 
     if ($plats -contains "windows") { Set-Plat "windows-x86_64" "Queqiao-Setup-$ver.exe" }

@@ -50,13 +50,25 @@ Group=relay
 Environment=RELAY_ADDR=:17891
 Environment=RELAY_DATA=/var/lib/remote-assist-relay/relay.db
 ExecStart=/usr/local/bin/remote-assist-relay
-Restart=on-failure
+Restart=always
 RestartSec=3
+StartLimitIntervalSec=0
 LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+`Restart=always` 而不是 `on-failure`：中继正常退出（含升级脚本 kill 后的干净退出）也要自己起来，否则无人值守端会一直连不上。`StartLimitIntervalSec=0` 避免连续失败后被 systemd 放弃重启。
+
+### 连接与容量（可选环境变量）
+
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `RELAY_IDLE_TIMEOUT` | `10m` | Go duration（如 `30m`）。同时作用于「等待配对」与「已配对管道空闲」：超时即断开，客户端会自动重新注册。协助会话经常长时间无字节往来时可调大 |
+| `RELAY_MAX_SESSIONS` | `64` | 等待 + 转发中的会话槽上限，超出报 `too many sessions` |
+
+两端都开了 TCP keepalive（客户端 30s 空闲 / 10s 探测，中继 `SetKeepAlivePeriod(30s)`），用于刷新 NAT 空闲映射并尽快发现半开连接；不要只靠 `RELAY_IDLE_TIMEOUT` 兜底掉线。
 
 上机前创建专用用户与目录，例如：
 

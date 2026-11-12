@@ -19,6 +19,8 @@ const (
 	DefaultMaxSessions = 64
 	controlDeadline    = 30 * time.Second
 	maxLineBytes       = 16 * 1024
+	// 与客户端一致：刷新 NAT 空闲映射，并让半开连接尽快暴露。
+	keepAlivePeriod = 30 * time.Second
 )
 
 // Config holds listen and resource limits for a small VPS (e.g. 2C2G).
@@ -139,6 +141,10 @@ func (s *Server) Serve(ln net.Listener) error {
 				return nil
 			}
 			return err
+		}
+		if tcp, ok := conn.(*net.TCPConn); ok {
+			_ = tcp.SetKeepAlive(true)
+			_ = tcp.SetKeepAlivePeriod(keepAlivePeriod)
 		}
 		s.wg.Add(1)
 		go func() {

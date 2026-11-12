@@ -12,6 +12,7 @@ rustls = { workspace = true }
 sha2 = { workspace = true }
 hmac = { workspace = true }
 spake2 = { workspace = true }
+socket2 = { workspace = true }
 
 [dev-dependencies]
 rcgen = "0.13"

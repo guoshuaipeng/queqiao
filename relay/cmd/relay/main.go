@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/guoshuaipeng/remote-assist/relay/internal/relay"
 )
@@ -31,12 +32,28 @@ func main() {
 			auditRetention = n
 		}
 	}
+	idle := relay.DefaultIdleTimeout
+	if v := os.Getenv("RELAY_IDLE_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			idle = d
+		} else {
+			logger.Warn("bad RELAY_IDLE_TIMEOUT, using default", "value", v)
+		}
+	}
+	maxSessions := relay.DefaultMaxSessions
+	if v := os.Getenv("RELAY_MAX_SESSIONS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			maxSessions = n
+		} else {
+			logger.Warn("bad RELAY_MAX_SESSIONS, using default", "value", v)
+		}
+	}
 
 	srv, err := relay.NewServer(relay.Config{
 		Addr:               addr,
 		DataPath:           data,
-		IdleTimeout:        relay.DefaultIdleTimeout,
-		MaxSessions:        relay.DefaultMaxSessions,
+		IdleTimeout:        idle,
+		MaxSessions:        maxSessions,
 		Logger:             logger,
 		AuditAddr:          auditAddr,
 		AuditToken:         auditToken,
@@ -51,8 +68,8 @@ func main() {
 		logger.Info("relay listening",
 			"addr", addr,
 			"data", data,
-			"idle", relay.DefaultIdleTimeout.String(),
-			"maxSessions", relay.DefaultMaxSessions,
+			"idle", idle.String(),
+			"maxSessions", maxSessions,
 		)
 		if err := srv.ListenAndServe(); err != nil {
 			logger.Error("server stopped", "err", err)

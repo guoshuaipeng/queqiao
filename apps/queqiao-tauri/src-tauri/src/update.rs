@@ -2,11 +2,12 @@
 //! 清单：`{SITE}/downloads/latest.json`（与官网安装包同目录）。
 
 use std::fs::{self, File};
-use std::io::{copy, Write};
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 
 use crate::copy as text;
 
@@ -16,6 +17,8 @@ pub struct Available {
     pub notes: String,
     pub url: String,
     pub name: String,
+    pub sha256: String,
+    pub size: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -37,6 +40,11 @@ struct Platform {
     url: String,
     #[serde(default)]
     name: String,
+    /// 安装包 SHA256（十六进制）。缺失即拒绝自动更新。
+    #[serde(default)]
+    sha256: String,
+    #[serde(default)]
+    size: u64,
 }
 
 /// 解析本平台应比较的远端版本：platform.version > 顶层 version。
@@ -86,17 +94,20 @@ pub fn manifest_url() -> String {
 /// 拉取清单；无新版本返回 `Ok(None)`。
 pub fn check() -> Result<Option<Available>, String> {
     let key = platform_key().ok_or_else(|| "当前平台暂不支持自动更新。".to_string())?;
-    let url = manifest_url();
     let agent = ureq::AgentBuilder::new()
         .timeout_connect(Duration::from_secs(8))
         .timeout_read(Duration::from_secs(12))
         .build();
     let body = agent
-        .get(&url)
+        .get(&manifest_url())
         .call()
         .map_err(|_| "没能检查更新，请检查网络后重试。".to_string())?
         .into_string()
         .map_err(|_| "没能读取更新信息。".to_string())?;
+    resolve(&body, key)
+}
+
+fn resolve(body: &str, key: &str) -> Result<Option<Available>, String> {
     let manifest: Manifest =
         serde_json::from_str(body.trim_start_matches('\u{feff}')).map_err(|_| {
             "更新信息不完整。请稍后再试，或到官网下载最新版。".to_string()
@@ -116,6 +127,11 @@ pub fn check() -> Result<Option<Available>, String> {
     if !url_allowed(download) {
         return Err("更新地址不可信，已取消。".into());
     }
+    // 没有校验值就不自动装：宁可让用户去官网手动下，也不把来历不明的包直接跑起来。
+    let sha256 = platform.sha256.trim().to_ascii_lowercase();
+    if !is_sha256(&sha256) {
+        return Err("更新包缺少校验信息，已取消自动更新。请到官网下载最新版。".into());
+    }
     let name = if platform.name.trim().is_empty() {
         file_name_from_url(download).unwrap_or_else(|| format!("Queqiao-{remote}"))
     } else {
@@ -126,12 +142,21 @@ pub fn check() -> Result<Option<Available>, String> {
         notes: manifest.notes.trim().to_string(),
         url: download.to_string(),
         name,
+        sha256,
+        size: platform.size,
     }))
+}
+
+fn is_sha256(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
 pub fn download_to_temp(update: &Available) -> Result<PathBuf, String> {
     if !url_allowed(&update.url) {
         return Err("更新地址不可信，已取消。".into());
+    }
+    if !is_sha256(&update.sha256) {
+        return Err("更新包缺少校验信息，已取消自动更新。请到官网下载最新版。".into());
     }
     let dir = std::env::temp_dir().join("queqiao-update");
     fs::create_dir_all(&dir).map_err(|_| "没能准备更新目录。".to_string())?;
@@ -141,6 +166,8 @@ pub fn download_to_temp(update: &Available) -> Result<PathBuf, String> {
         .filter(|s| !s.is_empty() && !s.contains(".."))
         .unwrap_or("Queqiao-Update.bin");
     let dest = dir.join(safe_name);
+    // 先落到 .part：下载中断不会留下一个看起来完整的安装包。
+    let part = dir.join(format!("{safe_name}.part"));
     let agent = ureq::AgentBuilder::new()
         .timeout_connect(Duration::from_secs(10))
         .timeout_read(Duration::from_secs(300))
@@ -150,9 +177,41 @@ pub fn download_to_temp(update: &Available) -> Result<PathBuf, String> {
         .call()
         .map_err(|_| "没能下载更新包，请检查网络后重试。".to_string())?;
     let mut reader = response.into_reader();
-    let mut file = File::create(&dest).map_err(|_| "没能写入更新包。".to_string())?;
-    copy(&mut reader, &mut file).map_err(|_| "下载更新包时中断了。".to_string())?;
-    file.flush().map_err(|_| "没能写完更新包。".to_string())?;
+    let mut file = File::create(&part).map_err(|_| "没能写入更新包。".to_string())?;
+    let mut hasher = Sha256::new();
+    let mut buf = vec![0u8; 64 * 1024];
+    let mut total = 0u64;
+    let streamed = (|| -> Result<(), String> {
+        loop {
+            let n = reader
+                .read(&mut buf)
+                .map_err(|_| "下载更新包时中断了。".to_string())?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buf[..n]);
+            file.write_all(&buf[..n])
+                .map_err(|_| "没能写入更新包。".to_string())?;
+            total += n as u64;
+        }
+        file.flush().map_err(|_| "没能写完更新包。".to_string())?;
+        file.sync_all().map_err(|_| "没能写完更新包。".to_string())
+    })();
+    drop(file);
+    if let Err(err) = streamed {
+        let _ = fs::remove_file(&part);
+        return Err(err);
+    }
+    let digest = hex(&hasher.finalize());
+    if let Err(err) = verify(update, total, &digest) {
+        let _ = fs::remove_file(&part);
+        crate::diag::note(
+            "update verify failed",
+            &format!("bytes={total} want_bytes={} sha256={digest}", update.size),
+        );
+        return Err(err);
+    }
+    fs::rename(&part, &dest).map_err(|_| "没能保存更新包。".to_string())?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -206,6 +265,21 @@ pub fn launch_installer(path: &Path) -> Result<(), String> {
     Err("当前平台暂不支持自动安装。".into())
 }
 
+/// 大小或摘要对不上就不许启动安装包。
+fn verify(update: &Available, total: u64, digest: &str) -> Result<(), String> {
+    if update.size > 0 && total != update.size {
+        return Err("更新包大小不对，已取消。请到官网重新下载。".into());
+    }
+    if !is_sha256(&update.sha256) || !digest.eq_ignore_ascii_case(update.sha256.trim()) {
+        return Err("更新包校验没通过，已取消。请到官网重新下载。".into());
+    }
+    Ok(())
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
 pub fn normalize_version(raw: &str) -> String {
     raw.trim().trim_start_matches('v').trim().to_string()
 }
@@ -256,6 +330,57 @@ fn file_name_from_url(url: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const ABC_SHA256: &str = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+
+    fn manifest(sha256: &str) -> String {
+        let site = text::SITE.trim_end_matches('/');
+        format!(
+            r#"{{"version":"99.0.0","platforms":{{"windows-x86_64":{{"version":"99.0.0","url":"{site}/downloads/a.exe","name":"a.exe","sha256":"{sha256}","size":3}}}}}}"#
+        )
+    }
+
+    fn available(sha256: &str) -> Available {
+        Available {
+            version: "99.0.0".into(),
+            notes: String::new(),
+            url: String::new(),
+            name: "a.exe".into(),
+            sha256: sha256.into(),
+            size: 3,
+        }
+    }
+
+    #[test]
+    fn update_without_checksum_is_refused() {
+        let err = resolve(&manifest(""), "windows-x86_64").unwrap_err();
+        assert!(err.contains("校验"));
+        assert!(resolve(&manifest("not-a-hash"), "windows-x86_64").is_err());
+    }
+
+    #[test]
+    fn update_with_checksum_is_offered() {
+        let want = "a".repeat(64);
+        let avail = resolve(&manifest(&want), "windows-x86_64").unwrap().unwrap();
+        assert_eq!(avail.sha256, want);
+        assert_eq!(avail.size, 3);
+    }
+
+    #[test]
+    fn checksum_and_size_both_gate_the_installer() {
+        let avail = available(ABC_SHA256);
+        assert!(verify(&avail, 3, &ABC_SHA256.to_uppercase()).is_ok());
+        assert!(verify(&avail, 4, ABC_SHA256).is_err());
+        assert!(verify(&avail, 3, &"0".repeat(64)).is_err());
+        assert!(verify(&available(""), 3, ABC_SHA256).is_err());
+    }
+
+    #[test]
+    fn sha256_of_bytes_matches_known_digest() {
+        let mut hasher = Sha256::new();
+        hasher.update(b"abc");
+        assert_eq!(hex(&hasher.finalize()), ABC_SHA256);
+    }
 
     #[test]
     fn newer_semver() {
