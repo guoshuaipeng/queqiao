@@ -41,6 +41,7 @@ func StartAuditHTTP(store *Store, addr, token string, logger *slog.Logger) (*Aud
 	a := &AuditHTTP{store: store, token: token, logger: logger}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /audit/events", a.handleListEvents)
+	mux.HandleFunc("GET /audit/codes", a.handleListCodes)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
@@ -158,6 +159,35 @@ func (a *AuditHTTP) handleListEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	writeAuditJSON(w, http.StatusOK, map[string]any{
 		"ok": true, "events": safe,
+		"page": page, "page_size": pageSize, "total": total,
+	})
+}
+
+func (a *AuditHTTP) handleListCodes(w http.ResponseWriter, r *http.Request) {
+	if !a.authorized(r) {
+		writeAuditJSON(w, http.StatusUnauthorized, map[string]any{"ok": false, "error": "unauthorized"})
+		return
+	}
+	page, pageSize := 1, defaultAuditPageSize
+	if v := strings.TrimSpace(r.URL.Query().Get("page")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			page = n
+		}
+	}
+	if v := strings.TrimSpace(r.URL.Query().Get("page_size")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			pageSize = n
+		}
+	}
+	page, pageSize = normalizeAuditPage(page, pageSize)
+	codes, total, err := a.store.ListGuestCodesPage(r.URL.Query().Get("code"), page, pageSize)
+	if err != nil {
+		a.logger.Error("list guest codes", "err", err)
+		writeAuditJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": "list failed"})
+		return
+	}
+	writeAuditJSON(w, http.StatusOK, map[string]any{
+		"ok": true, "codes": codes,
 		"page": page, "page_size": pageSize, "total": total,
 	})
 }

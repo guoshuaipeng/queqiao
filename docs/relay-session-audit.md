@@ -64,8 +64,8 @@
 | 形态 | **中继同机旁路只读 HTTP**；**不**占用、不改语义 TCP `17891` |
 | 地址 | `RELAY_AUDIT_ADDR` **默认仅 loopback**；生产经 **SSH 隧道**访问；不得裸暴露公网 |
 | 鉴权 | 配置 **`RELAY_AUDIT_TOKEN` 后才启用**管理 HTTP；未配置 = 不开。与 `SITE_ADMIN_PASSWORD`、中继 `signup`/`token` **均独立** |
-| 能力 | 只读事件流水（**最新在前**），可按 **code** 过滤；无改删审计的对外 API |
-| UI | **不做**按 code 透视表（产品锁） |
+| 能力 | 只读：`GET /audit/codes` 按码聚合（一行一码，最近活动在前）+ `GET /audit/events` 事件流水（最新在前），均可按 **code** 过滤、分页；无改删审计的对外 API |
+| UI | 管理台默认一行一码，行内展开事件明细；状态/事件/失败原因中文展示（2026-11-12 产品改口，取代原「不做按 code 透视表」锁） |
 | 官网 `/admin` | R046 不做；后续 PV-001 已加只读列表（仅本地验收） |
 | 协议 | 不增加客户端 `audit_*` op；不进 `relay-protocol.md` 消费方契约 |
 
@@ -126,6 +126,22 @@
 
 ## 7. 列表列（旁路 / 管理只读）
 
+### 7.1 按码聚合 `GET /audit/codes`（管理台默认视图）
+
+| 列 | 来源 |
+|----|------|
+| 会话码 | `code`（`GROUP BY code`） |
+| 状态 | 该码最后一条**生命周期**事件：`generated`→等待连接、`paired`→协助中、`ended`→已结束、`wait_timeout`→超时无人连接、`abandoned`→连接断开；`join_failed` 不改状态 |
+| 开始时间 | `MIN(ts)` |
+| 结束时间 | 最近一条 `ended`/`abandoned`/`wait_timeout` 的 `ts`；没有则空 |
+| 配对次数 / 累计协助 | `SUM(event='paired')` / `SUM(duration_sec)` |
+| 失败 | `SUM(event='join_failed')` + 最后一条 `fail_reason` |
+| 最近活动 | `MAX(ts)`（含 join_failed） |
+
+分页 `page`/`page_size`（上限 100）+ `total`（`COUNT(DISTINCT code)`）。长久码固定不变，一行代表该码累计情况，单次协助过程看明细。
+
+### 7.2 事件流水 `GET /audit/events`（行内明细）
+
 | 列 | 来源 |
 |----|------|
 | 时间 | `ts` |
@@ -160,3 +176,4 @@
 |----------------------|------|
 | 2026-11-06 | 草案与 site 边界讨论 |
 | 2026-11-06 | **定稿**：`relay.db`/`guest_audit`；旁路只读 HTTP；v1 不存 IP；保留 90 天；site `/admin` 本轮不做；事件名对齐产品锁 |
+| 2026-11-12 | 产品改口：管理台改一行一码（`GET /audit/codes` 聚合），事件流水降为行内明细；状态/事件/失败原因中文展示 |

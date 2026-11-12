@@ -197,6 +197,141 @@ FROM guest_audit WHERE code = ? ORDER BY ts DESC, id DESC LIMIT ? OFFSET ?
 	return out, total, rows.Err()
 }
 
+// GuestCodeSummary collapses every audit event of one session code into a single row.
+type GuestCodeSummary struct {
+	Code           string `json:"code"`
+	Status         string `json:"status"`
+	FirstTS        int64  `json:"first_ts"`
+	LastTS         int64  `json:"last_ts"`
+	EndedAt        *int64 `json:"ended_at,omitempty"`
+	Pairs          int64  `json:"pairs"`
+	DurationSec    int64  `json:"duration_sec"`
+	Fails          int64  `json:"fails"`
+	LastFailReason string `json:"last_fail_reason,omitempty"`
+	Events         int64  `json:"events"`
+}
+
+// Code statuses come from the last lifecycle event; join_failed only counts as a failure.
+const (
+	CodeWaiting   = "waiting"
+	CodeAssisting = "assisting"
+	CodeEnded     = "ended"
+	CodeTimeout   = "timeout"
+	CodeAbandoned = "abandoned"
+)
+
+func codeStatus(lastEvent string) string {
+	switch lastEvent {
+	case AuditPaired:
+		return CodeAssisting
+	case AuditEnded:
+		return CodeEnded
+	case AuditWaitTimeout:
+		return CodeTimeout
+	case AuditAbandoned:
+		return CodeAbandoned
+	default:
+		return CodeWaiting
+	}
+}
+
+// ListGuestCodesPage returns one row per code, newest activity first.
+func (s *Store) ListGuestCodesPage(code string, page, pageSize int) ([]GuestCodeSummary, int64, error) {
+	page, pageSize = normalizeAuditPage(page, pageSize)
+	code = normalizeCode(code)
+	where, args := "", []any{}
+	if code != "" {
+		where, args = " WHERE code = ?", []any{code}
+	}
+	var total int64
+	if err := s.db.QueryRow(`SELECT COUNT(DISTINCT code) FROM guest_audit`+where, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	rows, err := s.db.Query(`
+SELECT code, MIN(ts), MAX(ts),
+       SUM(event = 'paired'), SUM(COALESCE(duration_sec, 0)), SUM(event = 'join_failed'), COUNT(1),
+       MAX(CASE WHEN event IN ('ended','abandoned','wait_timeout') THEN ts END)
+FROM guest_audit`+where+`
+GROUP BY code ORDER BY MAX(ts) DESC, code DESC LIMIT ? OFFSET ?
+`, append(args, pageSize, (page-1)*pageSize)...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	out := make([]GuestCodeSummary, 0, pageSize)
+	for rows.Next() {
+		var c GuestCodeSummary
+		var ended sql.NullInt64
+		if err := rows.Scan(&c.Code, &c.FirstTS, &c.LastTS, &c.Pairs, &c.DurationSec, &c.Fails, &c.Events, &ended); err != nil {
+			return nil, 0, err
+		}
+		if ended.Valid {
+			c.EndedAt = &ended.Int64
+		}
+		c.Status = CodeWaiting
+		out = append(out, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	if len(out) == 0 {
+		return out, total, nil
+	}
+	byCode := make(map[string]*GuestCodeSummary, len(out))
+	placeholders := make([]any, 0, len(out))
+	marks := ""
+	for i := range out {
+		byCode[out[i].Code] = &out[i]
+		placeholders = append(placeholders, out[i].Code)
+		if i > 0 {
+			marks += ","
+		}
+		marks += "?"
+	}
+	// 状态取每码最后一条生命周期事件；失败原因取最后一条 join_failed。
+	last, err := s.db.Query(`
+SELECT code, event FROM guest_audit
+WHERE id IN (SELECT MAX(id) FROM guest_audit WHERE event <> 'join_failed' AND code IN (`+marks+`) GROUP BY code)
+`, placeholders...)
+	if err != nil {
+		return nil, 0, err
+	}
+	for last.Next() {
+		var code, event string
+		if err := last.Scan(&code, &event); err != nil {
+			last.Close()
+			return nil, 0, err
+		}
+		if c, ok := byCode[code]; ok {
+			c.Status = codeStatus(event)
+		}
+	}
+	if err := last.Err(); err != nil {
+		last.Close()
+		return nil, 0, err
+	}
+	last.Close()
+	fails, err := s.db.Query(`
+SELECT code, fail_reason FROM guest_audit
+WHERE id IN (SELECT MAX(id) FROM guest_audit WHERE event = 'join_failed' AND code IN (`+marks+`) GROUP BY code)
+`, placeholders...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer fails.Close()
+	for fails.Next() {
+		var code string
+		var reason sql.NullString
+		if err := fails.Scan(&code, &reason); err != nil {
+			return nil, 0, err
+		}
+		if c, ok := byCode[code]; ok && reason.Valid {
+			c.LastFailReason = reason.String
+		}
+	}
+	return out, total, fails.Err()
+}
+
 // PurgeGuestAuditOlderThan deletes audit rows older than retentionDays. retentionDays<=0 uses 90.
 func (s *Store) PurgeGuestAuditOlderThan(retentionDays int) (int64, error) {
 	if retentionDays <= 0 {

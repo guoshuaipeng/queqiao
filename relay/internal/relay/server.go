@@ -57,16 +57,17 @@ type Server struct {
 const maxGuestJoinFails = 5
 
 type pairSlot struct {
-	key     string
-	kind    string // guest | account
-	mode    string // guest | account
-	agent   net.Conn
-	agentBr *bufio.Reader
-	helper  net.Conn
-	userID  int64
-	paired  chan struct{}
-	done    chan struct{}
-	once    sync.Once
+	key      string
+	kind     string // guest | account
+	mode     string // guest | account
+	agent    net.Conn
+	agentBr  *bufio.Reader
+	helper   net.Conn
+	userID   int64
+	pairedAt int64
+	paired   chan struct{}
+	done     chan struct{}
+	once     sync.Once
 }
 
 type clientConn struct {
@@ -596,6 +597,7 @@ func (c *clientConn) opGuestJoin(req map[string]any) (bool, error) {
 		return fail(err)
 	}
 	now := time.Now().Unix()
+	slot.pairedAt = now
 	c.s.safeAppendAudit(AuditInsert{
 		Event: AuditPaired, Code: code, OK: intPtr(1), PeerRole: "helper", PairedAt: int64Ptr(now),
 	})
@@ -806,9 +808,13 @@ func (s *Server) runPipe(slot *pairSlot, a, b net.Conn, aR, bR *bufio.Reader) {
 
 	if slot.kind == "guest" {
 		now := time.Now().Unix()
-		s.safeAppendAudit(AuditInsert{
+		in := AuditInsert{
 			Event: AuditEnded, Code: slot.key, OK: intPtr(1), ClosedAt: int64Ptr(now),
-		})
+		}
+		if slot.pairedAt > 0 {
+			in.DurationSec = int64Ptr(now - slot.pairedAt)
+		}
+		s.safeAppendAudit(in)
 	}
 
 	s.mu.Lock()

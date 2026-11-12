@@ -98,6 +98,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /admin/api/status", s.requireAdmin(s.handleSetStatus))
 	s.mux.HandleFunc("POST /admin/api/note", s.requireAdmin(s.handleSetNote))
 	s.mux.HandleFunc("GET /admin/api/session-codes", s.requireAdmin(s.handleSessionCodes))
+	s.mux.HandleFunc("GET /admin/api/session-code-events", s.requireAdmin(s.handleSessionCodeEvents))
 	s.mux.HandleFunc("GET /admin/api/stats", s.requireAdmin(s.handleAccessStats))
 
 	s.mux.HandleFunc("GET /downloads/{name}", s.handleDownload)
@@ -449,17 +450,25 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 }
 
 func (s *Server) handleSessionCodes(w http.ResponseWriter, r *http.Request) {
+	s.proxyRelayAudit(w, r, "/audit/codes", "codes")
+}
+
+func (s *Server) handleSessionCodeEvents(w http.ResponseWriter, r *http.Request) {
+	s.proxyRelayAudit(w, r, "/audit/events", "events")
+}
+
+func (s *Server) proxyRelayAudit(w http.ResponseWriter, r *http.Request, path, listKey string) {
 	base := strings.TrimSpace(s.cfg.RelayAuditURL)
 	token := strings.TrimSpace(s.cfg.RelayAuditToken)
 	if base == "" || token == "" {
 		writeJSON(w, http.StatusOK, map[string]any{
-			"ok": true, "events": []any{}, "configured": false,
+			"ok": true, listKey: []any{}, "configured": false,
 			"hint": "未配置 SITE_RELAY_AUDIT_URL / SITE_RELAY_AUDIT_TOKEN",
 		})
 		return
 	}
 	base = strings.TrimRight(base, "/")
-	u, err := url.Parse(base + "/audit/events")
+	u, err := url.Parse(base + path)
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "bad relay audit url"})
 		return
@@ -510,7 +519,7 @@ func (s *Server) handleSessionCodes(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadGateway, map[string]any{"ok": false, "error": "bad relay json"})
 		return
 	}
-	events, _ := parsed["events"].([]any)
+	events, _ := parsed[listKey].([]any)
 	safe := make([]map[string]any, 0, len(events))
 	forbid := map[string]bool{
 		"password": true, "pwd": true, "password_hash": true, "fp": true,
@@ -549,7 +558,7 @@ func (s *Server) handleSessionCodes(w http.ResponseWriter, r *http.Request) {
 		total = int64(v)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"ok": true, "events": safe, "configured": true,
+		"ok": true, listKey: safe, "configured": true,
 		"page": respPage, "page_size": respSize, "total": total,
 	})
 }

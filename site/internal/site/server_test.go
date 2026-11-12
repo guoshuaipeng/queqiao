@@ -342,6 +342,22 @@ func TestSessionCodesRequiresAuthAndProxies(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "events": events})
 	})
+	mux.HandleFunc("/audit/codes", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer relay-secret" {
+			http.Error(w, "no", http.StatusUnauthorized)
+			return
+		}
+		codes := []map[string]any{
+			{"code": "ABC123", "status": "ended", "first_ts": 1700000001, "last_ts": 1700000002,
+				"pairs": 1, "duration_sec": 42, "fails": 0, "events": 2, "password_hash": "SHOULD_NOT_LEAK"},
+		}
+		if code := r.URL.Query().Get("code"); code != "" && code != "ABC123" {
+			codes = []map[string]any{}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"ok": true, "codes": codes, "page": 1, "page_size": 20, "total": len(codes),
+		})
+	})
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -406,9 +422,32 @@ func TestSessionCodesRequiresAuthAndProxies(t *testing.T) {
 	if resp["ok"] != true || resp["configured"] != true {
 		t.Fatalf("%v", resp)
 	}
-	ev := resp["events"].([]any)
-	if len(ev) != 2 {
-		t.Fatalf("events=%v", ev)
+	ev := resp["codes"].([]any)
+	if len(ev) != 1 {
+		t.Fatalf("codes=%v", ev)
+	}
+	row := ev[0].(map[string]any)
+	if row["code"] != "ABC123" || row["status"] != "ended" {
+		t.Fatalf("code row=%v", row)
+	}
+
+	// 行内明细仍走事件流。
+	req = httptest.NewRequest(http.MethodGet, "/admin/api/session-code-events?code=ABC123", nil)
+	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: session})
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("events code=%d body=%s", rr.Code, rr.Body.String())
+	}
+	if strings.Contains(rr.Body.String(), "SHOULD_NOT_LEAK") {
+		t.Fatalf("leaked sensitive: %s", rr.Body.String())
+	}
+	resp = map[string]any{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if len(resp["events"].([]any)) != 2 {
+		t.Fatalf("events=%v", resp["events"])
 	}
 }
 

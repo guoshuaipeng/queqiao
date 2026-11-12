@@ -22,6 +22,13 @@
     .badge.new { color: var(--amber); background: var(--amber-soft); border-color: transparent; }
     .badge.contact { color: var(--ok); background: #ecfdf5; border-color: transparent; }
     .badge.done { color: var(--muted); background: var(--bg-soft); border-color: transparent; }
+    .badge.warn { color: var(--danger); background: #fef2f2; border-color: transparent; }
+    .btn.mini { padding: 2px 10px; font-size: 0.8rem; }
+    tr.code-detail > td { background: var(--bg-soft); }
+    .detail-box { padding: 2px 4px 6px; }
+    .detail-box table.data { font-size: 0.85rem; }
+    .detail-box table.data th, .detail-box table.data td { padding: 6px 10px; }
+    .detail-note { color: var(--muted); font-size: 0.8rem; margin: 6px 0 0; }
 
     .admin-shell {
       display: grid;
@@ -214,7 +221,7 @@
         <section id="panel-codes" data-panel="codes">
           <div class="panel-head">
             <h1>会话码</h1>
-            <p class="hint">只读事件流水（最新在前）。数据来自中继审计旁路；不展示密码、hash、凭证、指纹。</p>
+            <p class="hint">一行一个会话码（最近活动在前）。点「明细」展开该码的事件流水；不展示密码、hash、凭证、指纹。</p>
           </div>
           <div class="toolbar">
             <label>按码过滤
@@ -227,11 +234,15 @@
             <table class="data" id="sc-table">
               <thead>
                 <tr>
-                  <th>时间</th>
                   <th>会话码</th>
-                  <th>事件</th>
-                  <th>失败原因</th>
-                  <th>角色</th>
+                  <th>状态</th>
+                  <th>开始时间</th>
+                  <th>结束时间</th>
+                  <th>配对次数</th>
+                  <th>累计协助</th>
+                  <th>失败</th>
+                  <th>最近活动</th>
+                  <th>明细</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -377,6 +388,30 @@
     function contacts(o) {
       return [o.wechat && ("微信 " + o.wechat), o.phone && ("手机 " + o.phone), o.email && ("邮箱 " + o.email)].filter(Boolean).join(" / ");
     }
+    const codeStatusText = {
+      waiting: "等待连接", assisting: "协助中", ended: "已结束",
+      timeout: "超时无人连接", abandoned: "连接断开",
+    };
+    const codeStatusClass = {
+      waiting: "new", assisting: "contact", ended: "done", timeout: "warn", abandoned: "warn",
+    };
+    const codeEventText = {
+      generated: "生成", paired: "配对成功", join_failed: "连接失败",
+      wait_timeout: "等待超时", ended: "正常结束", abandoned: "异常断开",
+    };
+    const codeFailText = {
+      bad_credentials: "密码错误", expired: "码已过期", peer_offline: "对方不在线",
+      busy: "对方忙", too_many_sessions: "会话数超限", bad_request: "请求无效", other: "其他",
+    };
+    function fmtDur(sec) {
+      sec = Number(sec) || 0;
+      if (sec <= 0) return "—";
+      if (sec < 60) return sec + " 秒";
+      const m = Math.floor(sec / 60), s = sec % 60;
+      if (m < 60) return s ? m + " 分 " + s + " 秒" : m + " 分";
+      const h = Math.floor(m / 60), mm = m % 60;
+      return mm ? h + " 小时 " + mm + " 分" : h + " 小时";
+    }
     function showErr(el, msg) {
       if (!msg) { el.classList.remove("show"); el.textContent = ""; return; }
       el.textContent = msg; el.classList.add("show");
@@ -491,24 +526,83 @@
       }
       pagers.codes.page = data.page || pagers.codes.page;
       pagers.codes.total = data.total || 0;
-      renderSessionCodes(data.events || []);
+      codeEventsCache.clear();
+      renderSessionCodes(data.codes || []);
       updatePager("codes");
     }
+
+    const codeEventsCache = new Map();
 
     function renderSessionCodes(list) {
       const tb = document.querySelector("#sc-table tbody");
       tb.innerHTML = "";
-      for (const e of list) {
+      for (const c of list) {
         const tr = document.createElement("tr");
+        const status = codeStatusText[c.status] || c.status || "";
+        const fails = Number(c.fails) || 0;
+        const failTip = c.last_fail_reason ? (codeFailText[c.last_fail_reason] || c.last_fail_reason) : "";
         tr.innerHTML = `
-          <td>${fmtTime(e.ts)}</td>
-          <td class="ink">${escapeHtml(e.code || "")}</td>
-          <td><span class="badge">${escapeHtml(e.event || "")}</span></td>
-          <td>${escapeHtml(e.fail_reason || "")}</td>
-          <td>${escapeHtml(e.peer_role || "")}</td>`;
+          <td class="ink">${escapeHtml(c.code || "")}</td>
+          <td><span class="badge ${codeStatusClass[c.status] || ""}">${escapeHtml(status)}</span></td>
+          <td>${fmtTime(c.first_ts)}</td>
+          <td>${c.ended_at ? fmtTime(c.ended_at) : "—"}</td>
+          <td>${Number(c.pairs) || 0}</td>
+          <td>${fmtDur(c.duration_sec)}</td>
+          <td${failTip ? ` title="${escapeAttr(failTip)}"` : ""}>${fails ? fails + " 次" : "—"}</td>
+          <td>${fmtTime(c.last_ts)}</td>
+          <td><button class="btn mini" type="button" data-code="${escapeAttr(c.code || "")}">明细</button></td>`;
         tb.appendChild(tr);
       }
     }
+
+    function renderCodeEvents(list, total) {
+      if (!list.length) return '<p class="detail-note">暂无事件。</p>';
+      const rows = list.map(e => `
+        <tr>
+          <td>${fmtTime(e.ts)}</td>
+          <td><span class="badge">${escapeHtml(codeEventText[e.event] || e.event || "")}</span></td>
+          <td>${escapeHtml(e.fail_reason ? (codeFailText[e.fail_reason] || e.fail_reason) : "")}</td>
+          <td>${escapeHtml(e.peer_role || "")}</td>
+          <td>${e.duration_sec ? fmtDur(e.duration_sec) : "—"}</td>
+        </tr>`).join("");
+      const note = total > list.length ? `<p class="detail-note">共 ${total} 条事件，仅显示最近 ${list.length} 条。</p>` : "";
+      return `<table class="data">
+        <thead><tr><th>时间</th><th>事件</th><th>失败原因</th><th>角色</th><th>时长</th></tr></thead>
+        <tbody>${rows}</tbody></table>${note}`;
+    }
+
+    async function toggleCodeDetail(btn, code) {
+      const tr = btn.closest("tr");
+      const open = tr.nextElementSibling;
+      if (open && open.classList.contains("code-detail")) {
+        open.remove();
+        btn.textContent = "明细";
+        return;
+      }
+      const row = document.createElement("tr");
+      row.className = "code-detail";
+      row.innerHTML = '<td colspan="9"><div class="detail-box">加载中…</div></td>';
+      tr.after(row);
+      btn.textContent = "收起";
+      const box = row.querySelector(".detail-box");
+      let entry = codeEventsCache.get(code);
+      if (!entry) {
+        const q = new URLSearchParams({ code, page: "1", page_size: "100" });
+        const { res, data } = await api("/admin/api/session-code-events?" + q.toString());
+        if (!res.ok || !data.ok) {
+          box.textContent = (data && data.error) || "明细加载失败";
+          return;
+        }
+        entry = { list: data.events || [], total: Number(data.total) || 0 };
+        codeEventsCache.set(code, entry);
+      }
+      box.innerHTML = renderCodeEvents(entry.list, entry.total);
+    }
+
+    document.querySelector("#sc-table tbody").addEventListener("click", ev => {
+      const btn = ev.target.closest("button[data-code]");
+      if (btn) toggleCodeDetail(btn, btn.dataset.code);
+    });
 
     function renderMessages(list) {
       const tb = document.querySelector("#msg-table tbody");
