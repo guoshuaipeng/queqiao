@@ -187,6 +187,8 @@ function Invoke-Ssh([string]$command) {
         Write-Info "[dry-run] ssh $SshTarget $command"
         return
     }
+    # Windows here-string 带 CRLF，远端 bash 会把 \r 当成单元名/选项的一部分而失败。
+    $command = $command -replace "`r`n", "`n"
     & ssh -o BatchMode=yes -o ConnectTimeout=15 $SshTarget $command
     if ($LASTEXITCODE -ne 0) {
         throw "ssh 失败 ($LASTEXITCODE)。请配置对 $SshTarget 的免密登录，或改用 -SkipUpload 后走 ssh-connect MCP。"
