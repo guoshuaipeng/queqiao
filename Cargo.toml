@@ -20,4 +20,4 @@ rustls = { version = "0.23", default-features = false, features = ["ring", "std"
 sha2 = "0.10"
 hmac = "0.12"
 spake2 = "0.4"
-socket2 = "0.6"
+socket2 = { version = "0.6", features = ["all"] }
