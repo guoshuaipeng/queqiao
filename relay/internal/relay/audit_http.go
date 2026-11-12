@@ -103,13 +103,25 @@ func (a *AuditHTTP) handleListEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	code := r.URL.Query().Get("code")
-	limit := 100
-	if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" {
+	page, pageSize := 1, defaultAuditPageSize
+	if v := strings.TrimSpace(r.URL.Query().Get("page")); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
-			limit = n
+			page = n
 		}
 	}
-	events, err := a.store.ListGuestAudit(code, limit)
+	if v := strings.TrimSpace(r.URL.Query().Get("page_size")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			pageSize = n
+		}
+	}
+	// 兼容旧 limit：当作第一页 page_size
+	if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			pageSize = n
+		}
+	}
+	page, pageSize = normalizeAuditPage(page, pageSize)
+	events, total, err := a.store.ListGuestAuditPage(code, page, pageSize)
 	if err != nil {
 		a.logger.Error("list guest_audit", "err", err)
 		writeAuditJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "error": "list failed"})
@@ -144,7 +156,10 @@ func (a *AuditHTTP) handleListEvents(w http.ResponseWriter, r *http.Request) {
 		}
 		safe = append(safe, row)
 	}
-	writeAuditJSON(w, http.StatusOK, map[string]any{"ok": true, "events": safe})
+	writeAuditJSON(w, http.StatusOK, map[string]any{
+		"ok": true, "events": safe,
+		"page": page, "page_size": pageSize, "total": total,
+	})
 }
 
 func writeAuditJSON(w http.ResponseWriter, code int, v any) {

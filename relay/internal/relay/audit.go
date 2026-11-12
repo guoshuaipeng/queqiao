@@ -102,39 +102,76 @@ func nullIfEmpty(s string) any {
 	return s
 }
 
+const (
+	defaultAuditPageSize = 20
+	maxAuditPageSize     = 100
+	maxAuditPageNumber   = 10000
+)
+
+func normalizeAuditPage(page, pageSize int) (int, int) {
+	if pageSize <= 0 {
+		pageSize = defaultAuditPageSize
+	}
+	if pageSize > maxAuditPageSize {
+		pageSize = maxAuditPageSize
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if page > maxAuditPageNumber {
+		page = maxAuditPageNumber
+	}
+	return page, pageSize
+}
+
 // ListGuestAudit returns newest-first events; empty code means no filter.
 func (s *Store) ListGuestAudit(code string, limit int) ([]GuestAuditEvent, error) {
-	if limit <= 0 || limit > 500 {
-		limit = 100
+	if limit <= 0 || limit > maxAuditPageSize {
+		limit = defaultAuditPageSize
 	}
+	list, _, err := s.ListGuestAuditPage(code, 1, limit)
+	return list, err
+}
+
+// ListGuestAuditPage returns newest-first events with total count.
+func (s *Store) ListGuestAuditPage(code string, page, pageSize int) ([]GuestAuditEvent, int64, error) {
+	page, pageSize = normalizeAuditPage(page, pageSize)
 	code = normalizeCode(code)
-	var (
-		rows *sql.Rows
-		err  error
-	)
+	var total int64
+	var err error
+	if code == "" {
+		err = s.db.QueryRow(`SELECT COUNT(1) FROM guest_audit`).Scan(&total)
+	} else {
+		err = s.db.QueryRow(`SELECT COUNT(1) FROM guest_audit WHERE code = ?`, code).Scan(&total)
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+	offset := (page - 1) * pageSize
+	var rows *sql.Rows
 	if code == "" {
 		rows, err = s.db.Query(`
 SELECT id, ts, event, code, ok, fail_reason, peer_role, paired_at, closed_at, duration_sec
-FROM guest_audit ORDER BY ts DESC, id DESC LIMIT ?
-`, limit)
+FROM guest_audit ORDER BY ts DESC, id DESC LIMIT ? OFFSET ?
+`, pageSize, offset)
 	} else {
 		rows, err = s.db.Query(`
 SELECT id, ts, event, code, ok, fail_reason, peer_role, paired_at, closed_at, duration_sec
-FROM guest_audit WHERE code = ? ORDER BY ts DESC, id DESC LIMIT ?
-`, code, limit)
+FROM guest_audit WHERE code = ? ORDER BY ts DESC, id DESC LIMIT ? OFFSET ?
+`, code, pageSize, offset)
 	}
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
-	out := make([]GuestAuditEvent, 0)
+	out := make([]GuestAuditEvent, 0, pageSize)
 	for rows.Next() {
 		var e GuestAuditEvent
 		var ok sql.NullInt64
 		var fail, peer sql.NullString
 		var paired, closed, dur sql.NullInt64
 		if err := rows.Scan(&e.ID, &e.TS, &e.Event, &e.Code, &ok, &fail, &peer, &paired, &closed, &dur); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		if ok.Valid {
 			v := int(ok.Int64)
@@ -157,7 +194,7 @@ FROM guest_audit WHERE code = ? ORDER BY ts DESC, id DESC LIMIT ?
 		}
 		out = append(out, e)
 	}
-	return out, rows.Err()
+	return out, total, rows.Err()
 }
 
 // PurgeGuestAuditOlderThan deletes audit rows older than retentionDays. retentionDays<=0 uses 90.

@@ -201,18 +201,46 @@ func (s *Server) recordAccess(kind, path, fileName string, r *http.Request) {
 }
 
 func (s *Server) handleAccessStats(w http.ResponseWriter, r *http.Request) {
-	limit := 100
-	if lim := strings.TrimSpace(r.URL.Query().Get("limit")); lim != "" {
-		if n, err := strconv.Atoi(lim); err == nil && n > 0 {
-			limit = n
+	_, pageSize := parsePageQuery(r)
+	q := AccessStatsQuery{
+		Section:      strings.TrimSpace(r.URL.Query().Get("section")),
+		VisitPage:    1,
+		DownloadPage: 1,
+		PageSize:     pageSize,
+	}
+	if v := strings.TrimSpace(r.URL.Query().Get("visit_page")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			q.VisitPage = n
 		}
 	}
-	stats, err := s.store.AccessStats(limit)
+	if v := strings.TrimSpace(r.URL.Query().Get("download_page")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			q.DownloadPage = n
+		}
+	}
+	if v := strings.TrimSpace(r.URL.Query().Get("page")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			if q.Section == "downloads" {
+				q.DownloadPage = n
+			} else {
+				q.VisitPage = n
+			}
+		}
+	}
+	// 兼容旧参数 limit：当作 page_size
+	if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			q.PageSize = n
+		}
+	}
+	stats, err := s.store.AccessStats(q)
 	if err != nil {
 		s.log.Error("access stats", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false})
 		return
 	}
+	enrichAccessIPLocations(stats.RecentVisits)
+	enrichAccessIPLocations(stats.RecentDownloads)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "stats": stats})
 }
 
@@ -357,23 +385,29 @@ func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func (s *Server) handleListMessages(w http.ResponseWriter, r *http.Request) {
-	list, err := s.store.ListMessages()
+	page, pageSize := parsePageQuery(r)
+	list, total, err := s.store.ListMessagesPage(page, pageSize)
 	if err != nil {
 		s.log.Error("list messages", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "messages": list})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok": true, "messages": list, "page": page, "page_size": pageSize, "total": total,
+	})
 }
 
 func (s *Server) handleListCustomers(w http.ResponseWriter, r *http.Request) {
-	list, err := s.store.ListCustomers()
+	page, pageSize := parsePageQuery(r)
+	list, total, err := s.store.ListCustomersPage(page, pageSize)
 	if err != nil {
 		s.log.Error("list customers", "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]any{"ok": false})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "customers": list})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok": true, "customers": list, "page": page, "page_size": pageSize, "total": total,
+	})
 }
 
 func (s *Server) handleSetStatus(w http.ResponseWriter, r *http.Request) {
@@ -434,6 +468,9 @@ func (s *Server) handleSessionCodes(w http.ResponseWriter, r *http.Request) {
 	if code := strings.TrimSpace(r.URL.Query().Get("code")); code != "" {
 		q.Set("code", code)
 	}
+	page, pageSize := parsePageQuery(r)
+	q.Set("page", strconv.Itoa(page))
+	q.Set("page_size", strconv.Itoa(pageSize))
 	if lim := strings.TrimSpace(r.URL.Query().Get("limit")); lim != "" {
 		if n, err := strconv.Atoi(lim); err == nil && n > 0 {
 			q.Set("limit", strconv.Itoa(n))
@@ -494,5 +531,25 @@ func (s *Server) handleSessionCodes(w http.ResponseWriter, r *http.Request) {
 		}
 		safe = append(safe, out)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "events": safe, "configured": true})
+	respPage := page
+	respSize := pageSize
+	if v, ok := parsed["page"].(float64); ok && v > 0 {
+		respPage = int(v)
+	}
+	if v, ok := parsed["page_size"].(float64); ok && v > 0 {
+		respSize = int(v)
+	}
+	total := int64(len(safe))
+	switch v := parsed["total"].(type) {
+	case float64:
+		total = int64(v)
+	case int64:
+		total = v
+	case int:
+		total = int64(v)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok": true, "events": safe, "configured": true,
+		"page": respPage, "page_size": respSize, "total": total,
+	})
 }

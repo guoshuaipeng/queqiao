@@ -413,6 +413,12 @@ func TestSessionCodesRequiresAuthAndProxies(t *testing.T) {
 }
 
 func TestAccessStatsVisitAndDownload(t *testing.T) {
+	r := newIPGeoResolver()
+	r.fetch = func(ip string) string { return "测试地址" }
+	prev := defaultIPGeo
+	defaultIPGeo = r
+	t.Cleanup(func() { defaultIPGeo = prev })
+
 	dl := t.TempDir()
 	name := "Queqiao-Setup-0.1.0.exe"
 	if err := os.WriteFile(filepath.Join(dl, name), []byte("pkg"), 0o644); err != nil {
@@ -484,7 +490,7 @@ func TestAccessStatsVisitAndDownload(t *testing.T) {
 		t.Fatal("no session")
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "/admin/api/stats", nil)
+	req = httptest.NewRequest(http.MethodGet, "/admin/api/stats?page_size=20", nil)
 	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: session})
 	rr = httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rr, req)
@@ -498,6 +504,10 @@ func TestAccessStatsVisitAndDownload(t *testing.T) {
 			VisitUniqueIPs    int64 `json:"visit_unique_ips"`
 			DownloadCount     int64 `json:"download_count"`
 			DownloadUniqueIPs int64 `json:"download_unique_ips"`
+			VisitPage         int   `json:"visit_page"`
+			VisitPageSize     int   `json:"visit_page_size"`
+			DownloadPage      int   `json:"download_page"`
+			DownloadPageSize  int   `json:"download_page_size"`
 			DownloadsByFile   []struct {
 				FileName string `json:"file_name"`
 				Count    int64  `json:"count"`
@@ -530,6 +540,9 @@ func TestAccessStatsVisitAndDownload(t *testing.T) {
 	if resp.Stats.DownloadUniqueIPs != 1 {
 		t.Fatalf("download_unique_ips=%d want 1", resp.Stats.DownloadUniqueIPs)
 	}
+	if resp.Stats.VisitPage != 1 || resp.Stats.VisitPageSize != 20 {
+		t.Fatalf("visit page=%d size=%d", resp.Stats.VisitPage, resp.Stats.VisitPageSize)
+	}
 	if len(resp.Stats.DownloadsByFile) != 1 || resp.Stats.DownloadsByFile[0].FileName != name {
 		t.Fatalf("downloads_by_file=%v", resp.Stats.DownloadsByFile)
 	}
@@ -542,6 +555,24 @@ func TestAccessStatsVisitAndDownload(t *testing.T) {
 	}
 	if len(resp.Stats.RecentDownloads) != 1 || resp.Stats.RecentDownloads[0].IP != "192.0.2.55" {
 		t.Fatalf("recent downloads=%v", resp.Stats.RecentDownloads)
+	}
+
+	// page 2 with page_size=1 should return the older visit only
+	req = httptest.NewRequest(http.MethodGet, "/admin/api/stats?visit_page=2&page_size=1", nil)
+	req.AddCookie(&http.Cookie{Name: sessionCookie, Value: session})
+	rr = httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("paged stats code=%d", rr.Code)
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp.Stats.VisitPage != 2 || resp.Stats.VisitPageSize != 1 || len(resp.Stats.RecentVisits) != 1 {
+		t.Fatalf("paged visits=%+v", resp.Stats)
+	}
+	if resp.Stats.RecentVisits[0].IP != "203.0.113.10" {
+		t.Fatalf("page2 ip=%s want 203.0.113.10", resp.Stats.RecentVisits[0].IP)
 	}
 }
 

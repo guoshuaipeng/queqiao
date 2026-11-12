@@ -57,6 +57,21 @@
     }
     .side-nav button:hover { background: rgba(255,255,255,.06); color: #fff; }
     .side-nav button.active { background: var(--primary); color: #fff; }
+    .side-group { margin-top: 6px; }
+    .side-group-title {
+      color: #64748b;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      padding: 10px 12px 4px;
+      text-transform: uppercase;
+    }
+    .side-sub { display: grid; gap: 2px; }
+    .side-sub button {
+      font-size: 0.9rem;
+      padding: 8px 12px 8px 22px;
+      color: #94a3b8;
+    }
+    .side-sub button.active { color: #fff; }
     .side-foot { margin-top: auto; display: grid; gap: 8px; padding-top: 16px; }
     .side-foot a { color: #94a3b8; font-size: 0.85rem; text-decoration: none; padding: 4px 12px; }
     .side-foot a:hover { color: #fff; }
@@ -70,11 +85,17 @@
     .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
     .toolbar label { display: flex; gap: 8px; align-items: center; margin: 0; color: var(--ink-2); font-size: 0.9rem; }
     .table-card { overflow-x: auto; padding: 0; background: #fff; }
+    .pager {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      padding: 10px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem;
+    }
+    .pager .btn { padding: 4px 10px; font-size: 0.85rem; }
+    .pager .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
     @media (max-width: 760px) {
       .admin-shell { grid-template-columns: 1fr; }
       .admin-side { position: static; height: auto; }
-      .side-nav { grid-template-columns: repeat(4, 1fr); }
+      .side-nav { grid-template-columns: 1fr; }
       .side-foot { margin-top: 12px; }
       .admin-main { padding: 20px 16px 40px; }
     }
@@ -116,7 +137,14 @@
           <button type="button" data-panel="codes" class="active">会话码</button>
           <button type="button" data-panel="messages">留言</button>
           <button type="button" data-panel="customers">客户</button>
-          <button type="button" data-panel="stats">统计</button>
+          <div class="side-group">
+            <div class="side-group-title">统计</div>
+            <div class="side-sub">
+              <button type="button" data-panel="stats-overview">汇总</button>
+              <button type="button" data-panel="stats-visits">打开记录</button>
+              <button type="button" data-panel="stats-downloads">下载记录</button>
+            </div>
+          </div>
         </nav>
         <div class="side-foot">
           <a href="/">产品介绍</a>
@@ -148,6 +176,11 @@
               </thead>
               <tbody></tbody>
             </table>
+            <div class="pager" data-list="messages">
+              <button class="btn" type="button" data-dir="-1">上一页</button>
+              <span data-page-label>第 1 页</span>
+              <button class="btn" type="button" data-dir="1">下一页</button>
+            </div>
           </div>
         </section>
 
@@ -170,6 +203,11 @@
               </thead>
               <tbody></tbody>
             </table>
+            <div class="pager" data-list="customers">
+              <button class="btn" type="button" data-dir="-1">上一页</button>
+              <span data-page-label>第 1 页</span>
+              <button class="btn" type="button" data-dir="1">下一页</button>
+            </div>
           </div>
         </section>
 
@@ -198,18 +236,23 @@
               </thead>
               <tbody></tbody>
             </table>
+            <div class="pager" data-list="codes">
+              <button class="btn" type="button" data-dir="-1">上一页</button>
+              <span data-page-label>第 1 页</span>
+              <button class="btn" type="button" data-dir="1">下一页</button>
+            </div>
           </div>
         </section>
 
-        <section id="panel-stats" class="hidden" data-panel="stats">
+        <section id="panel-stats-overview" class="hidden" data-panel="stats-overview">
           <div class="panel-head">
-            <h1>访问与下载</h1>
-            <p class="hint">记录公开页打开与安装包下载（含 IP）。刷新页面会重复计数；独立访客按 IP 去重。不记后台与静态资源。</p>
+            <h1>访问汇总</h1>
+            <p class="hint">公开页打开与安装包下载汇总。刷新页面会重复计数；独立访客按 IP 去重。不记后台与静态资源。</p>
           </div>
           <div class="toolbar">
-            <button class="btn" type="button" id="stats-refresh">刷新</button>
+            <button class="btn" type="button" data-stats-refresh="overview">刷新</button>
           </div>
-          <div class="alert err" id="stats-err"></div>
+          <div class="alert err" id="stats-overview-err"></div>
           <div class="card table-card" style="padding:16px 20px;margin-bottom:16px">
             <table class="data" id="stats-summary">
               <thead>
@@ -233,7 +276,7 @@
           <div class="panel-head" style="margin-top:8px">
             <h1 style="font-size:1.1rem;margin:0 0 6px">按文件下载</h1>
           </div>
-          <div class="card table-card" style="margin-bottom:16px">
+          <div class="card table-card">
             <table class="data" id="stats-files">
               <thead>
                 <tr>
@@ -244,25 +287,47 @@
               <tbody></tbody>
             </table>
           </div>
-          <div class="panel-head" style="margin-top:8px">
-            <h1 style="font-size:1.1rem;margin:0 0 6px">最近打开</h1>
+        </section>
+
+        <section id="panel-stats-visits" class="hidden" data-panel="stats-visits">
+          <div class="panel-head">
+            <h1>打开记录</h1>
+            <p class="hint">公开页打开流水（含 IP 与归属地）。</p>
           </div>
-          <div class="card table-card" style="margin-bottom:16px">
+          <div class="toolbar">
+            <button class="btn" type="button" data-stats-refresh="visits">刷新</button>
+          </div>
+          <div class="alert err" id="stats-visits-err"></div>
+          <div class="card table-card">
             <table class="data" id="stats-visits">
               <thead>
                 <tr>
                   <th>时间</th>
                   <th>路径</th>
                   <th>IP</th>
+                  <th>地址</th>
                   <th>UA</th>
                 </tr>
               </thead>
               <tbody></tbody>
             </table>
+            <div class="pager" data-list="stats-visits">
+              <button class="btn" type="button" data-dir="-1">上一页</button>
+              <span data-page-label>第 1 页</span>
+              <button class="btn" type="button" data-dir="1">下一页</button>
+            </div>
           </div>
-          <div class="panel-head" style="margin-top:8px">
-            <h1 style="font-size:1.1rem;margin:0 0 6px">最近下载</h1>
+        </section>
+
+        <section id="panel-stats-downloads" class="hidden" data-panel="stats-downloads">
+          <div class="panel-head">
+            <h1>下载记录</h1>
+            <p class="hint">安装包下载流水（含 IP 与归属地）。</p>
           </div>
+          <div class="toolbar">
+            <button class="btn" type="button" data-stats-refresh="downloads">刷新</button>
+          </div>
+          <div class="alert err" id="stats-downloads-err"></div>
           <div class="card table-card">
             <table class="data" id="stats-downloads">
               <thead>
@@ -270,11 +335,17 @@
                   <th>时间</th>
                   <th>文件</th>
                   <th>IP</th>
+                  <th>地址</th>
                   <th>UA</th>
                 </tr>
               </thead>
               <tbody></tbody>
             </table>
+            <div class="pager" data-list="stats-downloads">
+              <button class="btn" type="button" data-dir="-1">上一页</button>
+              <span data-page-label>第 1 页</span>
+              <button class="btn" type="button" data-dir="1">下一页</button>
+            </div>
           </div>
         </section>
       </div>
@@ -287,7 +358,15 @@
     const loginErr = document.getElementById("login-err");
     const dashErr = document.getElementById("dash-err");
     const statuses = ["新留言", "已联系", "已结束"];
-    const panels = ["messages", "customers", "codes", "stats"];
+    const panels = ["codes", "messages", "customers", "stats-overview", "stats-visits", "stats-downloads"];
+    const pageSize = 20;
+    const pagers = {
+      messages: { page: 1, total: 0 },
+      customers: { page: 1, total: 0 },
+      codes: { page: 1, total: 0 },
+      "stats-visits": { page: 1, total: 0 },
+      "stats-downloads": { page: 1, total: 0 },
+    };
 
     function fmtTime(sec) {
       if (!sec) return "";
@@ -307,6 +386,10 @@
       if (st === "已结束") return "done";
       return "new";
     }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+    }
+    function escapeAttr(s) { return escapeHtml(s).replace(/\n/g, " "); }
 
     async function api(path, opts) {
       const res = await fetch(path, Object.assign({ credentials: "same-origin" }, opts || {}));
@@ -314,8 +397,28 @@
       return { res, data };
     }
 
+    function pageCount(total, size) {
+      return Math.max(1, Math.ceil((Number(total) || 0) / (Number(size) || pageSize)));
+    }
+
+    function updatePager(listKey) {
+      const state = pagers[listKey];
+      if (!state) return;
+      const pages = pageCount(state.total, pageSize);
+      if (state.page > pages) state.page = pages;
+      const el = document.querySelector('.pager[data-list="' + listKey + '"]');
+      if (!el) return;
+      const label = el.querySelector("[data-page-label]");
+      if (label) label.textContent = "第 " + state.page + " / " + pages + " 页（共 " + (state.total || 0) + " 条）";
+      el.querySelectorAll("button[data-dir]").forEach(btn => {
+        const dir = Number(btn.dataset.dir);
+        btn.disabled = (dir < 0 && state.page <= 1) || (dir > 0 && state.page >= pages);
+      });
+    }
+
     function currentPanel() {
       const name = (location.hash || "").replace(/^#/, "");
+      if (name === "stats") return "stats-overview";
       return panels.includes(name) ? name : "codes";
     }
 
@@ -330,33 +433,54 @@
       }
     }
 
-    async function refresh() {
-      showErr(dashErr, "");
-      const [m, c] = await Promise.all([
-        api("/admin/api/messages"),
-        api("/admin/api/customers"),
-      ]);
-      if (m.res.status === 401 || c.res.status === 401) {
-        showLogin();
-        return;
-      }
-      if (!m.data.ok || !c.data.ok) {
-        showErr(dashErr, "加载失败，请刷新重试。");
-        return;
-      }
-      renderMessages(m.data.messages || []);
-      renderCustomers(c.data.customers || []);
-      showDash();
-      refreshSessionCodes();
-      if (currentPanel() === "stats") refreshStats();
+    function showLogin() {
+      loginWrap.classList.remove("hidden");
+      dashView.classList.add("hidden");
+    }
+    function showDash() {
+      loginWrap.classList.add("hidden");
+      dashView.classList.remove("hidden");
+      showPanel(currentPanel());
     }
 
-    async function refreshSessionCodes() {
+    async function refreshMessages() {
+      showErr(dashErr, "");
+      const q = new URLSearchParams({ page: String(pagers.messages.page), page_size: String(pageSize) });
+      const { res, data } = await api("/admin/api/messages?" + q.toString());
+      if (res.status === 401) { showLogin(); return; }
+      if (!res.ok || !data.ok) {
+        showErr(dashErr, "留言加载失败");
+        return;
+      }
+      pagers.messages.page = data.page || pagers.messages.page;
+      pagers.messages.total = data.total || 0;
+      renderMessages(data.messages || []);
+      updatePager("messages");
+    }
+
+    async function refreshCustomers() {
+      showErr(dashErr, "");
+      const q = new URLSearchParams({ page: String(pagers.customers.page), page_size: String(pageSize) });
+      const { res, data } = await api("/admin/api/customers?" + q.toString());
+      if (res.status === 401) { showLogin(); return; }
+      if (!res.ok || !data.ok) {
+        showErr(dashErr, "客户加载失败");
+        return;
+      }
+      pagers.customers.page = data.page || pagers.customers.page;
+      pagers.customers.total = data.total || 0;
+      renderCustomers(data.customers || []);
+      updatePager("customers");
+    }
+
+    async function refreshSessionCodes(resetPage) {
       const scErr = document.getElementById("sc-err");
       showErr(scErr, "");
+      if (resetPage) pagers.codes.page = 1;
       const code = (document.getElementById("sc-code").value || "").trim();
-      const q = code ? ("?code=" + encodeURIComponent(code)) : "";
-      const { res, data } = await api("/admin/api/session-codes" + q);
+      const q = new URLSearchParams({ page: String(pagers.codes.page), page_size: String(pageSize) });
+      if (code) q.set("code", code);
+      const { res, data } = await api("/admin/api/session-codes?" + q.toString());
       if (res.status === 401) { showLogin(); return; }
       if (!res.ok || !data.ok) {
         showErr(scErr, (data && data.error) || "会话码加载失败");
@@ -365,7 +489,10 @@
       if (data.configured === false) {
         showErr(scErr, data.hint || "未配置中继审计代理");
       }
+      pagers.codes.page = data.page || pagers.codes.page;
+      pagers.codes.total = data.total || 0;
       renderSessionCodes(data.events || []);
+      updatePager("codes");
     }
 
     function renderSessionCodes(list) {
@@ -409,7 +536,7 @@
             body: JSON.stringify({ id: Number(el.dataset.id), status: el.value }),
           });
           if (!res.ok || !data.ok) showErr(dashErr, "改状态失败");
-          else refresh();
+          else refreshMessages();
         });
       });
       tb.querySelectorAll("input.note-input").forEach(el => {
@@ -440,77 +567,118 @@
       }
     }
 
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
-    }
-    function escapeAttr(s) { return escapeHtml(s).replace(/\n/g, " "); }
-
-    function showLogin() {
-      loginWrap.classList.remove("hidden");
-      dashView.classList.add("hidden");
-    }
-    function showDash() {
-      loginWrap.classList.add("hidden");
-      dashView.classList.remove("hidden");
-      showPanel(currentPanel());
-    }
-
-    async function refreshStats() {
-      const statsErr = document.getElementById("stats-err");
+    async function refreshStats(section, resetPage) {
+      const errId = section === "overview" ? "stats-overview-err"
+        : (section === "visits" ? "stats-visits-err" : "stats-downloads-err");
+      const statsErr = document.getElementById(errId);
       showErr(statsErr, "");
-      const { res, data } = await api("/admin/api/stats");
+      if (resetPage) {
+        if (section === "visits") pagers["stats-visits"].page = 1;
+        if (section === "downloads") pagers["stats-downloads"].page = 1;
+      }
+      const q = new URLSearchParams({
+        section: section,
+        page_size: String(pageSize),
+      });
+      if (section === "visits") q.set("page", String(pagers["stats-visits"].page));
+      if (section === "downloads") q.set("page", String(pagers["stats-downloads"].page));
+      const { res, data } = await api("/admin/api/stats?" + q.toString());
       if (res.status === 401) { showLogin(); return; }
       if (!res.ok || !data.ok || !data.stats) {
         showErr(statsErr, "统计加载失败");
         return;
       }
       const st = data.stats;
-      document.getElementById("stat-visit-count").textContent = st.visit_count || 0;
-      document.getElementById("stat-visit-ips").textContent = st.visit_unique_ips || 0;
-      document.getElementById("stat-dl-count").textContent = st.download_count || 0;
-      document.getElementById("stat-dl-ips").textContent = st.download_unique_ips || 0;
-
-      const ftb = document.querySelector("#stats-files tbody");
-      ftb.innerHTML = "";
-      for (const f of (st.downloads_by_file || [])) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td class="ink">${escapeHtml(f.file_name || "")}</td><td>${f.count || 0}</td>`;
-        ftb.appendChild(tr);
+      if (section === "overview" || section === "all") {
+        document.getElementById("stat-visit-count").textContent = st.visit_count || 0;
+        document.getElementById("stat-visit-ips").textContent = st.visit_unique_ips || 0;
+        document.getElementById("stat-dl-count").textContent = st.download_count || 0;
+        document.getElementById("stat-dl-ips").textContent = st.download_unique_ips || 0;
+        const ftb = document.querySelector("#stats-files tbody");
+        ftb.innerHTML = "";
+        for (const f of (st.downloads_by_file || [])) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td class="ink">${escapeHtml(f.file_name || "")}</td><td>${f.count || 0}</td>`;
+          ftb.appendChild(tr);
+        }
       }
-
-      const vtb = document.querySelector("#stats-visits tbody");
-      vtb.innerHTML = "";
-      for (const e of (st.recent_visits || [])) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${fmtTime(e.created_at)}</td>
-          <td class="ink">${escapeHtml(e.path || "")}</td>
-          <td>${escapeHtml(e.ip || "")}</td>
-          <td class="problem">${escapeHtml(e.user_agent || "")}</td>`;
-        vtb.appendChild(tr);
+      if (section === "visits") {
+        pagers["stats-visits"].page = st.visit_page || pagers["stats-visits"].page;
+        pagers["stats-visits"].total = st.visit_count || 0;
+        const vtb = document.querySelector("#stats-visits tbody");
+        vtb.innerHTML = "";
+        for (const e of (st.recent_visits || [])) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${fmtTime(e.created_at)}</td>
+            <td class="ink">${escapeHtml(e.path || "")}</td>
+            <td>${escapeHtml(e.ip || "")}</td>
+            <td>${escapeHtml(e.ip_location || "")}</td>
+            <td class="problem">${escapeHtml(e.user_agent || "")}</td>`;
+          vtb.appendChild(tr);
+        }
+        updatePager("stats-visits");
       }
-
-      const dtb = document.querySelector("#stats-downloads tbody");
-      dtb.innerHTML = "";
-      for (const e of (st.recent_downloads || [])) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${fmtTime(e.created_at)}</td>
-          <td class="ink">${escapeHtml(e.file_name || "")}</td>
-          <td>${escapeHtml(e.ip || "")}</td>
-          <td class="problem">${escapeHtml(e.user_agent || "")}</td>`;
-        dtb.appendChild(tr);
+      if (section === "downloads") {
+        pagers["stats-downloads"].page = st.download_page || pagers["stats-downloads"].page;
+        pagers["stats-downloads"].total = st.download_count || 0;
+        const dtb = document.querySelector("#stats-downloads tbody");
+        dtb.innerHTML = "";
+        for (const e of (st.recent_downloads || [])) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${fmtTime(e.created_at)}</td>
+            <td class="ink">${escapeHtml(e.file_name || "")}</td>
+            <td>${escapeHtml(e.ip || "")}</td>
+            <td>${escapeHtml(e.ip_location || "")}</td>
+            <td class="problem">${escapeHtml(e.user_agent || "")}</td>`;
+          dtb.appendChild(tr);
+        }
+        updatePager("stats-downloads");
       }
+    }
+
+    function loadPanel(panel) {
+      showPanel(panel);
+      if (panel === "messages") return refreshMessages();
+      if (panel === "customers") return refreshCustomers();
+      if (panel === "codes") return refreshSessionCodes(false);
+      if (panel === "stats-overview") return refreshStats("overview");
+      if (panel === "stats-visits") return refreshStats("visits");
+      if (panel === "stats-downloads") return refreshStats("downloads");
+    }
+
+    async function refresh() {
+      showErr(dashErr, "");
+      showDash();
+      await loadPanel(currentPanel());
     }
 
     document.getElementById("side-nav").addEventListener("click", (ev) => {
       const btn = ev.target.closest("button[data-panel]");
       if (!btn) return;
-      showPanel(btn.dataset.panel);
-      if (btn.dataset.panel === "stats") refreshStats();
+      loadPanel(btn.dataset.panel);
     });
 
-    document.getElementById("stats-refresh").addEventListener("click", refreshStats);
+    document.querySelector(".admin-main").addEventListener("click", (ev) => {
+      const refreshBtn = ev.target.closest("[data-stats-refresh]");
+      if (refreshBtn) {
+        refreshStats(refreshBtn.dataset.statsRefresh, true);
+        return;
+      }
+      const btn = ev.target.closest(".pager button[data-dir]");
+      if (!btn || btn.disabled) return;
+      const pager = btn.closest(".pager");
+      const listKey = pager && pager.dataset.list;
+      if (!listKey || !pagers[listKey]) return;
+      const dir = Number(btn.dataset.dir) || 0;
+      pagers[listKey].page = Math.max(1, pagers[listKey].page + dir);
+      if (listKey === "messages") refreshMessages();
+      else if (listKey === "customers") refreshCustomers();
+      else if (listKey === "codes") refreshSessionCodes(false);
+      else if (listKey === "stats-visits") refreshStats("visits");
+      else if (listKey === "stats-downloads") refreshStats("downloads");
+    });
 
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -537,16 +705,14 @@
       showLogin();
     });
 
-    document.getElementById("sc-refresh").addEventListener("click", refreshSessionCodes);
+    document.getElementById("sc-refresh").addEventListener("click", () => refreshSessionCodes(true));
     document.getElementById("sc-code").addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") { ev.preventDefault(); refreshSessionCodes(); }
+      if (ev.key === "Enter") { ev.preventDefault(); refreshSessionCodes(true); }
     });
 
     window.addEventListener("hashchange", () => {
       if (dashView.classList.contains("hidden")) return;
-      const panel = currentPanel();
-      showPanel(panel);
-      if (panel === "stats") refreshStats();
+      loadPanel(currentPanel());
     });
 
     refresh();

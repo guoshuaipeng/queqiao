@@ -16,13 +16,14 @@ const (
 const maxUserAgentRunes = 512
 
 type AccessEvent struct {
-	ID        int64  `json:"id"`
-	Kind      string `json:"kind"`
-	Path      string `json:"path"`
-	FileName  string `json:"file_name"`
-	IP        string `json:"ip"`
-	UserAgent string `json:"user_agent"`
-	CreatedAt int64  `json:"created_at"`
+	ID         int64  `json:"id"`
+	Kind       string `json:"kind"`
+	Path       string `json:"path"`
+	FileName   string `json:"file_name"`
+	IP         string `json:"ip"`
+	IPLocation string `json:"ip_location,omitempty"`
+	UserAgent  string `json:"user_agent"`
+	CreatedAt  int64  `json:"created_at"`
 }
 
 type FileDownloadStat struct {
@@ -37,7 +38,18 @@ type AccessStats struct {
 	DownloadUniqueIPs int64              `json:"download_unique_ips"`
 	DownloadsByFile   []FileDownloadStat `json:"downloads_by_file"`
 	RecentVisits      []AccessEvent      `json:"recent_visits"`
+	VisitPage         int                `json:"visit_page"`
+	VisitPageSize     int                `json:"visit_page_size"`
 	RecentDownloads   []AccessEvent      `json:"recent_downloads"`
+	DownloadPage      int                `json:"download_page"`
+	DownloadPageSize  int                `json:"download_page_size"`
+}
+
+type AccessStatsQuery struct {
+	Section      string // overview | visits | downloads | all
+	VisitPage    int
+	DownloadPage int
+	PageSize     int
 }
 
 func clientIP(r *http.Request) string {
@@ -107,7 +119,7 @@ VALUES(?,?,?,?,?,?)`, kind, path, fileName, ip, ua, now)
 	return err
 }
 
-func (s *Store) AccessStats(recentLimit int) (AccessStats, error) {
+func (s *Store) AccessStats(q AccessStatsQuery) (AccessStats, error) {
 	var out AccessStats
 	out.DownloadsByFile = []FileDownloadStat{}
 	out.RecentVisits = []AccessEvent{}
@@ -115,11 +127,16 @@ func (s *Store) AccessStats(recentLimit int) (AccessStats, error) {
 	if s == nil || s.db == nil {
 		return out, nil
 	}
-	if recentLimit <= 0 {
-		recentLimit = 100
-	}
-	if recentLimit > 500 {
-		recentLimit = 500
+
+	visitPage, pageSize := normalizePage(q.VisitPage, q.PageSize)
+	dlPage, _ := normalizePage(q.DownloadPage, pageSize)
+	out.VisitPage = visitPage
+	out.VisitPageSize = pageSize
+	out.DownloadPage = dlPage
+	out.DownloadPageSize = pageSize
+	section := strings.TrimSpace(q.Section)
+	if section == "" {
+		section = "all"
 	}
 
 	var err error
@@ -139,17 +156,23 @@ func (s *Store) AccessStats(recentLimit int) (AccessStats, error) {
 	if err != nil {
 		return out, err
 	}
-	out.DownloadsByFile, err = s.downloadsByFile()
-	if err != nil {
-		return out, err
+	if section == "overview" || section == "all" {
+		out.DownloadsByFile, err = s.downloadsByFile()
+		if err != nil {
+			return out, err
+		}
 	}
-	out.RecentVisits, err = s.listAccess(AccessVisit, recentLimit)
-	if err != nil {
-		return out, err
+	if section == "visits" || section == "all" {
+		out.RecentVisits, err = s.listAccessPage(AccessVisit, visitPage, pageSize)
+		if err != nil {
+			return out, err
+		}
 	}
-	out.RecentDownloads, err = s.listAccess(AccessDownload, recentLimit)
-	if err != nil {
-		return out, err
+	if section == "downloads" || section == "all" {
+		out.RecentDownloads, err = s.listAccessPage(AccessDownload, dlPage, pageSize)
+		if err != nil {
+			return out, err
+		}
 	}
 	return out, nil
 }
@@ -191,18 +214,20 @@ ORDER BY c DESC, file_name ASC`, AccessDownload)
 	return out, rows.Err()
 }
 
-func (s *Store) listAccess(kind string, limit int) ([]AccessEvent, error) {
+func (s *Store) listAccessPage(kind string, page, pageSize int) ([]AccessEvent, error) {
+	page, pageSize = normalizePage(page, pageSize)
+	offset := (page - 1) * pageSize
 	rows, err := s.db.Query(`
 SELECT id, kind, path, file_name, ip, user_agent, created_at
 FROM access_events
 WHERE kind=?
 ORDER BY created_at DESC, id DESC
-LIMIT ?`, kind, limit)
+LIMIT ? OFFSET ?`, kind, pageSize, offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	out := make([]AccessEvent, 0)
+	out := make([]AccessEvent, 0, pageSize)
 	for rows.Next() {
 		var e AccessEvent
 		if err := rows.Scan(&e.ID, &e.Kind, &e.Path, &e.FileName, &e.IP, &e.UserAgent, &e.CreatedAt); err != nil {

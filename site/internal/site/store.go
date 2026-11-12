@@ -148,6 +148,8 @@ CREATE TABLE IF NOT EXISTS access_events (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_access_kind_created ON access_events(kind, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_access_kind_created_id ON access_events(kind, created_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_access_kind_ip ON access_events(kind, ip);
 CREATE INDEX IF NOT EXISTS idx_access_ip ON access_events(ip);
 `
 	_, err := s.db.Exec(schema)
@@ -312,23 +314,41 @@ func mergeCustomerContactsTx(tx *sql.Tx, id int64, in AskInput, now int64) error
 	return err
 }
 
+func (s *Store) CountMessages() (int64, error) {
+	var n int64
+	err := s.db.QueryRow(`SELECT COUNT(1) FROM messages`).Scan(&n)
+	return n, err
+}
+
 func (s *Store) ListMessages() ([]Message, error) {
+	list, _, err := s.ListMessagesPage(1, maxPageSize)
+	return list, err
+}
+
+func (s *Store) ListMessagesPage(page, pageSize int) ([]Message, int64, error) {
+	page, pageSize = normalizePage(page, pageSize)
+	total, err := s.CountMessages()
+	if err != nil {
+		return nil, 0, err
+	}
+	offset := (page - 1) * pageSize
 	rows, err := s.db.Query(`
 SELECT id, customer_id, name, wechat, phone, email, os, problem, status, note, created_at, updated_at
-FROM messages ORDER BY created_at DESC, id DESC`)
+FROM messages ORDER BY created_at DESC, id DESC
+LIMIT ? OFFSET ?`, pageSize, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
-	out := make([]Message, 0)
+	out := make([]Message, 0, pageSize)
 	for rows.Next() {
 		var m Message
 		if err := rows.Scan(&m.ID, &m.CustomerID, &m.Name, &m.Wechat, &m.Phone, &m.Email, &m.OS, &m.Problem, &m.Status, &m.Note, &m.CreatedAt, &m.UpdatedAt); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		out = append(out, m)
 	}
-	return out, rows.Err()
+	return out, total, rows.Err()
 }
 
 func (s *Store) SetStatus(id int64, status string) error {
@@ -370,25 +390,43 @@ func (s *Store) SetNote(id int64, note string) error {
 	return nil
 }
 
+func (s *Store) CountCustomers() (int64, error) {
+	var n int64
+	err := s.db.QueryRow(`SELECT COUNT(1) FROM customers`).Scan(&n)
+	return n, err
+}
+
 func (s *Store) ListCustomers() ([]Customer, error) {
+	list, _, err := s.ListCustomersPage(1, maxPageSize)
+	return list, err
+}
+
+func (s *Store) ListCustomersPage(page, pageSize int) ([]Customer, int64, error) {
+	page, pageSize = normalizePage(page, pageSize)
+	total, err := s.CountCustomers()
+	if err != nil {
+		return nil, 0, err
+	}
+	offset := (page - 1) * pageSize
 	rows, err := s.db.Query(`
 SELECT c.id, c.name, c.wechat, c.phone, c.email, c.os, c.created_at, c.updated_at,
   (SELECT COUNT(1) FROM messages m WHERE m.customer_id = c.id) AS history_count,
   (SELECT m.created_at FROM messages m WHERE m.customer_id = c.id ORDER BY m.created_at DESC, m.id DESC LIMIT 1) AS last_msg_at,
   (SELECT m.status FROM messages m WHERE m.customer_id = c.id ORDER BY m.created_at DESC, m.id DESC LIMIT 1) AS status
 FROM customers c
-ORDER BY last_msg_at DESC, c.id DESC`)
+ORDER BY last_msg_at DESC, c.id DESC
+LIMIT ? OFFSET ?`, pageSize, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
-	out := make([]Customer, 0)
+	out := make([]Customer, 0, pageSize)
 	for rows.Next() {
 		var c Customer
 		var last sql.NullInt64
 		var st sql.NullString
 		if err := rows.Scan(&c.ID, &c.Name, &c.Wechat, &c.Phone, &c.Email, &c.OS, &c.CreatedAt, &c.UpdatedAt, &c.HistoryCount, &last, &st); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		if last.Valid {
 			c.LastMsgAt = last.Int64
@@ -398,5 +436,5 @@ ORDER BY last_msg_at DESC, c.id DESC`)
 		}
 		out = append(out, c)
 	}
-	return out, rows.Err()
+	return out, total, rows.Err()
 }
